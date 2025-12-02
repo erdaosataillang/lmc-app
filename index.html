@@ -38,6 +38,7 @@
         }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
 
+        /* リング色 */
         .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
         .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26, 115, 232, 0.5); }
         .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250, 123, 23, 0.5); }
@@ -94,6 +95,7 @@
         .dot { width: 5px; height: 5px; border-radius: 50%; background: #34A853; }
         .dot.event { background: #137333; transform: scale(1.2); }
 
+        /* タイムライン (日表示) */
         .timeline-container {
             background: white; border-radius: 12px; padding: 10px 0;
             position: relative; height: 60vh; overflow-y: auto;
@@ -121,31 +123,26 @@
         .event-title { font-weight: bold; }
         .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
 
-        /* --- マイバンド & カードデザイン --- */
-        .card {
-            background: white; border-radius: 16px; padding: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px;
-            transition: background-color 0.2s;
-        }
-        /* タップできるように */
-        .card.band-card:active { background-color: #f5f5f5; }
-
-        .band-item { display: flex; align-items: center; }
+        /* マイバンド */
+        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; }
+        .band-item { display: flex; align-items: center; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; }
+        .band-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
         
-        .band-icon {
-            width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px;
-            display: flex; justify-content: center; align-items: center; margin-right: 12px;
-            font-size: 20px; color: #5f6368; font-weight: bold;
-        }
+        .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; }
         .band-info { flex-grow: 1; }
-        .band-name { font-weight: bold; font-size: 16px; color: #1f1f1f; }
-        .band-members { font-size: 12px; color: #5f6368; margin-top: 2px;}
+        .band-name { font-weight: bold; font-size: 16px; }
+        .band-members { font-size: 12px; color: #5f6368; }
 
-        /* メンバーリスト (編集画面用) */
-        .member-list-edit { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
-        .member-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
-        .member-row:last-child { border-bottom: none; }
-        .btn-remove-member { font-size: 11px; color: #d93025; border: 1px solid #d93025; background: white; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+        /* ★ アーカイブ用タブスタイル */
+        .band-tabs {
+            display: flex; background: white; border-radius: 12px; padding: 4px; margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .band-tab {
+            flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold;
+            border-radius: 8px; cursor: pointer; color: #5f6368;
+        }
+        .band-tab.active { background: #e8f0fe; color: #0b57d0; }
 
         /* ナビゲーション */
         .bottom-nav {
@@ -169,29 +166,10 @@
             display: flex; justify-content: center; align-items: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900;
         }
-        
-        /* ボタン */
-        .btn-primary {
-            background: #0b57d0; color: white; border: none; padding: 12px 20px;
-            border-radius: 24px; font-weight: bold; width: 100%; cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .btn-secondary {
-            background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px;
-            border-radius: 24px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer;
-        }
-        .btn-danger {
-            background: #fee2e2; color: #d93025; border: none; padding: 12px 20px;
-            border-radius: 24px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer;
-        }
-        
-        /* 招待ボタン (調整版) */
-        .btn-invite {
-            background: white; color: #0b57d0; border: 1px solid #dadce0;
-            padding: 6px 12px; border-radius: 16px; font-size: 12px; font-weight: bold;
-            cursor: pointer; display: flex; align-items: center; gap: 4px;
-            margin-left: auto;
-        }
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 100%; cursor: pointer; }
+        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
+        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
+        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 8px 16px; border-radius: 16px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
 
         /* モーダル */
         .modal-overlay {
@@ -208,10 +186,13 @@
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        .form-group { margin-bottom: 20px; }
-        .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 6px; font-weight: bold; }
-        .form-input { width: 100%; padding: 14px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: white; }
-        
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size:16px; }
+        .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; }
+        .member-option.selected { background: #e8f0fe; }
+        .member-check { margin-right: 10px; color: #0b57d0; }
         .hidden { display: none !important; }
         
         #selectionToast {
@@ -224,6 +205,12 @@
         .radio-group { display: flex; gap: 15px; }
         .radio-label { display: flex; align-items: center; font-size: 16px; cursor: pointer; }
         .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
+        
+        .member-list-edit { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
+        .member-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+        .member-row:last-child { border-bottom: none; }
+        .btn-remove-member { font-size: 11px; color: #d93025; border: 1px solid #d93025; background: white; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+
     </style>
 </head>
 <body>
@@ -235,6 +222,12 @@
             <div class="header-title">マイバンド <span style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">2025年度</span></div>
             <div class="header-avatar" id="headerIconBands" onclick="goToMyPage()"></div>
         </div>
+        
+        <div class="band-tabs">
+            <div class="band-tab active" onclick="switchBandTab('active')">活動中</div>
+            <div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div>
+        </div>
+
         <div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>
         <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
     </div>
@@ -290,6 +283,12 @@
             <h3 style="margin-top:0;">バンド結成</h3>
             <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">バンドを作成後、招待URLをLINEで送信してメンバーを集めましょう。</p>
             <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム"></div>
+            
+            <div class="form-group">
+                <label class="form-label">メンバー選択 (登録済みユーザー)</label>
+                <div class="member-select-list" id="userSelectList"></div>
+            </div>
+
             <button class="btn-primary" onclick="saveBand()">作成して招待を送る</button>
             <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
         </div>
@@ -299,7 +298,7 @@
         <div class="modal-content">
             <h3 style="margin-top:0; display:flex; justify-content:space-between;">
                 バンド詳細
-                <button class="btn-invite" id="btnInviteInModal" onclick=""><span class="material-icons" style="font-size:14px;">share</span> 招待</button>
+                <button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>
             </h3>
             <input type="hidden" id="detailBandId">
             
@@ -310,12 +309,15 @@
             
             <div class="form-group">
                 <label class="form-label">メンバー</label>
-                <div class="member-list-edit" id="detailMemberList">
-                    </div>
+                <div class="member-list-edit" id="detailMemberList"></div>
             </div>
 
             <div id="bandCreatorActions" class="hidden">
                 <button class="btn-primary" onclick="updateBandName()">バンド名を変更</button>
+                
+                <button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button>
+                <button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button>
+                
                 <button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button>
             </div>
             
@@ -357,6 +359,11 @@
             </div>
             
             <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
+            
+            <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()" style="background:#fff; color:#3c4043; border:1px solid #dadce0; padding:10px; border-radius:20px; width:100%; margin-top:16px; font-weight:bold; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:8px;">
+                <span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加
+            </button>
+
             <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
             <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
         </div>
@@ -364,7 +371,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
@@ -389,246 +396,15 @@
         let selectionStartHour = null;
         let selectionEndHour = null;
         
-        let myBandsCache = []; 
+        let myBandsAll = []; // 全件保持
+        let currentBandTab = 'active'; // 'active' or 'archived'
+        
         let calendarMode = 'month';
         let isSelecting = false;
         let selectionTimer = null;
         let editingBookingData = null;
 
-        // --- メイン処理 ---
-        async function main() {
-            try {
-                await liff.init({ liffId: MY_LIFF_ID });
-                const urlParams = new URLSearchParams(window.location.search);
-                const action = urlParams.get('action');
-                const inviteBandId = urlParams.get('bandId');
-
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                
-                const profile = await liff.getProfile();
-                currentUser = profile.userId;
-                currentProfile = profile;
-
-                const userRef = doc(db, "users", currentUser);
-                const userSnap = await getDoc(userRef);
-                if (!userSnap.exists()) { 
-                    alert("利用には会員登録が必要です。マイページへ移動します。"); 
-                    window.location.href = MY_PAGE_URL; 
-                    return; 
-                }
-                
-                currentUserData = userSnap.data(); 
-                renderHeaderIcons(currentUserData);
-
-                if (action === 'invite' && inviteBandId) {
-                    await handleInvite(inviteBandId);
-                    window.history.replaceState(null, null, window.location.pathname);
-                }
-
-                loadMyBands();
-            } catch(e) { console.error(e); }
-        }
-
-        // --- マイバンド ---
-        function loadMyBands() {
-            const container = document.getElementById('bandListContainer');
-            const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
-            
-            onSnapshot(q, (snapshot) => {
-                container.innerHTML = ""; myBandsCache = [];
-                if (snapshot.empty) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">バンドがありません。<br>招待をもらうか、新規作成してください。</div>'; return; }
-                
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const bandId = docSnap.id;
-                    myBandsCache.push({ id: bandId, name: data.name }); 
-
-                    const div = document.createElement('div');
-                    div.className = 'card band-card'; // タップ用クラス
-                    div.onclick = () => openBandDetail(bandId, data);
-
-                    let html = `
-                        <div class="band-item" style="border:none; margin:0; padding:0;">
-                            <div class="band-icon">${data.name.charAt(0)}</div>
-                            <div class="band-info">
-                                <div class="band-name">${data.name}</div>
-                                <div class="band-members">${data.memberNames.join(', ')}</div>
-                            </div>
-                    `;
-                    
-                    if (data.creatorId === currentUser) {
-                        // 招待ボタンはイベント伝播を止めて、詳細が開かないようにする
-                        html += `<button class="btn-invite" onclick="event.stopPropagation(); shareBandInvite('${bandId}', '${data.name}')"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>`;
-                    }
-                    html += `</div>`;
-                    div.innerHTML = html;
-                    container.appendChild(div);
-                });
-            });
-        }
-
-        // --- バンド詳細モーダル ---
-        window.openBandDetail = (bandId, data) => {
-            document.getElementById('detailBandId').value = bandId;
-            document.getElementById('detailBandName').value = data.name;
-            
-            // 招待ボタンのセット
-            document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
-
-            // メンバーリスト生成
-            const memberListDiv = document.getElementById('detailMemberList');
-            memberListDiv.innerHTML = "";
-            
-            const isCreator = (data.creatorId === currentUser);
-            
-            // 編集権限設定
-            const nameInput = document.getElementById('detailBandName');
-            if (isCreator) {
-                nameInput.readOnly = false;
-                document.getElementById('bandCreatorActions').classList.remove('hidden');
-                document.getElementById('bandMemberActions').classList.add('hidden');
-            } else {
-                nameInput.readOnly = true;
-                document.getElementById('bandCreatorActions').classList.add('hidden');
-                document.getElementById('bandMemberActions').classList.remove('hidden');
-            }
-
-            // メンバー表示
-            data.memberIds.forEach((uid, idx) => {
-                const name = data.memberNames[idx] || "不明";
-                const row = document.createElement('div');
-                row.className = 'member-row';
-                
-                let rowHtml = `<span>${name}</span>`;
-                
-                // リーダーはメンバーを削除できる（自分以外）
-                if (isCreator && uid !== currentUser) {
-                    rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`;
-                } else if (uid === data.creatorId) {
-                    rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`;
-                }
-                
-                row.innerHTML = rowHtml;
-                memberListDiv.appendChild(row);
-            });
-
-            openModal('modal-band-detail');
-        };
-
-        window.updateBandName = async () => {
-            const bandId = document.getElementById('detailBandId').value;
-            const newName = document.getElementById('detailBandName').value.trim();
-            if(!newName) return alert("バンド名を入力してください");
-            try {
-                await updateDoc(doc(db, "bands", bandId), { name: newName });
-                alert("バンド名を変更しました");
-                closeModal('modal-band-detail');
-            } catch(e) { alert("エラー: " + e.message); }
-        };
-
-        window.removeMember = async (bandId, uid, name) => {
-            if(!confirm(`${name} さんをバンドから削除しますか？`)) return;
-            try {
-                // 削除対象のIDと名前を配列から除去
-                await updateDoc(doc(db, "bands", bandId), {
-                    memberIds: arrayRemove(uid),
-                    memberNames: arrayRemove(name)
-                });
-                alert("削除しました");
-                closeModal('modal-band-detail'); // リロードさせるため一度閉じる
-            } catch(e) { alert("エラー: " + e.message); }
-        };
-
-        window.deleteBand = async () => {
-            const bandId = document.getElementById('detailBandId').value;
-            if(!confirm("本当にバンドを解散（削除）しますか？\nこの操作は取り消せません。")) return;
-            try {
-                await deleteDoc(doc(db, "bands", bandId));
-                alert("バンドを解散しました");
-                closeModal('modal-band-detail');
-            } catch(e) { alert("エラー: " + e.message); }
-        };
-
-        window.leaveBand = async () => {
-            const bandId = document.getElementById('detailBandId').value;
-            if(!confirm("本当にこのバンドから脱退しますか？")) return;
-            try {
-                await updateDoc(doc(db, "bands", bandId), {
-                    memberIds: arrayRemove(currentUser),
-                    memberNames: arrayRemove(currentProfile.displayName)
-                });
-                alert("脱退しました");
-                closeModal('modal-band-detail');
-            } catch(e) { alert("エラー: " + e.message); }
-        };
-
-        // --- バンド作成 & 招待 ---
-        window.saveBand = async () => {
-            const name = document.getElementById('inputBandName').value.trim();
-            if(!name) return alert("バンド名を入力してください");
-
-            try {
-                const docRef = await addDoc(collection(db, "bands"), {
-                    name: name,
-                    memberIds: [currentUser],
-                    memberNames: [currentProfile.displayName],
-                    creatorId: currentUser,
-                    createdAt: new Date()
-                });
-                closeModal('modal-band');
-                document.getElementById('inputBandName').value = "";
-                
-                if (confirm(`「${name}」を作成しました！\nLINEでメンバーに招待状を送りますか？`)) {
-                    shareBandInvite(docRef.id, name);
-                } else {
-                    alert("作成しました");
-                }
-            } catch(e) { alert("エラー: " + e.message); }
-        };
-
-        async function shareBandInvite(bandId, bandName) {
-            const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`;
-            if (liff.isApiAvailable('shareTargetPicker')) {
-                try {
-                    await liff.shareTargetPicker([{
-                        type: "flex", altText: `${bandName} への招待`,
-                        contents: {
-                            type: "bubble",
-                            body: {
-                                type: "box", layout: "vertical",
-                                contents: [
-                                    { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" },
-                                    { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true },
-                                    { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true }
-                                ]
-                            },
-                            footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] }
-                        }
-                    }]);
-                } catch (error) { alert("送信できませんでした。"); }
-            } else { alert("招待機能が使えません。"); }
-        }
-
-        async function handleInvite(bandId) {
-            try {
-                const bandRef = doc(db, "bands", bandId);
-                const bandSnap = await getDoc(bandRef);
-                if (!bandSnap.exists()) return alert("このバンドは存在しません");
-                const data = bandSnap.data();
-                if (data.memberIds.includes(currentUser)) return alert(`すでに「${data.name}」のメンバーです`);
-
-                if (confirm(`「${data.name}」に参加しますか？`)) {
-                    await updateDoc(bandRef, {
-                        memberIds: arrayUnion(currentUser),
-                        memberNames: arrayUnion(currentProfile.displayName)
-                    });
-                    alert(`「${data.name}」に参加しました！`);
-                    loadMyBands();
-                }
-            } catch(e) { alert("エラー: " + e.message); }
-        }
-
-        // --- カレンダー ---
+        // --- 共通関数 ---
         window.switchScreen = (screenId, navEl) => {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById('screen-' + screenId).classList.add('active');
@@ -643,6 +419,7 @@
 
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
 
+        // --- カレンダーUI ---
         window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
         window.switchCalendarView = (mode) => {
             calendarMode = mode;
@@ -686,7 +463,6 @@
             const month = displayDate.getMonth();
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
-            
             for(let i=0; i<firstDay.getDay(); i++) {
                 const div = document.createElement('div'); div.className = 'day-cell other-month'; grid.appendChild(div);
             }
@@ -738,7 +514,6 @@
             loadDayBookings();
         }
 
-        // ドラッグ処理
         function handleTouchStart(e) {
             if (e.target.classList.contains('event-block')) return;
             const hour = parseInt(e.target.dataset.hour);
@@ -785,10 +560,13 @@
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
             const start = Math.min(selectionStartHour, selectionEndHour);
             const end = Math.max(selectionStartHour, selectionEndHour);
+            
             document.getElementById('bookingModalTitle').innerText = "新規予約";
             document.getElementById('btnSaveBooking').innerText = "予約を確定する";
             document.getElementById('btnDeleteBooking').classList.add('hidden');
+            document.getElementById('btnAddToGCal').classList.add('hidden');
             document.getElementById('editingBookingId').value = ""; 
+            
             const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
             const typeSelector = document.getElementById('bookingTypeSelector');
             if(isAdmin) {
@@ -796,8 +574,10 @@
                 document.querySelector('input[name="bookingType"][value="normal"]').checked = true;
             } else { typeSelector.classList.add('hidden'); }
             toggleBookingInputs();
+
             const m = displayDate.getMonth() + 1; const d = displayDate.getDate();
             document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`;
+
             setupTimeSelects(`${start}:00`, `${end+1}:00`);
             updateBandSelect();
             openModal('modal-booking');
@@ -823,8 +603,10 @@
             document.getElementById('bookingModalTitle').innerText = "予約の編集";
             document.getElementById('btnSaveBooking').innerText = "変更を保存";
             document.getElementById('btnDeleteBooking').classList.remove('hidden');
+            document.getElementById('btnAddToGCal').classList.remove('hidden');
             document.getElementById('editingBookingId').value = id;
-            
+            editingBookingData = data;
+
             const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
             const typeSelector = document.getElementById('bookingTypeSelector');
             if(isAdmin) {
@@ -837,11 +619,14 @@
             const s = data.startTime.toDate(); const e = data.endTime.toDate();
             const m = s.getMonth() + 1; const d = s.getDate();
             document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`;
+
             const startStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
             const endStr = `${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`;
             setupTimeSelects(startStr, endStr);
+            
             if(data.type === 'event') document.getElementById('inputEventTitle').value = data.title || "";
             else updateBandSelect(data.bandId);
+            
             openModal('modal-booking');
         }
 
@@ -861,8 +646,11 @@
         function updateBandSelect(selectedBandId = "") {
             const select = document.getElementById('selectBookingBand');
             select.innerHTML = "";
-            if (myBandsCache.length === 0) { select.appendChild(new Option("バンドがありません", "")); }
-            else { myBandsCache.forEach(b => { const op = new Option(b.name, b.id); if(b.id === selectedBandId) op.selected = true; select.appendChild(op); }); }
+            // ★ アーカイブされていないバンドのみを表示
+            const activeBands = myBandsAll.filter(b => !b.isArchived);
+            
+            if (activeBands.length === 0) { select.appendChild(new Option("バンドがありません", "")); }
+            else { activeBands.forEach(b => { const op = new Option(b.name, b.id); if(b.id === selectedBandId) op.selected = true; select.appendChild(op); }); }
         }
 
         function loadDayBookings() {
@@ -876,6 +664,7 @@
                     const bookingId = docSnap.id;
                     const s = data.startTime.toDate();
                     const e = data.endTime.toDate();
+                    
                     const startMin = (s.getHours() - 9) * 60 + s.getMinutes();
                     const endMin = (e.getHours() - 9) * 60 + e.getMinutes();
                     const durationMin = endMin - startMin;
@@ -886,16 +675,23 @@
                         const contentArea = slots[slotIndex].querySelector('.time-content');
                         const div = document.createElement('div');
                         div.className = 'event-block';
+                        div.style.top = (s.getMinutes() + 1) + "px"; 
+                        div.style.height = (heightPx - 2) + "px";
+                        div.style.zIndex = "20";
+
                         if (data.type === 'event') {
                             div.classList.add('special-event'); div.innerHTML = `<div class="event-title">${data.title}</div>`; 
                         } else {
                             div.innerHTML = `<div class="event-title">${data.bandName}</div>`;
-                            if (data.creatorId === currentUser) { div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#0b57d0"; div.style.color = "#001d35"; } 
-                            else { div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; }
+                            // 所属チェック（アーカイブ済みでも自分のIDが含まれていれば青）
+                            // 簡易的に、myBandsAllに含まれるIDなら青とする
+                            const myBandIds = myBandsAll.map(b => b.id);
+                            if (data.creatorId === currentUser) { 
+                                div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#0b57d0"; div.style.color = "#001d35"; 
+                            } else { 
+                                div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; 
+                            }
                         }
-                        div.style.top = (s.getMinutes() + 1) + "px"; 
-                        div.style.height = (heightPx - 2) + "px";
-                        div.style.zIndex = "20";
                         div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(bookingId, data); };
                         contentArea.appendChild(div);
                     }
@@ -908,15 +704,15 @@
             const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal';
             let bookingData = { creatorId: currentUser, userName: currentProfile.displayName, type: type, createdAt: new Date() };
             if (type === 'normal') {
-                if (myBandsCache.length === 0) return alert("バンドを作成してください");
+                // アクティブなバンドから選択させる
+                if (myBandsAll.filter(b => !b.isArchived).length === 0) return alert("バンドを作成してください");
                 const selectBand = document.getElementById('selectBookingBand');
                 bookingData.bandId = selectBand.value;
                 bookingData.bandName = selectBand.options[selectBand.selectedIndex].text;
             } else {
                 const title = document.getElementById('inputEventTitle').value.trim();
                 if (!title) return alert("イベント名を入力してください");
-                bookingData.title = title;
-                bookingData.bandName = title; 
+                bookingData.title = title; bookingData.bandName = title; 
             }
             const sTimeStr = document.getElementById('selectStartTime').value;
             const eTimeStr = document.getElementById('selectEndTime').value;
@@ -930,11 +726,21 @@
             try {
                 if (editingId) {
                     delete bookingData.createdAt; await updateDoc(doc(db, "bookings", editingId), bookingData); alert("変更しました");
+                    editingBookingData = { ...editingBookingData, ...bookingData };
                 } else {
                     await addDoc(collection(db, "bookings"), bookingData); alert("予約しました");
                 }
                 closeModal('modal-booking');
             } catch(e) { alert("エラー: " + e.message); }
+        };
+
+        window.addToGoogleCalendar = () => {
+            if (!editingBookingData) return;
+            const title = editingBookingData.bandName || "バンド練習";
+            const start = editingBookingData.startTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, "");
+            const end = editingBookingData.endTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, "");
+            const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=LMC+Mobileからの予約`;
+            window.open(url, '_blank');
         };
 
         window.deleteBooking = async () => {
@@ -943,6 +749,244 @@
             if(!confirm("本当に削除しますか？")) return;
             try { await deleteDoc(doc(db, "bookings", editingId)); alert("削除しました"); closeModal('modal-booking'); } catch(e) { alert("エラー: " + e.message); }
         };
+
+        // --- メイン処理 ---
+        async function main() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                const urlParams = new URLSearchParams(window.location.search);
+                const action = urlParams.get('action');
+                const inviteBandId = urlParams.get('bandId');
+
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                const profile = await liff.getProfile();
+                currentUser = profile.userId;
+                currentProfile = profile;
+                const userRef = doc(db, "users", currentUser);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) { alert("利用には会員登録が必要です"); window.location.href = MY_PAGE_URL; return; }
+                
+                await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
+                currentUserData = userSnap.data(); 
+                renderHeaderIcons(currentUserData);
+
+                if (action === 'invite' && inviteBandId) {
+                    await handleInvite(inviteBandId);
+                    window.history.replaceState(null, null, window.location.pathname);
+                }
+                loadMyBands();
+                loadUserList();
+            } catch(e) { console.error(e); }
+        }
+
+        // --- バンド一覧とタブ切り替え ---
+        window.switchBandTab = (tab) => {
+            currentBandTab = tab;
+            document.querySelectorAll('.band-tab').forEach(el => el.classList.remove('active'));
+            // index 0: Active, 1: Archived
+            const idx = tab === 'active' ? 0 : 1;
+            document.querySelectorAll('.band-tab')[idx].classList.add('active');
+            renderBandList();
+        };
+
+        function loadMyBands() {
+            const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
+            onSnapshot(q, (snapshot) => {
+                myBandsAll = []; // クリア
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    myBandsAll.push({ id: docSnap.id, ...data });
+                });
+                renderBandList();
+            });
+        }
+
+        function renderBandList() {
+            const container = document.getElementById('bandListContainer');
+            container.innerHTML = "";
+            
+            // フィルタリング
+            const targetBands = myBandsAll.filter(b => {
+                if (currentBandTab === 'active') return !b.isArchived; // アーカイブされていないもの
+                else return b.isArchived; // アーカイブされているもの
+            });
+
+            if (targetBands.length === 0) {
+                const msg = currentBandTab === 'active' ? 'バンドがありません。<br>招待をもらうか、新規作成してください。' : 'アーカイブされたバンドはありません。';
+                container.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">${msg}</div>`;
+                return;
+            }
+
+            targetBands.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'card band-card';
+                div.onclick = () => openBandDetail(b.id, b);
+
+                let html = `
+                    <div class="band-item" style="border:none; margin:0; padding:0;">
+                        <div class="band-icon">${b.name.charAt(0)}</div>
+                        <div class="band-info"><div class="band-name">${b.name}</div><div class="band-members">${b.memberNames.join(', ')}</div></div>
+                `;
+                
+                // アクティブかつリーダーなら招待ボタン
+                if (b.creatorId === currentUser && !b.isArchived) {
+                    html += `<button class="btn-outline" onclick="event.stopPropagation(); shareBandInvite('${b.id}', '${b.name}')"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>`;
+                }
+                html += `</div>`;
+                div.innerHTML = html;
+                container.appendChild(div);
+            });
+        }
+
+        // --- バンド詳細・アーカイブ操作 ---
+        window.openBandDetail = (bandId, data) => {
+            document.getElementById('detailBandId').value = bandId;
+            document.getElementById('detailBandName').value = data.name;
+            document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
+            
+            const memberListDiv = document.getElementById('detailMemberList');
+            memberListDiv.innerHTML = "";
+            const isCreator = (data.creatorId === currentUser);
+            
+            const nameInput = document.getElementById('detailBandName');
+            
+            // アーカイブ状態によるUI制御
+            const btnArchive = document.getElementById('btnArchive');
+            const btnRestore = document.getElementById('btnRestore');
+
+            if (data.isArchived) {
+                btnArchive.classList.add('hidden');
+                btnRestore.classList.remove('hidden');
+                nameInput.readOnly = true; // アーカイブ中は編集不可
+            } else {
+                btnArchive.classList.remove('hidden');
+                btnRestore.classList.add('hidden');
+                if(isCreator) nameInput.readOnly = false;
+            }
+
+            // ボタン表示切り替え
+            if (isCreator) {
+                document.getElementById('bandCreatorActions').classList.remove('hidden');
+                document.getElementById('bandMemberActions').classList.add('hidden');
+            } else {
+                nameInput.readOnly = true;
+                document.getElementById('bandCreatorActions').classList.add('hidden');
+                document.getElementById('bandMemberActions').classList.remove('hidden');
+            }
+
+            data.memberIds.forEach((uid, idx) => {
+                const name = data.memberNames[idx] || "不明";
+                const row = document.createElement('div'); row.className = 'member-row';
+                let rowHtml = `<span>${name}</span>`;
+                if (isCreator && uid !== currentUser) {
+                    rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`;
+                } else if (uid === data.creatorId) {
+                    rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`;
+                }
+                row.innerHTML = rowHtml;
+                memberListDiv.appendChild(row);
+            });
+            openModal('modal-band-detail');
+        };
+
+        // アーカイブ実行
+        window.archiveBand = async () => {
+            const bandId = document.getElementById('detailBandId').value;
+            if(!confirm("このバンドをアーカイブしますか？\nマイバンド一覧から非表示になり、予約ができなくなります。")) return;
+            try { await updateDoc(doc(db, "bands", bandId), { isArchived: true }); alert("アーカイブしました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
+        };
+
+        // 復元実行
+        window.restoreBand = async () => {
+            const bandId = document.getElementById('detailBandId').value;
+            if(!confirm("このバンドを復元しますか？")) return;
+            try { await updateDoc(doc(db, "bands", bandId), { isArchived: false }); alert("復元しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
+        };
+
+        window.updateBandName = async () => {
+            const bandId = document.getElementById('detailBandId').value;
+            const newName = document.getElementById('detailBandName').value.trim();
+            if(!newName) return alert("バンド名を入力してください");
+            try { await updateDoc(doc(db, "bands", bandId), { name: newName }); alert("変更しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
+        };
+        window.removeMember = async (bandId, uid, name) => {
+            if(!confirm(`${name} さんを削除しますか？`)) return;
+            try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(uid), memberNames: arrayRemove(name) }); alert("削除しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
+        };
+        window.deleteBand = async () => {
+            const bandId = document.getElementById('detailBandId').value;
+            if(!confirm("本当に解散しますか？")) return;
+            try { await deleteDoc(doc(db, "bands", bandId)); alert("解散しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
+        };
+        window.leaveBand = async () => {
+            const bandId = document.getElementById('detailBandId').value;
+            if(!confirm("本当に脱退しますか？")) return;
+            try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); alert("脱退しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
+        };
+
+        window.saveBand = async () => {
+            const name = document.getElementById('inputBandName').value.trim();
+            if(!name) return alert("バンド名を入力してください");
+            // メンバー選択
+            const selectedEls = document.querySelectorAll('.member-option.selected');
+            const memberIds = [currentUser]; const memberNames = [currentProfile.displayName];
+            selectedEls.forEach(el => { const uid = el.dataset.uid; if(uid !== currentUser) { memberIds.push(uid); memberNames.push(el.dataset.uname); }});
+            try {
+                const docRef = await addDoc(collection(db, "bands"), {
+                    name: name, memberIds: memberIds, memberNames: memberNames, creatorId: currentUser, isArchived: false, createdAt: new Date()
+                });
+                closeModal('modal-band'); document.getElementById('inputBandName').value = "";
+                document.querySelectorAll('.member-option').forEach(el => { el.classList.remove('selected'); el.querySelector('.material-icons').innerText = 'check_box_outline_blank'; });
+                if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name);
+                else alert("作成しました");
+            } catch(e) { alert("エラー: " + e.message); }
+        };
+
+        async function shareBandInvite(bandId, bandName) {
+            const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`;
+            if (liff.isApiAvailable('shareTargetPicker')) {
+                try {
+                    await liff.shareTargetPicker([{
+                        type: "flex", altText: `${bandName} への招待`,
+                        contents: {
+                            type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] }
+                        }
+                    }]);
+                } catch (error) { alert("送信できませんでした"); }
+            } else { alert("招待機能が使えません"); }
+        }
+
+        async function handleInvite(bandId) {
+            try {
+                const bandRef = doc(db, "bands", bandId);
+                const bandSnap = await getDoc(bandRef);
+                if (!bandSnap.exists()) return alert("存在しないバンドです");
+                const data = bandSnap.data();
+                if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`);
+                if (confirm(`「${data.name}」に参加しますか？`)) {
+                    await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) });
+                    alert(`参加しました！`);
+                }
+            } catch(e) { alert("エラー: " + e.message); }
+        }
+
+        async function loadUserList() {
+            const list = document.getElementById('userSelectList');
+            const qs = await getDocs(collection(db, "users"));
+            list.innerHTML = "";
+            qs.forEach(doc => {
+                const u = doc.data();
+                if(doc.id === currentUser) return;
+                const div = document.createElement('div'); div.className = 'member-option'; 
+                div.dataset.uid = doc.id; div.dataset.uname = u.name;
+                div.onclick = () => { 
+                    div.classList.toggle('selected'); 
+                    div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; 
+                };
+                div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name}</div>`;
+                list.appendChild(div);
+            });
+        }
 
         function renderHeaderIcons(data) {
             let ringClass = "";
