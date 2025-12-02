@@ -93,7 +93,6 @@
         .day-cell.other-month { opacity: 0.3; }
         .event-dots { display: flex; gap: 2px; margin-top: 4px; justify-content: center; }
         .dot { width: 5px; height: 5px; border-radius: 50%; background: #34A853; }
-        /* ★緑のドット（イベント用） */
         .dot.event { background: #137333; transform: scale(1.2); }
 
         /* タイムライン (日表示) */
@@ -122,11 +121,7 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .event-title { font-weight: bold; }
-
-        /* ★ イベント用のスタイル (緑) */
-        .event-block.special-event {
-            background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d;
-        }
+        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
 
         /* マイバンド */
         .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; }
@@ -194,7 +189,6 @@
         }
         #selectionToast.show { opacity: 1; }
         
-        /* ラジオボタン */
         .radio-group { display: flex; gap: 15px; }
         .radio-label { display: flex; align-items: center; font-size: 16px; cursor: pointer; }
         .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
@@ -329,7 +323,7 @@
 
         let currentUser = null; 
         let currentProfile = null;
-        let currentUserData = null; // ユーザー詳細データ(権限チェック用)
+        let currentUserData = null; 
         let displayDate = new Date(); 
         let selectedTimeSlot = null; 
         let selectionStartHour = null;
@@ -339,8 +333,8 @@
         let calendarMode = 'month';
         let isSelecting = false;
         let selectionTimer = null;
+        let editingBookingData = null;
 
-        // 画面切り替え
         window.switchScreen = (screenId, navEl) => {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById('screen-' + screenId).classList.add('active');
@@ -355,7 +349,6 @@
 
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
 
-        // ビュー切り替え
         window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
         window.switchCalendarView = (mode) => {
             calendarMode = mode;
@@ -375,7 +368,6 @@
             renderCalendar();
         };
 
-        // カレンダー描画
         function renderCalendar() {
             const y = displayDate.getFullYear();
             const m = displayDate.getMonth() + 1;
@@ -426,14 +418,13 @@
                     const container = document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`);
                     if (container && container.children.length < 3) {
                         const dot = document.createElement('div');
-                        dot.className = data.type === 'event' ? 'dot event' : 'dot'; // イベントなら特別なドット
+                        dot.className = data.type === 'event' ? 'dot event' : 'dot';
                         container.appendChild(dot);
                     }
                 });
             });
         }
 
-        // 日表示 & ドラッグ
         function renderDayView() {
             const container = document.getElementById('timeline'); container.innerHTML = "";
             for (let hour = 9; hour < 22; hour++) {
@@ -496,28 +487,26 @@
             return options;
         }
 
-        // --- モーダル制御 ---
         function openBookingModalRange() {
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
             const start = Math.min(selectionStartHour, selectionEndHour);
             const end = Math.max(selectionStartHour, selectionEndHour);
             
-            // UI初期化
             document.getElementById('bookingModalTitle').innerText = "新規予約";
             document.getElementById('btnSaveBooking').innerText = "予約を確定する";
             document.getElementById('btnDeleteBooking').classList.add('hidden');
             document.getElementById('editingBookingId').value = ""; 
             
-            // 権限チェック (裏方役職者のみイベント選択可)
+            // ★権限チェック
             const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
             const typeSelector = document.getElementById('bookingTypeSelector');
             if(isAdmin) {
                 typeSelector.classList.remove('hidden');
-                document.querySelector('input[name="bookingType"][value="normal"]').checked = true; // デフォルトNormal
+                document.querySelector('input[name="bookingType"][value="normal"]').checked = true;
             } else {
                 typeSelector.classList.add('hidden');
             }
-            toggleBookingInputs(); // 表示切り替え
+            toggleBookingInputs();
 
             const m = displayDate.getMonth() + 1; const d = displayDate.getDate();
             document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`;
@@ -527,7 +516,6 @@
             openModal('modal-booking');
         }
 
-        // ★ 種別切り替え処理 (グローバル公開)
         window.toggleBookingInputs = () => {
             const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal';
             if (type === 'event') {
@@ -541,7 +529,6 @@
 
         function openEditBookingModal(id, data) {
             if (data.creatorId !== currentUser) {
-                // 他人の予約はアラート (イベントは特別)
                 if(data.type === 'event') alert(`【${data.title}】\n予定のため予約できません`);
                 else alert("他人の予約は変更できません"); 
                 return; 
@@ -552,12 +539,10 @@
             document.getElementById('btnDeleteBooking').classList.remove('hidden');
             document.getElementById('editingBookingId').value = id;
 
-            // 管理者モードか
             const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
             const typeSelector = document.getElementById('bookingTypeSelector');
             if(isAdmin) {
                 typeSelector.classList.remove('hidden');
-                // 既存のタイプを選択
                 const t = data.type || 'normal';
                 document.querySelector(`input[name="bookingType"][value="${t}"]`).checked = true;
             } else {
@@ -627,10 +612,9 @@
                         const div = document.createElement('div');
                         div.className = 'event-block';
                         
-                        // ★ イベントなら緑色、自分のバンドなら青、他人はグレー
                         if (data.type === 'event') {
                             div.classList.add('special-event');
-                            div.innerHTML = `<div class="event-title">${data.title}</div>`; // イベント名
+                            div.innerHTML = `<div class="event-title">${data.title}</div>`; 
                         } else {
                             div.innerHTML = `<div class="event-title">${data.bandName}</div>`;
                             if (data.creatorId === currentUser) {
@@ -654,7 +638,6 @@
             const editingId = document.getElementById('editingBookingId').value;
             const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal';
             
-            // バリデーション
             let bookingData = { creatorId: currentUser, userName: currentProfile.displayName, type: type, createdAt: new Date() };
             if (type === 'normal') {
                 if (myBandsCache.length === 0) return alert("バンドを作成してください");
@@ -665,20 +648,26 @@
                 const title = document.getElementById('inputEventTitle').value.trim();
                 if (!title) return alert("イベント名を入力してください");
                 bookingData.title = title;
-                bookingData.bandName = title; // カレンダー表示用(念のため)
+                bookingData.bandName = title; 
             }
 
             const sTimeStr = document.getElementById('selectStartTime').value;
             const eTimeStr = document.getElementById('selectEndTime').value;
-            if (sTimeStr >= eTimeStr) return alert("終了時間は開始時間より後にしてね");
             const [sH, sM] = sTimeStr.split(':').map(Number);
             const [eH, eM] = eTimeStr.split(':').map(Number);
-            bookingData.startTime = new Date(displayDate); bookingData.startTime.setHours(sH, sM, 0, 0);
-            bookingData.endTime = new Date(displayDate); bookingData.endTime.setHours(eH, eM, 0, 0);
+
+            const startTime = new Date(displayDate); startTime.setHours(sH, sM, 0, 0);
+            const endTime = new Date(displayDate); endTime.setHours(eH, eM, 0, 0);
+
+            // ★ バグ修正：日付オブジェクト同士で比較する
+            if (startTime.getTime() >= endTime.getTime()) return alert("終了時間は開始時間より後にしてね");
+
+            bookingData.startTime = startTime;
+            bookingData.endTime = endTime;
 
             try {
                 if (editingId) {
-                    delete bookingData.createdAt; // 更新時は作成日時維持
+                    delete bookingData.createdAt;
                     await updateDoc(doc(db, "bookings", editingId), bookingData);
                     alert("変更しました");
                 } else {
@@ -711,7 +700,7 @@
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) { alert("利用には会員登録が必要です"); window.location.href = MY_PAGE_URL; return; }
                 
-                currentUserData = userSnap.data(); // ★ここで権限チェック用に保持
+                currentUserData = userSnap.data(); 
                 renderHeaderIcons(currentUserData);
                 loadMyBands();
                 loadUserList();
