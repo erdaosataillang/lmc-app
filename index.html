@@ -9,39 +9,64 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
     <style>
-        /* --- 共通デザイン (MyPageから継承) --- */
+        /* --- 共通設定 --- */
         body {
             margin: 0; padding: 0;
             font-family: 'Roboto', 'Noto Sans JP', sans-serif;
             background-color: rgb(241, 244, 249);
             color: #1f1f1f;
             min-height: 100vh;
-            padding-bottom: 80px; /* ナビゲーションバーの分 */
+            padding-bottom: 80px; /* ナビゲーションバー分 */
             overscroll-behavior-y: none;
         }
 
-        /* --- ナビゲーションバー --- */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: white; border-top: 1px solid #e0e3e7;
-            display: flex; justify-content: space-around;
-            padding: 8px 0 24px; /* iPhoneの下部バー考慮 */
-            z-index: 1000;
+        /* --- ヘッダー (Google風) --- */
+        .app-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 20px;
+            background: rgb(241, 244, 249);
+            position: sticky; top: 0; z-index: 100;
         }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: #5f6368; text-decoration: none; font-size: 10px; width: 60px; cursor: pointer;
+        .header-title {
+            font-size: 24px; font-weight: bold; color: #1f1f1f;
+            display: flex; align-items: center; gap: 10px;
         }
-        .nav-item.active { color: #0b57d0; }
-        .nav-icon { font-size: 24px; margin-bottom: 4px; }
         
+        /* 右上のユーザーアイコン */
+        .header-avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            background: #dadce0;
+            cursor: pointer;
+            position: relative;
+        }
+        .header-avatar img {
+            width: 32px; height: 32px;
+            border-radius: 50%; object-fit: cover;
+            border: 2px solid white;
+            z-index: 2;
+        }
+
+        /* リングエフェクト (ミニサイズ) */
+        .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
+        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26, 115, 232, 0.5); }
+        .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250, 123, 23, 0.5); }
+        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52, 168, 83, 0.5); }
+        .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234, 67, 53, 0.5); }
+        .ring-birthday {
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-size: 400%; animation: birthday-glow 3s linear infinite;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+        }
+        @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+
         /* --- 画面コンテナ --- */
-        .screen { display: none; padding: 16px; max-width: 480px; margin: 0 auto; }
+        .screen { display: none; padding: 0 16px 16px; max-width: 480px; margin: 0 auto; }
         .screen.active { display: block; }
 
-        /* --- 見出し --- */
-        .page-title { font-size: 24px; font-weight: bold; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center; }
-        
         /* --- カード --- */
         .card {
             background: white; border-radius: 16px; padding: 16px;
@@ -57,19 +82,18 @@
         .band-icon {
             width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px;
             display: flex; justify-content: center; align-items: center; margin-right: 12px;
-            font-size: 20px;
+            font-size: 20px; color: #5f6368; font-weight: bold;
         }
         .band-info { flex-grow: 1; }
         .band-name { font-weight: bold; font-size: 16px; }
         .band-members { font-size: 12px; color: #5f6368; }
 
-        /* --- カレンダー画面 (Day View) --- */
+        /* --- カレンダー画面 --- */
         .calendar-header {
             display: flex; justify-content: space-between; align-items: center;
             background: white; padding: 12px; border-radius: 12px; margin-bottom: 10px;
         }
         .date-display { font-size: 18px; font-weight: bold; }
-        
         .timeline-container {
             background: white; border-radius: 12px; padding: 10px;
             position: relative; height: 600px; overflow-y: auto;
@@ -79,25 +103,32 @@
             display: flex; align-items: flex-start;
             position: relative;
         }
-        .time-label {
-            width: 50px; font-size: 12px; color: #5f6368; transform: translateY(-8px);
-        }
-        .time-content {
-            flex-grow: 1; height: 100%; position: relative;
-            border-left: 1px solid #f0f0f0;
-        }
+        .time-label { width: 50px; font-size: 12px; color: #5f6368; transform: translateY(-8px); }
+        .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; }
         
-        /* 予約ブロック */
         .event-block {
             position: absolute; left: 2px; right: 2px; top: 1px; bottom: 1px;
             background: #e8f0fe; border-left: 4px solid #0b57d0;
             border-radius: 4px; padding: 4px 8px;
-            font-size: 12px; color: #0b57d0; overflow: hidden;
-            cursor: pointer;
+            font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer;
         }
         .event-title { font-weight: bold; }
 
-        /* --- 共通ボタン --- */
+        /* --- ナビゲーションバー --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: white; border-top: 1px solid #e0e3e7;
+            display: flex; justify-content: space-around;
+            padding: 8px 0 24px; z-index: 1000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: #5f6368; text-decoration: none; font-size: 10px; width: 60px; cursor: pointer;
+        }
+        .nav-item.active { color: #0b57d0; }
+        .nav-icon { font-size: 24px; margin-bottom: 4px; }
+
+        /* --- UIパーツ --- */
         .fab {
             position: fixed; bottom: 90px; right: 20px;
             width: 56px; height: 56px; border-radius: 50%;
@@ -114,7 +145,7 @@
             border-radius: 20px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer;
         }
 
-        /* --- モーダル --- */
+        /* モーダル */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 2000;
@@ -129,16 +160,12 @@
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        /* フォーム */
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; }
         
-        /* メンバー選択リスト */
         .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
-        .member-option {
-            padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer;
-        }
+        .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; }
         .member-option.selected { background: #e8f0fe; }
         .member-check { margin-right: 10px; color: #0b57d0; }
 
@@ -148,9 +175,13 @@
 <body>
 
     <div id="screen-bands" class="screen active">
-        <div class="page-title">
-            マイバンド
-            <div style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">2025年度</div>
+        <div class="app-header">
+            <div class="header-title">
+                マイバンド
+                <span style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">2025年度</span>
+            </div>
+            <div class="header-avatar" id="headerIconBands" onclick="goToMyPage()">
+                </div>
         </div>
         
         <div id="bandListContainer">
@@ -163,7 +194,10 @@
     </div>
 
     <div id="screen-calendar" class="screen">
-        <div class="page-title">合わせ予約</div>
+        <div class="app-header">
+            <div class="header-title">合わせ予約</div>
+            <div class="header-avatar" id="headerIconCal" onclick="goToMyPage()"></div>
+        </div>
         
         <div class="calendar-header">
             <span class="material-icons" onclick="changeDate(-1)">chevron_left</span>
@@ -171,12 +205,14 @@
             <span class="material-icons" onclick="changeDate(1)">chevron_right</span>
         </div>
 
-        <div class="timeline-container" id="timeline">
-            </div>
+        <div class="timeline-container" id="timeline"></div>
     </div>
 
     <div id="screen-cuesheet" class="screen">
-        <div class="page-title">Cueシート</div>
+        <div class="app-header">
+            <div class="header-title">Cueシート</div>
+            <div class="header-avatar" id="headerIconCue" onclick="goToMyPage()"></div>
+        </div>
         <div style="text-align:center; margin-top:100px; color:#5f6368;">
             <span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>
             この機能は現在開発中です
@@ -205,17 +241,11 @@
     <div id="modal-band" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0;">バンド登録</h3>
+            <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="バンド名を入力"></div>
             <div class="form-group">
-                <label class="form-label">バンド名</label>
-                <input type="text" id="inputBandName" class="form-input" placeholder="バンド名を入力">
+                <label class="form-label">メンバー選択</label>
+                <div class="member-select-list" id="userSelectList"></div>
             </div>
-            
-            <div class="form-group">
-                <label class="form-label">メンバー選択 (登録済みユーザー)</label>
-                <div class="member-select-list" id="userSelectList">
-                    </div>
-            </div>
-
             <button class="btn-primary" onclick="saveBand()">登録する</button>
             <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
         </div>
@@ -224,17 +254,11 @@
     <div id="modal-booking" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0;">合わせ予約</h3>
-            <div class="form-group">
-                <label class="form-label">日付・時間</label>
-                <div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingTimeDisplay"></div>
-            </div>
-            
+            <div class="form-group"><label class="form-label">日時</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingTimeDisplay"></div></div>
             <div class="form-group">
                 <label class="form-label">予約するバンド</label>
-                <select id="selectBookingBand" class="form-input">
-                    </select>
+                <select id="selectBookingBand" class="form-input"></select>
             </div>
-
             <button class="btn-primary" onclick="saveBooking()">予約する</button>
             <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
         </div>
@@ -242,9 +266,8 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, query, where, orderBy, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, where, orderBy, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-        // ★ Firebase設定 (MyPageと同じものを使う) ★
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -258,250 +281,216 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        // ★ 新しいLIFF ID (LMC Mobile用) に書き換えてください ★
-        // テスト用なら前のIDでも動きますが、URLが変わるため分けて登録推奨
+        // ★ LMC Mobile用 LIFF ID
         const MY_LIFF_ID = "2008162165-vVODNp12"; 
+        
+        // ★ マイページ用 LIFF URL (未登録時の遷移先)
+        const MY_PAGE_URL = "https://liff.line.me/2008162165-znd24peg";
 
-        // グローバル変数
-        let currentUser = null; // LINE UserID
+        let currentUser = null; 
         let currentProfile = null;
-        let displayDate = new Date(); // カレンダー表示用
-        let selectedTimeSlot = null; // 予約クリック時の時間保持
-        let myBandsCache = []; // 予約モーダル用
+        let displayDate = new Date(); 
+        let selectedTimeSlot = null; 
+        let myBandsCache = []; 
 
-        // --- 画面切り替え ---
         window.switchScreen = (screenId, navEl) => {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById('screen-' + screenId).classList.add('active');
-            
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             navEl.classList.add('active');
-
-            if (screenId === 'calendar') {
-                renderCalendar(); // カレンダー描画
-            }
+            if (screenId === 'calendar') renderCalendar();
         };
 
-        // --- マイページへ移動 ---
-        window.goToMyPage = () => {
-            // MyPageのURLを開く
-            window.location.href = "https://liff.line.me/2008162165-znd24peg";
-        };
+        window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
 
-        // --- 初期化 ---
         async function main() {
-            await liff.init({ liffId: MY_LIFF_ID });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
-            const profile = await liff.getProfile();
-            currentUser = profile.userId;
-            currentProfile = profile;
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                const profile = await liff.getProfile();
+                currentUser = profile.userId;
+                currentProfile = profile;
 
-            // バンド一覧読み込み
-            loadMyBands();
-            // ユーザーリスト読み込み (バンド作成用キャッシュ)
-            loadUserList();
+                // ★ 1. ユーザー登録チェック
+                const userRef = doc(db, "users", currentUser);
+                const userSnap = await getDoc(userRef);
+
+                if (!userSnap.exists()) {
+                    // 未登録の場合
+                    alert("利用には会員登録が必要です。\nマイページへ移動します。");
+                    window.location.href = MY_PAGE_URL;
+                    return;
+                }
+
+                // ★ 2. ユーザー情報取得＆ヘッダーアイコン反映
+                const userData = userSnap.data();
+                renderHeaderIcons(userData);
+
+                // アプリ機能ロード
+                loadMyBands();
+                loadUserList();
+
+            } catch(e) {
+                console.error(e);
+                alert("エラーが発生しました: " + e.message);
+            }
         }
 
-        // ==========================================
-        //  マイバンド機能
-        // ==========================================
+        // --- ヘッダーアイコン描画 (全画面分) ---
+        function renderHeaderIcons(data) {
+            // アイコン枠のクラス決定
+            let ringClass = "";
+            const affs = data.affiliations || [];
+            const isUrakata = affs.includes("urakata");
 
-        // バンド一覧取得
+            // 誕生日判定
+            let isBirthday = false;
+            if (data.birthday) {
+                const today = new Date();
+                const bday = new Date(data.birthday);
+                if (today.getMonth() === bday.getMonth() && today.getDate() === bday.getDate()) {
+                    isBirthday = true;
+                }
+            }
+
+            if (isBirthday) {
+                ringClass = "ring-birthday";
+            } else if (isUrakata) {
+                 if(data.job === "sound") ringClass = "ring-sound";
+                 else if(data.job === "light") ringClass = "ring-light";
+                 else if(data.job === "stage") ringClass = "ring-stage";
+                 else if(data.job === "video") ringClass = "ring-video";
+                 else ringClass = "ring-rainbow";
+            }
+
+            // 各画面のヘッダーアイコン領域に流し込み
+            const iconHtml = `<img src="${data.icon || 'https://placehold.jp/40x40.png'}" alt="icon">`;
+            const targets = ['headerIconBands', 'headerIconCal', 'headerIconCue'];
+            
+            targets.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.innerHTML = iconHtml;
+                    el.className = "header-avatar " + ringClass; // クラス適用
+                }
+            });
+        }
+
+        // --- マイバンド ---
         function loadMyBands() {
             const container = document.getElementById('bandListContainer');
-            
-            // "bands" コレクションから、自分がメンバーに含まれるバンドを探す
-            // memberIds配列に currentUser が含まれるか
             const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
             
-            // リアルタイム更新
             onSnapshot(q, (snapshot) => {
                 container.innerHTML = "";
-                myBandsCache = []; // キャッシュクリア
-
+                myBandsCache = []; 
                 if (snapshot.empty) {
                     container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">バンドが登録されていません。<br>「＋」ボタンから結成しましょう！</div>';
                     return;
                 }
-
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    myBandsCache.push({ id: doc.id, name: data.name }); // 予約用に保存
-
+                    myBandsCache.push({ id: doc.id, name: data.name }); 
                     const div = document.createElement('div');
                     div.className = 'card band-item';
-                    
-                    // アイコンはバンド名の頭文字
                     const initial = data.name ? data.name.charAt(0) : "B";
-                    
-                    div.innerHTML = `
-                        <div class="band-icon">${initial}</div>
-                        <div class="band-info">
-                            <div class="band-name">${data.name}</div>
-                            <div class="band-members">${data.memberNames.join(', ')}</div>
-                        </div>
-                    `;
+                    div.innerHTML = `<div class="band-icon">${initial}</div><div class="band-info"><div class="band-name">${data.name}</div><div class="band-members">${data.memberNames.join(', ')}</div></div>`;
                     container.appendChild(div);
                 });
             });
         }
 
-        // ユーザーリスト取得（バンド作成モーダル用）
         async function loadUserList() {
             const list = document.getElementById('userSelectList');
             const qs = await getDocs(collection(db, "users"));
             list.innerHTML = "";
-            
             qs.forEach(doc => {
                 const u = doc.data();
                 const div = document.createElement('div');
                 div.className = 'member-option';
-                div.dataset.uid = doc.id; // UserIDを埋め込む
+                div.dataset.uid = doc.id; 
                 div.dataset.uname = u.name;
                 div.onclick = () => {
                     div.classList.toggle('selected');
                     const icon = div.querySelector('.material-icons');
                     icon.innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank';
                 };
-                
-                div.innerHTML = `
-                    <span class="material-icons member-check">check_box_outline_blank</span>
-                    <img src="${u.icon}" style="width:32px; height:32px; border-radius:50%; margin-right:10px;">
-                    <div>${u.name}</div>
-                `;
+                div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part ? '('+getPartLabel(u.part)+')' : ''}</span></div>`;
                 list.appendChild(div);
             });
         }
 
-        // バンド作成処理
+        function getPartLabel(part) {
+            if (part === "vocal") return "Vo";
+            if (part === "guitar") return "Gt";
+            if (part === "bass") return "Ba";
+            if (part === "drums") return "Dr";
+            if (part === "keyboard") return "Key";
+            return "";
+        }
+
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim();
             if(!name) return alert("バンド名を入力してください");
-
-            // 選択されたメンバーを取得
             const selectedEls = document.querySelectorAll('.member-option.selected');
-            const memberIds = [currentUser]; // 自分は必ず含む
-            const memberNames = [currentProfile.displayName]; // 自分の名前（LINE名か登録名か...今回はLINE名簡易）
-
+            const memberIds = [currentUser]; 
+            const memberNames = [currentProfile.displayName]; 
             selectedEls.forEach(el => {
                 const uid = el.dataset.uid;
-                if(uid !== currentUser) { // 自分以外を追加
-                    memberIds.push(uid);
-                    memberNames.push(el.dataset.uname);
-                }
+                if(uid !== currentUser) { memberIds.push(uid); memberNames.push(el.dataset.uname); }
             });
-
             try {
-                await addDoc(collection(db, "bands"), {
-                    name: name,
-                    memberIds: memberIds,
-                    memberNames: memberNames,
-                    creatorId: currentUser,
-                    createdAt: new Date()
-                });
+                await addDoc(collection(db, "bands"), { name: name, memberIds: memberIds, memberNames: memberNames, creatorId: currentUser, createdAt: new Date() });
                 alert("バンドを結成しました！");
                 closeModal('modal-band');
                 document.getElementById('inputBandName').value = "";
-                document.querySelectorAll('.member-option').forEach(el=> {
-                    el.classList.remove('selected');
-                    el.querySelector('.material-icons').innerText = 'check_box_outline_blank';
-                });
-            } catch(e) {
-                alert("エラー: " + e.message);
-            }
+                document.querySelectorAll('.member-option').forEach(el=> { el.classList.remove('selected'); el.querySelector('.material-icons').innerText = 'check_box_outline_blank'; });
+            } catch(e) { alert("エラー: " + e.message); }
         };
 
-        // ==========================================
-        //  カレンダー機能 (Day View)
-        // ==========================================
-
-        window.changeDate = (diff) => {
-            displayDate.setDate(displayDate.getDate() + diff);
-            renderCalendar();
-        };
+        // --- カレンダー ---
+        window.changeDate = (diff) => { displayDate.setDate(displayDate.getDate() + diff); renderCalendar(); };
 
         function renderCalendar() {
-            // 日付表示更新
             const days = ['日', '月', '火', '水', '木', '金', '土'];
-            const y = displayDate.getFullYear();
             const m = displayDate.getMonth() + 1;
             const d = displayDate.getDate();
             const w = days[displayDate.getDay()];
             document.getElementById('currentDateDisplay').innerText = `${m}/${d} (${w})`;
-
-            // タイムライン生成
             const container = document.getElementById('timeline');
             container.innerHTML = "";
-
-            // 9時から22時までループ
             for (let hour = 9; hour < 22; hour++) {
                 const slot = document.createElement('div');
                 slot.className = 'time-slot';
-                
-                // 時間ラベル
                 const label = document.createElement('div');
                 label.className = 'time-label';
                 label.innerText = `${hour}:00`;
-                
-                // コンテンツエリア（クリックで予約）
                 const content = document.createElement('div');
                 content.className = 'time-content';
-                content.onclick = (e) => {
-                    // 既に予約バーがある場合はクリックさせない（簡易制御）
-                    if(e.target !== content) return; 
-                    openBookingModal(hour);
-                };
-
-                slot.appendChild(label);
-                slot.appendChild(content);
-                container.appendChild(slot);
+                content.onclick = (e) => { if(e.target !== content) return; openBookingModal(hour); };
+                slot.appendChild(label); slot.appendChild(content); container.appendChild(slot);
             }
-
-            // 予約データを取得して表示
             loadBookings();
         }
 
         function loadBookings() {
-            // displayDateの 00:00:00 〜 23:59:59 の範囲
-            const startOfDay = new Date(displayDate);
-            startOfDay.setHours(0,0,0,0);
-            const endOfDay = new Date(displayDate);
-            endOfDay.setHours(23,59,59,999);
-
-            const q = query(
-                collection(db, "bookings"),
-                where("startTime", ">=", startOfDay),
-                where("startTime", "<=", endOfDay)
-            );
-
+            const startOfDay = new Date(displayDate); startOfDay.setHours(0,0,0,0);
+            const endOfDay = new Date(displayDate); endOfDay.setHours(23,59,59,999);
+            const q = query(collection(db, "bookings"), where("startTime", ">=", startOfDay), where("startTime", "<=", endOfDay));
             onSnapshot(q, (qs) => {
-                // 描画済みスロットを取得
-                const slots = document.querySelectorAll('.time-slot');
-                
-                // まず既存の予約表示をクリアしたいが、onSnapshotなので重複しないように管理が必要
-                // 今回は簡易的に、毎回全スロットの .event-block を消す処理を入れる
                 document.querySelectorAll('.event-block').forEach(el => el.remove());
-
                 qs.forEach(doc => {
                     const data = doc.data();
-                    const date = data.startTime.toDate(); // Firestore Timestamp -> Date
+                    const date = data.startTime.toDate();
                     const hour = date.getHours();
-                    
-                    // 対応するスロットを探す (9時から始まるので index = hour - 9)
+                    const slots = document.querySelectorAll('.time-slot');
                     const index = hour - 9;
                     if (index >= 0 && index < slots.length) {
                         const contentArea = slots[index].querySelector('.time-content');
-                        
                         const div = document.createElement('div');
                         div.className = 'event-block';
-                        div.innerHTML = `<div class="event-title">${data.bandName}</div><div>${data.userName}</div>`;
-                        
-                        // 自分の予約なら色を変えるなどしてもよい
-                        if (data.creatorId === currentUser) {
-                            div.style.backgroundColor = "#c2e7ff";
-                            div.style.borderLeftColor = "#001d35";
-                        }
-
+                        div.innerHTML = `<div class="event-title">${data.bandName}</div>`;
+                        if (data.creatorId === currentUser) { div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#001d35"; }
                         contentArea.appendChild(div);
                     }
                 });
@@ -510,66 +499,36 @@
 
         window.openBookingModal = (hour) => {
             selectedTimeSlot = hour;
-            const y = displayDate.getFullYear();
             const m = displayDate.getMonth() + 1;
             const d = displayDate.getDate();
             document.getElementById('bookingTimeDisplay').innerText = `${m}/${d}  ${hour}:00 〜 ${hour+1}:00`;
-            
-            // バンド選択肢更新
             const select = document.getElementById('selectBookingBand');
             select.innerHTML = "";
             if (myBandsCache.length === 0) {
-                const op = document.createElement('option');
-                op.text = "バンドがありません";
-                select.appendChild(op);
+                const op = document.createElement('option'); op.text = "バンドがありません"; select.appendChild(op);
             } else {
-                myBandsCache.forEach(b => {
-                    const op = document.createElement('option');
-                    op.value = b.id; // バンドID
-                    op.text = b.name; // バンド名
-                    select.appendChild(op);
-                });
+                myBandsCache.forEach(b => { const op = document.createElement('option'); op.value = b.id; op.text = b.name; select.appendChild(op); });
             }
-
             openModal('modal-booking');
         };
 
         window.saveBooking = async () => {
             if (myBandsCache.length === 0) return alert("バンドを作成してください");
-            
             const select = document.getElementById('selectBookingBand');
             const bandId = select.value;
             const bandName = select.options[select.selectedIndex].text;
-
-            // 予約日時作成
-            const startTime = new Date(displayDate);
-            startTime.setHours(selectedTimeSlot, 0, 0, 0);
-            
-            const endTime = new Date(startTime);
-            endTime.setHours(selectedTimeSlot + 1, 0, 0, 0);
-
+            const startTime = new Date(displayDate); startTime.setHours(selectedTimeSlot, 0, 0, 0);
+            const endTime = new Date(startTime); endTime.setHours(selectedTimeSlot + 1, 0, 0, 0);
             try {
-                // 重複チェックはFirestoreルールか、Cloud Functionsでするのが本格的だが
-                // 今回は簡易的に「登録できたもの勝ち」とする（フロントでチェックも可能だがラグがある）
-                
                 await addDoc(collection(db, "bookings"), {
-                    bandId: bandId,
-                    bandName: bandName,
-                    creatorId: currentUser,
-                    userName: currentProfile.displayName,
-                    startTime: startTime,
-                    endTime: endTime
+                    bandId: bandId, bandName: bandName, creatorId: currentUser, userName: currentProfile.displayName,
+                    startTime: startTime, endTime: endTime, createdAt: new Date()
                 });
-                
                 alert("予約しました");
                 closeModal('modal-booking');
-            } catch(e) {
-                alert("エラー: " + e.message);
-            }
+            } catch(e) { alert("エラー: " + e.message); }
         };
 
-
-        // --- モーダル制御 ---
         window.openBandModal = () => openModal('modal-band');
         window.openModal = (id) => document.getElementById(id).classList.add('open');
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
