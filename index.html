@@ -18,7 +18,7 @@
             min-height: 100vh;
             padding-bottom: 80px;
             overscroll-behavior-y: none;
-            user-select: none; /* 長押し選択のためにテキスト選択を無効化 */
+            user-select: none;
             -webkit-user-select: none;
         }
 
@@ -57,19 +57,19 @@
             display: flex; justify-content: space-between; align-items: center;
             background: white; padding: 12px 16px; border-radius: 12px; margin-bottom: 12px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            position: relative; z-index: 200; /* 高めに設定 */
+            position: relative; z-index: 200;
         }
         .cal-view-toggle {
             font-size: 16px; font-weight: bold; cursor: pointer;
             display: flex; align-items: center; gap: 4px;
-            background: #f1f3f4; padding: 6px 12px; border-radius: 8px; /* ボタンっぽく */
+            background: #f1f3f4; padding: 6px 12px; border-radius: 8px;
         }
         
         .view-menu {
             position: absolute; top: 50px; left: 16px;
             background: white; border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            width: 120px; z-index: 300; /* さらに高く */
+            width: 120px; z-index: 300;
             display: none; flex-direction: column; overflow: hidden;
         }
         .view-menu.open { display: flex; }
@@ -107,9 +107,8 @@
         .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
         .time-content {
             flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0;
-            touch-action: pan-y; /* スクロールは許可しつつJSで制御 */
+            touch-action: pan-y; 
         }
-        /* 選択中の色 */
         .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
 
         .event-block {
@@ -118,6 +117,7 @@
             border-radius: 4px; padding: 4px 8px;
             font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; pointer-events: auto;
             z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .event-title { font-weight: bold; }
 
@@ -154,6 +154,7 @@
         }
         .btn-primary { background: #0b57d0; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 100%; cursor: pointer; }
         .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
+        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
 
         /* モーダル */
         .modal-overlay {
@@ -179,7 +180,6 @@
         .member-check { margin-right: 10px; color: #0b57d0; }
         .hidden { display: none !important; }
         
-        /* 選択中のトースト */
         #selectionToast {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
             background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px;
@@ -227,7 +227,7 @@
 
         <div id="calDayView" class="hidden">
             <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
-            <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約</div>
+            <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
             <div class="timeline-container" id="timeline"></div>
         </div>
     </div>
@@ -258,16 +258,19 @@
 
     <div id="modal-booking" class="modal-overlay">
         <div class="modal-content">
-            <h3 style="margin-top:0;">予約の確認</h3>
-            <div class="form-group"><label class="form-label">日時</label><div style="font-weight:bold; font-size:18px; color:#0b57d0;" id="bookingTimeDisplay"></div></div>
+            <h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3>
+            <input type="hidden" id="editingBookingId" value=""> <div class="form-group"><label class="form-label">日時</label><div style="font-weight:bold; font-size:18px; color:#0b57d0;" id="bookingTimeDisplay"></div></div>
             <div class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div>
-            <button class="btn-primary" onclick="saveBooking()">予約を確定する</button><button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
+            
+            <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
+            <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
+            <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, where, orderBy, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
@@ -287,6 +290,7 @@
         let currentUser = null; 
         let currentProfile = null;
         let displayDate = new Date(); 
+        let selectedTimeSlot = null; 
         let myBandsCache = []; 
         let calendarMode = 'month';
 
@@ -295,6 +299,9 @@
         let selectionStartHour = null;
         let selectionEndHour = null;
         let selectionTimer = null;
+
+        // 編集用の一時データ
+        let editingBookingData = null;
 
         window.switchScreen = (screenId, navEl) => {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
@@ -395,60 +402,43 @@
                 
                 const content = document.createElement('div');
                 content.className = 'time-content';
-                content.dataset.hour = hour; // 時間識別用
+                content.dataset.hour = hour;
                 
-                // タッチイベント (スマホ用ドラッグ)
                 content.addEventListener('touchstart', handleTouchStart, {passive: false});
                 content.addEventListener('touchmove', handleTouchMove, {passive: false});
                 content.addEventListener('touchend', handleTouchEnd);
-                
-                // マウスイベント (PCテスト用)
                 content.addEventListener('mousedown', handleMouseDown);
                 
                 slot.appendChild(content);
                 container.appendChild(slot);
             }
-            // PC用マウスイベント (コンテナ全体)
             container.addEventListener('mousemove', handleMouseMove);
             container.addEventListener('mouseup', handleMouseUp);
-            
             loadDayBookings();
         }
 
         // --- ドラッグロジック ---
         function handleTouchStart(e) {
+            if (e.target.classList.contains('event-block')) return; // 既存予約タップ時は選択しない
             const hour = parseInt(e.target.dataset.hour);
             if(isNaN(hour)) return;
             
-            // 長押し判定 (500ms)
             selectionTimer = setTimeout(() => {
-                isSelecting = true;
-                selectionStartHour = hour;
-                selectionEndHour = hour;
+                isSelecting = true; selectionStartHour = hour; selectionEndHour = hour;
                 updateSelectionUI();
                 document.getElementById('selectionToast').classList.add('show');
-                // 振動フィードバック
                 if(navigator.vibrate) navigator.vibrate(50);
             }, 500);
         }
 
         function handleTouchMove(e) {
-            if (!isSelecting) {
-                // 長押し前に動いたらキャンセル
-                clearTimeout(selectionTimer);
-                return;
-            }
-            e.preventDefault(); // スクロール阻止
-            
-            // 指の位置にある要素を取得
+            if (!isSelecting) { clearTimeout(selectionTimer); return; }
+            e.preventDefault(); 
             const touch = e.touches[0];
             const target = document.elementFromPoint(touch.clientX, touch.clientY);
             if (target && target.classList.contains('time-content')) {
                 const hour = parseInt(target.dataset.hour);
-                if (!isNaN(hour)) {
-                    selectionEndHour = hour;
-                    updateSelectionUI();
-                }
+                if (!isNaN(hour)) { selectionEndHour = hour; updateSelectionUI(); }
             }
         }
 
@@ -461,37 +451,24 @@
             }
         }
 
-        // PC用マウス操作 (簡易実装)
         function handleMouseDown(e) {
             if(!e.target.classList.contains('time-content')) return;
-            isSelecting = true;
-            selectionStartHour = parseInt(e.target.dataset.hour);
-            selectionEndHour = selectionStartHour;
+            isSelecting = true; selectionStartHour = parseInt(e.target.dataset.hour); selectionEndHour = selectionStartHour;
             updateSelectionUI();
         }
         function handleMouseMove(e) {
             if(!isSelecting) return;
-            if(e.target.classList.contains('time-content')) {
-                selectionEndHour = parseInt(e.target.dataset.hour);
-                updateSelectionUI();
-            }
+            if(e.target.classList.contains('time-content')) { selectionEndHour = parseInt(e.target.dataset.hour); updateSelectionUI(); }
         }
         function handleMouseUp() {
-            if(isSelecting) {
-                isSelecting = false;
-                openBookingModalRange();
-            }
+            if(isSelecting) { isSelecting = false; openBookingModalRange(); }
         }
 
         function updateSelectionUI() {
-            // 全スロットの色をリセット
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
-            
             if (selectionStartHour === null || selectionEndHour === null) return;
-
             const start = Math.min(selectionStartHour, selectionEndHour);
             const end = Math.max(selectionStartHour, selectionEndHour);
-
             for (let h = start; h <= end; h++) {
                 const el = document.querySelector(`.time-content[data-hour="${h}"]`);
                 if (el) el.classList.add('selecting');
@@ -499,28 +476,34 @@
         }
 
         function openBookingModalRange() {
-            // 選択解除
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
-            
             const start = Math.min(selectionStartHour, selectionEndHour);
             const end = Math.max(selectionStartHour, selectionEndHour);
             
-            // 予約モーダルへ
-            const m = displayDate.getMonth() + 1;
-            const d = displayDate.getDate();
+            // 新規予約モード
+            document.getElementById('bookingModalTitle').innerText = "新規予約";
+            document.getElementById('btnSaveBooking').innerText = "予約を確定する";
+            document.getElementById('btnDeleteBooking').classList.add('hidden');
+            document.getElementById('editingBookingId').value = ""; // IDクリア
+            editingBookingData = null;
+
+            const m = displayDate.getMonth() + 1; const d = displayDate.getDate();
             document.getElementById('bookingTimeDisplay').innerText = `${m}/${d}  ${start}:00 〜 ${end+1}:00`;
-            
             updateBandSelect();
             openModal('modal-booking');
         }
 
-        function updateBandSelect() {
+        function updateBandSelect(selectedBandId = "") {
             const select = document.getElementById('selectBookingBand');
             select.innerHTML = "";
             if (myBandsCache.length === 0) {
                 select.appendChild(new Option("バンドがありません", ""));
             } else {
-                myBandsCache.forEach(b => select.appendChild(new Option(b.name, b.id)));
+                myBandsCache.forEach(b => {
+                    const op = new Option(b.name, b.id);
+                    if(b.id === selectedBandId) op.selected = true;
+                    select.appendChild(op);
+                });
             }
         }
 
@@ -531,32 +514,34 @@
             
             onSnapshot(q, (qs) => {
                 document.querySelectorAll('.event-block').forEach(el => el.remove());
-                qs.forEach(doc => {
-                    const data = doc.data();
+                qs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const bookingId = docSnap.id;
                     const s = data.startTime.toDate();
                     const e = data.endTime.toDate();
-                    
                     const startHour = s.getHours();
-                    const endHour = e.getHours(); // 終了時の時 (例: 14:00終了なら14)
-                    const duration = endHour - startHour; // 時間数
+                    const endHour = e.getHours();
+                    const duration = endHour - startHour;
 
                     const index = startHour - 9;
                     const slots = document.querySelectorAll('.time-slot');
                     if (index >= 0 && index < slots.length) {
                         const contentArea = slots[index].querySelector('.time-content');
-                        
                         const div = document.createElement('div');
                         div.className = 'event-block';
-                        div.style.height = `calc(${duration * 100}% + ${duration - 1}px)`; // 複数スロットまたぐ高さ
-                        div.style.zIndex = "20"; // 選択色より上
+                        div.style.height = `calc(${duration * 100}% + ${duration - 1}px)`;
+                        div.style.zIndex = "20";
                         div.innerHTML = `<div class="event-title">${data.bandName}</div><div>${data.userName}</div>`;
                         
                         if (data.creatorId === currentUser) {
                             div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#001d35";
                         }
                         
-                        // イベントクリックで削除など拡張可能
-                        div.onclick = (ev) => { ev.stopPropagation(); alert("予約: " + data.bandName); };
+                        // ★ クリックで編集モードへ
+                        div.onclick = (ev) => { 
+                            ev.stopPropagation(); 
+                            openEditBookingModal(bookingId, data); 
+                        };
 
                         contentArea.appendChild(div);
                     }
@@ -564,24 +549,74 @@
             });
         }
 
+        // --- 編集モーダル ---
+        function openEditBookingModal(id, data) {
+            // 権限チェック (自分の予約のみ編集可)
+            if (data.creatorId !== currentUser) {
+                alert(`予約者: ${data.userName}\nバンド: ${data.bandName}\n※他人の予約は変更できません`);
+                return;
+            }
+
+            document.getElementById('bookingModalTitle').innerText = "予約の変更・削除";
+            document.getElementById('btnSaveBooking').innerText = "変更を保存";
+            document.getElementById('btnDeleteBooking').classList.remove('hidden');
+            document.getElementById('editingBookingId').value = id;
+            editingBookingData = data; // 時間などは保持
+
+            // 日時表示 (編集時は時間は変更不可とする簡易仕様)
+            const s = data.startTime.toDate();
+            const e = data.endTime.toDate();
+            const m = s.getMonth() + 1; const d = s.getDate();
+            const timeStr = `${m}/${d} ${s.getHours()}:00 〜 ${e.getHours()}:00`;
+            document.getElementById('bookingTimeDisplay').innerText = timeStr;
+
+            updateBandSelect(data.bandId);
+            openModal('modal-booking');
+        }
+
         window.saveBooking = async () => {
             if (myBandsCache.length === 0) return alert("バンドを作成してください");
+            
+            const editingId = document.getElementById('editingBookingId').value;
             const select = document.getElementById('selectBookingBand');
             const bandId = select.value;
             const bandName = select.options[select.selectedIndex].text;
 
-            const start = Math.min(selectionStartHour, selectionEndHour);
-            const end = Math.max(selectionStartHour, selectionEndHour);
+            try {
+                if (editingId) {
+                    // 更新処理
+                    await updateDoc(doc(db, "bookings", editingId), {
+                        bandId: bandId,
+                        bandName: bandName
+                        // 時間は変更しない
+                    });
+                    alert("変更しました");
+                } else {
+                    // 新規作成
+                    const start = Math.min(selectionStartHour, selectionEndHour);
+                    const end = Math.max(selectionStartHour, selectionEndHour);
+                    const startTime = new Date(displayDate); startTime.setHours(start, 0, 0, 0);
+                    const endTime = new Date(displayDate); endTime.setHours(end + 1, 0, 0, 0);
 
-            const startTime = new Date(displayDate); startTime.setHours(start, 0, 0, 0);
-            const endTime = new Date(displayDate); endTime.setHours(end + 1, 0, 0, 0);
+                    await addDoc(collection(db, "bookings"), {
+                        bandId: bandId, bandName: bandName, creatorId: currentUser, userName: currentProfile.displayName,
+                        startTime: startTime, endTime: endTime, createdAt: new Date()
+                    });
+                    alert("予約しました");
+                }
+                closeModal('modal-booking');
+            } catch(e) { alert("エラー: " + e.message); }
+        };
+
+        window.deleteBooking = async () => {
+            const editingId = document.getElementById('editingBookingId').value;
+            if (!editingId) return;
+            
+            if(!confirm("本当にこの予約を削除しますか？")) return;
 
             try {
-                await addDoc(collection(db, "bookings"), {
-                    bandId: bandId, bandName: bandName, creatorId: currentUser, userName: currentProfile.displayName,
-                    startTime: startTime, endTime: endTime, createdAt: new Date()
-                });
-                alert("予約しました");
+                await deleteDoc(doc(db, "bookings", editingId));
+                alert("予約を削除しました");
                 closeModal('modal-booking');
             } catch(e) { alert("エラー: " + e.message); }
         };
