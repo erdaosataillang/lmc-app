@@ -18,7 +18,8 @@
             min-height: 100vh;
             padding-bottom: 80px;
             overscroll-behavior-y: none;
-            user-select: none; -webkit-user-select: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .container { max-width: 480px; margin: 0 auto; }
@@ -94,9 +95,11 @@
         .dot { width: 5px; height: 5px; border-radius: 50%; background: #34A853; }
         .dot.event { background: #137333; transform: scale(1.2); }
 
+        /* タイムライン (日表示) */
         .timeline-container {
             background: white; border-radius: 12px; padding: 10px 0;
-            position: relative; height: 60vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+            position: relative; height: 60vh; overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
         .time-slot {
             height: 60px; border-bottom: 1px solid #f0f0f0;
@@ -114,7 +117,8 @@
             background: #e8f0fe; border-left: 4px solid #0b57d0;
             border-radius: 4px; padding: 4px 8px;
             font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; pointer-events: auto;
-            z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .event-title { font-weight: bold; }
         .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
@@ -339,7 +343,6 @@
 
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
 
-        // --- ビュー切り替え ---
         window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
         window.switchCalendarView = (mode) => {
             calendarMode = mode;
@@ -359,7 +362,6 @@
             renderCalendar();
         };
 
-        // --- カレンダー描画 ---
         function renderCalendar() {
             const y = displayDate.getFullYear();
             const m = displayDate.getMonth() + 1;
@@ -417,7 +419,6 @@
             });
         }
 
-        // --- 日表示 & ドラッグ ---
         function renderDayView() {
             const container = document.getElementById('timeline'); container.innerHTML = "";
             for (let hour = 9; hour < 22; hour++) {
@@ -480,7 +481,6 @@
             return options;
         }
 
-        // --- モーダル制御 ---
         function openBookingModalRange() {
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
             const start = Math.min(selectionStartHour, selectionEndHour);
@@ -652,7 +652,6 @@
             const startTime = new Date(displayDate); startTime.setHours(sH, sM, 0, 0);
             const endTime = new Date(displayDate); endTime.setHours(eH, eM, 0, 0);
 
-            // ★ バグ修正済み: Dateオブジェクトで比較
             if (startTime.getTime() >= endTime.getTime()) return alert("終了時間は開始時間より後にしてね");
 
             bookingData.startTime = startTime;
@@ -682,14 +681,10 @@
             } catch(e) { alert("エラー: " + e.message); }
         };
 
-        // ==========================================
-        //  ★ 招待・承認不要・バンド管理
-        // ==========================================
-
         async function main() {
             try {
                 await liff.init({ liffId: MY_LIFF_ID });
-                // 招待リンクチェック
+                // 招待チェック
                 const urlParams = new URLSearchParams(window.location.search);
                 const action = urlParams.get('action');
                 const inviteBandId = urlParams.get('bandId');
@@ -706,7 +701,6 @@
                 currentUserData = userSnap.data(); 
                 renderHeaderIcons(currentUserData);
 
-                // ★ 性善説：招待即参加ロジック
                 if (action === 'invite' && inviteBandId) {
                     await handleInvite(inviteBandId);
                     window.history.replaceState(null, null, window.location.pathname);
@@ -719,9 +713,7 @@
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim();
             if(!name) return alert("バンド名を入力してください");
-
             try {
-                // 自分のみで作成
                 const docRef = await addDoc(collection(db, "bands"), {
                     name: name,
                     memberIds: [currentUser],
@@ -731,12 +723,9 @@
                 });
                 closeModal('modal-band');
                 document.getElementById('inputBandName').value = "";
-                
                 if (confirm(`「${name}」を作成しました！\nLINEでメンバーに招待状を送りますか？`)) {
                     shareBandInvite(docRef.id, name);
-                } else {
-                    alert("作成しました");
-                }
+                } else { alert("作成しました"); }
             } catch(e) { alert("エラー: " + e.message); }
         };
 
@@ -772,61 +761,38 @@
                 const bandSnap = await getDoc(bandRef);
                 if (!bandSnap.exists()) return alert("このバンドは存在しません");
                 const data = bandSnap.data();
-
                 if (data.memberIds.includes(currentUser)) return alert(`すでに「${data.name}」のメンバーです`);
-
-                // ★ 即時参加処理
                 if (confirm(`「${data.name}」に参加しますか？`)) {
                     await updateDoc(bandRef, {
                         memberIds: arrayUnion(currentUser),
                         memberNames: arrayUnion(currentProfile.displayName)
                     });
                     alert(`「${data.name}」に参加しました！`);
-                    loadMyBands(); // リスト更新
+                    loadMyBands();
                 }
             } catch(e) { alert("エラー: " + e.message); }
         }
 
-        function loadMyBands() {
-            const container = document.getElementById('bandListContainer');
-            // メンバーに含まれるバンドを表示
-            const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
-            
-            onSnapshot(q, (snapshot) => {
-                container.innerHTML = ""; myBandsCache = [];
-                if (snapshot.empty) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">バンドがありません。<br>招待をもらうか、新規作成してください。</div>'; return; }
-                
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const bandId = docSnap.id;
-                    myBandsCache.push({ id: bandId, name: data.name }); 
-
-                    const div = document.createElement('div');
-                    div.className = 'card';
-                    
-                    let html = `
-                        <div class="band-item" style="border:none; margin:0; padding:0;">
-                            <div class="band-icon">${data.name.charAt(0)}</div>
-                            <div class="band-info">
-                                <div class="band-name">${data.name}</div>
-                                <div class="band-members">${data.memberNames.join(', ')}</div>
-                            </div>
-                    `;
-                    
-                    // リーダーのみ招待ボタン
-                    if (data.creatorId === currentUser) {
-                        html += `<button class="btn-outline" onclick="shareBandInvite('${bandId}', '${data.name}')" style="margin-left:auto;"><span class="material-icons" style="font-size:16px;">share</span> 招待</button>`;
-                    }
-                    html += `</div>`;
-                    
-                    div.innerHTML = html;
-                    container.appendChild(div);
-                });
+        function renderHeaderIcons(data) {
+            let ringClass = "";
+            const affs = data.affiliations || [];
+            const isUrakata = affs.includes("urakata");
+            let isBirthday = false;
+            if (data.birthday) {
+                const today = new Date(); const bday = new Date(data.birthday);
+                if (today.getMonth() === bday.getMonth() && today.getDate() === bday.getDate()) isBirthday = true;
+            }
+            if (isBirthday) ringClass = "ring-birthday";
+            else if (isUrakata) {
+                 if(data.job === "sound") ringClass = "ring-sound"; else if(data.job === "light") ringClass = "ring-light"; else if(data.job === "stage") ringClass = "ring-stage"; else if(data.job === "video") ringClass = "ring-video"; else ringClass = "ring-rainbow";
+            }
+            const iconHtml = `<img src="${data.icon || 'https://placehold.jp/40x40.png'}" alt="icon">`;
+            ['headerIconBands', 'headerIconCal', 'headerIconCue'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) { el.innerHTML = iconHtml; el.className = "header-avatar " + ringClass; }
             });
         }
 
-        // グローバル公開
-        window.shareBandInvite = shareBandInvite;
         window.openBandModal = () => openModal('modal-band');
         window.openModal = (id) => document.getElementById(id).classList.add('open');
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
