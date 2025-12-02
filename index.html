@@ -259,8 +259,29 @@
     <div id="modal-booking" class="modal-overlay">
         <div class="modal-content">
             <h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3>
-            <input type="hidden" id="editingBookingId" value=""> <div class="form-group"><label class="form-label">日時</label><div style="font-weight:bold; font-size:18px; color:#0b57d0;" id="bookingTimeDisplay"></div></div>
-            <div class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div>
+            <input type="hidden" id="editingBookingId" value="">
+            
+            <div class="form-group">
+                <label class="form-label">日付</label>
+                <div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div>
+            </div>
+
+            <div class="form-group" style="display:flex; gap:10px; align-items:center;">
+                <div style="flex:1;">
+                    <label class="form-label">開始</label>
+                    <select id="selectStartTime" class="form-input"></select>
+                </div>
+                <span style="margin-top:15px;">〜</span>
+                <div style="flex:1;">
+                    <label class="form-label">終了</label>
+                    <select id="selectEndTime" class="form-input"></select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">予約するバンド</label>
+                <select id="selectBookingBand" class="form-input"></select>
+            </div>
             
             <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
             <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
@@ -290,19 +311,16 @@
         let currentUser = null; 
         let currentProfile = null;
         let displayDate = new Date(); 
-        let selectedTimeSlot = null; 
-        let myBandsCache = []; 
-        let calendarMode = 'month';
-
-        // 範囲選択用
-        let isSelecting = false;
+        // 選択された時間（ドラッグ時）
         let selectionStartHour = null;
         let selectionEndHour = null;
+        
+        let myBandsCache = []; 
+        let calendarMode = 'month';
+        let isSelecting = false;
         let selectionTimer = null;
 
-        // 編集用の一時データ
-        let editingBookingData = null;
-
+        // 画面切り替え
         window.switchScreen = (screenId, navEl) => {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById('screen-' + screenId).classList.add('active');
@@ -317,7 +335,7 @@
 
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
 
-        // --- ビュー切り替え ---
+        // ビュー切り替え
         window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
         window.switchCalendarView = (mode) => {
             calendarMode = mode;
@@ -331,14 +349,13 @@
             document.getElementById('calDayView').classList.toggle('hidden', calendarMode !== 'day');
         }
 
-        // --- 日付移動 ---
         window.changeDate = (diff) => {
             if (calendarMode === 'month') displayDate.setMonth(displayDate.getMonth() + diff);
             else displayDate.setDate(displayDate.getDate() + diff);
             renderCalendar();
         };
 
-        // --- カレンダー描画 ---
+        // カレンダー描画
         function renderCalendar() {
             const y = displayDate.getFullYear();
             const m = displayDate.getMonth() + 1;
@@ -355,7 +372,6 @@
             }
         }
 
-        // 月表示
         function renderMonthView() {
             const grid = document.getElementById('monthGrid'); grid.innerHTML = "";
             ['日','月','火','水','木','金','土'].forEach(wd => {
@@ -393,22 +409,19 @@
             });
         }
 
-        // --- 日表示 & ドラッグ選択 ---
+        // 日表示 & ドラッグ
         function renderDayView() {
             const container = document.getElementById('timeline'); container.innerHTML = "";
             for (let hour = 9; hour < 22; hour++) {
                 const slot = document.createElement('div'); slot.className = 'time-slot';
                 slot.innerHTML = `<div class="time-label">${hour}:00</div>`;
-                
                 const content = document.createElement('div');
                 content.className = 'time-content';
                 content.dataset.hour = hour;
-                
                 content.addEventListener('touchstart', handleTouchStart, {passive: false});
                 content.addEventListener('touchmove', handleTouchMove, {passive: false});
                 content.addEventListener('touchend', handleTouchEnd);
                 content.addEventListener('mousedown', handleMouseDown);
-                
                 slot.appendChild(content);
                 container.appendChild(slot);
             }
@@ -417,20 +430,16 @@
             loadDayBookings();
         }
 
-        // --- ドラッグロジック ---
         function handleTouchStart(e) {
-            if (e.target.classList.contains('event-block')) return; // 既存予約タップ時は選択しない
+            if (e.target.classList.contains('event-block')) return;
             const hour = parseInt(e.target.dataset.hour);
             if(isNaN(hour)) return;
-            
             selectionTimer = setTimeout(() => {
                 isSelecting = true; selectionStartHour = hour; selectionEndHour = hour;
-                updateSelectionUI();
-                document.getElementById('selectionToast').classList.add('show');
+                updateSelectionUI(); document.getElementById('selectionToast').classList.add('show');
                 if(navigator.vibrate) navigator.vibrate(50);
             }, 500);
         }
-
         function handleTouchMove(e) {
             if (!isSelecting) { clearTimeout(selectionTimer); return; }
             e.preventDefault(); 
@@ -441,28 +450,10 @@
                 if (!isNaN(hour)) { selectionEndHour = hour; updateSelectionUI(); }
             }
         }
-
-        function handleTouchEnd(e) {
-            clearTimeout(selectionTimer);
-            if (isSelecting) {
-                isSelecting = false;
-                document.getElementById('selectionToast').classList.remove('show');
-                openBookingModalRange();
-            }
-        }
-
-        function handleMouseDown(e) {
-            if(!e.target.classList.contains('time-content')) return;
-            isSelecting = true; selectionStartHour = parseInt(e.target.dataset.hour); selectionEndHour = selectionStartHour;
-            updateSelectionUI();
-        }
-        function handleMouseMove(e) {
-            if(!isSelecting) return;
-            if(e.target.classList.contains('time-content')) { selectionEndHour = parseInt(e.target.dataset.hour); updateSelectionUI(); }
-        }
-        function handleMouseUp() {
-            if(isSelecting) { isSelecting = false; openBookingModalRange(); }
-        }
+        function handleTouchEnd(e) { clearTimeout(selectionTimer); if (isSelecting) { isSelecting = false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(); } }
+        function handleMouseDown(e) { if(!e.target.classList.contains('time-content')) return; isSelecting = true; selectionStartHour = parseInt(e.target.dataset.hour); selectionEndHour = selectionStartHour; updateSelectionUI(); }
+        function handleMouseMove(e) { if(!isSelecting) return; if(e.target.classList.contains('time-content')) { selectionEndHour = parseInt(e.target.dataset.hour); updateSelectionUI(); } }
+        function handleMouseUp() { if(isSelecting) { isSelecting = false; openBookingModalRange(); } }
 
         function updateSelectionUI() {
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
@@ -475,36 +466,81 @@
             }
         }
 
+        // --- 30分単位プルダウンの生成 ---
+        function generateTimeOptions() {
+            const options = [];
+            for (let h = 9; h <= 22; h++) {
+                options.push(`${h}:00`);
+                if (h < 22) options.push(`${h}:30`);
+            }
+            return options;
+        }
+
+        // --- モーダル: 新規予約 ---
         function openBookingModalRange() {
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
             const start = Math.min(selectionStartHour, selectionEndHour);
             const end = Math.max(selectionStartHour, selectionEndHour);
             
-            // 新規予約モード
             document.getElementById('bookingModalTitle').innerText = "新規予約";
             document.getElementById('btnSaveBooking').innerText = "予約を確定する";
             document.getElementById('btnDeleteBooking').classList.add('hidden');
-            document.getElementById('editingBookingId').value = ""; // IDクリア
-            editingBookingData = null;
+            document.getElementById('editingBookingId').value = ""; 
 
+            // 日付表示
             const m = displayDate.getMonth() + 1; const d = displayDate.getDate();
-            document.getElementById('bookingTimeDisplay').innerText = `${m}/${d}  ${start}:00 〜 ${end+1}:00`;
+            document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`;
+
+            // プルダウン生成 & セット
+            setupTimeSelects(`${start}:00`, `${end+1}:00`);
             updateBandSelect();
             openModal('modal-booking');
+        }
+
+        // --- モーダル: 編集 ---
+        function openEditBookingModal(id, data) {
+            if (data.creatorId !== currentUser) { alert("他人の予約は変更できません"); return; }
+
+            document.getElementById('bookingModalTitle').innerText = "予約の編集";
+            document.getElementById('btnSaveBooking').innerText = "変更を保存";
+            document.getElementById('btnDeleteBooking').classList.remove('hidden');
+            document.getElementById('editingBookingId').value = id;
+
+            const s = data.startTime.toDate();
+            const e = data.endTime.toDate();
+            const m = s.getMonth() + 1; const d = s.getDate();
+            document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`;
+
+            // 時間を "H:mm" 形式に変換
+            const startStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
+            const endStr = `${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`;
+            
+            setupTimeSelects(startStr, endStr);
+            updateBandSelect(data.bandId);
+            openModal('modal-booking');
+        }
+
+        function setupTimeSelects(defaultStart, defaultEnd) {
+            const startSel = document.getElementById('selectStartTime');
+            const endSel = document.getElementById('selectEndTime');
+            startSel.innerHTML = ""; endSel.innerHTML = "";
+            
+            const times = generateTimeOptions();
+            times.forEach(t => {
+                startSel.appendChild(new Option(t, t));
+                endSel.appendChild(new Option(t, t));
+            });
+
+            // デフォルト値を選択
+            if (times.includes(defaultStart)) startSel.value = defaultStart;
+            if (times.includes(defaultEnd)) endSel.value = defaultEnd;
         }
 
         function updateBandSelect(selectedBandId = "") {
             const select = document.getElementById('selectBookingBand');
             select.innerHTML = "";
-            if (myBandsCache.length === 0) {
-                select.appendChild(new Option("バンドがありません", ""));
-            } else {
-                myBandsCache.forEach(b => {
-                    const op = new Option(b.name, b.id);
-                    if(b.id === selectedBandId) op.selected = true;
-                    select.appendChild(op);
-                });
-            }
+            if (myBandsCache.length === 0) { select.appendChild(new Option("バンドがありません", "")); }
+            else { myBandsCache.forEach(b => { const op = new Option(b.name, b.id); if(b.id === selectedBandId) op.selected = true; select.appendChild(op); }); }
         }
 
         function loadDayBookings() {
@@ -519,85 +555,76 @@
                     const bookingId = docSnap.id;
                     const s = data.startTime.toDate();
                     const e = data.endTime.toDate();
-                    const startHour = s.getHours();
-                    const endHour = e.getHours();
-                    const duration = endHour - startHour;
+                    
+                    // 開始位置と高さの計算 (分単位)
+                    const startMin = (s.getHours() - 9) * 60 + s.getMinutes();
+                    const endMin = (e.getHours() - 9) * 60 + e.getMinutes();
+                    const durationMin = endMin - startMin;
 
-                    const index = startHour - 9;
+                    // ピクセル換算 (1時間=60px -> 1分=1px)
+                    const topPx = startMin; 
+                    const heightPx = durationMin;
+
+                    // 対応する親スロット (開始時間の「時」)
+                    const slotIndex = s.getHours() - 9;
                     const slots = document.querySelectorAll('.time-slot');
-                    if (index >= 0 && index < slots.length) {
-                        const contentArea = slots[index].querySelector('.time-content');
+                    
+                    if (slotIndex >= 0 && slotIndex < slots.length) {
+                        // 開始時間のスロットを基準に配置するが、
+                        // 複数スロットにまたがる場合は absolute で配置するため、
+                        // 親は「9:00」のスロットではなく、タイムライン全体のコンテナにするのが理想だが、
+                        // 今回は既存構造(time-content内)を利用するため、オフセット調整を行う。
+                        
+                        const contentArea = slots[slotIndex].querySelector('.time-content');
                         const div = document.createElement('div');
                         div.className = 'event-block';
-                        div.style.height = `calc(${duration * 100}% + ${duration - 1}px)`;
+                        
+                        // 分単位のズレ (例: 9:30開始なら top: 30px)
+                        // heightは時間の長さ
+                        div.style.top = (s.getMinutes() + 1) + "px"; 
+                        div.style.height = (heightPx - 2) + "px";
                         div.style.zIndex = "20";
-                        div.innerHTML = `<div class="event-title">${data.bandName}</div><div>${data.userName}</div>`;
+                        div.innerHTML = `<div class="event-title">${data.bandName}</div>`;
                         
                         if (data.creatorId === currentUser) {
                             div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#001d35";
                         }
                         
-                        // ★ クリックで編集モードへ
-                        div.onclick = (ev) => { 
-                            ev.stopPropagation(); 
-                            openEditBookingModal(bookingId, data); 
-                        };
-
+                        div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(bookingId, data); };
                         contentArea.appendChild(div);
                     }
                 });
             });
         }
 
-        // --- 編集モーダル ---
-        function openEditBookingModal(id, data) {
-            // 権限チェック (自分の予約のみ編集可)
-            if (data.creatorId !== currentUser) {
-                alert(`予約者: ${data.userName}\nバンド: ${data.bandName}\n※他人の予約は変更できません`);
-                return;
-            }
-
-            document.getElementById('bookingModalTitle').innerText = "予約の変更・削除";
-            document.getElementById('btnSaveBooking').innerText = "変更を保存";
-            document.getElementById('btnDeleteBooking').classList.remove('hidden');
-            document.getElementById('editingBookingId').value = id;
-            editingBookingData = data; // 時間などは保持
-
-            // 日時表示 (編集時は時間は変更不可とする簡易仕様)
-            const s = data.startTime.toDate();
-            const e = data.endTime.toDate();
-            const m = s.getMonth() + 1; const d = s.getDate();
-            const timeStr = `${m}/${d} ${s.getHours()}:00 〜 ${e.getHours()}:00`;
-            document.getElementById('bookingTimeDisplay').innerText = timeStr;
-
-            updateBandSelect(data.bandId);
-            openModal('modal-booking');
-        }
-
+        // --- 保存処理 ---
         window.saveBooking = async () => {
             if (myBandsCache.length === 0) return alert("バンドを作成してください");
             
             const editingId = document.getElementById('editingBookingId').value;
-            const select = document.getElementById('selectBookingBand');
-            const bandId = select.value;
-            const bandName = select.options[select.selectedIndex].text;
+            const selectBand = document.getElementById('selectBookingBand');
+            const bandId = selectBand.value;
+            const bandName = selectBand.options[selectBand.selectedIndex].text;
+
+            // プルダウンから日時生成
+            const sTimeStr = document.getElementById('selectStartTime').value; // "HH:mm"
+            const eTimeStr = document.getElementById('selectEndTime').value;
+            
+            if (sTimeStr >= eTimeStr) return alert("終了時間は開始時間より後にしてね");
+
+            const [sH, sM] = sTimeStr.split(':').map(Number);
+            const [eH, eM] = eTimeStr.split(':').map(Number);
+
+            const startTime = new Date(displayDate); startTime.setHours(sH, sM, 0, 0);
+            const endTime = new Date(displayDate); endTime.setHours(eH, eM, 0, 0);
 
             try {
                 if (editingId) {
-                    // 更新処理
                     await updateDoc(doc(db, "bookings", editingId), {
-                        bandId: bandId,
-                        bandName: bandName
-                        // 時間は変更しない
+                        bandId: bandId, bandName: bandName, startTime: startTime, endTime: endTime
                     });
                     alert("変更しました");
                 } else {
-                    // 新規作成
-                    const start = Math.min(selectionStartHour, selectionEndHour);
-                    const end = Math.max(selectionStartHour, selectionEndHour);
-                    const startTime = new Date(displayDate); startTime.setHours(start, 0, 0, 0);
-                    const endTime = new Date(displayDate); endTime.setHours(end + 1, 0, 0, 0);
-
                     await addDoc(collection(db, "bookings"), {
                         bandId: bandId, bandName: bandName, creatorId: currentUser, userName: currentProfile.displayName,
                         startTime: startTime, endTime: endTime, createdAt: new Date()
@@ -611,17 +638,14 @@
         window.deleteBooking = async () => {
             const editingId = document.getElementById('editingBookingId').value;
             if (!editingId) return;
-            
-            if(!confirm("本当にこの予約を削除しますか？")) return;
-
+            if(!confirm("本当に削除しますか？")) return;
             try {
                 await deleteDoc(doc(db, "bookings", editingId));
-                alert("予約を削除しました");
+                alert("削除しました");
                 closeModal('modal-booking');
             } catch(e) { alert("エラー: " + e.message); }
         };
 
-        // --- バンド作成など ---
         async function main() {
             try {
                 await liff.init({ liffId: MY_LIFF_ID });
@@ -629,11 +653,9 @@
                 const profile = await liff.getProfile();
                 currentUser = profile.userId;
                 currentProfile = profile;
-
                 const userRef = doc(db, "users", currentUser);
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) { alert("利用には会員登録が必要です"); window.location.href = MY_PAGE_URL; return; }
-                
                 const userData = userSnap.data();
                 renderHeaderIcons(userData);
                 loadMyBands();
