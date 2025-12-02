@@ -82,17 +82,28 @@
             text-align: center; margin-bottom: 20px;
         }
         .weekday-label { font-size: 11px; color: #5f6368; padding-bottom: 8px; }
+        
         .day-cell {
             height: 50px; border-radius: 8px;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
             padding-top: 6px; cursor: pointer; position: relative;
+            border: 2px solid transparent; /* 枠線用 */
         }
-        .day-num { font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 50%; }
+        .day-num { font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 50%; z-index: 2; }
         .day-cell.today .day-num { background: #0b57d0; color: white; font-weight: bold; }
         .day-cell.other-month { opacity: 0.3; }
-        .event-dots { display: flex; gap: 2px; margin-top: 4px; justify-content: center; }
+        
+        /* ★ 予約不可日・イベント日 (背景オレンジ) */
+        .day-cell.unavailable {
+            background-color: #ffccbc; /* 薄いオレンジ */
+            border-color: #ff7043;     /* 濃いオレンジ枠 */
+        }
+        .day-cell.unavailable .day-num {
+            color: #bf360c; font-weight: bold; /* 文字色も濃く */
+        }
+
+        .event-dots { display: flex; gap: 2px; margin-top: 4px; justify-content: center; z-index: 2; }
         .dot { width: 5px; height: 5px; border-radius: 50%; background: #34A853; }
-        .dot.event { background: #137333; transform: scale(1.2); }
 
         /* タイムライン (日表示) */
         .timeline-container {
@@ -120,7 +131,8 @@
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         .event-title { font-weight: bold; }
-        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
+        /* タイムライン上のイベント表示 (こちらもオレンジ系に) */
+        .event-block.special-event { background: #ffccbc; border-left: 4px solid #ff7043; color: #bf360c; }
 
         /* マイバンド */
         .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; }
@@ -171,7 +183,6 @@
         .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 24px; font-weight: bold; width: 100%; margin-top: 8px; cursor: pointer; }
         .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 8px 16px; border-radius: 16px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
         
-        /* Googleカレンダーボタン */
         .btn-google { 
             background: #fff; color: #3c4043; border: 1px solid #dadce0; 
             padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 16px; cursor: pointer;
@@ -198,7 +209,6 @@
         .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size:16px; }
         
-        /* メンバー選択リスト */
         .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
         .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; }
         .member-option.selected { background: #e8f0fe; }
@@ -226,7 +236,6 @@
         .member-row:last-child { border-bottom: none; }
         .btn-remove-member { font-size: 11px; color: #d93025; border: 1px solid #d93025; background: white; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
         
-        /* メンバー追加ボタン */
         .btn-add-member {
             margin-top: 10px; width: 100%; padding: 10px; 
             border: 1px dashed #0b57d0; background: #e8f0fe; color: #0b57d0; 
@@ -383,7 +392,11 @@
             </div>
             
             <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
-            <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button>
+            
+            <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()">
+                <span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加
+            </button>
+
             <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
             <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
         </div>
@@ -438,6 +451,7 @@
         };
 
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
+
         window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
         window.switchCalendarView = (mode) => { calendarMode = mode; updateViewMenuUI(); document.getElementById('viewMenu').classList.remove('open'); renderCalendar(); };
         function updateViewMenuUI() { document.getElementById('currentViewName').innerText = calendarMode === 'month' ? '月表示' : '日表示'; document.getElementById('calMonthView').classList.toggle('hidden', calendarMode !== 'month'); document.getElementById('calDayView').classList.toggle('hidden', calendarMode !== 'day'); }
@@ -457,6 +471,8 @@
             const today = new Date();
             for(let d=1; d<=lastDay.getDate(); d++) {
                 const div = document.createElement('div'); div.className = 'day-cell';
+                // IDを付与
+                div.id = `day-${year}-${month+1}-${d}`;
                 if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) div.classList.add('today');
                 div.onclick = () => { displayDate.setDate(d); switchCalendarView('day'); };
                 div.innerHTML = `<div class="day-num">${d}</div><div class="event-dots" id="dots-${year}-${month+1}-${d}"></div>`;
@@ -469,8 +485,27 @@
             const start = new Date(year, month, 1); const end = new Date(year, month + 1, 0, 23, 59, 59);
             const q = query(collection(db, "bookings"), where("startTime", ">=", start), where("startTime", "<=", end));
             onSnapshot(q, (qs) => {
+                // ドット・背景色リセット
                 document.querySelectorAll('.event-dots').forEach(el => el.innerHTML = "");
-                qs.forEach(doc => { const data = doc.data(); const d = data.startTime.toDate(); const container = document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); if (container && container.children.length < 3) { const dot = document.createElement('div'); dot.className = data.type === 'event' ? 'dot event' : 'dot'; container.appendChild(dot); } });
+                document.querySelectorAll('.day-cell.unavailable').forEach(el => el.classList.remove('unavailable'));
+
+                qs.forEach(doc => { 
+                    const data = doc.data(); const d = data.startTime.toDate();
+                    const dayId = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+                    const dayCell = document.getElementById(dayId);
+                    
+                    // ★ イベント(不可日)なら背景色変更
+                    if (data.type === 'event') {
+                        if(dayCell) dayCell.classList.add('unavailable');
+                    } else {
+                        const container = document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); 
+                        if (container && container.children.length < 3) { 
+                             const dot = document.createElement('div'); 
+                             dot.className = 'dot'; 
+                             container.appendChild(dot); 
+                        }
+                    }
+                });
             });
         }
 
@@ -485,7 +520,6 @@
             container.addEventListener('mousemove', handleMouseMove); container.addEventListener('mouseup', handleMouseUp);
             loadDayBookings();
         }
-
         function handleTouchStart(e) { if (e.target.classList.contains('event-block')) return; const hour = parseInt(e.target.dataset.hour); if(isNaN(hour)) return; selectionTimer = setTimeout(() => { isSelecting = true; selectionStartHour = hour; selectionEndHour = hour; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate) navigator.vibrate(50); }, 500); }
         function handleTouchMove(e) { if (!isSelecting) { clearTimeout(selectionTimer); return; } e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (target && target.classList.contains('time-content')) { const hour = parseInt(target.dataset.hour); if (!isNaN(hour)) { selectionEndHour = hour; updateSelectionUI(); } } }
         function handleTouchEnd(e) { clearTimeout(selectionTimer); if (isSelecting) { isSelecting = false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(); } }
@@ -494,21 +528,12 @@
         function handleMouseUp() { if(isSelecting) { isSelecting = false; openBookingModalRange(); } }
         function updateSelectionUI() { document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting')); if (selectionStartHour === null || selectionEndHour === null) return; const start = Math.min(selectionStartHour, selectionEndHour); const end = Math.max(selectionStartHour, selectionEndHour); for (let h = start; h <= end; h++) { const el = document.querySelector(`.time-content[data-hour="${h}"]`); if (el) el.classList.add('selecting'); } }
         function generateTimeOptions() { const options = []; for (let h = 9; h <= 22; h++) { options.push(`${h}:00`); if (h < 22) options.push(`${h}:30`); } return options; }
-        
-        // ★ 終日トグル機能
         window.toggleAllDay = () => {
             const isAllDay = document.getElementById('checkAllDay').checked;
             const timeArea = document.getElementById('timeSelectArea');
-            if(isAllDay) {
-                timeArea.style.opacity = "0.5"; timeArea.style.pointerEvents = "none";
-                // UI上は9:00-22:00にする（保存時も強制する）
-                document.getElementById('selectStartTime').value = "9:00";
-                document.getElementById('selectEndTime').value = "22:00";
-            } else {
-                timeArea.style.opacity = "1"; timeArea.style.pointerEvents = "auto";
-            }
+            if(isAllDay) { timeArea.style.opacity = "0.5"; timeArea.style.pointerEvents = "none"; document.getElementById('selectStartTime').value = "9:00"; document.getElementById('selectEndTime').value = "22:00"; }
+            else { timeArea.style.opacity = "1"; timeArea.style.pointerEvents = "auto"; }
         };
-
         function openBookingModalRange() {
             document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
             const start = Math.min(selectionStartHour, selectionEndHour); const end = Math.max(selectionStartHour, selectionEndHour);
@@ -518,7 +543,6 @@
             if(isAdmin) { typeSelector.classList.remove('hidden'); document.querySelector('input[name="bookingType"][value="normal"]').checked = true; } else { typeSelector.classList.add('hidden'); }
             toggleBookingInputs();
             const m = displayDate.getMonth() + 1; const d = displayDate.getDate(); document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`;
-            
             setupTimeSelects(`${start}:00`, `${end+1}:00`); 
             document.getElementById('checkAllDay').checked = false; toggleAllDay();
             updateBandSelect(); openModal('modal-booking');
@@ -532,15 +556,9 @@
             if(isAdmin) { typeSelector.classList.remove('hidden'); const t = data.type || 'normal'; document.querySelector(`input[name="bookingType"][value="${t}"]`).checked = true; } else { typeSelector.classList.add('hidden'); }
             toggleBookingInputs();
             const s = data.startTime.toDate(); const e = data.endTime.toDate(); const m = s.getMonth() + 1; const d = s.getDate(); document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`;
-            const startStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`; const endStr = `${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; 
-            
-            // 終日判定 (9:00-22:00ならチェック)
-            const isAll = (startStr === "9:00" && endStr === "22:00");
-            document.getElementById('checkAllDay').checked = isAll;
-            
-            setupTimeSelects(startStr, endStr);
-            toggleAllDay();
-
+            const startStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`; const endStr = `${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`;
+            const isAll = (startStr === "9:00" && endStr === "22:00"); document.getElementById('checkAllDay').checked = isAll;
+            setupTimeSelects(startStr, endStr); toggleAllDay();
             if(data.type === 'event') document.getElementById('inputEventTitle').value = data.title || ""; else updateBandSelect(data.bandId);
             openModal('modal-booking');
         }
@@ -559,14 +577,12 @@
                         const contentArea = slots[slotIndex].querySelector('.time-content'); const div = document.createElement('div'); div.className = 'event-block';
                         div.style.top = (s.getMinutes() + 1) + "px"; div.style.height = (heightPx - 2) + "px"; div.style.zIndex = "20";
                         if (data.type === 'event') { div.classList.add('special-event'); div.innerHTML = `<div class="event-title">${data.title}</div>`; }
-                        else { div.innerHTML = `<div class="event-title">${data.bandName}</div>`; if (data.creatorId === currentUser) { div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#0b57d0"; div.style.color = "#001d35"; } else { div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; } }
+                        else { div.innerHTML = `<div class="event-title">${data.bandName}</div>`; const myBandIds = myBandsAll.map(b => b.id); if (myBandIds.includes(data.bandId)) { div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#0b57d0"; div.style.color = "#001d35"; } else { div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; } }
                         div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(bookingId, data); }; contentArea.appendChild(div);
                     }
                 });
             });
         }
-        
-        // ★ 保存処理 (終日対応)
         window.saveBooking = async () => {
             const editingId = document.getElementById('editingBookingId').value; const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal';
             let bookingData = { creatorId: currentUser, userName: currentProfile.displayName, type: type, createdAt: new Date() };
@@ -574,13 +590,8 @@
             else { const title = document.getElementById('inputEventTitle').value.trim(); if (!title) return alert("イベント名を入力してください"); bookingData.title = title; bookingData.bandName = title; }
             
             let sH, sM, eH, eM;
-            if (document.getElementById('checkAllDay').checked) {
-                 sH = 9; sM = 0; eH = 22; eM = 0; // 強制的に終日
-            } else {
-                const sTimeStr = document.getElementById('selectStartTime').value; const eTimeStr = document.getElementById('selectEndTime').value;
-                [sH, sM] = sTimeStr.split(':').map(Number); [eH, eM] = eTimeStr.split(':').map(Number);
-            }
-
+            if (document.getElementById('checkAllDay').checked) { sH = 9; sM = 0; eH = 22; eM = 0; }
+            else { const sTimeStr = document.getElementById('selectStartTime').value; const eTimeStr = document.getElementById('selectEndTime').value; [sH, sM] = sTimeStr.split(':').map(Number); [eH, eM] = eTimeStr.split(':').map(Number); }
             const startTime = new Date(displayDate); startTime.setHours(sH, sM, 0, 0); const endTime = new Date(displayDate); endTime.setHours(eH, eM, 0, 0);
             if (startTime.getTime() >= endTime.getTime()) return alert("終了時間は開始時間より後にしてね");
             bookingData.startTime = startTime; bookingData.endTime = endTime;
@@ -618,40 +629,6 @@
                 loadMyBands(); loadUserList();
             } catch(e) { console.error(e); }
         }
-
-        // --- メンバー追加機能 ---
-        window.openAddMemberModal = async () => {
-            if (!currentEditingBandId) return;
-            const list = document.getElementById('addMemberSelectList');
-            list.innerHTML = "読み込み中...";
-            const qs = await getDocs(collection(db, "users"));
-            list.innerHTML = "";
-            qs.forEach(doc => {
-                const u = doc.data();
-                if(currentEditingBandMembers.includes(doc.id)) return;
-                const div = document.createElement('div'); div.className = 'member-option'; 
-                div.dataset.uid = doc.id; div.dataset.uname = u.name;
-                div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; };
-                div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name}</div>`;
-                list.appendChild(div);
-            });
-            if(list.children.length === 0) list.innerHTML = '<div style="padding:10px; color:#999;">追加できるユーザーがいません</div>';
-            openModal('modal-add-member');
-        }
-        
-        window.saveAddedMembers = async () => {
-            if(!currentEditingBandId) return;
-            const selectedEls = document.querySelectorAll('#addMemberSelectList .member-option.selected');
-            if(selectedEls.length === 0) return alert("メンバーを選択してください");
-            const memberIds = []; const memberNames = [];
-            selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); });
-            try { await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...memberIds), memberNames: arrayUnion(...memberNames) }); alert("追加しました"); closeModal('modal-add-member'); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
-        }
-        
-        // ... (loadMyBands, switchBandTab, renderBandList, loadUserList, saveBand, shareBandInvite, handleInvite, openBandDetail etc... same as previous) ...
-        // ※コードが長いため、前回のロジックと同じ関数はそのまま利用しています。
-        // （上記の`saveBooking` `openBookingModalRange` `openEditBookingModal` `toggleAllDay` が今回の修正の肝です）
-
         function loadMyBands() {
             const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
             onSnapshot(q, (snapshot) => { myBandsAll = []; snapshot.forEach(docSnap => { const data = docSnap.data(); myBandsAll.push({ id: docSnap.id, ...data }); }); renderBandList(); });
@@ -662,7 +639,7 @@
             const targetBands = myBandsAll.filter(b => currentBandTab === 'active' ? !b.isArchived : b.isArchived);
             if (targetBands.length === 0) { container.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">${currentBandTab === 'active' ? 'バンドがありません' : 'アーカイブはありません'}</div>`; return; }
             targetBands.forEach(b => {
-                const div = document.createElement('div'); div.className = 'card band-item'; div.onclick = () => openBandDetail(b.id, b);
+                const div = document.createElement('div'); div.className = 'card band-card'; div.onclick = () => openBandDetail(b.id, b);
                 let html = `<div class="band-item" style="border:none; margin:0; padding:0;"><div class="band-icon">${b.name.charAt(0)}</div><div class="band-info"><div class="band-name">${b.name}</div><div class="band-members">${b.memberNames.join(', ')}</div></div>`;
                 if (b.creatorId === currentUser && !b.isArchived) { html += `<button class="btn-outline" onclick="event.stopPropagation(); shareBandInvite('${b.id}', '${b.name}')"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>`; } html += `</div>`;
                 div.innerHTML = html; container.appendChild(div);
@@ -672,23 +649,19 @@
             const list = document.getElementById('userSelectList'); const qs = await getDocs(collection(db, "users")); list.innerHTML = "";
             qs.forEach(doc => { const u = doc.data(); if(doc.id === currentUser) return; const div = document.createElement('div'); div.className = 'member-option'; div.dataset.uid = doc.id; div.dataset.uname = u.name; div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; }; div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name}</div>`; list.appendChild(div); });
         }
-        window.openBandDetail = (bandId, data) => {
-            document.getElementById('detailBandId').value = bandId; document.getElementById('detailBandName').value = data.name; document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
-            currentEditingBandId = bandId; currentEditingBandMembers = data.memberIds;
-            const memberListDiv = document.getElementById('detailMemberList'); memberListDiv.innerHTML = ""; const isCreator = (data.creatorId === currentUser);
-            const nameInput = document.getElementById('detailBandName'); const btnArchive = document.getElementById('btnArchive'); const btnRestore = document.getElementById('btnRestore'); const btnAddMember = document.getElementById('btnAddMemberToBand');
-            if (data.isArchived) { btnArchive.classList.add('hidden'); btnRestore.classList.remove('hidden'); nameInput.readOnly = true; btnAddMember.classList.add('hidden'); } else { btnArchive.classList.remove('hidden'); btnRestore.classList.add('hidden'); if(isCreator) { nameInput.readOnly = false; btnAddMember.classList.remove('hidden'); } else { btnAddMember.classList.add('hidden'); } }
-            if (isCreator) { document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden'); } else { nameInput.readOnly = true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden'); }
-            data.memberIds.forEach((uid, idx) => { const name = data.memberNames[idx] || "不明"; const row = document.createElement('div'); row.className = 'member-row'; let rowHtml = `<span>${name}</span>`; if (isCreator && uid !== currentUser) { rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`; } else if (uid === data.creatorId) { rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`; } row.innerHTML = rowHtml; memberListDiv.appendChild(row); });
-            openModal('modal-band-detail');
-        };
-        window.archiveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("アーカイブしますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: true }); alert("アーカイブしました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.restoreBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("復元しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: false }); alert("復元しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.updateBandName = async () => { const bandId = document.getElementById('detailBandId').value; const newName = document.getElementById('detailBandName').value.trim(); if(!newName) return alert("バンド名を入力してください"); try { await updateDoc(doc(db, "bands", bandId), { name: newName }); alert("変更しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.removeMember = async (bandId, uid, name) => { if(!confirm(`${name} さんを削除しますか？`)) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(uid), memberNames: arrayRemove(name) }); alert("削除しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.deleteBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に解散しますか？")) return; try { await deleteDoc(doc(db, "bands", bandId)); alert("解散しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.leaveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に脱退しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); alert("脱退しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-
+        window.openAddMemberModal = async () => {
+            if (!currentEditingBandId) return;
+            const list = document.getElementById('addMemberSelectList'); list.innerHTML = "読み込み中..."; const qs = await getDocs(collection(db, "users")); list.innerHTML = "";
+            qs.forEach(doc => { const u = doc.data(); if(currentEditingBandMembers.includes(doc.id)) return; const div = document.createElement('div'); div.className = 'member-option'; div.dataset.uid = doc.id; div.dataset.uname = u.name; div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; }; div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name}</div>`; list.appendChild(div); });
+            if(list.children.length === 0) list.innerHTML = '<div style="padding:10px; color:#999;">追加できるユーザーがいません</div>'; openModal('modal-add-member');
+        }
+        window.saveAddedMembers = async () => {
+            if(!currentEditingBandId) return;
+            const selectedEls = document.querySelectorAll('#addMemberSelectList .member-option.selected');
+            if(selectedEls.length === 0) return alert("メンバーを選択してください");
+            const memberIds = []; const memberNames = []; selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); });
+            try { await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...memberIds), memberNames: arrayUnion(...memberNames) }); alert("追加しました"); closeModal('modal-add-member'); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); }
+        }
         main();
     </script>
 </body>
