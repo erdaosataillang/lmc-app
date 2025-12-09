@@ -62,6 +62,8 @@
         .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
         .event-block.pending { opacity: 0.9; background: #fff8e1; border-left: 4px solid #ffb300; color: #b06000; border: 1px dashed #ffb300; border-left-style: solid; }
+        /* 抽選確定済み（薄紫） */
+        .event-block.lottery-confirmed { background: #f3e5f5; border-left: 4px solid #ab47bc; color: #4a148c; }
         
         /* 予約重複時のまとめ表示用 */
         .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; }
@@ -481,6 +483,16 @@
         </div>
     </div>
 
+    <!-- 予約一覧モーダル（重複時用） -->
+    <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">予約一覧</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p>
+            <div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+            <button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -590,17 +602,28 @@
             const endOfDay = new Date(targetDate); endOfDay.setHours(23,59,59,999);
 
             try {
-                // 1. 対象日の予約（承認待ち）を取得
+                // 1. 対象日の予約を全取得
                 const q = query(collection(db, "bookings"), 
                     where("startTime", ">=", startOfDay), 
                     where("startTime", "<=", endOfDay)
                 );
                 const snapshot = await getDocs(q);
+                
                 let candidates = [];
+                let lockedSlots = []; // 確定済みの予約（先着やイベント）
+
                 snapshot.forEach(doc => {
                     const d = doc.data();
-                    if (d.type !== 'event' && d.status === 'pending') {
+                    if (d.status === 'pending' && d.type !== 'event') {
+                        // 抽選対象（承認待ち）
                         candidates.push({ id: doc.id, ...d });
+                    } else if (d.status === 'confirmed' || d.type === 'event') {
+                        // 既に確定している予約（先着モードで入ったものやイベント）
+                        lockedSlots.push({
+                            start: d.startTime.toDate(),
+                            end: d.endTime.toDate(),
+                            title: d.bandName || d.title
+                        });
                     }
                 });
 
@@ -609,9 +632,9 @@
                     return;
                 }
 
-                logBox.innerHTML += `<div class="log-line">候補: ${candidates.length}件の希望枠</div>`;
+                logBox.innerHTML += `<div class="log-line">候補: ${candidates.length}件 / 確定済: ${lockedSlots.length}件</div>`;
 
-                // 2. バンドごとに希望枠を整理 (Band ID -> [Available Ranges])
+                // 2. バンドごとに希望枠を整理
                 const bandRequests = {};
                 candidates.forEach(c => {
                     if (!bandRequests[c.bandId]) {
@@ -632,21 +655,19 @@
                 const bands = Object.values(bandRequests);
                 logBox.innerHTML += `<div class="log-line">エントリー: ${bands.length}バンド</div>`;
 
-                // 3. スケジューリング実行 (1h -> 30m -> 1.5h)
+                // 3. スケジューリング実行
+                // lockedSlotsを渡して、その時間を埋めた状態で開始する
                 let schedule = null;
                 
-                // Strategy A: 60 mins
                 logBox.innerHTML += '<div class="log-line">--- 60分枠で割り当て試行 ---</div>';
-                schedule = attemptSchedule(bands, 60);
+                schedule = attemptSchedule(bands, 60, lockedSlots);
                 
                 if (schedule.successCount < bands.length) {
                     logBox.innerHTML += `<div class="log-line log-warn">失敗: 全員入りません (${schedule.successCount}/${bands.length})</div>`;
                     logBox.innerHTML += '<div class="log-line">--- 30分枠で再試行 ---</div>';
-                    // Strategy B: 30 mins
-                    schedule = attemptSchedule(bands, 30);
+                    schedule = attemptSchedule(bands, 30, lockedSlots);
                 } else {
                     logBox.innerHTML += '<div class="log-line log-success">成功: 全員配置可能！</div>';
-                    // Strategy C: Bonus Extension to 90 mins
                     logBox.innerHTML += '<div class="log-line">--- 余り時間で1.5時間へ拡張試行 ---</div>';
                     schedule = extendSchedule(schedule, bands, 90);
                 }
@@ -668,7 +689,7 @@
                     });
                 }
 
-                tempLotterySchedule = schedule; // 保存用データ保持
+                tempLotterySchedule = schedule; 
                 document.getElementById('btnApplyLottery').classList.remove('hidden');
 
             } catch(e) {
@@ -677,37 +698,46 @@
             }
         };
 
-        // スケジューリング・アルゴリズム (Greedy with Random Shuffle)
-        function attemptSchedule(bands, durationMinutes) {
+        // スケジューリング・アルゴリズム
+        function attemptSchedule(bands, durationMinutes, lockedSlots) {
             // タイムライン: 9:00 - 22:00 (分単位)
-            // 9:00 = 0, 22:00 = 780
             const START_HOUR = 9;
             const END_HOUR = 22;
             const TOTAL_MINUTES = (END_HOUR - START_HOUR) * 60;
-            const timeline = new Array(TOTAL_MINUTES).fill(null); // null = 空き
+            const timeline = new Array(TOTAL_MINUTES).fill(null); 
 
-            const shuffledBands = [...bands].sort(() => Math.random() - 0.5); // 公平性のためシャッフル
+            // 確定済み(locked)の予約を埋める
+            if (lockedSlots && lockedSlots.length > 0) {
+                lockedSlots.forEach(lock => {
+                    const startMin = (lock.start.getHours() - START_HOUR) * 60 + lock.start.getMinutes();
+                    const endMin = (lock.end.getHours() - START_HOUR) * 60 + lock.end.getMinutes();
+                    
+                    // 範囲チェックと埋め込み
+                    const s = Math.max(0, startMin);
+                    const e = Math.min(TOTAL_MINUTES, endMin);
+                    
+                    for (let t = s; t < e; t++) {
+                        timeline[t] = "LOCKED";
+                    }
+                });
+            }
+
+            const shuffledBands = [...bands].sort(() => Math.random() - 0.5); 
             const assignments = [];
             const failedBands = [];
 
             shuffledBands.forEach(band => {
                 let assigned = false;
-                
-                // バンドの希望枠を走査
-                // シャッフルして「希望枠のどこか」にランダムにあたるようにする
                 const requests = [...band.requests].sort(() => Math.random() - 0.5);
 
                 for (let req of requests) {
                     if (assigned) break;
                     
-                    // リクエスト範囲を分(0-780)に変換
                     const reqStartMin = (req.start.getHours() - START_HOUR) * 60 + req.start.getMinutes();
                     const reqEndMin = (req.end.getHours() - START_HOUR) * 60 + req.end.getMinutes();
 
-                    // この範囲内で durationMinutes 分の空きを探す
                     // 30分刻みで探索
                     for (let t = reqStartMin; t <= reqEndMin - durationMinutes; t += 30) {
-                        // 空きチェック
                         let isFree = true;
                         for (let k = 0; k < durationMinutes; k++) {
                             if (t + k >= TOTAL_MINUTES || timeline[t + k] !== null) {
@@ -717,12 +747,10 @@
                         }
 
                         if (isFree) {
-                            // 確保
                             for (let k = 0; k < durationMinutes; k++) {
                                 timeline[t + k] = band.name;
                             }
                             
-                            // 結果保存
                             const sTime = new Date(req.start);
                             sTime.setHours(START_HOUR + Math.floor(t / 60), t % 60, 0, 0);
                             const eTime = new Date(sTime);
@@ -755,35 +783,28 @@
         // スケジュール拡張 (1h -> 1.5h)
         function extendSchedule(baseSchedule, bands, targetDuration) {
             const currentAssignments = baseSchedule.assignments;
-            const timeline = baseSchedule.timeline; // Array filled with names or null
+            const timeline = baseSchedule.timeline; 
             const START_HOUR = baseSchedule.startHour;
-            const extraMinutes = targetDuration - 60; // 追加したい分数 (30分)
+            const extraMinutes = targetDuration - 60; 
 
-            // 公平に拡張するためにシャッフルして試行
             const shuffled = [...currentAssignments].sort(() => Math.random() - 0.5);
 
             shuffled.forEach(assign => {
-                // 現在の確保位置 (分)
                 const currentStartMin = (assign.start.getHours() - START_HOUR) * 60 + assign.start.getMinutes();
                 const currentEndMin = (assign.end.getHours() - START_HOUR) * 60 + assign.end.getMinutes();
 
-                // 後ろに拡張できるか？
                 let canExtendBack = true;
-                // まずタイムライン上の空きチェック
                 for(let k=0; k<extraMinutes; k++) {
                     if(currentEndMin + k >= timeline.length || timeline[currentEndMin + k] !== null) {
                         canExtendBack = false; break;
                     }
                 }
                 
-                // 次に、ユーザーの元の希望範囲内かチェック
                 if(canExtendBack) {
                     const band = bands.find(b => b.name === assign.bandName);
-                    // 拡張後の終了時刻
                     const newEndTime = new Date(assign.end);
                     newEndTime.setMinutes(newEndTime.getMinutes() + extraMinutes);
                     
-                    // いずれかの希望枠に収まっているか
                     let inRange = false;
                     for(let req of band.requests) {
                         if (req.start <= assign.start && req.end >= newEndTime) {
@@ -794,13 +815,8 @@
                 }
 
                 if (canExtendBack) {
-                    // 拡張実行
                     for(let k=0; k<extraMinutes; k++) timeline[currentEndMin + k] = assign.bandName;
                     assign.end.setMinutes(assign.end.getMinutes() + extraMinutes);
-                    // ログ用
-                    // console.log("Extended " + assign.bandName);
-                } else {
-                    // 前に拡張できるか？ (ロジック省略: 実装が複雑になるため今回は後ろ拡張のみ優先)
                 }
             });
 
@@ -818,26 +834,24 @@
             assignments.forEach(a => {
                 const newRef = doc(collection(db, "bookings"));
                 batch.set(newRef, {
-                    bandId: getBandIdByName(a.bandName), // ヘルパー関数が必要、または構造変更
+                    bandId: getBandIdByName(a.bandName),
                     bandName: a.bandName,
-                    creatorId: currentUser, // ※本来は各バンドの代表者IDを入れるべきだが、ここでは操作者にしておくか、元のdocから取得する
-                    userName: "抽選確定", // システム
+                    creatorId: currentUser, 
+                    userName: "抽選確定", 
                     startTime: a.start,
                     endTime: a.end,
                     type: 'normal',
                     status: 'confirmed',
+                    source: 'lottery', // 抽選由来フラグ
                     createdAt: new Date()
                 });
                 
-                // 2. 元の「承認待ち」予約を削除
                 a.originalDocIds.forEach(oldId => {
                     const oldRef = doc(db, "bookings", oldId);
                     batch.delete(oldRef);
                 });
             });
 
-            // 選外のバンドの希望も削除する？ -> 残すと重複エラーになるので削除するか、「落選」ステータスにする
-            // 今回は一旦削除します（仕様次第）
             tempLotterySchedule.failedBands.forEach(b => {
                 b.docIds.forEach(oldId => {
                     const oldRef = doc(db, "bookings", oldId);
@@ -1322,6 +1336,15 @@
                             div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; 
                         }
                     } 
+                    
+                    // 抽選確定の場合は薄紫にする
+                    if (data.source === 'lottery') {
+                        div.classList.add('lottery-confirmed');
+                        // インラインスタイルを上書きする必要があるため、important付きクラスにするか、ここでスタイル直接指定
+                        div.style.backgroundColor = "#f3e5f5";
+                        div.style.borderLeftColor = "#ab47bc";
+                        div.style.color = "#4a148c";
+                    }
                 } 
                 div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(data.id, data); }; 
                 contentArea.appendChild(div); 
