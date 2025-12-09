@@ -299,6 +299,8 @@
         </div>
     </div>
 
+    /* --- サブページ群 (スライドイン) --- */
+    
     <div id="page-admin-users" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div>
         <div class="content-area">
@@ -315,11 +317,21 @@
         <div class="content-area">
             <div class="card" style="padding: 20px;">
                 <h3 style="font-size: 16px; margin: 0 0 16px 0;">予約受付設定</h3>
+                
                 <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
-                    <div><div style="font-weight: bold; font-size: 15px;">予約方式</div><div style="font-size: 12px; color: #5f6368;" id="bookingModeLabel">先着順</div></div>
-                    <label class="toggle-switch"><input type="checkbox" id="bookingModeSwitch" onchange="toggleBookingMode()"><span class="slider"></span></label>
+                    <div>
+                        <div style="font-weight: bold; font-size: 15px;">予約方式</div>
+                        <div style="font-size: 12px; color: #5f6368;" id="bookingModeLabel">先着順</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="bookingModeSwitch" onchange="toggleBookingMode()">
+                        <span class="slider"></span>
+                    </label>
                 </div>
-                <p style="font-size: 11px; color: #999; margin-top: 12px;">※「抽選」に切り替えると、自動的に抽選ロジックが適用されます（現在はUIのみ）。</p>
+                
+                <p style="font-size: 11px; color: #999; margin-top: 12px;">
+                    ※「抽選」に切り替えると、自動的に抽選ロジックが適用されます（現在はUIのみ）。
+                </p>
             </div>
         </div>
     </div>
@@ -391,8 +403,19 @@
             <input type="hidden" id="detailBandId">
             <div class="image-picker-area"><div class="image-picker" id="detailIconPicker"><img id="detailBandIcon" src=""></div><input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)"></div>
             <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="detailBandName" class="form-input" readonly></div>
-            <div class="form-group"><label class="form-label">メンバー</label><div class="member-list-edit" id="detailMemberList"></div><button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button></div>
-            <div id="bandCreatorActions" class="hidden"><button class="btn-primary" onclick="updateBandName()">バンド名を変更</button><button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button><button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button><button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button></div>
+            <div class="form-group">
+                <label class="form-label">メンバー</label>
+                <div class="member-list-edit" id="detailMemberList"></div>
+                <button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()">
+                    <span class="material-icons">person_add</span> メンバーを追加
+                </button>
+            </div>
+            <div id="bandCreatorActions" class="hidden">
+                <button class="btn-primary" onclick="updateBandName()">バンド名を変更</button>
+                <button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button>
+                <button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button>
+                <button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button>
+            </div>
             <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()">バンドから脱退</button></div>
             <button class="btn-secondary" onclick="closeModal('modal-band-detail')">閉じる</button>
         </div>
@@ -544,7 +567,6 @@
             });
         }
         document.getElementById('adminSearchInput').addEventListener('input', (e) => { const term = e.target.value.trim(); renderAdminList(term ? allUsersCache.filter(u => u.name.includes(term) || (u.kana && u.kana.includes(term))) : allUsersCache); });
-        
         function openAdminEdit(user) {
             adminEditingUserId = user.id; openPage('admin-edit');
             document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img"; document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName; document.getElementById('admin-edit-docId').innerText = user.id;
@@ -556,10 +578,7 @@
             const listContainer = document.getElementById('admin-user-band-list'); listContainer.innerHTML = "読み込み中...";
             try { const q = query(collection(db, "bands"), where("memberIds", "array-contains", targetUserId)); const qs = await getDocs(q); if(qs.empty) { listContainer.innerHTML = "所属バンドなし"; } else { let html = "<ul style='padding-left:20px; margin:0;'>"; qs.forEach(doc => { const b = doc.data(); html += `<li>${b.name} ${b.creatorId === targetUserId ? '<span style="font-size:10px; color:#0b57d0;">(リーダー)</span>' : ''}</li>`; }); html += "</ul>"; listContainer.innerHTML = html; } } catch(e) { listContainer.innerHTML = "取得エラー"; }
         }
-        document.getElementById('btn-save-user-role').addEventListener('click', async () => {
-            if(!adminEditingUserId) return; const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中...";
-            try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
-        });
+        document.getElementById('btn-save-user-role').addEventListener('click', async () => { if(!adminEditingUserId) return; const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中..."; try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; } });
         window.downloadMemberCsv = async () => { if(!confirm("部員名簿をCSVでダウンロードしますか？")) return; try { const qs = await getDocs(collection(db, "users")); let csvContent = "\uFEFFID,名前,ふりがな,学籍番号,所属\n"; qs.forEach(doc => { const u = doc.data(); let aff = ""; if(u.affiliations) aff = u.affiliations.join('/'); const row = [doc.id, u.name, u.kana||"", u.studentId||"", aff].map(s => `"${s}"`).join(","); csvContent += row + "\n"; }); const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", "部員名簿.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); } catch(e) { alert("ダウンロードエラー: " + e.message); } };
         window.toggleBookingMode = () => { const isChecked = document.getElementById('bookingModeSwitch').checked; document.getElementById('bookingModeLabel').innerText = isChecked ? "抽選方式" : "先着順"; };
 
@@ -651,8 +670,8 @@
         window.addToGoogleCalendar = () => { if (!editingBookingData) return; const title = editingBookingData.bandName || "バンド練習"; const start = editingBookingData.startTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const end = editingBookingData.endTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=LMC+Mobileからの予約`; window.open(url, '_blank'); };
         window.deleteBooking = async () => { const editingId = document.getElementById('editingBookingId').value; if (!editingId) return; if(!confirm("本当に削除しますか？")) return; try { await deleteDoc(doc(db, "bookings", editingId)); alert("削除しました"); closeModal('modal-booking'); } catch(e) { alert("エラー: " + e.message); } };
         function renderHeaderIcons(data) { let ringClass = ""; const affs = data.affiliations || []; const isUrakata = affs.includes("urakata"); let isBirthday = false; if (data.birthday) { const today = new Date(); const bday = new Date(data.birthday); if (today.getMonth() === bday.getMonth() && today.getDate() === bday.getDate()) isBirthday = true; } if (isBirthday) ringClass = "ring-birthday"; else if (isUrakata) { if(data.job === "sound") ringClass = "ring-sound"; else if(data.job === "light") ringClass = "ring-light"; else if(data.job === "stage") ringClass = "ring-stage"; else if(data.job === "video") ringClass = "ring-video"; else ringClass = "ring-rainbow"; } const iconHtml = `<img src="${data.icon || 'https://placehold.jp/40x40.png'}" alt="icon">`; ['headerIconBands', 'headerIconCal', 'headerIconCue', 'headerIconAdmin'].forEach(id => { const el = document.getElementById(id); if(el) { el.innerHTML = iconHtml; el.className = "header-avatar " + ringClass; } }); if(isUrakata && data.role) document.getElementById('nav-admin').classList.remove('hidden'); }
-
-       
+        
+        main();
     </script>
 </body>
 </html>
