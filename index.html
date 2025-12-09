@@ -60,10 +60,10 @@
         .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
         .event-block { position: absolute; left: 2px; right: 2px; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .event-title { font-weight: bold; }
-        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
+        .event-block.special-event { background: #e6f4ea; border-left-color: #137333; color: #0d652d; }
 
         /* マイバンド */
-        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; }
+        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: transform 0.1s; }
         .card.band-card:active { background-color: #f5f5f5; }
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; }
         .band-item:last-child { border: none; margin: 0; padding: 0; }
@@ -79,7 +79,7 @@
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
         .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; }
         .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } 
-        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } /* 管理タブ用色 */
+        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } 
         .nav-item.active span { color: #1f1f1f; font-weight: bold; }
 
         /* UIパーツ */
@@ -226,28 +226,17 @@
             <div class="menu-list">
                 <button class="menu-btn" onclick="openPage('admin-calendar-stub')">
                     <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
-                    <div class="menu-content">
-                        <span class="menu-title">予約システム管理</span>
-                        <span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span>
-                    </div>
+                    <div class="menu-content"><span class="menu-title">予約システム管理</span><span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-                
                 <button class="menu-btn" onclick="openAdminUsers()">
                     <div class="menu-icon-wrapper icon-admin-user"><span class="material-icons">manage_accounts</span></div>
-                    <div class="menu-content">
-                        <span class="menu-title">個人の管理</span>
-                        <span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span>
-                    </div>
+                    <div class="menu-content"><span class="menu-title">個人の管理</span><span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-                
                 <button class="menu-btn" onclick="openPage('admin-docs-stub')">
                     <div class="menu-icon-wrapper icon-admin-doc"><span class="material-icons">description</span></div>
-                    <div class="menu-content">
-                        <span class="menu-title">提出書類の作成</span>
-                        <span class="menu-subtitle">各種申請書類のエクスポート</span>
-                    </div>
+                    <div class="menu-content"><span class="menu-title">提出書類の作成</span><span class="menu-subtitle">各種申請書類のエクスポート</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
             </div>
@@ -272,15 +261,12 @@
         </div>
     </div>
 
-    <!--- サブページ群 --->
+    /* --- サブページ群 --- */
     
     <div id="page-admin-users" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div>
         <div class="content-area">
-            <div class="search-bar">
-                <span class="material-icons" style="color:#5f6368;">search</span>
-                <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
-            </div>
+            <div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="adminSearchInput" placeholder="ユーザー検索..."></div>
             <div id="adminUserList"></div>
         </div>
     </div>
@@ -288,14 +274,19 @@
     <div id="page-admin-calendar-stub" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div>
         <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
-            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">engineering</span><br>準備中: 予約ルールの設定機能
+            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">engineering</span><br>準備中
         </div>
     </div>
     
     <div id="page-admin-docs-stub" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div>
-        <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
-            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">print</span><br>準備中: 書類PDF出力機能
+        <div class="content-area">
+            <div class="card" style="padding:20px; text-align:center;">
+                <span class="material-icons" style="font-size:48px; color:#00695c; margin-bottom:10px;">file_download</span>
+                <h3 style="margin:0 0 10px;">部員名簿CSV</h3>
+                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">全登録ユーザーの氏名、ふりがな、学籍番号、所属を出力します。</p>
+                <button class="btn-primary" onclick="downloadMemberCsv()" style="background-color:#00695c;">CSVダウンロード</button>
+            </div>
         </div>
     </div>
 
@@ -318,10 +309,7 @@
 
             <div class="card" style="padding:20px;">
                 <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">権限設定</h3>
-                <div class="form-group">
-                    <label class="form-label">役職</label>
-                    <input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など">
-                </div>
+                <div class="form-group"><label class="form-label">役職</label><input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など"></div>
                 <button id="btn-save-user-role" class="btn-admin-save">役職を保存</button>
             </div>
 
@@ -330,9 +318,7 @@
                 <div id="admin-user-band-list" style="font-size:14px;">読み込み中...</div>
             </div>
             
-            <div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">
-                USER ID: <span id="admin-edit-docId"></span>
-            </div>
+            <div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">USER ID: <span id="admin-edit-docId"></span></div>
         </div>
     </div>
 
@@ -355,12 +341,24 @@
 
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content">
-            <h3 style="margin-top:0; display:flex; justify-content:space-between;">詳細<button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button></h3>
+            <h3 style="margin-top:0; display:flex; justify-content:space-between;">
+                バンド詳細
+                <button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>
+            </h3>
             <input type="hidden" id="detailBandId">
             <div class="image-picker-area"><div class="image-picker" id="detailIconPicker"><img id="detailBandIcon" src=""></div><input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)"></div>
             <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="detailBandName" class="form-input" readonly></div>
-            <div class="form-group"><label class="form-label">メンバー</label><div class="member-list-edit" id="detailMemberList"></div><button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button></div>
-            <div id="bandCreatorActions" class="hidden"><button class="btn-primary" onclick="updateBandName()">バンド名を変更</button><button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button><button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button><button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button></div>
+            <div class="form-group">
+                <label class="form-label">メンバー</label>
+                <div class="member-list-edit" id="detailMemberList"></div>
+                <button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button>
+            </div>
+            <div id="bandCreatorActions" class="hidden">
+                <button class="btn-primary" onclick="updateBandName()">バンド名を変更</button>
+                <button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button>
+                <button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button>
+                <button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button>
+            </div>
             <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()">バンドから脱退</button></div>
             <button class="btn-secondary" onclick="closeModal('modal-band-detail')">閉じる</button>
         </div>
@@ -383,7 +381,13 @@
             <div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div></div>
             <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="checkAllDay" onchange="toggleAllDay()"> 終日 (9:00 - 22:00)</label></div>
             <div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;"><div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span style="margin-top:15px;">〜</span><div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div></div>
-            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;"><label class="form-label">登録種別</label><div class="radio-group"><label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label><label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label></div></div>
+            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;">
+                <label class="form-label">登録種別</label>
+                <div class="radio-group">
+                    <label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label>
+                    <label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label>
+                </div>
+            </div>
             <div id="groupBandSelect" class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div>
             <div id="groupEventTitle" class="form-group hidden"><label class="form-label">イベント名 / 理由</label><input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会"></div>
             <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
@@ -428,6 +432,7 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             navEl.classList.add('active');
             if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
+            if (screenId === 'admin') { loadAdminData(); }
         };
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
         window.openPage = (pageId) => { document.getElementById('page-' + pageId).classList.add('open'); };
@@ -436,8 +441,7 @@
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
         
         // --- 管理者機能 ---
-        window.openAdminUsers = async () => {
-            openPage('admin-users');
+        async function loadAdminData() {
             document.getElementById('adminUserList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
             try {
                 const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
@@ -451,7 +455,7 @@
                 });
                 renderAdminList(allUsersCache);
             } catch(e) { document.getElementById('adminUserList').innerHTML = "エラー: " + e.message; }
-        };
+        }
         function renderAdminList(users) {
             const container = document.getElementById('adminUserList'); container.innerHTML = "";
             if(users.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
@@ -474,7 +478,6 @@
             document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName;
             document.getElementById('admin-edit-docId').innerText = user.id;
             
-            // 閲覧用
             document.getElementById('admin-show-name').innerText = user.name;
             document.getElementById('admin-show-kana').innerText = user.kana || "-";
             document.getElementById('admin-show-studentId').innerText = user.studentId || "-";
@@ -483,11 +486,7 @@
             if(user.affiliations && user.affiliations.includes('lmc')) affText += "LMC ";
             document.getElementById('admin-show-aff').innerText = affText;
             document.getElementById('admin-show-part').innerText = getPartLabel(user.part) || "-";
-
-            // 編集用
             document.getElementById('admin-edit-role').value = user.role || "";
-            
-            // 所属バンド取得
             loadAdminUserBands(user.id);
         }
         async function loadAdminUserBands(targetUserId) {
@@ -507,40 +506,32 @@
             if(!adminEditingUserId) return; const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中...";
             try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
         });
-
-        // --- メイン処理 ---
-        async function main() {
-            try {
-                await liff.init({ liffId: MY_LIFF_ID });
-                const urlParams = new URLSearchParams(window.location.search);
-                const action = urlParams.get('action');
-                const inviteBandId = urlParams.get('bandId');
-                const targetPage = urlParams.get('page');
-
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                const profile = await liff.getProfile();
-                currentUser = profile.userId; currentProfile = profile;
-                const userRef = doc(db, "users", currentUser);
-                const userSnap = await getDoc(userRef);
-                if (!userSnap.exists()) { alert("利用には会員登録が必要です"); window.location.href = MY_PAGE_URL; return; }
+        
+        // CSV出力機能
+        window.downloadMemberCsv = async () => {
+             if(!confirm("部員名簿をCSVでダウンロードしますか？")) return;
+             try {
+                const qs = await getDocs(collection(db, "users"));
+                let csvContent = "\uFEFFID,名前,ふりがな,学籍番号,所属\n"; // BOM付き
                 
-                await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
-                currentUserData = userSnap.data(); renderHeaderIcons(currentUserData);
+                qs.forEach(doc => {
+                    const u = doc.data();
+                    let aff = "";
+                    if(u.affiliations) aff = u.affiliations.join('/');
+                    const row = [doc.id, u.name, u.kana||"", u.studentId||"", aff].map(s => `"${s}"`).join(",");
+                    csvContent += row + "\n";
+                });
                 
-                // ダイレクト遷移
-                if (targetPage) {
-                    let navSelector = '';
-                    if(targetPage === 'calendar') navSelector = '.nav-item:nth-child(2)';
-                    else if(targetPage === 'cuesheet') navSelector = '.nav-item:nth-child(3)';
-                    else if(targetPage === 'bands') navSelector = '.nav-item:nth-child(1)';
-                    const navEl = document.querySelector(navSelector);
-                    if(navEl) switchScreen(targetPage, navEl);
-                }
-
-                if (action === 'invite' && inviteBandId) { await handleInvite(inviteBandId); window.history.replaceState(null, null, window.location.pathname); }
-                loadMyBands();
-            } catch(e) { console.error(e); }
-        }
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "部員名簿.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+             } catch(e) { alert("ダウンロードエラー: " + e.message); }
+        };
 
         // --- マイバンド ---
         function loadMyBands() {
