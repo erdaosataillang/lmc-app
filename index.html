@@ -481,16 +481,6 @@
         </div>
     </div>
 
-    <!-- 予約一覧モーダル（重複時用） -->
-    <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')">
-        <div class="modal-content">
-            <h3 style="margin-top:0;">予約一覧</h3>
-            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p>
-            <div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div>
-            <button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -626,6 +616,7 @@
                 candidates.forEach(c => {
                     if (!bandRequests[c.bandId]) {
                         bandRequests[c.bandId] = { 
+                            id: c.bandId, 
                             name: c.bandName, 
                             requests: [], 
                             docIds: [] 
@@ -738,7 +729,7 @@
                             eTime.setMinutes(sTime.getMinutes() + durationMinutes);
 
                             assignments.push({
-                                bandId: Object.keys(bandRequests).find(key => bandRequests[key] === band), // Note: bandRequests is not in scope, fixing logic below
+                                bandId: band.id, 
                                 bandName: band.name,
                                 start: sTime,
                                 end: eTime,
