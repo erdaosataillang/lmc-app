@@ -58,11 +58,14 @@
         .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
         .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; touch-action: pan-y; }
         .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
-        .event-block { position: absolute; left: 2px; right: 2px; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .event-title { font-weight: bold; }
+        .event-block { position: absolute; left: 0; width: 100%; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
-        /* 承認待ちは薄く表示 */
-        .event-block.pending { opacity: 0.7; background: #fef7e0; border-left: 4px solid #fbbc04; color: #b06000; }
+        .event-block.pending { opacity: 0.9; background: #fff8e1; border-left: 4px solid #ffb300; color: #b06000; border: 1px dashed #ffb300; border-left-style: solid; }
+        
+        /* 予約重複時のまとめ表示用 */
+        .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; }
+        .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
 
         /* マイバンド */
         .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; }
@@ -425,6 +428,16 @@
         </div>
     </div>
 
+    <!-- 予約一覧モーダル（重複時用） -->
+    <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">予約一覧</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p>
+            <div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+            <button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
@@ -733,47 +746,218 @@
         function setupTimeSelects(defaultStart, defaultEnd) { const startSel = document.getElementById('selectStartTime'); const endSel = document.getElementById('selectEndTime'); startSel.innerHTML = ""; endSel.innerHTML = ""; generateTimeOptions().forEach(t => { startSel.appendChild(new Option(t, t)); endSel.appendChild(new Option(t, t)); }); if (defaultStart) startSel.value = defaultStart; if (defaultEnd) endSel.value = defaultEnd; }
         function updateBandSelect(selectedBandId = "") { const select = document.getElementById('selectBookingBand'); select.innerHTML = ""; const activeBands = myBandsAll.filter(b => !b.isArchived); if (activeBands.length === 0) { select.appendChild(new Option("バンドがありません", "")); } else { activeBands.forEach(b => { const op = new Option(b.name, b.id); if(b.id === selectedBandId) op.selected = true; select.appendChild(op); }); } }
         
+        // --- 予約重複時のリスト表示 ---
+        window.openEventListModal = (events) => {
+            const container = document.getElementById('eventListContainer');
+            container.innerHTML = "";
+            events.sort((a,b) => a.startTime.toDate() - b.startTime.toDate());
+            
+            events.forEach(data => {
+                const div = document.createElement('div');
+                div.className = "card";
+                div.style.marginBottom = "10px";
+                div.style.padding = "10px";
+                div.style.cursor = "pointer";
+                
+                const s = data.startTime.toDate();
+                const e = data.endTime.toDate();
+                const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`;
+                
+                let html = `<div style="font-weight:bold; font-size:14px; color:#0b57d0;">${timeStr}</div>`;
+                if(data.type === 'event') {
+                    html += `<div style="font-weight:bold;">${data.title}</div><div style="font-size:11px; color:#137333;">イベント</div>`;
+                } else {
+                    html += `<div style="font-weight:bold;">${data.bandName}</div><div style="font-size:11px; color:#5f6368;">${data.userName}</div>`;
+                }
+                
+                if(data.status === 'pending') {
+                    html += `<div style="font-size:10px; color:#b06000; margin-top:4px;">●承認待ち</div>`;
+                }
+                
+                div.innerHTML = html;
+                div.onclick = () => {
+                    closeModal('modal-event-list');
+                    openEditBookingModal(data.id, data);
+                };
+                container.appendChild(div);
+            });
+            openModal('modal-event-list');
+        };
+
+        // --- 予約読み込みとレイアウト計算 ---
         function loadDayBookings() { 
-            const startOfDay = new Date(displayDate); startOfDay.setHours(0,0,0,0); const endOfDay = new Date(displayDate); endOfDay.setHours(23,59,59,999); 
+            const startOfDay = new Date(displayDate); startOfDay.setHours(0,0,0,0); 
+            const endOfDay = new Date(displayDate); endOfDay.setHours(23,59,59,999); 
             const q = query(collection(db, "bookings"), where("startTime", ">=", startOfDay), where("startTime", "<=", endOfDay)); 
+            
             onSnapshot(q, (qs) => { 
                 document.querySelectorAll('.event-block').forEach(el => el.remove()); 
-                qs.forEach(docSnap => { 
-                    const data = docSnap.data(); const bookingId = docSnap.id; 
-                    const s = data.startTime.toDate(); const e = data.endTime.toDate(); 
-                    const startMin = (s.getHours() - 9) * 60 + s.getMinutes(); const endMin = (e.getHours() - 9) * 60 + e.getMinutes(); 
-                    const durationMin = endMin - startMin; const heightPx = durationMin; const slotIndex = s.getHours() - 9; 
-                    const slots = document.querySelectorAll('.time-slot'); 
-                    if (slotIndex >= 0 && slotIndex < slots.length) { 
-                        const contentArea = slots[slotIndex].querySelector('.time-content'); 
-                        const div = document.createElement('div'); div.className = 'event-block'; 
-                        div.style.top = (s.getMinutes() + 1) + "px"; div.style.height = (heightPx - 2) + "px"; div.style.zIndex = "20"; 
-                        if (data.type === 'event') { 
-                            div.classList.add('special-event'); div.innerHTML = `<div class="event-title">${data.title}</div>`; 
-                        } else { 
-                            div.innerHTML = `<div class="event-title">${data.bandName}</div>`; 
-                            
-                            // 承認待ちの場合のスタイル
-                            if (data.status === 'pending') {
-                                div.classList.add('pending');
-                                div.innerHTML += `<div style="font-size:10px;">(承認待ち)</div>`;
-                            }
+                const events = [];
+                qs.forEach(docSnap => {
+                    const d = docSnap.data();
+                    d.id = docSnap.id;
+                    events.push(d);
+                });
+                
+                if(events.length === 0) return;
 
-                            const myBandIds = myBandsAll.map(b => b.id); 
-                            if (myBandIds.includes(data.bandId)) { 
-                                if(data.status !== 'pending') {
-                                    div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#0b57d0"; div.style.color = "#001d35"; 
+                // レイアウト計算
+                // 1. 時間順にソート
+                events.sort((a,b) => a.startTime.toDate() - b.startTime.toDate());
+
+                // 2. クラスタリング (重なり合うイベントのグループ化)
+                const clusters = [];
+                let currentCluster = [];
+                let clusterEnd = 0;
+
+                events.forEach(ev => {
+                    const startT = ev.startTime.toDate().getTime();
+                    const endT = ev.endTime.toDate().getTime();
+                    
+                    if (currentCluster.length === 0) {
+                        currentCluster.push(ev);
+                        clusterEnd = endT;
+                    } else {
+                        // 現在のクラスタの最後の終了時間より開始時間が前なら重なっているとみなす
+                        if (startT < clusterEnd) {
+                            currentCluster.push(ev);
+                            if (endT > clusterEnd) clusterEnd = endT;
+                        } else {
+                            clusters.push(currentCluster);
+                            currentCluster = [ev];
+                            clusterEnd = endT;
+                        }
+                    }
+                });
+                if(currentCluster.length > 0) clusters.push(currentCluster);
+
+                // 3. 各クラスタの描画処理
+                const MAX_COLS = 3; // これを超えるとスタック表示
+
+                clusters.forEach(cluster => {
+                    // クラスタ内の最大同時並行数を計算
+                    let points = [];
+                    cluster.forEach(ev => {
+                        points.push({t: ev.startTime.toDate().getTime(), type: 1}); // start
+                        points.push({t: ev.endTime.toDate().getTime(), type: -1}); // end
+                    });
+                    // 時間順、同時刻なら終了(-1)を開始(1)より先に処理して接するだけなら重複としない
+                    // ただし見た目の重複回避のため、厳密には同時刻start/endは重なりとしない
+                    points.sort((a,b) => a.t - b.t || a.type - b.type);
+
+                    let maxConcurrent = 0;
+                    let currentConcurrent = 0;
+                    points.forEach(p => {
+                        currentConcurrent += p.type;
+                        if(currentConcurrent > maxConcurrent) maxConcurrent = currentConcurrent;
+                    });
+
+                    // 描画
+                    if (maxConcurrent > MAX_COLS) {
+                        // まとめて表示
+                        const minStart = new Date(Math.min(...cluster.map(e => e.startTime.toDate().getTime())));
+                        const maxEnd = new Date(Math.max(...cluster.map(e => e.endTime.toDate().getTime())));
+                        renderSummaryBlock(cluster, minStart, maxEnd);
+                    } else {
+                        // カラムレイアウト (Greedy packing)
+                        const columns = []; // 各カラムの「最後に配置したイベントの終了時間」
+                        cluster.forEach(ev => {
+                            let placed = false;
+                            const evStart = ev.startTime.toDate().getTime();
+                            const evEnd = ev.endTime.toDate().getTime();
+                            
+                            for(let i=0; i<columns.length; i++) {
+                                if(columns[i] <= evStart) {
+                                    ev.colIndex = i;
+                                    columns[i] = evEnd;
+                                    placed = true;
+                                    break;
                                 }
-                            } else { 
-                                if(data.status !== 'pending') {
-                                    div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; 
-                                }
-                            } 
-                        } 
-                        div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(bookingId, data); }; contentArea.appendChild(div); 
-                    } 
-                }); 
+                            }
+                            if(!placed) {
+                                ev.colIndex = columns.length;
+                                columns.push(evEnd);
+                            }
+                        });
+                        
+                        // 全体の幅をカラム数で割る
+                        const widthPct = 100 / columns.length;
+                        cluster.forEach(ev => {
+                            renderEventBlock(ev, ev.colIndex * widthPct, widthPct);
+                        });
+                    }
+                });
             }); 
+        }
+
+        function renderEventBlock(data, leftPct, widthPct) {
+            const s = data.startTime.toDate(); 
+            const e = data.endTime.toDate(); 
+            const startMin = (s.getHours() - 9) * 60 + s.getMinutes(); 
+            const endMin = (e.getHours() - 9) * 60 + e.getMinutes(); 
+            const durationMin = endMin - startMin; 
+            const slotIndex = s.getHours() - 9; 
+            const slots = document.querySelectorAll('.time-slot'); 
+            
+            if (slotIndex >= 0 && slotIndex < slots.length) { 
+                const contentArea = slots[slotIndex].querySelector('.time-content'); 
+                const div = document.createElement('div'); 
+                div.className = 'event-block'; 
+                div.style.top = (s.getMinutes() + 1) + "px"; 
+                div.style.height = (durationMin - 2) + "px"; 
+                div.style.left = leftPct + "%";
+                div.style.width = widthPct + "%";
+                div.style.zIndex = "20"; 
+
+                if (data.type === 'event') { 
+                    div.classList.add('special-event'); 
+                    div.innerHTML = `<div class="event-title">${data.title}</div>`; 
+                } else { 
+                    div.innerHTML = `<div class="event-title">${data.bandName}</div>`; 
+                    if (data.status === 'pending') {
+                        div.classList.add('pending');
+                        // 幅が狭いときは承認待ちテキストを省略するなどの工夫も可
+                    }
+                    const myBandIds = myBandsAll.map(b => b.id); 
+                    if (myBandIds.includes(data.bandId)) { 
+                        if(data.status !== 'pending') {
+                            div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#0b57d0"; div.style.color = "#001d35"; 
+                        }
+                    } else { 
+                        if(data.status !== 'pending') {
+                            div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; 
+                        }
+                    } 
+                } 
+                div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(data.id, data); }; 
+                contentArea.appendChild(div); 
+            }
+        }
+
+        function renderSummaryBlock(events, startTime, endTime) {
+            const startMin = (startTime.getHours() - 9) * 60 + startTime.getMinutes();
+            const endMin = (endTime.getHours() - 9) * 60 + endTime.getMinutes();
+            const durationMin = endMin - startMin;
+            const slotIndex = startTime.getHours() - 9;
+            const slots = document.querySelectorAll('.time-slot');
+
+            if (slotIndex >= 0 && slotIndex < slots.length) {
+                const contentArea = slots[slotIndex].querySelector('.time-content');
+                const div = document.createElement('div');
+                div.className = 'event-block cluster';
+                div.style.top = (startTime.getMinutes() + 1) + "px";
+                div.style.height = (durationMin - 2) + "px";
+                div.style.left = "0%";
+                div.style.width = "100%";
+                
+                div.innerHTML = `<div class="event-title">予約 ${events.length}件<br><span style="font-size:10px; font-weight:normal;">(タップで詳細)</span></div>`;
+                
+                div.onclick = (ev) => {
+                    ev.stopPropagation();
+                    openEventListModal(events);
+                };
+                contentArea.appendChild(div);
+            }
         }
 
         window.saveBooking = async () => {
