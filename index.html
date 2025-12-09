@@ -15,7 +15,7 @@
         .hidden { display: none !important; }
 
         /* ヘッダー */
-        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; position: sticky; top: 0; }
         .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
@@ -60,10 +60,10 @@
         .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
         .event-block { position: absolute; left: 2px; right: 2px; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .event-title { font-weight: bold; }
-        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
+        .event-block.special-event { background: #e6f4ea; border-left-color: #137333; color: #0d652d; }
 
         /* マイバンド */
-        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; }
+        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: transform 0.1s; }
         .card.band-card:active { background-color: #f5f5f5; }
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; }
         .band-item:last-child { border: none; margin: 0; padding: 0; }
@@ -79,7 +79,7 @@
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
         .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; }
         .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } 
-        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } /* 管理タブ用色 */
+        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } 
         .nav-item.active span { color: #1f1f1f; font-weight: bold; }
 
         /* UIパーツ */
@@ -135,144 +135,157 @@
         
         .icon-admin-cal { background-color: #fce4ec; color: #c2185b; }
         .icon-admin-user { background-color: #e8eaf6; color: #283593; }
-        .icon-admin-doc { background-color: #e0f2f1; color: #00695c; }
         
+        /* 管理者用保存ボタン */
+        .btn-admin-save { background: #c2185b; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        
+        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .info-row .label { color: #5f6368; font-size: 13px; } .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
+        .user-list-item { background: white; padding: 16px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; }
+        .mini-icon { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
+        .user-info-main { flex-grow: 1; } .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } .user-sub { font-size: 12px; color: #5f6368; }
+        .search-bar { padding: 12px 16px; background:white; border-radius:30px; display:flex; align-items:center; margin-bottom:20px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .search-bar input { border:none; width:100%; outline:none; font-size:16px; margin-left:10px; padding:0; }
+        
+        /* ページ遷移 */
         .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; }
         .page-container.open { transform: translateX(0); }
         .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
         .back-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1f1f1f; margin-right: 8px; margin-left: -8px; }
         .page-title { font-size: 20px; font-weight: 400; color: #1f1f1f; }
         .content-area { padding: 0 16px 40px; }
-        .search-bar { padding: 12px 16px; background:white; border-radius:30px; display:flex; align-items:center; margin-bottom:20px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        .search-bar input { border:none; width:100%; outline:none; font-size:16px; margin-left:10px; padding:0; }
-        .user-list-item { background: white; padding: 16px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; }
-        .mini-icon { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
-        .user-info-main { flex-grow: 1; } .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } .user-sub { font-size: 12px; color: #5f6368; }
-        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-        .info-row .label { color: #5f6368; font-size: 13px; } .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
-        /* 管理者用保存ボタン */
-        .btn-admin-save { background: #c2185b; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="selectionToast">なぞって時間を選択...</div>
 
-    <div id="screen-bands" class="screen active">
-        <div class="app-header">
-            <div class="header-title">マイバンド <span style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">2025年度</span></div>
-            <div class="header-avatar" id="headerIconBands" onclick="goToMyPage()"></div>
+    <div id="screen-setup" class="setup-screen hidden">
+        <div id="setupStep1" class="setup-step active">
+            <div class="setup-title">ようこそ</div><div class="setup-desc">名前を検索してアカウントを確認しましょう。</div>
+            <div class="form-group"><label class="form-label">氏名（漢字）</label><input type="text" id="setupInputName" class="form-input" placeholder="例: 山田太郎"></div>
+            <button class="btn-primary" onclick="setupSearch()">検索する</button>
+        </div>
+        <div id="setupStep2" class="setup-step">
+            <div class="setup-title">アカウント連携</div><div class="setup-desc">利用するサービスを選択してください。</div>
+            <div id="linkTargetCard" class="link-card hidden"><div class="link-avatar" id="linkAvatar"></div><div class="link-name" id="linkName"></div><div class="link-id" id="linkId"></div><div class="link-badge">名簿登録済み</div></div>
+            <div id="linkNotFoundMsg" class="hidden" style="margin-bottom:20px; color:#d93025;">名簿に見つかりませんでした。新規登録します。</div>
+            <div class="form-label">接続サービス</div>
+            <div class="service-selector">
+                <div class="service-option" id="opt-urakata" onclick="toggleService('urakata')"><div class="service-info"><span class="material-icons service-icon">settings</span><div><div style="font-weight:bold;">裏方部</div><div style="font-size:12px; color:#5f6368;">機材管理など</div></div></div><span class="material-icons service-check">check_circle</span></div>
+                <div class="service-option" id="opt-lmc" onclick="toggleService('lmc')"><div class="service-info"><span class="material-icons service-icon">music_note</span><div><div style="font-weight:bold;">LMC (軽音)</div><div style="font-size:12px; color:#5f6368;">バンド活動など</div></div></div><span class="material-icons service-check">check_circle</span></div>
+            </div>
+            <button class="btn-primary" onclick="setupConfirm()">次へ</button><button class="btn-secondary" onclick="setupBack(1)">戻る</button>
+        </div>
+        <div id="setupStep3" class="setup-step">
+            <div class="setup-title">プロフィール設定</div>
+            <div class="form-group"><label class="form-label">氏名</label><input type="text" id="regName" class="form-input"></div>
+            <div class="form-group"><label class="form-label">ふりがな</label><input type="text" id="regKana" class="form-input"></div>
+            <div class="form-group"><label class="form-label">学籍番号</label><input type="text" id="regStudentId" class="form-input"></div>
+            <div class="form-group" id="groupRegPart"><label class="form-label">担当パート</label><select id="regPart" class="form-input"><option value="">なし</option><option value="vocal">ボーカル</option><option value="guitar">ギター</option><option value="bass">ベース</option><option value="drums">ドラム</option><option value="keyboard">キーボード</option></select></div>
+            <div class="form-group"><label class="form-label">生年月日</label><input type="date" id="regBirthday" class="form-input"></div>
+            <button class="btn-primary" onclick="setupFinish()">登録完了</button><button class="btn-secondary" onclick="setupBack(2)">戻る</button>
+        </div>
+    </div>
+
+    <div id="app-container" class="container hidden">
+        
+        <div id="screen-bands" class="screen active">
+            <div class="app-header">
+                <div class="header-title">マイバンド <span style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">2025年度</span></div>
+                <div class="header-avatar" id="headerIconBands" onclick="goToMyPage()"></div>
+            </div>
+            <div class="band-tabs">
+                <div class="band-tab active" onclick="switchBandTab('active')">活動中</div>
+                <div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div>
+            </div>
+            <div class="scroll-content">
+                <div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>
+            </div>
+            <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
+        </div>
+
+        <div id="screen-calendar" class="screen">
+            <div class="app-header">
+                <div class="header-title">合わせ予約</div>
+                <div class="header-avatar" id="headerIconCal" onclick="goToMyPage()"></div>
+            </div>
+            <div class="calendar-controls">
+                <div class="cal-view-toggle" onclick="toggleViewMenu()">
+                    <span id="currentViewName">月表示</span>
+                    <span class="material-icons">arrow_drop_down</span>
+                </div>
+                <div class="view-menu" id="viewMenu">
+                    <div class="view-menu-item active" onclick="switchCalendarView('month')">月表示</div>
+                    <div class="view-menu-item" onclick="switchCalendarView('day')">日表示</div>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span>
+                    <div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px;"></div>
+                    <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span>
+                </div>
+            </div>
+            <div class="scroll-content">
+                <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
+                <div id="calDayView" class="hidden">
+                    <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
+                    <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
+                    <div class="timeline-container" id="timeline"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="screen-cuesheet" class="screen">
+            <div class="app-header">
+                <div class="header-title">Cueシート</div>
+                <div class="header-avatar" id="headerIconCue" onclick="goToMyPage()"></div>
+            </div>
+            <div class="scroll-content">
+                <div style="text-align:center; margin-top:100px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>準備中</div>
+            </div>
         </div>
         
-        <div class="band-tabs">
-            <div class="band-tab active" onclick="switchBandTab('active')">活動中</div>
-            <div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div>
-        </div>
-
-        <div class="scroll-content">
-            <div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>
-        </div>
-        <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
-    </div>
-
-    <div id="screen-calendar" class="screen">
-        <div class="app-header">
-            <div class="header-title">合わせ予約</div>
-            <div class="header-avatar" id="headerIconCal" onclick="goToMyPage()"></div>
-        </div>
-        
-        <div class="calendar-controls">
-            <div class="cal-view-toggle" onclick="toggleViewMenu()">
-                <span id="currentViewName">月表示</span>
-                <span class="material-icons">arrow_drop_down</span>
+        <div id="screen-admin" class="screen">
+            <div class="app-header">
+                <div class="header-title">データの管理</div>
+                <div class="header-avatar" id="headerIconAdmin" onclick="goToMyPage()"></div>
             </div>
-            <div class="view-menu" id="viewMenu">
-                <div class="view-menu-item active" onclick="switchCalendarView('month')">月表示</div>
-                <div class="view-menu-item" onclick="switchCalendarView('day')">日表示</div>
-            </div>
-            <div style="display:flex; align-items:center;">
-                <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span>
-                <div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px;"></div>
-                <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span>
+            <div class="scroll-content">
+                <div class="menu-list">
+                    <button class="menu-btn" onclick="openPage('admin-calendar-stub')">
+                        <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
+                        <div class="menu-content"><span class="menu-title">予約システム管理</span><span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span></div>
+                        <span class="material-icons menu-arrow">chevron_right</span>
+                    </button>
+                    <button class="menu-btn" onclick="openAdminUsers()">
+                        <div class="menu-icon-wrapper icon-admin-user"><span class="material-icons">manage_accounts</span></div>
+                        <div class="menu-content"><span class="menu-title">個人の管理</span><span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span></div>
+                        <span class="material-icons menu-arrow">chevron_right</span>
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="scroll-content">
-            <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
-            <div id="calDayView" class="hidden">
-                <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
-                <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
-                <div class="timeline-container" id="timeline"></div>
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchScreen('bands', this)">
+                <span class="material-icons nav-icon">groups</span><span>マイバンド</span>
+            </div>
+            <div class="nav-item" onclick="switchScreen('calendar', this)">
+                <span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span>
+            </div>
+            <div class="nav-item" onclick="switchScreen('cuesheet', this)">
+                <span class="material-icons nav-icon">description</span><span>Cueシート</span>
+            </div>
+            <div class="nav-item hidden" id="nav-admin" onclick="switchScreen('admin', this)">
+                <span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span>
+            </div>
+            <div class="nav-item" onclick="goToMyPage()">
+                <span class="material-icons nav-icon">account_circle</span><span>マイページ</span>
             </div>
         </div>
     </div>
 
-    <div id="screen-cuesheet" class="screen">
-        <div class="app-header">
-            <div class="header-title">Cueシート</div>
-            <div class="header-avatar" id="headerIconCue" onclick="goToMyPage()"></div>
-        </div>
-        <div class="scroll-content">
-            <div style="text-align:center; margin-top:100px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>準備中</div>
-        </div>
-    </div>
-    
-    <div id="screen-admin" class="screen">
-        <div class="app-header">
-            <div class="header-title">データの管理</div>
-            <div class="header-avatar" id="headerIconAdmin" onclick="goToMyPage()"></div>
-        </div>
-        <div class="scroll-content">
-            <div class="menu-list">
-                <button class="menu-btn" onclick="openPage('admin-calendar-stub')">
-                    <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
-                    <div class="menu-content">
-                        <span class="menu-title">予約システム管理</span>
-                        <span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span>
-                    </div>
-                    <span class="material-icons menu-arrow">chevron_right</span>
-                </button>
-                
-                <button class="menu-btn" onclick="openAdminUsers()">
-                    <div class="menu-icon-wrapper icon-admin-user"><span class="material-icons">manage_accounts</span></div>
-                    <div class="menu-content">
-                        <span class="menu-title">個人の管理</span>
-                        <span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span>
-                    </div>
-                    <span class="material-icons menu-arrow">chevron_right</span>
-                </button>
-                
-                <button class="menu-btn" onclick="openPage('admin-docs-stub')">
-                    <div class="menu-icon-wrapper icon-admin-doc"><span class="material-icons">description</span></div>
-                    <div class="menu-content">
-                        <span class="menu-title">提出書類の作成</span>
-                        <span class="menu-subtitle">各種申請書類のエクスポート</span>
-                    </div>
-                    <span class="material-icons menu-arrow">chevron_right</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchScreen('bands', this)">
-            <span class="material-icons nav-icon">groups</span><span>マイバンド</span>
-        </div>
-        <div class="nav-item" onclick="switchScreen('calendar', this)">
-            <span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span>
-        </div>
-        <div class="nav-item" onclick="switchScreen('cuesheet', this)">
-            <span class="material-icons nav-icon">description</span><span>Cueシート</span>
-        </div>
-        <div class="nav-item hidden" id="nav-admin" onclick="switchScreen('admin', this)">
-            <span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span>
-        </div>
-        <div class="nav-item" onclick="goToMyPage()">
-            <span class="material-icons nav-icon">account_circle</span><span>マイページ</span>
-        </div>
-    </div>
-
-    /* --- サブページ群 --- */
+    /* --- サブページ群 (スライドイン) --- */
     
     <div id="page-admin-users" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div>
@@ -288,14 +301,7 @@
     <div id="page-admin-calendar-stub" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div>
         <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
-            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">engineering</span><br>準備中: 予約ルールの設定機能
-        </div>
-    </div>
-    
-    <div id="page-admin-docs-stub" class="page-container">
-        <div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div>
-        <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
-            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">print</span><br>準備中: 書類PDF出力機能
+            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">engineering</span><br>準備中
         </div>
     </div>
 
@@ -306,7 +312,6 @@
                 <img id="admin-user-icon" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; background:#eee;">
                 <div id="admin-user-lineName" style="font-size:12px; color:#999; margin-top:8px;"></div>
             </div>
-
             <div class="card" style="padding:20px;">
                 <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">基本情報</h3>
                 <div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div>
@@ -315,26 +320,19 @@
                 <div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div>
                 <div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div>
             </div>
-
             <div class="card" style="padding:20px;">
                 <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">権限設定</h3>
-                <div class="form-group">
-                    <label class="form-label">役職</label>
-                    <input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など">
-                </div>
+                <div class="form-group"><label class="form-label">役職</label><input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など"></div>
                 <button id="btn-save-user-role" class="btn-admin-save">役職を保存</button>
             </div>
-
             <div class="card" style="padding:20px;">
                 <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">所属バンド</h3>
                 <div id="admin-user-band-list" style="font-size:14px;">読み込み中...</div>
             </div>
-            
-            <div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">
-                USER ID: <span id="admin-edit-docId"></span>
-            </div>
+            <div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">USER ID: <span id="admin-edit-docId"></span></div>
         </div>
     </div>
+
 
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
         <div class="modal-content">
@@ -355,12 +353,26 @@
 
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content">
-            <h3 style="margin-top:0; display:flex; justify-content:space-between;">詳細<button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button></h3>
+            <h3 style="margin-top:0; display:flex; justify-content:space-between;">
+                バンド詳細
+                <button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>
+            </h3>
             <input type="hidden" id="detailBandId">
             <div class="image-picker-area"><div class="image-picker" id="detailIconPicker"><img id="detailBandIcon" src=""></div><input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)"></div>
             <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="detailBandName" class="form-input" readonly></div>
-            <div class="form-group"><label class="form-label">メンバー</label><div class="member-list-edit" id="detailMemberList"></div><button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button></div>
-            <div id="bandCreatorActions" class="hidden"><button class="btn-primary" onclick="updateBandName()">バンド名を変更</button><button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button><button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button><button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button></div>
+            <div class="form-group">
+                <label class="form-label">メンバー</label>
+                <div class="member-list-edit" id="detailMemberList"></div>
+                <button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()">
+                    <span class="material-icons">person_add</span> メンバーを追加
+                </button>
+            </div>
+            <div id="bandCreatorActions" class="hidden">
+                <button class="btn-primary" onclick="updateBandName()">バンド名を変更</button>
+                <button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button>
+                <button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button>
+                <button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button>
+            </div>
             <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()">バンドから脱退</button></div>
             <button class="btn-secondary" onclick="closeModal('modal-band-detail')">閉じる</button>
         </div>
@@ -420,133 +432,113 @@
         let isSelecting = false; let selectionTimer = null; let editingBookingData = null;
         let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBase64 = null;
         let allUsersCache = []; let adminEditingUserId = null;
+        let setupFoundMasterData = null; let setupSelectedServices = [];
 
-        // --- グローバル関数 ---
+        // --- Global Functions ---
         window.switchScreen = (screenId, navEl) => {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById('screen-' + screenId).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             navEl.classList.add('active');
             if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
+            if (screenId === 'admin') { loadAdminData(); }
         };
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
         window.openPage = (pageId) => { document.getElementById('page-' + pageId).classList.add('open'); };
         window.closePage = (pageId) => { document.getElementById('page-' + pageId).classList.remove('open'); };
         window.openModal = (id) => document.getElementById(id).classList.add('open');
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-        
-        // --- 管理者機能 ---
-        window.openAdminUsers = async () => {
-            openPage('admin-users');
+
+        // --- Setup ---
+        window.setupSearch = async () => {
+            const name = document.getElementById('setupInputName').value.trim(); if(!name) return;
+            try {
+                const q = query(collection(db, "students_master"), where("name", "==", name), where("isRegistered", "==", false));
+                const qs = await getDocs(q);
+                document.getElementById('setupStep1').classList.remove('active'); document.getElementById('setupStep2').classList.add('active');
+                if (!qs.empty) {
+                    setupFoundMasterData = qs.docs[0]; const data = setupFoundMasterData.data();
+                    document.getElementById('linkTargetCard').classList.remove('hidden'); document.getElementById('linkNotFoundMsg').classList.add('hidden');
+                    document.getElementById('linkAvatar').innerText = data.name.charAt(0); document.getElementById('linkName').innerText = data.name; document.getElementById('linkId').innerText = data.studentId || "IDなし";
+                    document.getElementById('opt-urakata').classList.add('selected'); setupSelectedServices = ['urakata'];
+                } else {
+                    setupFoundMasterData = null; document.getElementById('linkTargetCard').classList.add('hidden'); document.getElementById('linkNotFoundMsg').classList.remove('hidden');
+                    document.getElementById('opt-lmc').classList.add('selected'); setupSelectedServices = ['lmc'];
+                }
+                if(setupSelectedServices.includes('lmc')) document.getElementById('groupRegPart').classList.remove('hidden'); else document.getElementById('groupRegPart').classList.add('hidden');
+            } catch(e) { alert(e.message); }
+        };
+        window.toggleService = (svc) => {
+            if(setupFoundMasterData && svc === 'urakata') return;
+            const el = document.getElementById('opt-' + svc);
+            if(el.classList.contains('selected')) { el.classList.remove('selected'); setupSelectedServices = setupSelectedServices.filter(s => s !== svc); } 
+            else { el.classList.add('selected'); setupSelectedServices.push(svc); }
+            if(setupSelectedServices.includes('lmc')) document.getElementById('groupRegPart').classList.remove('hidden'); else document.getElementById('groupRegPart').classList.add('hidden');
+        };
+        window.setupConfirm = () => {
+            if(setupSelectedServices.length === 0) return alert("選択してください");
+            document.getElementById('setupStep2').classList.remove('active'); document.getElementById('setupStep3').classList.add('active');
+            if(setupFoundMasterData) {
+                const data = setupFoundMasterData.data();
+                document.getElementById('regName').value = data.name; document.getElementById('regName').readOnly = true;
+                document.getElementById('regKana').value = data.kana || ""; document.getElementById('regStudentId').value = data.studentId || "";
+                if(data.studentId) document.getElementById('regStudentId').readOnly = true;
+            }
+        };
+        window.setupBack = (step) => { document.querySelectorAll('.setup-step').forEach(el => el.classList.remove('active')); document.getElementById('setupStep' + step).classList.add('active'); };
+        window.setupFinish = async () => {
+            const name = document.getElementById('regName').value.trim(); const kana = document.getElementById('regKana').value.trim();
+            const sId = document.getElementById('regStudentId').value.trim(); const bday = document.getElementById('regBirthday').value;
+            if(!name || !bday) return alert("必須項目を入力してください");
+            let job = ""; if(setupFoundMasterData) job = setupFoundMasterData.data().job || "";
+            const part = document.getElementById('regPart').value;
+            try {
+                await setDoc(doc(db, "users", currentUser), {
+                    lineUserId: currentUser, lineDisplayName: currentProfile.displayName, icon: currentProfile.pictureUrl,
+                    name: name, kana: kana, studentId: sId || "未設定", birthday: bday,
+                    role: "", affiliations: setupSelectedServices, job: job, part: part,
+                    createdAt: serverTimestamp(), lastLogin: serverTimestamp()
+                });
+                if(setupFoundMasterData) await updateDoc(setupFoundMasterData.ref, { isRegistered: true, studentId: sId || setupFoundMasterData.data().studentId });
+                alert("登録完了！"); location.reload();
+            } catch(e) { alert("エラー: " + e.message); }
+        };
+
+        // --- Admin ---
+        window.openAdminUsers = async () => { openPage('admin-users'); loadAdminData(); };
+        async function loadAdminData() {
             document.getElementById('adminUserList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
             try {
-                const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-                const qs = await getDocs(q);
-                allUsersCache = [];
-                qs.forEach(doc => { 
-                    const data = doc.data();
-                    if(!data.affiliations && data.org) data.affiliations = [data.org];
-                    if(!data.affiliations) data.affiliations = [];
-                    allUsersCache.push({ id: doc.id, ...data }); 
-                });
+                const q = query(collection(db, "users"), orderBy("createdAt", "desc")); const qs = await getDocs(q);
+                allUsersCache = []; qs.forEach(doc => { const data = doc.data(); if(!data.affiliations && data.org) data.affiliations = [data.org]; if(!data.affiliations) data.affiliations = []; allUsersCache.push({ id: doc.id, ...data }); });
                 renderAdminList(allUsersCache);
             } catch(e) { document.getElementById('adminUserList').innerHTML = "エラー: " + e.message; }
-        };
+        }
         function renderAdminList(users) {
             const container = document.getElementById('adminUserList'); container.innerHTML = "";
             if(users.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
             users.forEach(u => {
-                const div = document.createElement('div'); div.className = 'user-list-item';
-                div.onclick = () => openAdminEdit(u);
-                let badges = "";
-                if(u.affiliations.includes('urakata')) badges += '<span style="color:#ea4335; font-size:10px; margin-right:4px;">●裏方</span>';
-                if(u.affiliations.includes('lmc')) badges += '<span style="color:#5f6368; font-size:10px;">●LMC</span>';
-                let roleHtml = u.role ? `<span style="font-size:10px; background:#e0e3e7; padding:2px 6px; border-radius:10px; margin-left:5px;">${u.role}</span>` : '';
-                div.innerHTML = `<img src="${u.icon || 'https://placehold.jp/40x40.png'}" class="mini-icon"><div class="user-info-main"><div class="user-name">${u.name} ${roleHtml}</div><div class="user-sub">${badges}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`;
-                container.appendChild(div);
+                const div = document.createElement('div'); div.className = 'user-list-item'; div.onclick = () => openAdminEdit(u);
+                let badges = ""; if(u.affiliations.includes('urakata')) badges += '<span style="color:#ea4335; font-size:10px; margin-right:4px;">●裏方</span>'; if(u.affiliations.includes('lmc')) badges += '<span style="color:#5f6368; font-size:10px;">●LMC</span>'; let roleHtml = u.role ? `<span style="font-size:10px; background:#e0e3e7; padding:2px 6px; border-radius:10px; margin-left:5px;">${u.role}</span>` : '';
+                div.innerHTML = `<img src="${u.icon || 'https://placehold.jp/40x40.png'}" class="mini-icon"><div class="user-info-main"><div class="user-name">${u.name} ${roleHtml}</div><div class="user-sub">${badges}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`; container.appendChild(div);
             });
         }
         document.getElementById('adminSearchInput').addEventListener('input', (e) => { const term = e.target.value.trim(); renderAdminList(term ? allUsersCache.filter(u => u.name.includes(term) || (u.kana && u.kana.includes(term))) : allUsersCache); });
-        
         function openAdminEdit(user) {
             adminEditingUserId = user.id; openPage('admin-edit');
-            document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img";
-            document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName;
-            document.getElementById('admin-edit-docId').innerText = user.id;
-            
-            // 閲覧用
-            document.getElementById('admin-show-name').innerText = user.name;
-            document.getElementById('admin-show-kana').innerText = user.kana || "-";
-            document.getElementById('admin-show-studentId').innerText = user.studentId || "-";
-            let affText = "";
-            if(user.affiliations && user.affiliations.includes('urakata')) affText += "裏方部 ";
-            if(user.affiliations && user.affiliations.includes('lmc')) affText += "LMC ";
-            document.getElementById('admin-show-aff').innerText = affText;
-            document.getElementById('admin-show-part').innerText = getPartLabel(user.part) || "-";
-
-            // 編集用
-            document.getElementById('admin-edit-role').value = user.role || "";
-            
-            // 所属バンド取得
-            loadAdminUserBands(user.id);
+            document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img"; document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName; document.getElementById('admin-edit-docId').innerText = user.id;
+            document.getElementById('admin-show-name').innerText = user.name; document.getElementById('admin-show-kana').innerText = user.kana || "-"; document.getElementById('admin-show-studentId').innerText = user.studentId || "-";
+            let affText = ""; if(user.affiliations && user.affiliations.includes('urakata')) affText += "裏方部 "; if(user.affiliations && user.affiliations.includes('lmc')) affText += "LMC "; document.getElementById('admin-show-aff').innerText = affText; document.getElementById('admin-show-part').innerText = getPartLabel(user.part) || "-";
+            document.getElementById('admin-edit-role').value = user.role || ""; loadAdminUserBands(user.id);
         }
         async function loadAdminUserBands(targetUserId) {
             const listContainer = document.getElementById('admin-user-band-list'); listContainer.innerHTML = "読み込み中...";
-            try {
-                const q = query(collection(db, "bands"), where("memberIds", "array-contains", targetUserId));
-                const qs = await getDocs(q);
-                if(qs.empty) { listContainer.innerHTML = "所属バンドなし"; } 
-                else {
-                    let html = "<ul style='padding-left:20px; margin:0;'>";
-                    qs.forEach(doc => { const b = doc.data(); html += `<li>${b.name} ${b.creatorId === targetUserId ? '<span style="font-size:10px; color:#0b57d0;">(リーダー)</span>' : ''}</li>`; });
-                    html += "</ul>"; listContainer.innerHTML = html;
-                }
-            } catch(e) { listContainer.innerHTML = "取得エラー"; }
+            try { const q = query(collection(db, "bands"), where("memberIds", "array-contains", targetUserId)); const qs = await getDocs(q); if(qs.empty) { listContainer.innerHTML = "所属バンドなし"; } else { let html = "<ul style='padding-left:20px; margin:0;'>"; qs.forEach(doc => { const b = doc.data(); html += `<li>${b.name} ${b.creatorId === targetUserId ? '<span style="font-size:10px; color:#0b57d0;">(リーダー)</span>' : ''}</li>`; }); html += "</ul>"; listContainer.innerHTML = html; } } catch(e) { listContainer.innerHTML = "取得エラー"; }
         }
-        document.getElementById('btn-save-user-role').addEventListener('click', async () => {
-            if(!adminEditingUserId) return; const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中...";
-            try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
-        });
+        document.getElementById('btn-save-user-role').addEventListener('click', async () => { if(!adminEditingUserId) return; const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中..."; try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; } });
 
-        // --- メイン処理 ---
-        async function main() {
-            try {
-                await liff.init({ liffId: MY_LIFF_ID });
-                const urlParams = new URLSearchParams(window.location.search);
-                const action = urlParams.get('action');
-                const inviteBandId = urlParams.get('bandId');
-                const targetPage = urlParams.get('page');
-
-                if (!liff.isLoggedIn()) { liff.login(); return; }
-                const profile = await liff.getProfile();
-                currentUser = profile.userId; currentProfile = profile;
-                const userRef = doc(db, "users", currentUser);
-                const userSnap = await getDoc(userRef);
-                if (!userSnap.exists()) { alert("利用には会員登録が必要です"); window.location.href = MY_PAGE_URL; return; }
-                
-                await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
-                currentUserData = userSnap.data(); renderHeaderIcons(currentUserData);
-                
-                // ダイレクト遷移
-                if (targetPage) {
-                    let navSelector = '';
-                    if(targetPage === 'calendar') navSelector = '.nav-item:nth-child(2)';
-                    else if(targetPage === 'cuesheet') navSelector = '.nav-item:nth-child(3)';
-                    else if(targetPage === 'bands') navSelector = '.nav-item:nth-child(1)';
-                    const navEl = document.querySelector(navSelector);
-                    if(navEl) switchScreen(targetPage, navEl);
-                }
-
-                if (action === 'invite' && inviteBandId) { await handleInvite(inviteBandId); window.history.replaceState(null, null, window.location.pathname); }
-                loadMyBands();
-            } catch(e) { console.error(e); }
-        }
-
-        // --- マイバンド ---
-        function loadMyBands() {
-            const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
-            onSnapshot(q, (snapshot) => { myBandsAll = []; snapshot.forEach(docSnap => { const data = docSnap.data(); myBandsAll.push({ id: docSnap.id, ...data }); }); renderBandList(); });
-        }
+        // --- Band ---
+        function loadMyBands() { const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)); onSnapshot(q, (snapshot) => { myBandsAll = []; snapshot.forEach(docSnap => { const data = docSnap.data(); myBandsAll.push({ id: docSnap.id, ...data }); }); renderBandList(); }); }
         window.switchBandTab = (tab) => { currentBandTab = tab; document.querySelectorAll('.band-tab').forEach(el => el.classList.remove('active')); const idx = tab === 'active' ? 0 : 1; document.querySelectorAll('.band-tab')[idx].classList.add('active'); renderBandList(); };
         function renderBandList() {
             const container = document.getElementById('bandListContainer'); container.innerHTML = "";
@@ -560,13 +552,7 @@
                 div.innerHTML = html; container.appendChild(div);
             });
         }
-        
-        // バンド作成 (画像保存つき)
-        window.openBandModal = () => { 
-            document.getElementById('inputBandName').value = ""; document.getElementById('userSelectList').innerHTML = "読み込み中...";
-            tempBandIconBase64 = null; document.getElementById('previewBandIcon').classList.add('hidden');
-            loadUserList('userSelectList'); openModal('modal-band'); 
-        };
+        window.openBandModal = () => { document.getElementById('inputBandName').value = ""; document.getElementById('userSelectList').innerHTML = "読み込み中..."; tempBandIconBase64 = null; document.getElementById('previewBandIcon').classList.add('hidden'); loadUserList('userSelectList'); openModal('modal-band'); };
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return alert("バンド名を入力してください");
             const selectedEls = document.querySelectorAll('#userSelectList .member-option.selected');
@@ -580,7 +566,7 @@
             } catch(e) { alert("エラー: " + e.message); }
         };
         window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
-        async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); } } catch(e) { alert("エラー: " + e.message); } }
+        async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); loadMyBands(); } } catch(e) { alert("エラー: " + e.message); } }
         window.openBandDetail = (bandId, data) => {
             document.getElementById('detailBandId').value = bandId; document.getElementById('detailBandName').value = data.name; document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
             currentEditingBandId = bandId; currentEditingBandMembers = data.memberIds;
@@ -638,8 +624,41 @@
         window.saveBooking = async () => { const editingId = document.getElementById('editingBookingId').value; const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal'; let bookingData = { creatorId: currentUser, userName: currentProfile.displayName, type: type, createdAt: new Date() }; if (type === 'normal') { if (myBandsAll.filter(b => !b.isArchived).length === 0) return alert("バンドを作成してください"); const selectBand = document.getElementById('selectBookingBand'); bookingData.bandId = selectBand.value; bookingData.bandName = selectBand.options[selectBand.selectedIndex].text; } else { const title = document.getElementById('inputEventTitle').value.trim(); if (!title) return alert("イベント名を入力してください"); bookingData.title = title; bookingData.bandName = title; } let sH, sM, eH, eM; if (document.getElementById('checkAllDay').checked) { sH = 9; sM = 0; eH = 22; eM = 0; } else { const sTimeStr = document.getElementById('selectStartTime').value; const eTimeStr = document.getElementById('selectEndTime').value; [sH, sM] = sTimeStr.split(':').map(Number); [eH, eM] = eTimeStr.split(':').map(Number); } const startTime = new Date(displayDate); startTime.setHours(sH, sM, 0, 0); const endTime = new Date(displayDate); endTime.setHours(eH, eM, 0, 0); if (startTime.getTime() >= endTime.getTime()) return alert("終了時間は開始時間より後にしてね"); bookingData.startTime = startTime; bookingData.endTime = endTime; try { if (editingId) { delete bookingData.createdAt; await updateDoc(doc(db, "bookings", editingId), bookingData); alert("変更しました"); editingBookingData = { ...editingBookingData, ...bookingData }; } else { await addDoc(collection(db, "bookings"), bookingData); alert("予約しました"); } closeModal('modal-booking'); } catch(e) { alert("エラー: " + e.message); } };
         window.addToGoogleCalendar = () => { if (!editingBookingData) return; const title = editingBookingData.bandName || "バンド練習"; const start = editingBookingData.startTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const end = editingBookingData.endTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=LMC+Mobileからの予約`; window.open(url, '_blank'); };
         window.deleteBooking = async () => { const editingId = document.getElementById('editingBookingId').value; if (!editingId) return; if(!confirm("本当に削除しますか？")) return; try { await deleteDoc(doc(db, "bookings", editingId)); alert("削除しました"); closeModal('modal-booking'); } catch(e) { alert("エラー: " + e.message); } };
-        function renderHeaderIcons(data) { let ringClass = ""; const affs = data.affiliations || []; const isUrakata = affs.includes("urakata"); let isBirthday = false; if (data.birthday) { const today = new Date(); const bday = new Date(data.birthday); if (today.getMonth() === bday.getMonth() && today.getDate() === bday.getDate()) isBirthday = true; } if (isBirthday) ringClass = "ring-birthday"; else if (isUrakata) { if(data.job === "sound") ringClass = "ring-sound"; else if(data.job === "light") ringClass = "ring-light"; else if(data.job === "stage") ringClass = "ring-stage"; else if(data.job === "video") ringClass = "ring-video"; else ringClass = "ring-rainbow"; } const iconHtml = `<img src="${data.icon || 'https://placehold.jp/40x40.png'}" alt="icon">`; ['headerIconBands', 'headerIconCal', 'headerIconCue', 'headerIconAdmin'].forEach(id => { const el = document.getElementById(id); if(el) { el.innerHTML = iconHtml; el.className = "header-avatar " + ringClass; } }); if(isUrakata && data.role) document.getElementById('nav-admin').classList.remove('hidden'); }
 
+        // --- メイン処理 ---
+        async function main() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                const urlParams = new URLSearchParams(window.location.search);
+                const action = urlParams.get('action');
+                const inviteBandId = urlParams.get('bandId');
+                const targetPage = urlParams.get('page');
+
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                const profile = await liff.getProfile();
+                currentUser = profile.userId; currentProfile = profile;
+                const userRef = doc(db, "users", currentUser);
+                const userSnap = await getDoc(userRef);
+                
+                if (!userSnap.exists()) { document.getElementById('screen-setup').classList.remove('hidden'); return; }
+                
+                await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
+                currentUserData = userSnap.data(); renderHeaderIcons(currentUserData);
+                document.getElementById('app-container').classList.remove('hidden');
+
+                if (targetPage) {
+                    let navSelector = '';
+                    if(targetPage === 'calendar') navSelector = '.nav-item:nth-child(2)';
+                    else if(targetPage === 'cuesheet') navSelector = '.nav-item:nth-child(3)';
+                    else if(targetPage === 'bands') navSelector = '.nav-item:nth-child(1)';
+                    const navEl = document.querySelector(navSelector);
+                    if(navEl) switchScreen(targetPage, navEl);
+                }
+
+                if (action === 'invite' && inviteBandId) { await handleInvite(inviteBandId); window.history.replaceState(null, null, window.location.pathname); }
+                loadMyBands();
+            } catch(e) { console.error(e); }
+        }
         main();
     </script>
 </body>
