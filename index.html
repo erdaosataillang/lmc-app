@@ -800,22 +800,45 @@
             const mode = currentSystemSettings.bookingMode || 'first_come';
             
             // 早い者勝ちモードの場合のみ重複チェック
-            // ※注: 完全な重複チェックにはFirestoreで複合クエリのインデックスが必要です
             if (mode === 'first_come') {
-                const qOverlap = query(collection(db, "bookings"), where("endTime", ">", startTime), where("startTime", "<", endTime));
+                // Firestoreの複合インデックス不要な方法：
+                // その日の予約をすべて取得し、メモリ上で重複計算する
+                const dayStart = new Date(startTime);
+                dayStart.setHours(0, 0, 0, 0);
+                const dayEnd = new Date(startTime);
+                dayEnd.setHours(23, 59, 59, 999);
+
+                const qDay = query(collection(db, "bookings"), 
+                    where("startTime", ">=", dayStart), 
+                    where("startTime", "<=", dayEnd)
+                );
+
                 try {
-                    const snap = await getDocs(qOverlap);
+                    const snap = await getDocs(qDay);
                     let hasOverlap = false;
-                    snap.forEach(d => { if(d.id !== editingId) hasOverlap = true; });
+                    
+                    snap.forEach(doc => {
+                        // 自分自身（編集中の予約）との比較はスキップ
+                        if (editingId && doc.id === editingId) return;
+
+                        const existing = doc.data();
+                        const exStart = existing.startTime.toDate();
+                        const exEnd = existing.endTime.toDate();
+
+                        // 重複判定: (StartA < EndB) && (EndA > StartB)
+                        // これで包含関係も部分重複もすべて検知できる
+                        if (exStart < endTime && exEnd > startTime) {
+                            hasOverlap = true;
+                        }
+                    });
                     
                     if(hasOverlap) {
-                        return alert("【早い者勝ちモード】\n先に予約が入っています！時間を変更してください。");
+                        return alert("【早い者勝ちモード】\n重複する予約があります。\n(包含する時間や重なる時間は予約できません)");
                     }
                     bookingData.status = 'confirmed'; // 確定
                 } catch(e) {
-                    console.warn("Indexがないためクライアント側チェックをスキップします", e);
-                    // インデックス未作成の場合はとりあえず通す（開発用）
-                    bookingData.status = 'confirmed'; 
+                    console.error("重複チェックエラー", e);
+                    return alert("エラー: 予約状況の確認に失敗しました。\n" + e.message);
                 }
             } else {
                 // 抽選モード: 重複OK、ステータスはPending
