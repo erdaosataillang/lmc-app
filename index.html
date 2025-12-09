@@ -10,187 +10,80 @@
     
     <style>
         /* --- 共通設定 --- */
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Roboto', 'Noto Sans JP', sans-serif;
-            background-color: rgb(241, 244, 249);
-            color: #1f1f1f;
-            min-height: 100vh;
-            padding-bottom: 88px; /* ナビゲーションバーの高さ確保 */
-            overscroll-behavior-y: none;
-            user-select: none; -webkit-user-select: none;
-        }
+        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; padding-bottom: 88px; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
+        .hidden { display: none !important; }
 
-        .container { max-width: 480px; margin: 0 auto; }
-
-        /* --- ヘッダー --- */
-        .app-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 16px; background: rgb(241, 244, 249);
-            position: sticky; top: 0; z-index: 100;
-        }
+        /* ヘッダー */
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
         .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
-        
-        .header-avatar {
-            width: 36px; height: 36px; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            background: #dadce0; cursor: pointer; position: relative;
-        }
+        .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
 
-        /* リング色 */
+        /* リング */
+        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); }
+        .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
+        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52,168,83,0.5); }
+        .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234,67,53,0.5); }
         .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
-        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26, 115, 232, 0.5); }
-        .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250, 123, 23, 0.5); }
-        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52, 168, 83, 0.5); }
-        .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234, 67, 53, 0.5); }
         .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
-        @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
 
-        /* --- 画面コンテナ --- */
-        .screen { display: none; padding: 0 16px 16px; max-width: 480px; margin: 0 auto; }
-        .screen.active { display: block; }
+        /* 画面切り替え */
+        .screen { display: none; flex-direction: column; height: 100%; width: 100%; }
+        .screen.active { display: flex; }
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
 
-        /* --- ナビゲーションバー (Google Photos風) --- */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            background: #f0f4f9;
-            border-top: none;
-            display: flex; justify-content: space-around;
-            padding: 12px 0 28px; /* iPhone下のバー考慮 */
-            z-index: 1000;
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: #444746; text-decoration: none; font-size: 12px; 
-            width: 72px; cursor: pointer; gap: 4px;
-            font-weight: 500;
-        }
-        .nav-icon {
-            font-size: 24px; 
-            padding: 4px 20px;
-            border-radius: 16px;
-            transition: background-color 0.2s ease-in-out, color 0.2s;
-        }
-        .nav-item.active .nav-icon {
-            background-color: #c2e7ff; color: #001d35;
-        }
-        /* 管理タブのアクティブ色（ピンク） */
-        .nav-item#nav-admin.active .nav-icon {
-            background-color: #ffd8e4; color: #31111d;
-        }
-        .nav-item.active span { color: #1f1f1f; font-weight: bold; }
-
-        /* --- カレンダー --- */
-        .calendar-controls {
-            display: flex; justify-content: space-between; align-items: center;
-            background: white; padding: 12px 16px; border-radius: 12px; margin-bottom: 12px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            position: relative; z-index: 200;
-        }
-        .cal-view-toggle {
-            font-size: 16px; font-weight: bold; cursor: pointer;
-            display: flex; align-items: center; gap: 4px;
-            background: #f1f3f4; padding: 6px 12px; border-radius: 8px;
-        }
-        
-        .view-menu {
-            position: absolute; top: 50px; left: 16px;
-            background: white; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            width: 120px; z-index: 300;
-            display: none; flex-direction: column; overflow: hidden;
-        }
+        /* カレンダー */
+        .calendar-controls { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 16px; border-radius: 12px; margin: 0 16px 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 400; }
+        .cal-view-toggle { font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; background: #f1f3f4; padding: 6px 12px; border-radius: 8px; }
+        .view-menu { position: absolute; top: 50px; left: 16px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 120px; z-index: 600; display: none; flex-direction: column; }
         .view-menu.open { display: flex; }
         .view-menu-item { padding: 12px 16px; font-size: 14px; cursor: pointer; }
-        .view-menu-item:hover { background: #f1f3f4; }
         .view-menu-item.active { background: #e8f0fe; color: #0b57d0; font-weight: bold; }
 
-        .month-grid {
-            background: white; border-radius: 12px; padding: 10px;
-            display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
-            text-align: center; margin-bottom: 20px;
-        }
+        .month-grid { background: white; border-radius: 12px; padding: 10px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; }
         .weekday-label { font-size: 11px; color: #5f6368; padding-bottom: 8px; }
-        .day-cell {
-            height: 50px; border-radius: 8px;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            padding-top: 6px; cursor: pointer; position: relative;
-            border: 2px solid transparent;
-        }
-        .day-num { font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 50%; }
+        .day-cell { height: 50px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px; cursor: pointer; border: 2px solid transparent; }
+        .day-num { font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 50%; z-index: 2; }
         .day-cell.today .day-num { background: #0b57d0; color: white; font-weight: bold; }
         .day-cell.other-month { opacity: 0.3; }
-        .day-cell.unavailable { background-color: #ffccbc; border-color: #ff7043; }
-        .day-cell.unavailable .day-num { color: #bf360c; font-weight: bold; }
-        .event-dots { display: flex; gap: 2px; margin-top: 4px; justify-content: center; }
-        .dot { width: 5px; height: 5px; border-radius: 50%; background: #34A853; }
-        .dot.event { background: #137333; transform: scale(1.2); }
+        .day-cell.unavailable { background-color: #ffccbc; border-color: #ff7043; } .day-cell.unavailable .day-num { color: #bf360c; font-weight: bold; }
+        .event-dots { display: flex; gap: 2px; margin-top: 4px; justify-content: center; z-index: 2; }
+        .dot { width: 5px; height: 5px; border-radius: 50%; background: #34A853; } .dot.event { background: #137333; transform: scale(1.2); }
 
-        .timeline-container {
-            background: white; border-radius: 12px; padding: 10px 0;
-            position: relative; height: 60vh; overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        .time-slot {
-            height: 60px; border-bottom: 1px solid #f0f0f0;
-            display: flex; align-items: flex-start; position: relative;
-        }
+        .timeline-container { background: white; border-radius: 12px; padding: 10px 0; position: relative; height: auto; min-height: 600px; }
+        .time-slot { height: 60px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; position: relative; }
         .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
-        .time-content {
-            flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0;
-            touch-action: pan-y; 
-        }
+        .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; touch-action: pan-y; }
         .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
-
-        .event-block {
-            position: absolute; left: 2px; right: 2px; top: 1px; bottom: 1px;
-            background: #e8f0fe; border-left: 4px solid #0b57d0;
-            border-radius: 4px; padding: 4px 8px;
-            font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; pointer-events: auto;
-            z-index: 10;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
+        .event-block { position: absolute; left: 2px; right: 2px; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .event-title { font-weight: bold; }
         .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
 
         /* マイバンド */
-        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: transform 0.1s; }
-        .card.band-card:active { transform: scale(0.98); background-color: #f5f5f5; }
-
+        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; }
+        .card.band-card:active { background-color: #f5f5f5; }
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; }
         .band-item:last-child { border: none; margin: 0; padding: 0; }
-        
-        .band-icon {
-            width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px;
-            display: flex; justify-content: center; align-items: center; margin-right: 12px;
-            font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden;
-        }
+        .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; }
         .band-icon img { width: 100%; height: 100%; object-fit: cover; }
-        .band-info { flex-grow: 1; }
-        .band-name { font-weight: bold; font-size: 16px; }
-        .band-members { font-size: 12px; color: #5f6368; }
-
-        /* タブ */
-        .band-tabs {
-            display: flex; background: white; border-radius: 12px; padding: 4px; margin-bottom: 16px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .band-tab {
-            flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold;
-            border-radius: 8px; cursor: pointer; color: #5f6368;
-        }
+        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 16px; } .band-members { font-size: 12px; color: #5f6368; }
+        .band-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin: 0 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; }
+        .band-tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #5f6368; }
         .band-tab.active { background: #e8f0fe; color: #0b57d0; }
 
+        /* ナビゲーション */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #f0f4f9; border-top: none; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
+        .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; }
+        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } 
+        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } /* 管理タブ用色 */
+        .nav-item.active span { color: #1f1f1f; font-weight: bold; }
+
         /* UIパーツ */
-        .fab {
-            position: fixed; bottom: 100px; right: 20px;
-            width: 56px; height: 56px; border-radius: 50%;
-            background: #c2e7ff; color: #001d35; 
-            display: flex; justify-content: center; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900;
-        }
+        .fab { position: fixed; bottom: 100px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900; }
         .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
         .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
@@ -200,28 +93,14 @@
 
         /* 画像選択 */
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; }
-        .image-picker {
-            width: 80px; height: 80px; background: #f1f3f4; border-radius: 16px;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #0b57d0; cursor: pointer; overflow: hidden; position: relative;
-        }
+        .image-picker { width: 80px; height: 80px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
-        .image-picker i { font-size: 24px; z-index: 1; }
-        .image-picker span { font-size: 10px; z-index: 1; margin-top: 4px; }
+        .image-picker i { font-size: 24px; z-index: 1; } .image-picker span { font-size: 10px; z-index: 1; margin-top: 4px; }
 
         /* モーダル */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 2000;
-            display: none; justify-content: center; align-items: flex-end;
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; display: none; justify-content: center; align-items: flex-end; }
         .modal-overlay.open { display: flex; }
-        .modal-content {
-            background: white; width: 100%; max-width: 480px;
-            border-radius: 24px 24px 0 0; padding: 24px;
-            box-sizing: border-box; max-height: 85vh; overflow-y: auto;
-            animation: slideUp 0.3s ease;
-        }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
         .form-group { margin-bottom: 16px; }
@@ -230,30 +109,40 @@
         
         .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
         .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; }
-        .member-option.selected { background: #e8f0fe; }
-        .member-check { margin-right: 10px; color: #0b57d0; }
+        .member-option.selected { background: #e8f0fe; } .member-check { margin-right: 10px; color: #0b57d0; }
         
         .hidden { display: none !important; }
         
-        #selectionToast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px;
-            z-index: 3000; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.2s;
-        }
+        #selectionToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 3000; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
         #selectionToast.show { opacity: 1; }
         
-        .radio-group { display: flex; gap: 15px; }
-        .radio-label { display: flex; align-items: center; font-size: 16px; cursor: pointer; }
-        .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
-        
-        .checkbox-label { display: flex; align-items: center; font-size: 15px; font-weight: bold; color: #0b57d0; cursor: pointer; }
-        .checkbox-label input { width: 20px; height: 20px; margin-right: 8px; }
-
-        .member-list-edit { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; }
-        .member-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+        .radio-group { display: flex; gap: 15px; } .radio-label { display: flex; align-items: center; font-size: 16px; cursor: pointer; } .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
+        .checkbox-label { display: flex; align-items: center; font-size: 15px; font-weight: bold; color: #0b57d0; cursor: pointer; } .checkbox-label input { width: 20px; height: 20px; margin-right: 8px; }
+        .member-list-edit { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; } .member-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
         .btn-remove-member { font-size: 11px; color: #d93025; border: 1px solid #d93025; background: white; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+        .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; padding: 8px 0; }
 
-        /* 管理者画面用 */
+        /* --- メニューボタン（管理者用） --- */
+        .menu-list { display: flex; flex-direction: column; gap: 12px; }
+        .menu-btn { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #ffffff; border: none; width: 100%; text-align: left; cursor: pointer; border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.1s; }
+        .menu-btn:active { transform: scale(0.98); background-color: #f8f9fa; }
+        .menu-icon-wrapper { width: 48px; height: 48px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; }
+        .menu-icon-wrapper .material-icons { font-size: 24px; }
+        .menu-content { flex-grow: 1; }
+        .menu-title { font-size: 16px; font-weight: 500; color: #1f1f1f; display: block; margin-bottom: 4px; }
+        .menu-subtitle { font-size: 12px; color: #444746; display: block; line-height: 1.4; }
+        .menu-arrow { color: #c4c7c5; font-size: 24px; }
+        
+        .icon-admin-cal { background-color: #fce4ec; color: #c2185b; }
+        .icon-admin-user { background-color: #e8eaf6; color: #283593; }
+        .icon-admin-doc { background-color: #e0f2f1; color: #00695c; }
+        
+        .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; }
+        .page-container.open { transform: translateX(0); }
+        .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
+        .back-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1f1f1f; margin-right: 8px; margin-left: -8px; }
+        .page-title { font-size: 20px; font-weight: 400; color: #1f1f1f; }
+        .content-area { padding: 0 16px 40px; }
         .search-bar { padding: 12px 16px; background:white; border-radius:30px; display:flex; align-items:center; margin-bottom:20px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .search-bar input { border:none; width:100%; outline:none; font-size:16px; margin-left:10px; padding:0; }
         .user-list-item { background: white; padding: 16px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; }
@@ -261,14 +150,8 @@
         .user-info-main { flex-grow: 1; } .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } .user-sub { font-size: 12px; color: #5f6368; }
         .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
         .info-row .label { color: #5f6368; font-size: 13px; } .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
-
-        /* ページ遷移 */
-        .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; }
-        .page-container.open { transform: translateX(0); }
-        .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
-        .back-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1f1f1f; margin-right: 8px; margin-left: -8px; }
-        .page-title { font-size: 20px; font-weight: 400; color: #1f1f1f; }
-        .content-area { padding: 0 16px 40px; }
+        /* 管理者用保存ボタン */
+        .btn-admin-save { background: #c2185b; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -286,7 +169,9 @@
             <div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div>
         </div>
 
-        <div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>
+        <div class="scroll-content">
+            <div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>
+        </div>
         <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
     </div>
 
@@ -312,12 +197,13 @@
             </div>
         </div>
 
-        <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
-
-        <div id="calDayView" class="hidden">
-            <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
-            <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
-            <div class="timeline-container" id="timeline"></div>
+        <div class="scroll-content">
+            <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
+            <div id="calDayView" class="hidden">
+                <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
+                <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
+                <div class="timeline-container" id="timeline"></div>
+            </div>
         </div>
     </div>
 
@@ -326,7 +212,9 @@
             <div class="header-title">Cueシート</div>
             <div class="header-avatar" id="headerIconCue" onclick="goToMyPage()"></div>
         </div>
-        <div style="text-align:center; margin-top:100px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>準備中</div>
+        <div class="scroll-content">
+            <div style="text-align:center; margin-top:100px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>準備中</div>
+        </div>
     </div>
     
     <div id="screen-admin" class="screen">
@@ -334,12 +222,35 @@
             <div class="header-title">データの管理</div>
             <div class="header-avatar" id="headerIconAdmin" onclick="goToMyPage()"></div>
         </div>
-        <div style="padding: 16px;">
-            <div class="search-bar">
-                <span class="material-icons" style="color:#5f6368;">search</span>
-                <input type="text" id="adminSearchInput" placeholder="ユーザー名で検索...">
+        <div class="scroll-content">
+            <div class="menu-list">
+                <button class="menu-btn" onclick="openPage('admin-calendar-stub')">
+                    <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">予約システム管理</span>
+                        <span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+                
+                <button class="menu-btn" onclick="openAdminUsers()">
+                    <div class="menu-icon-wrapper icon-admin-user"><span class="material-icons">manage_accounts</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">個人の管理</span>
+                        <span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+                
+                <button class="menu-btn" onclick="openPage('admin-docs-stub')">
+                    <div class="menu-icon-wrapper icon-admin-doc"><span class="material-icons">description</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">提出書類の作成</span>
+                        <span class="menu-subtitle">各種申請書類のエクスポート</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
             </div>
-            <div id="adminUserList"></div>
         </div>
     </div>
 
@@ -358,6 +269,33 @@
         </div>
         <div class="nav-item" onclick="goToMyPage()">
             <span class="material-icons nav-icon">account_circle</span><span>マイページ</span>
+        </div>
+    </div>
+
+    /* --- サブページ群 --- */
+    
+    <div id="page-admin-users" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div>
+        <div class="content-area">
+            <div class="search-bar">
+                <span class="material-icons" style="color:#5f6368;">search</span>
+                <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
+            </div>
+            <div id="adminUserList"></div>
+        </div>
+    </div>
+    
+    <div id="page-admin-calendar-stub" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div>
+        <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
+            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">engineering</span><br>準備中: 予約ルールの設定機能
+        </div>
+    </div>
+    
+    <div id="page-admin-docs-stub" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div>
+        <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
+            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">print</span><br>準備中: 書類PDF出力機能
         </div>
     </div>
 
@@ -384,7 +322,7 @@
                     <label class="form-label">役職</label>
                     <input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など">
                 </div>
-                <button id="btn-save-user-role" class="btn-primary" style="background-color:#c2185b;">役職を保存</button>
+                <button id="btn-save-user-role" class="btn-admin-save">役職を保存</button>
             </div>
 
             <div class="card" style="padding:20px;">
@@ -402,21 +340,14 @@
         <div class="modal-content">
             <h3 style="margin-top:0;">バンド結成</h3>
             <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">リストから選ぶか、後から招待リンクを送ってください。</p>
-            
             <div class="image-picker-area">
                 <div class="image-picker" onclick="document.getElementById('bandIconInput').click()">
                     <i class="material-icons">add_a_photo</i><span>写真</span><img id="previewBandIcon" class="hidden" src="">
                 </div>
                 <input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')">
             </div>
-
             <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム"></div>
-            
-            <div class="form-group">
-                <label class="form-label">メンバー選択 (登録済みユーザー)</label>
-                <div class="member-select-list" id="userSelectList"></div>
-            </div>
-
+            <div class="form-group"><label class="form-label">メンバー選択 (登録済みユーザー)</label><div class="member-select-list" id="userSelectList"></div></div>
             <button class="btn-primary" onclick="saveBand()">作成する</button>
             <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
         </div>
@@ -424,32 +355,12 @@
 
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content">
-            <h3 style="margin-top:0; display:flex; justify-content:space-between;">
-                バンド詳細
-                <button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>
-            </h3>
+            <h3 style="margin-top:0; display:flex; justify-content:space-between;">詳細<button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button></h3>
             <input type="hidden" id="detailBandId">
-            
-            <div class="image-picker-area">
-                <div class="image-picker" id="detailIconPicker"><img id="detailBandIcon" src=""></div>
-                <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
-            </div>
-            
+            <div class="image-picker-area"><div class="image-picker" id="detailIconPicker"><img id="detailBandIcon" src=""></div><input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)"></div>
             <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="detailBandName" class="form-input" readonly></div>
-            <div class="form-group">
-                <label class="form-label">メンバー</label>
-                <div class="member-list-edit" id="detailMemberList"></div>
-                <button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()">
-                    <span class="material-icons">person_add</span> メンバーを追加
-                </button>
-            </div>
-
-            <div id="bandCreatorActions" class="hidden">
-                <button class="btn-primary" onclick="updateBandName()">バンド名を変更</button>
-                <button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button>
-                <button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button>
-                <button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button>
-            </div>
+            <div class="form-group"><label class="form-label">メンバー</label><div class="member-list-edit" id="detailMemberList"></div><button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button></div>
+            <div id="bandCreatorActions" class="hidden"><button class="btn-primary" onclick="updateBandName()">バンド名を変更</button><button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button><button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button><button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button></div>
             <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()">バンドから脱退</button></div>
             <button class="btn-secondary" onclick="closeModal('modal-band-detail')">閉じる</button>
         </div>
@@ -471,23 +382,10 @@
             <input type="hidden" id="editingBookingId" value="">
             <div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div></div>
             <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="checkAllDay" onchange="toggleAllDay()"> 終日 (9:00 - 22:00)</label></div>
-            <div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;">
-                <div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div>
-                <span style="margin-top:15px;">〜</span>
-                <div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div>
-            </div>
-            
-            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;">
-                <label class="form-label">登録種別</label>
-                <div class="radio-group">
-                    <label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label>
-                    <label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label>
-                </div>
-            </div>
-
+            <div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;"><div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span style="margin-top:15px;">〜</span><div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div></div>
+            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;"><label class="form-label">登録種別</label><div class="radio-group"><label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label><label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label></div></div>
             <div id="groupBandSelect" class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div>
             <div id="groupEventTitle" class="form-group hidden"><label class="form-label">イベント名 / 理由</label><input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会"></div>
-            
             <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
             <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button>
             <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
@@ -530,13 +428,85 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             navEl.classList.add('active');
             if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
-            if (screenId === 'admin') { loadAdminData(); }
         };
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
         window.openPage = (pageId) => { document.getElementById('page-' + pageId).classList.add('open'); };
         window.closePage = (pageId) => { document.getElementById('page-' + pageId).classList.remove('open'); };
         window.openModal = (id) => document.getElementById(id).classList.add('open');
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+        
+        // --- 管理者機能 ---
+        window.openAdminUsers = async () => {
+            openPage('admin-users');
+            document.getElementById('adminUserList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
+            try {
+                const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+                const qs = await getDocs(q);
+                allUsersCache = [];
+                qs.forEach(doc => { 
+                    const data = doc.data();
+                    if(!data.affiliations && data.org) data.affiliations = [data.org];
+                    if(!data.affiliations) data.affiliations = [];
+                    allUsersCache.push({ id: doc.id, ...data }); 
+                });
+                renderAdminList(allUsersCache);
+            } catch(e) { document.getElementById('adminUserList').innerHTML = "エラー: " + e.message; }
+        };
+        function renderAdminList(users) {
+            const container = document.getElementById('adminUserList'); container.innerHTML = "";
+            if(users.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
+            users.forEach(u => {
+                const div = document.createElement('div'); div.className = 'user-list-item';
+                div.onclick = () => openAdminEdit(u);
+                let badges = "";
+                if(u.affiliations.includes('urakata')) badges += '<span style="color:#ea4335; font-size:10px; margin-right:4px;">●裏方</span>';
+                if(u.affiliations.includes('lmc')) badges += '<span style="color:#5f6368; font-size:10px;">●LMC</span>';
+                let roleHtml = u.role ? `<span style="font-size:10px; background:#e0e3e7; padding:2px 6px; border-radius:10px; margin-left:5px;">${u.role}</span>` : '';
+                div.innerHTML = `<img src="${u.icon || 'https://placehold.jp/40x40.png'}" class="mini-icon"><div class="user-info-main"><div class="user-name">${u.name} ${roleHtml}</div><div class="user-sub">${badges}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`;
+                container.appendChild(div);
+            });
+        }
+        document.getElementById('adminSearchInput').addEventListener('input', (e) => { const term = e.target.value.trim(); renderAdminList(term ? allUsersCache.filter(u => u.name.includes(term) || (u.kana && u.kana.includes(term))) : allUsersCache); });
+        
+        function openAdminEdit(user) {
+            adminEditingUserId = user.id; openPage('admin-edit');
+            document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img";
+            document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName;
+            document.getElementById('admin-edit-docId').innerText = user.id;
+            
+            // 閲覧用
+            document.getElementById('admin-show-name').innerText = user.name;
+            document.getElementById('admin-show-kana').innerText = user.kana || "-";
+            document.getElementById('admin-show-studentId').innerText = user.studentId || "-";
+            let affText = "";
+            if(user.affiliations && user.affiliations.includes('urakata')) affText += "裏方部 ";
+            if(user.affiliations && user.affiliations.includes('lmc')) affText += "LMC ";
+            document.getElementById('admin-show-aff').innerText = affText;
+            document.getElementById('admin-show-part').innerText = getPartLabel(user.part) || "-";
+
+            // 編集用
+            document.getElementById('admin-edit-role').value = user.role || "";
+            
+            // 所属バンド取得
+            loadAdminUserBands(user.id);
+        }
+        async function loadAdminUserBands(targetUserId) {
+            const listContainer = document.getElementById('admin-user-band-list'); listContainer.innerHTML = "読み込み中...";
+            try {
+                const q = query(collection(db, "bands"), where("memberIds", "array-contains", targetUserId));
+                const qs = await getDocs(q);
+                if(qs.empty) { listContainer.innerHTML = "所属バンドなし"; } 
+                else {
+                    let html = "<ul style='padding-left:20px; margin:0;'>";
+                    qs.forEach(doc => { const b = doc.data(); html += `<li>${b.name} ${b.creatorId === targetUserId ? '<span style="font-size:10px; color:#0b57d0;">(リーダー)</span>' : ''}</li>`; });
+                    html += "</ul>"; listContainer.innerHTML = html;
+                }
+            } catch(e) { listContainer.innerHTML = "取得エラー"; }
+        }
+        document.getElementById('btn-save-user-role').addEventListener('click', async () => {
+            if(!adminEditingUserId) return; const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中...";
+            try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
+        });
 
         // --- メイン処理 ---
         async function main() {
@@ -556,8 +526,8 @@
                 
                 await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
                 currentUserData = userSnap.data(); renderHeaderIcons(currentUserData);
-                document.getElementById('app-container').classList.remove('hidden'); // アプリ表示
-
+                
+                // ダイレクト遷移
                 if (targetPage) {
                     let navSelector = '';
                     if(targetPage === 'calendar') navSelector = '.nav-item:nth-child(2)';
@@ -571,95 +541,6 @@
                 loadMyBands();
             } catch(e) { console.error(e); }
         }
-
-        // --- 管理者機能 ---
-        async function loadAdminData() {
-            document.getElementById('adminUserList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
-            try {
-                const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-                const qs = await getDocs(q);
-                allUsersCache = [];
-                qs.forEach(doc => { 
-                    const data = doc.data();
-                    if(!data.affiliations && data.org) data.affiliations = [data.org];
-                    if(!data.affiliations) data.affiliations = [];
-                    allUsersCache.push({ id: doc.id, ...data }); 
-                });
-                renderAdminList(allUsersCache);
-            } catch(e) { document.getElementById('adminUserList').innerHTML = "エラー: " + e.message; }
-        }
-        function renderAdminList(users) {
-            const container = document.getElementById('adminUserList'); container.innerHTML = "";
-            if(users.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
-            users.forEach(u => {
-                const div = document.createElement('div'); div.className = 'user-list-item';
-                div.onclick = () => openAdminEdit(u);
-                let badges = "";
-                if(u.affiliations.includes('urakata')) badges += '<span style="color:#ea4335; font-size:10px; margin-right:4px;">●裏方</span>';
-                if(u.affiliations.includes('lmc')) badges += '<span style="color:#5f6368; font-size:10px;">●LMC</span>';
-                let roleHtml = u.role ? `<span style="font-size:10px; background:#e0e3e7; padding:2px 6px; border-radius:10px; margin-left:5px;">${u.role}</span>` : '';
-                div.innerHTML = `<img src="${u.icon || 'https://placehold.jp/40x40.png'}" class="mini-icon"><div class="user-info-main"><div class="user-name">${u.name} ${roleHtml}</div><div class="user-sub">${badges}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`;
-                container.appendChild(div);
-            });
-        }
-        document.getElementById('adminSearchInput').addEventListener('input', (e) => { const term = e.target.value.trim(); renderAdminList(term ? allUsersCache.filter(u => u.name.includes(term) || (u.kana && u.kana.includes(term))) : allUsersCache); });
-        
-        // 管理者: ユーザー編集
-        function openAdminEdit(user) {
-            adminEditingUserId = user.id; openPage('admin-edit');
-            document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img";
-            document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName;
-            document.getElementById('admin-edit-docId').innerText = user.id;
-
-            // 閲覧用
-            document.getElementById('admin-show-name').innerText = user.name;
-            document.getElementById('admin-show-kana').innerText = user.kana || "-";
-            document.getElementById('admin-show-studentId').innerText = user.studentId || "-";
-            let affText = "";
-            if(user.affiliations && user.affiliations.includes('urakata')) affText += "裏方部 ";
-            if(user.affiliations && user.affiliations.includes('lmc')) affText += "LMC ";
-            document.getElementById('admin-show-aff').innerText = affText;
-            document.getElementById('admin-show-part').innerText = getPartLabel(user.part) || "-";
-
-            // 編集用
-            document.getElementById('admin-edit-role').value = user.role || "";
-
-            // 所属バンド読み込み
-            loadAdminUserBands(user.id);
-        }
-
-        async function loadAdminUserBands(targetUserId) {
-            const listContainer = document.getElementById('admin-user-band-list');
-            listContainer.innerHTML = "読み込み中...";
-            try {
-                const q = query(collection(db, "bands"), where("memberIds", "array-contains", targetUserId));
-                const qs = await getDocs(q);
-                if(qs.empty) {
-                    listContainer.innerHTML = "所属バンドなし";
-                } else {
-                    let html = "<ul style='padding-left:20px; margin:0;'>";
-                    qs.forEach(doc => {
-                        const b = doc.data();
-                        html += `<li>${b.name} ${b.creatorId === targetUserId ? '<span style="font-size:10px; color:#0b57d0;">(リーダー)</span>' : ''}</li>`;
-                    });
-                    html += "</ul>";
-                    listContainer.innerHTML = html;
-                }
-            } catch(e) {
-                listContainer.innerHTML = "取得エラー";
-            }
-        }
-
-        document.getElementById('btn-save-user-role').addEventListener('click', async () => {
-            if(!adminEditingUserId) return;
-            const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中...";
-            try {
-                await updateDoc(doc(db, "users", adminEditingUserId), {
-                    role: document.getElementById('admin-edit-role').value
-                });
-                alert("役職を保存しました"); closePage('admin-edit'); loadAdminData();
-            } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
-        });
 
         // --- マイバンド ---
         function loadMyBands() {
@@ -698,8 +579,8 @@
                 if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name); else alert("作成しました");
             } catch(e) { alert("エラー: " + e.message); }
         };
-        
-        // バンド詳細
+        window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
+        async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); } } catch(e) { alert("エラー: " + e.message); } }
         window.openBandDetail = (bandId, data) => {
             document.getElementById('detailBandId').value = bandId; document.getElementById('detailBandName').value = data.name; document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
             currentEditingBandId = bandId; currentEditingBandMembers = data.memberIds;
@@ -714,13 +595,23 @@
             data.memberIds.forEach((uid, idx) => { const name = data.memberNames[idx] || "不明"; const row = document.createElement('div'); row.className = 'member-row'; let rowHtml = `<span>${name}</span>`; if (isCreator && uid !== currentUser) { rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`; } else if (uid === data.creatorId) { rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`; } row.innerHTML = rowHtml; memberListDiv.appendChild(row); });
             openModal('modal-band-detail');
         };
-
-        // --- 画像処理 ---
+        window.archiveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("アーカイブしますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: true }); alert("アーカイブしました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.restoreBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("復元しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: false }); alert("復元しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.updateBandName = async () => { const bandId = document.getElementById('detailBandId').value; const newName = document.getElementById('detailBandName').value.trim(); if(!newName) return alert("バンド名を入力してください"); try { await updateDoc(doc(db, "bands", bandId), { name: newName }); alert("変更しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.removeMember = async (bandId, uid, name) => { if(!confirm(`${name} さんを削除しますか？`)) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(uid), memberNames: arrayRemove(name) }); alert("削除しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.deleteBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に解散しますか？")) return; try { await deleteDoc(doc(db, "bands", bandId)); alert("解散しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.leaveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に脱退しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); alert("脱退しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.openAddMemberModal = async () => { if (!currentEditingBandId) return; const list = document.getElementById('addMemberSelectList'); list.innerHTML = "読み込み中..."; loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); }
+        window.saveAddedMembers = async () => { if(!currentEditingBandId) return; const selectedEls = document.querySelectorAll('#addMemberSelectList .member-option.selected'); if(selectedEls.length === 0) return alert("メンバーを選択してください"); const memberIds = []; const memberNames = []; selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); }); try { await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...memberIds), memberNames: arrayUnion(...memberNames) }); alert("追加しました"); closeModal('modal-add-member'); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } }
+        
+        // 画像処理
         window.handleImageSelect = (input, previewId) => { if (input.files && input.files[0]) { compressImage(input.files[0]).then(base64 => { tempBandIconBase64 = base64; const img = document.getElementById(previewId); img.src = base64; img.classList.remove('hidden'); }); } };
         window.handleImageEdit = async (input) => { if (input.files && input.files[0]) { if(!confirm("バンドアイコンを変更しますか？")) return; const base64 = await compressImage(input.files[0]); const bandId = document.getElementById('detailBandId').value; try { const storageRef = ref(storage, `band_icons/${bandId}.jpg`); await uploadString(storageRef, base64, 'data_url'); const url = await getDownloadURL(storageRef); await updateDoc(doc(db, "bands", bandId), { icon: url }); document.getElementById('detailBandIcon').src = url; alert("アイコンを変更しました"); } catch(e) { alert("画像アップロードエラー: " + e.message); } } };
         const compressImage = (file) => { return new Promise((resolve) => { const img = new Image(); img.src = URL.createObjectURL(file); img.onload = () => { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const size = 200; canvas.width = size; canvas.height = size; let sWidth = img.width; let sHeight = img.height; let sx = 0; let sy = 0; if (sWidth > sHeight) { sWidth = sHeight; sx = (img.width - sHeight) / 2; } else { sHeight = sWidth; sy = (img.height - sWidth) / 2; } ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }); };
+        async function loadUserList(targetId = 'userSelectList', excludeIds = []) { const list = document.getElementById(targetId); const qs = await getDocs(collection(db, "users")); list.innerHTML = ""; let count = 0; qs.forEach(doc => { const u = doc.data(); if(doc.id === currentUser || excludeIds.includes(doc.id)) return; const div = document.createElement('div'); div.className = 'member-option'; div.dataset.uid = doc.id; div.dataset.uname = u.name; div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; }; div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part ? '('+getPartLabel(u.part)+')' : ''}</span></div>`; list.appendChild(div); count++; }); if(count === 0) list.innerHTML = '<div style="padding:10px; color:#999;">追加できるユーザーがいません</div>'; }
+        function getPartLabel(part) { if (part === "vocal") return "Vo"; if (part === "guitar") return "Gt"; if (part === "bass") return "Ba"; if (part === "drums") return "Dr"; if (part === "keyboard") return "Key"; return ""; }
 
-        // --- カレンダー & 予約 ---
+        // カレンダー & 予約 (window登録)
         window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
         window.switchCalendarView = (mode) => { calendarMode = mode; updateViewMenuUI(); document.getElementById('viewMenu').classList.remove('open'); renderCalendar(); };
         function updateViewMenuUI() { document.getElementById('currentViewName').innerText = calendarMode === 'month' ? '月表示' : '日表示'; document.getElementById('calMonthView').classList.toggle('hidden', calendarMode !== 'month'); document.getElementById('calDayView').classList.toggle('hidden', calendarMode !== 'day'); }
@@ -729,8 +620,6 @@
         function renderMonthView() { const grid = document.getElementById('monthGrid'); grid.innerHTML = ""; ['日','月','火','水','木','金','土'].forEach(wd => { const div = document.createElement('div'); div.className = 'weekday-label'; div.innerText = wd; grid.appendChild(div); }); const year = displayDate.getFullYear(); const month = displayDate.getMonth(); const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0); for(let i=0; i<firstDay.getDay(); i++) { const div = document.createElement('div'); div.className = 'day-cell other-month'; grid.appendChild(div); } const today = new Date(); for(let d=1; d<=lastDay.getDate(); d++) { const div = document.createElement('div'); div.className = 'day-cell'; div.id = `day-${year}-${month+1}-${d}`; if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) div.classList.add('today'); div.onclick = () => { displayDate.setDate(d); switchCalendarView('day'); }; div.innerHTML = `<div class="day-num">${d}</div><div class="event-dots" id="dots-${year}-${month+1}-${d}"></div>`; grid.appendChild(div); } loadMonthBookings(year, month); }
         function loadMonthBookings(year, month) { const start = new Date(year, month, 1); const end = new Date(year, month + 1, 0, 23, 59, 59); const q = query(collection(db, "bookings"), where("startTime", ">=", start), where("startTime", "<=", end)); onSnapshot(q, (qs) => { document.querySelectorAll('.event-dots').forEach(el => el.innerHTML = ""); document.querySelectorAll('.day-cell.unavailable').forEach(el => el.classList.remove('unavailable')); qs.forEach(doc => { const data = doc.data(); const d = data.startTime.toDate(); if(data.type === 'event') { const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`)?.parentElement; if(cell) cell.classList.add('unavailable'); } else { const container = document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); if (container && container.children.length < 3) { const dot = document.createElement('div'); dot.className = 'dot'; container.appendChild(dot); } } }); }); }
         function renderDayView() { const container = document.getElementById('timeline'); container.innerHTML = ""; for (let hour = 9; hour < 22; hour++) { const slot = document.createElement('div'); slot.className = 'time-slot'; slot.innerHTML = `<div class="time-label">${hour}:00</div>`; const content = document.createElement('div'); content.className = 'time-content'; content.dataset.hour = hour; content.addEventListener('touchstart', handleTouchStart, {passive: false}); content.addEventListener('touchmove', handleTouchMove, {passive: false}); content.addEventListener('touchend', handleTouchEnd); content.addEventListener('mousedown', handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove', handleMouseMove); container.addEventListener('mouseup', handleMouseUp); loadDayBookings(); }
-        
-        // ドラッグ予約
         function handleTouchStart(e) { if (e.target.classList.contains('event-block')) return; const hour = parseInt(e.target.dataset.hour); if(isNaN(hour)) return; selectionTimer = setTimeout(() => { isSelecting = true; selectionStartHour = hour; selectionEndHour = hour; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate) navigator.vibrate(50); }, 500); }
         function handleTouchMove(e) { if (!isSelecting) { clearTimeout(selectionTimer); return; } e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (target && target.classList.contains('time-content')) { const hour = parseInt(target.dataset.hour); if (!isNaN(hour)) { selectionEndHour = hour; updateSelectionUI(); } } }
         function handleTouchEnd(e) { clearTimeout(selectionTimer); if (isSelecting) { isSelecting = false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(); } }
@@ -749,20 +638,6 @@
         window.saveBooking = async () => { const editingId = document.getElementById('editingBookingId').value; const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal'; let bookingData = { creatorId: currentUser, userName: currentProfile.displayName, type: type, createdAt: new Date() }; if (type === 'normal') { if (myBandsAll.filter(b => !b.isArchived).length === 0) return alert("バンドを作成してください"); const selectBand = document.getElementById('selectBookingBand'); bookingData.bandId = selectBand.value; bookingData.bandName = selectBand.options[selectBand.selectedIndex].text; } else { const title = document.getElementById('inputEventTitle').value.trim(); if (!title) return alert("イベント名を入力してください"); bookingData.title = title; bookingData.bandName = title; } let sH, sM, eH, eM; if (document.getElementById('checkAllDay').checked) { sH = 9; sM = 0; eH = 22; eM = 0; } else { const sTimeStr = document.getElementById('selectStartTime').value; const eTimeStr = document.getElementById('selectEndTime').value; [sH, sM] = sTimeStr.split(':').map(Number); [eH, eM] = eTimeStr.split(':').map(Number); } const startTime = new Date(displayDate); startTime.setHours(sH, sM, 0, 0); const endTime = new Date(displayDate); endTime.setHours(eH, eM, 0, 0); if (startTime.getTime() >= endTime.getTime()) return alert("終了時間は開始時間より後にしてね"); bookingData.startTime = startTime; bookingData.endTime = endTime; try { if (editingId) { delete bookingData.createdAt; await updateDoc(doc(db, "bookings", editingId), bookingData); alert("変更しました"); editingBookingData = { ...editingBookingData, ...bookingData }; } else { await addDoc(collection(db, "bookings"), bookingData); alert("予約しました"); } closeModal('modal-booking'); } catch(e) { alert("エラー: " + e.message); } };
         window.addToGoogleCalendar = () => { if (!editingBookingData) return; const title = editingBookingData.bandName || "バンド練習"; const start = editingBookingData.startTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const end = editingBookingData.endTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=LMC+Mobileからの予約`; window.open(url, '_blank'); };
         window.deleteBooking = async () => { const editingId = document.getElementById('editingBookingId').value; if (!editingId) return; if(!confirm("本当に削除しますか？")) return; try { await deleteDoc(doc(db, "bookings", editingId)); alert("削除しました"); closeModal('modal-booking'); } catch(e) { alert("エラー: " + e.message); } };
-
-        // --- その他汎用 ---
-        window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
-        async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); } } catch(e) { alert("エラー: " + e.message); } }
-        async function loadUserList(targetId = 'userSelectList', excludeIds = []) { const list = document.getElementById(targetId); const qs = await getDocs(collection(db, "users")); list.innerHTML = ""; let count = 0; qs.forEach(doc => { const u = doc.data(); if(doc.id === currentUser || excludeIds.includes(doc.id)) return; const div = document.createElement('div'); div.className = 'member-option'; div.dataset.uid = doc.id; div.dataset.uname = u.name; div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; }; div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part ? '('+getPartLabel(u.part)+')' : ''}</span></div>`; list.appendChild(div); count++; }); if(count === 0) list.innerHTML = '<div style="padding:10px; color:#999;">追加できるユーザーがいません</div>'; }
-        window.openAddMemberModal = async () => { if (!currentEditingBandId) return; const list = document.getElementById('addMemberSelectList'); list.innerHTML = "読み込み中..."; loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); }
-        window.saveAddedMembers = async () => { if(!currentEditingBandId) return; const selectedEls = document.querySelectorAll('#addMemberSelectList .member-option.selected'); if(selectedEls.length === 0) return alert("メンバーを選択してください"); const memberIds = []; const memberNames = []; selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); }); try { await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...memberIds), memberNames: arrayUnion(...memberNames) }); alert("追加しました"); closeModal('modal-add-member'); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } }
-        function getPartLabel(part) { if (part === "vocal") return "Vo"; if (part === "guitar") return "Gt"; if (part === "bass") return "Ba"; if (part === "drums") return "Dr"; if (part === "keyboard") return "Key"; return ""; }
-        window.updateBandName = async () => { const bandId = document.getElementById('detailBandId').value; const newName = document.getElementById('detailBandName').value.trim(); if(!newName) return alert("バンド名を入力してください"); try { await updateDoc(doc(db, "bands", bandId), { name: newName }); alert("変更しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.archiveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("アーカイブしますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: true }); alert("アーカイブしました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.restoreBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("復元しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: false }); alert("復元しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.removeMember = async (bandId, uid, name) => { if(!confirm(`${name} さんを削除しますか？`)) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(uid), memberNames: arrayRemove(name) }); alert("削除しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.deleteBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に解散しますか？")) return; try { await deleteDoc(doc(db, "bands", bandId)); alert("解散しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
-        window.leaveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に脱退しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); alert("脱退しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
         function renderHeaderIcons(data) { let ringClass = ""; const affs = data.affiliations || []; const isUrakata = affs.includes("urakata"); let isBirthday = false; if (data.birthday) { const today = new Date(); const bday = new Date(data.birthday); if (today.getMonth() === bday.getMonth() && today.getDate() === bday.getDate()) isBirthday = true; } if (isBirthday) ringClass = "ring-birthday"; else if (isUrakata) { if(data.job === "sound") ringClass = "ring-sound"; else if(data.job === "light") ringClass = "ring-light"; else if(data.job === "stage") ringClass = "ring-stage"; else if(data.job === "video") ringClass = "ring-video"; else ringClass = "ring-rainbow"; } const iconHtml = `<img src="${data.icon || 'https://placehold.jp/40x40.png'}" alt="icon">`; ['headerIconBands', 'headerIconCal', 'headerIconCue', 'headerIconAdmin'].forEach(id => { const el = document.getElementById(id); if(el) { el.innerHTML = iconHtml; el.className = "header-avatar " + ringClass; } }); if(isUrakata && data.role) document.getElementById('nav-admin').classList.remove('hidden'); }
 
         main();
