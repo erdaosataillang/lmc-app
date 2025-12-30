@@ -1324,12 +1324,15 @@
                     div.innerHTML = `<div class="event-title">${data.bandName}</div>`; 
                     if (data.status === 'pending') {
                         div.classList.add('pending');
-                        // 幅が狭いときは承認待ちテキストを省略するなどの工夫も可
                     }
+                    
                     const myBandIds = myBandsAll.map(b => b.id); 
                     if (myBandIds.includes(data.bandId)) { 
+                        // ▼▼▼ 自分のバンド（確定時）の色を緑系に変更 ▼▼▼
                         if(data.status !== 'pending') {
-                            div.style.backgroundColor = "#c2e7ff"; div.style.borderLeftColor = "#0b57d0"; div.style.color = "#001d35"; 
+                            div.style.backgroundColor = "#e6f4ea"; // 薄い緑
+                            div.style.borderLeftColor = "#34A853"; // 緑
+                            div.style.color = "#0d652d";           // 濃い緑
                         }
                     } else { 
                         if(data.status !== 'pending') {
