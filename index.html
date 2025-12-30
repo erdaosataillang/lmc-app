@@ -143,6 +143,7 @@
         .icon-admin-cal { background-color: #fce4ec; color: #c2185b; }
         .icon-admin-user { background-color: #e8eaf6; color: #283593; }
         .icon-admin-doc { background-color: #e0f2f1; color: #00695c; }
+        .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; }
         
         .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; }
         .page-container.open { transform: translateX(0); }
@@ -166,6 +167,12 @@
         .log-success { color: #8bc34a; }
         .log-warn { color: #ffeb3b; }
         .log-error { color: #f44336; }
+
+        /* 予約履歴用 */
+        .booking-list-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+        .status-confirmed { background: #e6f4ea; color: #0d652d; }
+        .status-pending { background: #fff8e1; color: #b06000; }
     </style>
 </head>
 <body>
@@ -255,6 +262,15 @@
                     </div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
+
+                <button class="menu-btn" onclick="openAdminBands()">
+                    <div class="menu-icon-wrapper icon-admin-band"><span class="material-icons">groups</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">バンドの管理</span>
+                        <span class="menu-subtitle">全バンドの編集、合わせ状況の確認</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
                 
                 <button class="menu-btn" onclick="openPage('admin-docs-stub')">
                     <div class="menu-icon-wrapper icon-admin-doc"><span class="material-icons">description</span></div>
@@ -296,6 +312,17 @@
                 <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
             </div>
             <div id="adminUserList"></div>
+        </div>
+    </div>
+
+    <div id="page-admin-bands" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-bands')"><span class="material-icons">arrow_back</span></button><div class="page-title">バンドの管理</div></div>
+        <div class="content-area">
+            <div class="search-bar">
+                <span class="material-icons" style="color:#5f6368;">search</span>
+                <input type="text" id="adminBandSearchInput" placeholder="バンド名検索...">
+            </div>
+            <div id="adminBandList"></div>
         </div>
     </div>
     
@@ -452,6 +479,11 @@
             <div class="form-group"><label class="form-label">メンバー</label><div class="member-list-edit" id="detailMemberList"></div><button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button></div>
             <div id="bandCreatorActions" class="hidden"><button class="btn-primary" onclick="updateBandName()">バンド名を変更</button><button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button><button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button><button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button></div>
             <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()">バンドから脱退</button></div>
+            <!-- 管理者用: 予約リスト -->
+            <div id="adminBandBookingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:16px;">
+                <h4 style="margin:0 0 10px; font-size:14px; color:#0b57d0;">予約・合わせ履歴 (管理者のみ)</h4>
+                <div id="adminBandBookingsList" style="max-height:150px; overflow-y:auto; font-size:12px;">読み込み中...</div>
+            </div>
             <button class="btn-secondary" onclick="closeModal('modal-band-detail')">閉じる</button>
         </div>
     </div>
@@ -520,6 +552,7 @@
         let isSelecting = false; let selectionTimer = null; let editingBookingData = null;
         let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBase64 = null;
         let allUsersCache = []; let adminEditingUserId = null;
+        let allBandsCache = []; // 管理者用バンドキャッシュ
         let tempLotterySchedule = null; // 抽選結果一時保存用
 
         // --- システム設定管理 (予約ルール) ---
@@ -1022,6 +1055,98 @@
             try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
         });
 
+        // --- 管理者用バンド管理 ---
+        window.openAdminBands = async () => {
+            openPage('admin-bands');
+            document.getElementById('adminBandList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
+            try {
+                // アーカイブ含む全バンドを取得
+                const qs = await getDocs(collection(db, "bands"));
+                allBandsCache = [];
+                qs.forEach(doc => {
+                    const data = doc.data();
+                    allBandsCache.push({ id: doc.id, ...data });
+                });
+                // 作成日順などでソートしたい場合はここでsort
+                allBandsCache.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                
+                renderAdminBandList(allBandsCache);
+            } catch(e) {
+                document.getElementById('adminBandList').innerHTML = "エラー: " + e.message;
+            }
+        };
+
+        function renderAdminBandList(bands) {
+            const container = document.getElementById('adminBandList'); container.innerHTML = "";
+            if(bands.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
+            
+            bands.forEach(b => {
+                const div = document.createElement('div'); 
+                div.className = 'card band-card'; 
+                div.onclick = () => openBandDetail(b.id, b);
+                
+                let iconHtml = `<div class="band-icon">${b.name.charAt(0)}</div>`; 
+                if (b.icon) iconHtml = `<div class="band-icon"><img src="${b.icon}"></div>`;
+                
+                let statusBadge = "";
+                if(b.isArchived) statusBadge = `<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>`;
+                
+                let html = `<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}
+                    <div class="band-info">
+                        <div class="band-name">${b.name}${statusBadge}</div>
+                        <div class="band-members">${b.memberNames.join(', ')}</div>
+                    </div>
+                    <span class="material-icons" style="color:#ccc;">chevron_right</span>
+                </div>`;
+                div.innerHTML = html; 
+                container.appendChild(div);
+            });
+        }
+        document.getElementById('adminBandSearchInput').addEventListener('input', (e) => { 
+            const term = e.target.value.trim(); 
+            renderAdminBandList(term ? allBandsCache.filter(b => b.name.includes(term)) : allBandsCache); 
+        });
+
+        async function loadBandBookings(bandId) {
+            const list = document.getElementById('adminBandBookingsList');
+            list.innerHTML = "読み込み中...";
+            try {
+                // Firestoreの複合インデックス制限を回避するため、bandIdだけで引いてJSでソートする
+                const q = query(collection(db, "bookings"), where("bandId", "==", bandId));
+                const qs = await getDocs(q);
+                
+                if(qs.empty) {
+                    list.innerHTML = "予約なし";
+                    return;
+                }
+                
+                const bookings = [];
+                qs.forEach(doc => { bookings.push(doc.data()); });
+                
+                // 日付順にソート (新しい順)
+                bookings.sort((a, b) => b.startTime.toDate() - a.startTime.toDate());
+                
+                let html = "";
+                bookings.forEach(bk => {
+                    const d = bk.startTime.toDate();
+                    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+                    
+                    let statusLabel = "";
+                    if(bk.status === 'confirmed') statusLabel = `<span class="status-badge status-confirmed">確定</span>`;
+                    else statusLabel = `<span class="status-badge status-pending">承認待ち</span>`;
+                    
+                    html += `<div class="booking-list-item">
+                        <div>${dateStr}</div>
+                        <div style="display:flex; align-items:center;">${bk.type==='event' ? '(イベント)' : ''} ${statusLabel}</div>
+                    </div>`;
+                });
+                list.innerHTML = html;
+                
+            } catch(e) {
+                list.innerHTML = "エラー: " + e.message;
+            }
+        }
+
         // --- メイン処理 ---
         async function main() {
             try {
@@ -1098,20 +1223,55 @@
         };
         window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
         async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); } } catch(e) { alert("エラー: " + e.message); } }
+        
         window.openBandDetail = (bandId, data) => {
             document.getElementById('detailBandId').value = bandId; document.getElementById('detailBandName').value = data.name; document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
             currentEditingBandId = bandId; currentEditingBandMembers = data.memberIds;
             const detailIcon = document.getElementById('detailBandIcon'); const detailPicker = document.getElementById('detailIconPicker');
             if (data.icon) { detailIcon.src = data.icon; detailIcon.style.display = 'block'; } else { detailIcon.src = 'https://placehold.jp/80x80.png?text=No+Img'; }
+            
             const isCreator = (data.creatorId === currentUser);
-            if (isCreator && !data.isArchived) { detailPicker.onclick = () => document.getElementById('editBandIconInput').click(); } else { detailPicker.onclick = null; }
+            // 管理者かどうかのチェック
+            const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
+            const canEdit = isCreator || isAdmin;
+
+            // 管理者ならアイコン変更も許可（アーカイブされてなければ）
+            if (canEdit && !data.isArchived) { detailPicker.onclick = () => document.getElementById('editBandIconInput').click(); } else { detailPicker.onclick = null; }
+            
             const memberListDiv = document.getElementById('detailMemberList'); memberListDiv.innerHTML = "";
             const nameInput = document.getElementById('detailBandName'); const btnArchive = document.getElementById('btnArchive'); const btnRestore = document.getElementById('btnRestore'); const btnAddMember = document.getElementById('btnAddMemberToBand');
-            if (data.isArchived) { btnArchive.classList.add('hidden'); btnRestore.classList.remove('hidden'); nameInput.readOnly = true; btnAddMember.classList.add('hidden'); } else { btnArchive.classList.remove('hidden'); btnRestore.classList.add('hidden'); if(isCreator) { nameInput.readOnly = false; btnAddMember.classList.remove('hidden'); } else { btnAddMember.classList.add('hidden'); } }
-            if (isCreator) { document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden'); } else { nameInput.readOnly = true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden'); }
-            data.memberIds.forEach((uid, idx) => { const name = data.memberNames[idx] || "不明"; const row = document.createElement('div'); row.className = 'member-row'; let rowHtml = `<span>${name}</span>`; if (isCreator && uid !== currentUser) { rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`; } else if (uid === data.creatorId) { rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`; } row.innerHTML = rowHtml; memberListDiv.appendChild(row); });
+            
+            if (data.isArchived) { 
+                btnArchive.classList.add('hidden'); btnRestore.classList.remove('hidden'); nameInput.readOnly = true; btnAddMember.classList.add('hidden'); 
+            } else { 
+                btnArchive.classList.remove('hidden'); btnRestore.classList.add('hidden'); 
+                if(canEdit) { nameInput.readOnly = false; btnAddMember.classList.remove('hidden'); } else { btnAddMember.classList.add('hidden'); } 
+            }
+            
+            // 管理者またはリーダーなら操作ボタンを表示
+            if (canEdit) { 
+                document.getElementById('bandCreatorActions').classList.remove('hidden'); 
+                document.getElementById('bandMemberActions').classList.add('hidden'); 
+            } else { 
+                nameInput.readOnly = true; 
+                document.getElementById('bandCreatorActions').classList.add('hidden'); 
+                document.getElementById('bandMemberActions').classList.remove('hidden'); 
+            }
+            
+            data.memberIds.forEach((uid, idx) => { const name = data.memberNames[idx] || "不明"; const row = document.createElement('div'); row.className = 'member-row'; let rowHtml = `<span>${name}</span>`; if (canEdit && uid !== currentUser) { rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`; } else if (uid === data.creatorId) { rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`; } row.innerHTML = rowHtml; memberListDiv.appendChild(row); });
+            
+            // 管理者用予約リスト表示
+            const bookingArea = document.getElementById('adminBandBookingsArea');
+            if(isAdmin) {
+                bookingArea.classList.remove('hidden');
+                loadBandBookings(bandId);
+            } else {
+                bookingArea.classList.add('hidden');
+            }
+
             openModal('modal-band-detail');
         };
+
         window.archiveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("アーカイブしますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: true }); alert("アーカイブしました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
         window.restoreBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("復元しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: false }); alert("復元しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
         window.updateBandName = async () => { const bandId = document.getElementById('detailBandId').value; const newName = document.getElementById('detailBandName').value.trim(); if(!newName) return alert("バンド名を入力してください"); try { await updateDoc(doc(db, "bands", bandId), { name: newName }); alert("変更しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
