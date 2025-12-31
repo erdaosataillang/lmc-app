@@ -1159,10 +1159,16 @@
         async function main() {
             try {
                 // ▼▼▼ 追加: Firebase Auth 認証処理 ▼▼▼
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (authError) {
+                    console.warn("Firebase Auth Warning (無視して続行します):", authError);
+                    // auth/configuration-not-found の場合は、匿名ログインが無効になっていますが、
+                    // FirestoreのルールがOpenなら動作するため、ここでは処理を止めずに次に進みます。
                 }
                 // ▲▲▲ 追加終わり ▲▲▲
 
