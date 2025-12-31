@@ -530,8 +530,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        // uploadStringをuploadBytesに変更
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
+        // Firebase Storageのインポートを削除
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
         const firebaseConfig = {
@@ -546,7 +545,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const storage = getStorage(app);
+        // const storage = getStorage(app); // 削除
         const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; 
         const MY_PAGE_URL = "https://liff.line.me/2008162165-znd24peg";
@@ -1227,7 +1226,32 @@
             });
         }
         
-        // バンド作成 (画像保存修正: Base64 -> Blob & uploadBytes)
+        // 外部アップローダーへの送信関数
+        async function uploadImageToExternal(blob) {
+            const formData = new FormData();
+            formData.append('files', blob, 'image.jpg'); 
+            
+            try {
+                const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if(!res.ok) throw new Error(`Upload failed: ${res.status}`);
+                const json = await res.json();
+                
+                // レスポンス例: {"files":[{"name":"...","url":"..."}]}
+                if(json.files && json.files[0] && json.files[0].url) {
+                    return json.files[0].url;
+                } else {
+                    throw new Error('Unexpected response format');
+                }
+            } catch(e) {
+                throw new Error('外部アップロードエラー: ' + e.message);
+            }
+        }
+
+        // バンド作成 (画像保存修正: 外部アップローダー使用)
         window.openBandModal = () => { 
             document.getElementById('inputBandName').value = ""; document.getElementById('userSelectList').innerHTML = "読み込み中...";
             tempBandIconBlob = null; document.getElementById('previewBandIcon').classList.add('hidden');
@@ -1238,20 +1262,36 @@
             const selectedEls = document.querySelectorAll('#userSelectList .member-option.selected');
             const memberIds = [currentUser]; const memberNames = [currentProfile.displayName];
             selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); });
+            
+            const btn = document.querySelector('#modal-band .btn-primary');
+            const originalText = btn.innerText;
+            btn.innerText = "処理中...";
+            btn.disabled = true;
+
             try {
+                // 1. バンドのドキュメントを作成
                 const docRef = await addDoc(collection(db, "bands"), { name: name, memberIds: memberIds, memberNames: memberNames, creatorId: currentUser, isArchived: false, createdAt: new Date() });
                 
-                // Blobを使ってアップロード (uploadBytes)
+                // 2. 画像があればアップロード (ここだけ失敗してもバンド作成は取り消さない)
                 if (tempBandIconBlob) { 
-                    const storageRef = ref(storage, `band_icons/${docRef.id}.jpg`); 
-                    await uploadBytes(storageRef, tempBandIconBlob); 
-                    const url = await getDownloadURL(storageRef); 
-                    await updateDoc(doc(db, "bands", docRef.id), { icon: url }); 
+                    try {
+                        const url = await uploadImageToExternal(tempBandIconBlob);
+                        await updateDoc(doc(db, "bands", docRef.id), { icon: url }); 
+                    } catch (imgError) {
+                        console.error("Image upload failed:", imgError);
+                        alert("バンドは作成されましたが、画像のアップロードに失敗しました。\n" + imgError.message);
+                    }
                 }
 
                 closeModal('modal-band'); document.getElementById('inputBandName').value = "";
                 if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name); else alert("作成しました");
-            } catch(e) { alert("エラー: " + e.message); }
+            } catch(e) { 
+                console.error(e);
+                alert("作成エラー: " + e.message); 
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         };
         window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
         async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); } } catch(e) { alert("エラー: " + e.message); } }
@@ -1310,21 +1350,22 @@
                 if(!confirm("バンドアイコンを変更しますか？")) return;
                 
                 const detailIcon = document.getElementById('detailBandIcon');
+                const originalSrc = detailIcon.src;
                 detailIcon.style.opacity = "0.5"; // 処理中表示
 
                 try {
                     const blob = await compressImage(input.files[0]); 
                     const bandId = document.getElementById('detailBandId').value; 
-                    const storageRef = ref(storage, `band_icons/${bandId}.jpg`); 
                     
-                    await uploadBytes(storageRef, blob); // uploadBytesに変更
-                    const url = await getDownloadURL(storageRef); 
+                    // 外部アップローダーを使用
+                    const url = await uploadImageToExternal(blob);
                     
                     await updateDoc(doc(db, "bands", bandId), { icon: url }); 
                     detailIcon.src = url; 
                     alert("アイコンを変更しました"); 
                 } catch(e) { 
                     console.error(e);
+                    detailIcon.src = originalSrc; // 戻す
                     alert("画像アップロードエラー: " + e.message); 
                 } finally {
                     detailIcon.style.opacity = "1";
