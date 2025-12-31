@@ -235,17 +235,32 @@
             <div class="header-title">Cueシート</div>
             <div class="header-avatar" id="headerIconCue" onclick="goToMyPage()"></div>
         </div>
+        
+        <!-- バンド選択エリアを追加 -->
+        <div style="padding:10px 16px; background:white; border-bottom:1px solid #eee;">
+            <label style="font-size:11px; color:#5f6368; display:block; margin-bottom:4px;">表示するバンドを選択</label>
+            <select id="cuesheetBandSelect" class="form-input" style="padding:8px; font-size:14px;" onchange="loadBandCuesheet(this.value)">
+                <option value="">バンドを選択...</option>
+            </select>
+        </div>
+
         <div class="scroll-content">
             <div id="cuesheetContainer" style="display:flex; flex-direction:column; align-items:center; min-height: 100%;">
-                <div id="cuesheetLoading" style="margin-top:100px; color:#5f6368;">読み込み中...</div>
+                <div id="cuesheetLoading" style="margin-top:100px; color:#5f6368; display:none;">読み込み中...</div>
+                
                 <div id="cuesheetContent" class="hidden" style="width:100%; padding:10px; box-sizing:border-box;">
-                    <img id="cuesheetImage" src="" style="width:100%; height:auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);" onclick="window.open(this.src, '_blank')">
+                    <!-- referrerpolicyを追加して、外部サイトからのブロックを防ぐ -->
+                    <img id="cuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; height:auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);" onclick="window.open(this.src, '_blank')">
                     <div style="margin-top:10px; font-size:12px; color:#999; text-align:center;">タップで拡大表示</div>
                 </div>
+                
                 <div id="cuesheetEmpty" class="hidden" style="margin-top:100px; text-align:center; color:#5f6368;">
                     <span class="material-icons" style="font-size:48px; margin-bottom:10px;">image_not_supported</span><br>
                     Cueシートはまだありません
                 </div>
+                
+                <!-- デバッグ情報表示エリア -->
+                <div id="cuesheetDebug" style="margin-top:20px; padding:10px; font-size:10px; color:#999; width:90%; word-break:break-all; border-top:1px dashed #eee;"></div>
             </div>
         </div>
     </div>
@@ -990,6 +1005,11 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             navEl.classList.add('active');
             if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
+            
+            // Cueシート画面への切り替え時、バンド選択肢を更新する
+            if (screenId === 'cuesheet') {
+                updateCuesheetBandSelect();
+            }
         };
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
         window.openPage = (pageId) => { document.getElementById('page-' + pageId).classList.add('open'); };
@@ -1202,9 +1222,6 @@
                 // システム設定を読み込む
                 await loadSystemConfig();
                 
-                // Cueシート読み込み
-                loadCuesheet();
-
                 // ダイレクト遷移
                 if (targetPage) {
                     let navSelector = '';
@@ -1220,34 +1237,108 @@
             } catch(e) { console.error(e); }
         }
 
-        // --- Cueシート ---
-        function loadCuesheet() {
-            onSnapshot(doc(db, "system", "cuesheet"), (docSnap) => {
-                const loading = document.getElementById('cuesheetLoading');
-                const content = document.getElementById('cuesheetContent');
-                const empty = document.getElementById('cuesheetEmpty');
-                const img = document.getElementById('cuesheetImage');
-                
+        // --- Cueシート関連 ---
+        
+        // バンド選択プルダウンの更新
+        window.loadBandCuesheet = function(bandId) {
+            loadBandCuesheetData(bandId);
+        }
+
+        function updateCuesheetBandSelect() {
+            const select = document.getElementById('cuesheetBandSelect');
+            if(!select) return;
+            select.innerHTML = "";
+            
+            // myBandsAll はすでにロードされている前提
+            if (!myBandsAll || myBandsAll.length === 0) {
+                select.innerHTML = '<option value="">所属バンドがありません</option>';
+                select.disabled = true;
+                document.getElementById('cuesheetContent').classList.add('hidden');
+                document.getElementById('cuesheetEmpty').classList.remove('hidden');
+                return;
+            }
+            select.disabled = false;
+            
+            let hasActive = false;
+            myBandsAll.forEach(b => {
+                if(!b.isArchived) {
+                    const op = document.createElement('option');
+                    op.value = b.id;
+                    op.text = b.name;
+                    select.appendChild(op);
+                    hasActive = true;
+                }
+            });
+            
+            if(!hasActive) {
+                select.innerHTML = '<option value="">活動中のバンドがありません</option>';
+                select.disabled = true;
+            } else {
+                // 初期選択でロード
+                if (select.options.length > 0) {
+                    select.selectedIndex = 0;
+                    loadBandCuesheetData(select.value);
+                }
+            }
+        }
+
+        let currentCuesheetUnsub = null; // リスナー解除用
+
+        function loadBandCuesheetData(bandId) {
+            if(!bandId) return;
+            if(currentCuesheetUnsub) currentCuesheetUnsub(); // 前の監視を解除
+            
+            const loading = document.getElementById('cuesheetLoading');
+            const content = document.getElementById('cuesheetContent');
+            const empty = document.getElementById('cuesheetEmpty');
+            const img = document.getElementById('cuesheetImage');
+            const debugBox = document.getElementById('cuesheetDebug');
+
+            loading.style.display = 'block';
+            content.classList.add('hidden');
+            empty.classList.add('hidden');
+            if(debugBox) debugBox.innerHTML = "";
+
+            currentCuesheetUnsub = onSnapshot(doc(db, "bands", bandId), (docSnap) => {
                 loading.style.display = 'none';
-                
-                if (docSnap.exists() && docSnap.data().latestCuesheetUrl) {
-                    img.src = docSnap.data().latestCuesheetUrl;
-                    content.classList.remove('hidden');
-                    empty.classList.add('hidden');
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.latestCuesheetUrl) {
+                        img.src = data.latestCuesheetUrl;
+                        content.classList.remove('hidden');
+                        empty.classList.add('hidden');
+                        if(debugBox) debugBox.innerHTML = `Loaded for: ${data.name}`;
+                    } else {
+                        content.classList.add('hidden');
+                        empty.classList.remove('hidden');
+                        if(debugBox) debugBox.innerHTML = `No cuesheet url in band: ${data.name}`;
+                    }
                 } else {
-                    content.classList.add('hidden');
-                    empty.classList.remove('hidden');
+                     content.classList.add('hidden');
+                     empty.classList.remove('hidden');
                 }
             }, (error) => {
-                console.error("Cueシート読み込みエラー:", error);
-                document.getElementById('cuesheetLoading').innerText = "読み込みエラー";
+                console.error(error);
+                loading.style.display = 'block';
+                loading.innerText = "読み込みエラー: " + error.message;
             });
         }
 
         // --- マイバンド ---
         function loadMyBands() {
             const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
-            onSnapshot(q, (snapshot) => { myBandsAll = []; snapshot.forEach(docSnap => { const data = docSnap.data(); myBandsAll.push({ id: docSnap.id, ...data }); }); renderBandList(); });
+            onSnapshot(q, (snapshot) => { 
+                myBandsAll = []; 
+                snapshot.forEach(docSnap => { 
+                    const data = docSnap.data(); 
+                    myBandsAll.push({ id: docSnap.id, ...data }); 
+                }); 
+                renderBandList(); 
+                // もしCueシート画面が開いていたらプルダウンも更新
+                if(document.getElementById('screen-cuesheet').classList.contains('active')) {
+                    updateCuesheetBandSelect();
+                }
+            });
         }
         window.switchBandTab = (tab) => { currentBandTab = tab; document.querySelectorAll('.band-tab').forEach(el => el.classList.remove('active')); const idx = tab === 'active' ? 0 : 1; document.querySelectorAll('.band-tab')[idx].classList.add('active'); renderBandList(); };
         function renderBandList() {
