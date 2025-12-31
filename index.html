@@ -236,7 +236,17 @@
             <div class="header-avatar" id="headerIconCue" onclick="goToMyPage()"></div>
         </div>
         <div class="scroll-content">
-            <div style="text-align:center; margin-top:100px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>準備中</div>
+            <div id="cuesheetContainer" style="display:flex; flex-direction:column; align-items:center; min-height: 100%;">
+                <div id="cuesheetLoading" style="margin-top:100px; color:#5f6368;">読み込み中...</div>
+                <div id="cuesheetContent" class="hidden" style="width:100%; padding:10px; box-sizing:border-box;">
+                    <img id="cuesheetImage" src="" style="width:100%; height:auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);" onclick="window.open(this.src, '_blank')">
+                    <div style="margin-top:10px; font-size:12px; color:#999; text-align:center;">タップで拡大表示</div>
+                </div>
+                <div id="cuesheetEmpty" class="hidden" style="margin-top:100px; text-align:center; color:#5f6368;">
+                    <span class="material-icons" style="font-size:48px; margin-bottom:10px;">image_not_supported</span><br>
+                    Cueシートはまだありません
+                </div>
+            </div>
         </div>
     </div>
     
@@ -1192,6 +1202,9 @@
                 // システム設定を読み込む
                 await loadSystemConfig();
                 
+                // Cueシート読み込み
+                loadCuesheet();
+
                 // ダイレクト遷移
                 if (targetPage) {
                     let navSelector = '';
@@ -1205,6 +1218,30 @@
                 if (action === 'invite' && inviteBandId) { await handleInvite(inviteBandId); window.history.replaceState(null, null, window.location.pathname); }
                 loadMyBands();
             } catch(e) { console.error(e); }
+        }
+
+        // --- Cueシート ---
+        function loadCuesheet() {
+            onSnapshot(doc(db, "system", "cuesheet"), (docSnap) => {
+                const loading = document.getElementById('cuesheetLoading');
+                const content = document.getElementById('cuesheetContent');
+                const empty = document.getElementById('cuesheetEmpty');
+                const img = document.getElementById('cuesheetImage');
+                
+                loading.style.display = 'none';
+                
+                if (docSnap.exists() && docSnap.data().latestCuesheetUrl) {
+                    img.src = docSnap.data().latestCuesheetUrl;
+                    content.classList.remove('hidden');
+                    empty.classList.add('hidden');
+                } else {
+                    content.classList.add('hidden');
+                    empty.classList.remove('hidden');
+                }
+            }, (error) => {
+                console.error("Cueシート読み込みエラー:", error);
+                document.getElementById('cuesheetLoading').innerText = "読み込みエラー";
+            });
         }
 
         // --- マイバンド ---
