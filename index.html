@@ -3,222 +3,534 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LMC Studio Mobile</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>LMC Mobile</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F3F4F6; color: #1F2937; -webkit-tap-highlight-color: transparent; }
-        .mobile-container { max-width: 480px; margin: 0 auto; background: white; min-height: 100vh; position: relative; padding-bottom: 80px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
-        .app-header { background: white; padding: 15px 20px; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #E5E7EB; display: flex; align-items: center; justify-content: space-between; height: 60px; }
-        .logo { font-weight: 800; font-size: 20px; background: linear-gradient(135deg, #6366F1, #8B5CF6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #E5E7EB; padding: 8px 0 20px; display: flex; justify-content: space-around; max-width: 480px; margin: 0 auto; z-index: 50; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #9CA3AF; font-size: 10px; font-weight: 500; transition: all 0.2s; width: 20%; }
-        .nav-item.active { color: #6366F1; }
-        .nav-item .material-icons { font-size: 24px; margin-bottom: 4px; }
-        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #F3F4F6; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-        .btn-primary { background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; width: 100%; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); transition: transform 0.1s; }
-        .btn-primary:active { transform: scale(0.98); }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 100; display: none; align-items: flex-end; backdrop-filter: blur(2px); }
-        .modal-content { background: white; width: 100%; max-width: 480px; margin: 0 auto; border-radius: 20px 20px 0 0; padding: 24px; animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); max-height: 90vh; overflow-y: auto; }
+        /* --- 共通設定 --- */
+        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; padding-bottom: 88px; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; }
+        .hidden { display: none !important; }
+
+        /* ヘッダー */
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
+        .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
+        .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
+
+        /* リング */
+        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); }
+        .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
+        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52,168,83,0.5); }
+        .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234,67,53,0.5); }
+        .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
+        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+
+        /* 画面切り替え */
+        .screen { display: none; flex-direction: column; height: 100%; width: 100%; }
+        .screen.active { display: flex; }
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
+
+        /* カレンダー */
+        .calendar-controls { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 16px; border-radius: 12px; margin: 0 16px 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 400; }
+        .cal-view-toggle { font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; background: #f1f3f4; padding: 6px 12px; border-radius: 8px; }
+        .view-menu { position: absolute; top: 50px; left: 16px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 120px; z-index: 600; display: none; flex-direction: column; }
+        .view-menu.open { display: flex; }
+        .view-menu-item { padding: 12px 16px; font-size: 14px; cursor: pointer; }
+        .view-menu-item.active { background: #e8f0fe; color: #0b57d0; font-weight: bold; }
+
+        .month-grid { background: white; border-radius: 12px; padding: 10px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; }
+        .weekday-label { font-size: 11px; color: #5f6368; padding-bottom: 8px; }
+        .day-cell { height: 50px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 6px; cursor: pointer; border: 2px solid transparent; }
+        .day-num { font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 50%; z-index: 2; }
+        .day-cell.today .day-num { background: #0b57d0; color: white; font-weight: bold; }
+        .day-cell.other-month { opacity: 0.3; }
+        .day-cell.unavailable { background-color: #ffccbc; border-color: #ff7043; } .day-cell.unavailable .day-num { color: #bf360c; font-weight: bold; }
+        .event-dots { display: flex; gap: 2px; margin-top: 4px; justify-content: center; z-index: 2; }
+        .dot { width: 5px; height: 5px; border-radius: 50%; background: #34A853; } .dot.event { background: #137333; transform: scale(1.2); }
+
+        .timeline-container { background: white; border-radius: 12px; padding: 10px 0; position: relative; height: auto; min-height: 600px; }
+        .time-slot { height: 60px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; position: relative; }
+        .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
+        .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; touch-action: pan-y; }
+        .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
+        .event-block { position: absolute; left: 0; width: 100%; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 4px; padding: 4px 8px; font-size: 12px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); box-sizing: border-box; }
+        .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
+        .event-block.pending { opacity: 0.9; background: #fff8e1; border-left: 4px solid #ffb300; color: #b06000; border: 1px dashed #ffb300; border-left-style: solid; }
+        /* 抽選確定済み（薄紫） */
+        .event-block.lottery-confirmed { background: #f3e5f5; border-left: 4px solid #ab47bc; color: #4a148c; }
+        
+        /* 予約重複時のまとめ表示用 */
+        .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; }
+        .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
+
+        /* マイバンド */
+        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; }
+        .card.band-card:active { background-color: #f5f5f5; }
+        .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; }
+        .band-item:last-child { border: none; margin: 0; padding: 0; }
+        .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; }
+        .band-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 16px; } .band-members { font-size: 12px; color: #5f6368; }
+        .band-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin: 0 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; }
+        .band-tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #5f6368; }
+        .band-tab.active { background: #e8f0fe; color: #0b57d0; }
+
+        /* ナビゲーション */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #f0f4f9; border-top: none; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
+        .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; }
+        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } 
+        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } /* 管理タブ用色 */
+        .nav-item.active span { color: #1f1f1f; font-weight: bold; }
+
+        /* UIパーツ */
+        .fab { position: fixed; bottom: 100px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900; }
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
+        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
+        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+        .btn-google { background: #fff; color: #3c4043; border: 1px solid #dadce0; padding: 10px; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 16px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-add-member { margin-top: 10px; width: 100%; padding: 10px; border: 1px dashed #0b57d0; background: #e8f0fe; color: #0b57d0; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px; }
+
+        /* 画像選択 */
+        .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; }
+        .image-picker { width: 80px; height: 80px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
+        .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+        .image-picker i { font-size: 24px; z-index: 1; } .image-picker span { font-size: 10px; z-index: 1; margin-top: 4px; }
+
+        /* モーダル */
+        /* z-indexを3000に上げ、管理画面(2500)より上に表示されるように修正 */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: none; justify-content: center; align-items: flex-end; }
+        .modal-overlay.open { display: flex; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; }
-        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px; position: relative; }
-        .calendar-day.today { background-color: #EEF2FF; color: #6366F1; font-weight: 700; }
-        .calendar-day.selected { background-color: #6366F1; color: white; }
-        .calendar-day.has-event::after { content: ''; position: absolute; bottom: 4px; width: 4px; height: 4px; background: #EF4444; border-radius: 50%; }
-        .time-slot { display: flex; border-bottom: 1px solid #F3F4F6; padding: 0; height: 44px; position: relative; } /* 高さ固定 */
-        .time-label { width: 50px; font-size: 12px; color: #9CA3AF; padding: 12px 8px 0 0; text-align: right; flex-shrink: 0; }
-        .time-track { flex-grow: 1; position: relative; background: #FAFAFA; border-left: 1px solid #F3F4F6; cursor: pointer; } /* cursor pointer追加 */
-        .booking-block { position: absolute; left: 2px; right: 2px; border-radius: 6px; padding: 2px 6px; font-size: 11px; color: white; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; z-index: 10; pointer-events: auto; }
-        .selection-highlight { position: absolute; left: 0; right: 0; background-color: rgba(99, 102, 241, 0.2); pointer-events: none; z-index: 5; } /* 選択範囲ハイライト */
-        .band-icon-sm { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; background: #F3F4F6; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: white; }
+        
+        .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; }
+        .member-option.selected { background: #e8f0fe; } .member-check { margin-right: 10px; color: #0b57d0; }
+        
         .hidden { display: none !important; }
         
-        /* メンバー選択用 */
-        .member-select-list { max-height: 200px; overflow-y: auto; margin-bottom: 15px; border: 1px solid #eee; border-radius: 8px; }
-        .member-option { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #f9f9f9; cursor: pointer; }
-        .member-option:last-child { border-bottom: none; }
-        .member-option.selected { background-color: #EEF2FF; }
-        .member-check { margin-right: 10px; color: #6366F1; }
+        /* z-indexを3500に上げ、モーダルよりさらに上に表示 */
+        #selectionToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 3500; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+        #selectionToast.show { opacity: 1; }
+        
+        .radio-group { display: flex; gap: 15px; } .radio-label { display: flex; align-items: center; font-size: 16px; cursor: pointer; } .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
+        .checkbox-label { display: flex; align-items: center; font-size: 15px; font-weight: bold; color: #0b57d0; cursor: pointer; } .checkbox-label input { width: 20px; height: 20px; margin-right: 8px; }
+        .member-list-edit { margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px; } .member-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+        .btn-remove-member { font-size: 11px; color: #d93025; border: 1px solid #d93025; background: white; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+        .checkbox-group { display: flex; gap: 15px; flex-wrap: wrap; padding: 8px 0; }
 
-        /* タブ切り替え */
-        .tab-group { display: flex; background: #F3F4F6; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 600; color: #6B7280; border-radius: 8px; transition: all 0.2s; }
-        .tab-btn.active { background: white; color: #6366F1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        /* --- メニューボタン（管理者用） --- */
+        .menu-list { display: flex; flex-direction: column; gap: 12px; }
+        .menu-btn { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #ffffff; border: none; width: 100%; text-align: left; cursor: pointer; border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.1s; }
+        .menu-btn:active { transform: scale(0.98); background-color: #f8f9fa; }
+        .menu-icon-wrapper { width: 48px; height: 48px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; }
+        .menu-icon-wrapper .material-icons { font-size: 24px; }
+        .menu-content { flex-grow: 1; }
+        .menu-title { font-size: 16px; font-weight: 500; color: #1f1f1f; display: block; margin-bottom: 4px; }
+        .menu-subtitle { font-size: 12px; color: #444746; display: block; line-height: 1.4; }
+        .menu-arrow { color: #c4c7c5; font-size: 24px; }
+        
+        .icon-admin-cal { background-color: #fce4ec; color: #c2185b; }
+        .icon-admin-user { background-color: #e8eaf6; color: #283593; }
+        .icon-admin-doc { background-color: #e0f2f1; color: #00695c; }
+        .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; }
+        
+        .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; }
+        .page-container.open { transform: translateX(0); }
+        .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
+        .back-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1f1f1f; margin-right: 8px; margin-left: -8px; }
+        .page-title { font-size: 20px; font-weight: 400; color: #1f1f1f; }
+        .content-area { padding: 0 16px 40px; }
+        .search-bar { padding: 12px 16px; background:white; border-radius:30px; display:flex; align-items:center; margin-bottom:20px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .search-bar input { border:none; width:100%; outline:none; font-size:16px; margin-left:10px; padding:0; }
+        .user-list-item { background: white; padding: 16px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; }
+        .mini-icon { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
+        .user-info-main { flex-grow: 1; } .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } .user-sub { font-size: 12px; color: #5f6368; }
+        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .info-row .label { color: #5f6368; font-size: 13px; } .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
+        /* 管理者用保存ボタン */
+        .btn-admin-save { background: #c2185b; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
+        
+        /* 抽選ログ用 */
+        .lottery-log-box { background: #2b2b2b; color: #fff; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto; margin-top: 10px; }
+        .log-line { margin-bottom: 4px; border-bottom: 1px solid #444; padding-bottom: 2px; }
+        .log-success { color: #8bc34a; }
+        .log-warn { color: #ffeb3b; }
+        .log-error { color: #f44336; }
 
-        /* スケルトンローディング */
-        .skeleton { background: #eee; background: linear-gradient(110deg, #ececec 8%, #f5f5f5 18%, #ececec 33%); border-radius: 8px; background-size: 200% 100%; animation: 1.5s shine linear infinite; }
-        @keyframes shine { to { background-position-x: -200%; } }
-
-        /* トースト通知 */
-        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 10px; width: 90%; max-width: 400px; pointer-events: none; }
-        .toast { background: rgba(31, 41, 55, 0.95); color: white; padding: 12px 20px; border-radius: 50px; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transform: translateY(-20px); transition: all 0.3s; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
-        .toast.show { opacity: 1; transform: translateY(0); }
-
-        /* 管理者パネル */
-        .admin-panel { border: 2px solid #6366F1; background: #EEF2FF; display: none; }
+        /* 予約履歴用 */
+        .booking-list-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+        .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
+        .status-confirmed { background: #e6f4ea; color: #0d652d; }
+        .status-pending { background: #fff8e1; color: #b06000; }
     </style>
 </head>
 <body>
 
-<div class="mobile-container">
-    <!-- Header -->
-    <header class="app-header">
-        <div class="logo">LMC Studio</div>
-        <div class="flex items-center gap-3">
-            <span id="headerDate" class="text-sm font-medium text-gray-500"></span>
-            <div id="userAvatar" class="w-8 h-8 rounded-full bg-gray-200 overflow-hidden cursor-pointer border border-gray-200" onclick="switchPage('profile')">
-                <img id="headerUserIcon" src="https://placehold.jp/150x150.png" class="w-full h-full object-cover">
-            </div>
-        </div>
-    </header>
+    <div id="selectionToast">なぞって時間を選択...</div>
 
-    <div id="toast-container"></div>
-
-    <!-- Main Content Area -->
-    <main id="mainContent" class="p-4">
-        <!-- ページはJSで切り替え -->
-    </main>
-    
-    <!-- Navigation -->
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="switchPage('home')">
-            <span class="material-icons">calendar_today</span>
-            <span>予約</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('bands')">
-            <span class="material-icons">groups</span>
-            <span>バンド</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('lottery')">
-            <span class="material-icons">casino</span>
-            <span>抽選</span>
-        </div>
-        <div class="nav-item" onclick="switchPage('profile')">
-            <span class="material-icons">person</span>
-            <span>マイページ</span>
-        </div>
-        <div id="adminNav" class="nav-item hidden" onclick="switchPage('admin')">
-            <span class="material-icons">admin_panel_settings</span>
-            <span>管理</span>
-        </div>
-    </nav>
-</div>
-
-<!-- Modal: Band Create -->
-<div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-bold">バンド作成</h3>
-            <button onclick="closeModal('modal-band')" class="text-gray-400"><span class="material-icons">close</span></button>
-        </div>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">バンド名</label>
-                <input type="text" id="inputBandName" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500" placeholder="バンド名を入力">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">アイコン画像</label>
-                <input type="file" id="inputBandIcon" accept="image/*" class="hidden" onchange="handleImageSelect(this, 'previewBandIcon')">
-                <div onclick="document.getElementById('inputBandIcon').click()" class="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-100">
-                    <img id="previewBandIcon" class="hidden w-full h-full object-cover rounded-xl">
-                    <span class="material-icons mb-1">add_photo_alternate</span>
-                    <span class="text-xs">タップして画像を選択</span>
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">メンバー追加</label>
-                <div id="userSelectList" class="member-select-list">
-                    <!-- JSでユーザーリスト生成 -->
-                </div>
-            </div>
-            <button onclick="saveBand()" class="btn-primary">作成する</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Booking -->
-<div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-bold">スタジオ予約</h3>
-            <button onclick="closeModal('modal-booking')" class="text-gray-400"><span class="material-icons">close</span></button>
-        </div>
-        <div class="space-y-4">
-            <div class="p-3 bg-indigo-50 rounded-xl text-indigo-800 text-sm font-medium flex items-center gap-2">
-                <span class="material-icons text-base">schedule</span>
-                <span id="bookingTimeDisplay">--:-- 〜 --:--</span>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">バンド選択</label>
-                <select id="bookingBandSelect" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 appearance-none">
-                    <!-- JSで生成 -->
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 mb-1">メモ (任意)</label>
-                <textarea id="bookingMemo" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500" rows="2" placeholder="機材の要望など"></textarea>
-            </div>
-            <button onclick="confirmBooking()" class="btn-primary">予約する</button>
-            <button id="btnDeleteBooking" onclick="deleteBooking()" class="w-full py-3 text-red-500 font-medium text-sm hidden">予約を取り消す</button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal: Band Detail -->
-<div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">バンド詳細</h3>
-            <button onclick="closeModal('modal-band-detail')" class="text-gray-400"><span class="material-icons">close</span></button>
-        </div>
-        <div class="flex flex-col items-center mb-6">
-            <div class="relative">
-                <img id="detailBandIcon" src="" class="w-24 h-24 rounded-2xl object-cover mb-3 shadow-md bg-gray-200">
-                <label for="editBandIconInput" class="absolute bottom-2 right-[-8px] bg-white p-1.5 rounded-full shadow cursor-pointer text-gray-600">
-                    <span class="material-icons text-sm">edit</span>
-                </label>
-                <input type="file" id="editBandIconInput" class="hidden" accept="image/*" onchange="handleImageEdit(this)">
-            </div>
-            <h2 id="detailBandName" class="text-xl font-bold"></h2>
-            <p id="detailBandMemberCount" class="text-sm text-gray-500 mt-1"></p>
+    <div id="screen-bands" class="screen active">
+        <div class="app-header">
+            <div class="header-title">マイバンド <span style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">2025年度</span></div>
+            <div class="header-avatar" id="headerIconBands" onclick="goToMyPage()"></div>
         </div>
         
-        <input type="hidden" id="detailBandId">
+        <div class="band-tabs">
+            <div class="band-tab active" onclick="switchBandTab('active')">活動中</div>
+            <div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div>
+        </div>
 
-        <div class="space-y-4">
-            <div>
-                <div class="flex justify-between items-center mb-2">
-                    <label class="text-xs font-bold text-gray-500">メンバー</label>
-                    <button onclick="openMemberAddModal()" class="text-xs text-indigo-600 font-medium">+ 追加</button>
+        <div class="scroll-content">
+            <div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>
+        </div>
+        <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
+    </div>
+
+    <div id="screen-calendar" class="screen">
+        <div class="app-header">
+            <div class="header-title">合わせ予約</div>
+            <div class="header-avatar" id="headerIconCal" onclick="goToMyPage()"></div>
+        </div>
+        
+        <div class="calendar-controls">
+            <div class="cal-view-toggle" onclick="toggleViewMenu()">
+                <span id="currentViewName">月表示</span>
+                <span class="material-icons">arrow_drop_down</span>
+            </div>
+            <div class="view-menu" id="viewMenu">
+                <div class="view-menu-item active" onclick="switchCalendarView('month')">月表示</div>
+                <div class="view-menu-item" onclick="switchCalendarView('day')">日表示</div>
+            </div>
+            <div style="display:flex; align-items:center;">
+                <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span>
+                <div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px;"></div>
+                <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span>
+            </div>
+        </div>
+
+        <div class="scroll-content">
+            <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
+            <div id="calDayView" class="hidden">
+                <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
+                <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
+                <div class="timeline-container" id="timeline"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-cuesheet" class="screen">
+        <div class="app-header">
+            <div class="header-title">Cueシート</div>
+            <div class="header-avatar" id="headerIconCue" onclick="goToMyPage()"></div>
+        </div>
+        <div class="scroll-content">
+            <div style="text-align:center; margin-top:100px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>準備中</div>
+        </div>
+    </div>
+    
+    <div id="screen-admin" class="screen">
+        <div class="app-header">
+            <div class="header-title">データの管理</div>
+            <div class="header-avatar" id="headerIconAdmin" onclick="goToMyPage()"></div>
+        </div>
+        <div class="scroll-content">
+            <div class="menu-list">
+                <button class="menu-btn" onclick="openAdminSettings()">
+                    <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">予約システム管理</span>
+                        <span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+                
+                <button class="menu-btn" onclick="openAdminUsers()">
+                    <div class="menu-icon-wrapper icon-admin-user"><span class="material-icons">manage_accounts</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">個人の管理</span>
+                        <span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+
+                <button class="menu-btn" onclick="openAdminBands()">
+                    <div class="menu-icon-wrapper icon-admin-band"><span class="material-icons">groups</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">バンドの管理</span>
+                        <span class="menu-subtitle">全バンドの編集、合わせ状況の確認</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+                
+                <button class="menu-btn" onclick="openPage('admin-docs-stub')">
+                    <div class="menu-icon-wrapper icon-admin-doc"><span class="material-icons">description</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">提出書類の作成</span>
+                        <span class="menu-subtitle">各種申請書類のエクスポート</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchScreen('bands', this)">
+            <span class="material-icons nav-icon">groups</span><span>マイバンド</span>
+        </div>
+        <div class="nav-item" onclick="switchScreen('calendar', this)">
+            <span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span>
+        </div>
+        <div class="nav-item" onclick="switchScreen('cuesheet', this)">
+            <span class="material-icons nav-icon">description</span><span>Cueシート</span>
+        </div>
+        <div class="nav-item hidden" id="nav-admin" onclick="switchScreen('admin', this)">
+            <span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span>
+        </div>
+        <div class="nav-item" onclick="goToMyPage()">
+            <span class="material-icons nav-icon">account_circle</span><span>マイページ</span>
+        </div>
+    </div>
+
+    <!-- --- サブページ群 --- -->
+    
+    <div id="page-admin-users" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div>
+        <div class="content-area">
+            <div class="search-bar">
+                <span class="material-icons" style="color:#5f6368;">search</span>
+                <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
+            </div>
+            <div id="adminUserList"></div>
+        </div>
+    </div>
+
+    <div id="page-admin-bands" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-bands')"><span class="material-icons">arrow_back</span></button><div class="page-title">バンドの管理</div></div>
+        <div class="content-area">
+            <div class="search-bar">
+                <span class="material-icons" style="color:#5f6368;">search</span>
+                <input type="text" id="adminBandSearchInput" placeholder="バンド名検索...">
+            </div>
+            <div id="adminBandList"></div>
+        </div>
+    </div>
+    
+    <!-- 予約システム管理画面 -->
+    <div id="page-admin-calendar-stub" class="page-container">
+        <div class="page-header">
+            <button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button>
+            <div class="page-title">予約システム管理</div>
+        </div>
+        <div class="content-area" style="padding-top: 20px;">
+            <div class="card">
+                <h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center;">
+                    <span class="material-icons" style="margin-right:8px;">tune</span>現在の予約モード
+                </h3>
+                <div class="form-group">
+                    <div class="radio-group" style="flex-direction: column; gap: 16px;">
+                        <label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;">
+                            <input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()">
+                            <div>
+                                <div style="font-weight:bold;">早い者勝ち (即時確定)</div>
+                                <div style="font-size:11px; color:#5f6368; margin-top:4px;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div>
+                            </div>
+                        </label>
+                        <label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;">
+                            <input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()">
+                            <div>
+                                <div style="font-weight:bold;">抽選式 (希望提出)</div>
+                                <div style="font-size:11px; color:#5f6368; margin-top:4px;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
-                <div id="detailMemberList" class="space-y-2"></div>
+
+                <!-- 抽選設定エリア (抽選モード時のみ表示) -->
+                <div id="lotterySettingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
+                    <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">抽選実行設定</h3>
+                    
+                    <div class="form-group">
+                        <label class="form-label">実行タイミング</label>
+                        <div class="radio-group" style="flex-direction: column; gap: 10px;">
+                            <label class="radio-label">
+                                <input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()">
+                                自動 (指定日時に実行)
+                            </label>
+                            <div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 10px;">
+                                <select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px;">
+                                    <option value="1">1日前</option>
+                                    <option value="2" selected>2日前</option>
+                                    <option value="3">3日前</option>
+                                    <option value="7">7日前</option>
+                                </select>
+                                の
+                                <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px;">
+                                    <option value="0">0:00</option>
+                                    <option value="9">9:00</option>
+                                    <option value="12">12:00</option>
+                                    <option value="18">18:00</option>
+                                    <option value="21">21:00</option>
+                                </select>
+                                に確定
+                            </div>
+
+                            <label class="radio-label">
+                                <input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()">
+                                手動 (管理者がボタンで実行)
+                            </label>
+                            <div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:10px; border-radius:8px;">
+                                <div style="font-size:12px; margin-bottom:8px;">対象日を選んで実行します</div>
+                                <input type="date" id="manualLotteryDate" class="form-input">
+                                <button class="btn-primary" style="margin-top:8px; background:#e65100;" onclick="runManualLottery()">今すぐ抽選を実行</button>
+                                <!-- 結果表示エリア -->
+                                <div id="lotteryLog" class="lottery-log-box hidden"></div>
+                                <button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:8px;" onclick="applyLotteryResults()">この結果で確定する</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button>
+            </div>
+            <div style="margin-top:20px; font-size:12px; color:#5f6368; padding:0 10px;">
+                ※ 設定を変更すると部員全員のアプリの挙動が切り替わります。
+            </div>
+        </div>
+    </div>
+    
+    <div id="page-admin-docs-stub" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div>
+        <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
+            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">print</span><br>準備中: 書類PDF出力機能
+        </div>
+    </div>
+
+    <div id="page-admin-edit" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button><div class="page-title">ユーザー詳細</div></div>
+        <div class="content-area">
+            <div style="text-align:center; margin-bottom:20px;">
+                <img id="admin-user-icon" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; background:#eee;">
+                <div id="admin-user-lineName" style="font-size:12px; color:#999; margin-top:8px;"></div>
+            </div>
+
+            <div class="card" style="padding:20px;">
+                <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">基本情報</h3>
+                <div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div>
+                <div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div>
+                <div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div>
+                <div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div>
+                <div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div>
+            </div>
+
+            <div class="card" style="padding:20px;">
+                <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">権限設定</h3>
+                <div class="form-group">
+                    <label class="form-label">役職</label>
+                    <input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など">
+                </div>
+                <button id="btn-save-user-role" class="btn-admin-save">役職を保存</button>
+            </div>
+
+            <div class="card" style="padding:20px;">
+                <h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">所属バンド</h3>
+                <div id="admin-user-band-list" style="font-size:14px;">読み込み中...</div>
             </div>
             
-            <div class="pt-4 border-t border-gray-100">
-                <button onclick="archiveBand()" class="w-full py-3 text-red-500 font-medium text-sm bg-red-50 rounded-xl">バンドを解散/アーカイブ</button>
+            <div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">
+                USER ID: <span id="admin-edit-docId"></span>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal: Add Member -->
-<div id="modal-add-member" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-add-member')">
-    <div class="modal-content">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-bold">メンバー追加</h3>
-            <button onclick="closeModal('modal-add-member')" class="text-gray-400"><span class="material-icons">close</span></button>
+    <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">バンド結成</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">リストから選ぶか、後から招待リンクを送ってください。</p>
+            <div class="image-picker-area">
+                <div class="image-picker" onclick="document.getElementById('bandIconInput').click()">
+                    <i class="material-icons">add_a_photo</i><span>写真</span><img id="previewBandIcon" class="hidden" src="">
+                </div>
+                <input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')">
+            </div>
+            <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム"></div>
+            <div class="form-group"><label class="form-label">メンバー選択 (登録済みユーザー)</label><div class="member-select-list" id="userSelectList"></div></div>
+            <button class="btn-primary" onclick="saveBand()">作成する</button>
+            <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
         </div>
-        <div id="addMemberSelectList" class="member-select-list"></div>
-        <button onclick="executeAddMember()" class="btn-primary">追加する</button>
     </div>
-</div>
+
+    <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
+        <div class="modal-content">
+            <h3 style="margin-top:0; display:flex; justify-content:space-between;">詳細<button class="btn-outline" id="btnInviteInModal" onclick="" style="border-radius: 20px;"><span class="material-icons" style="font-size:14px;">share</span> 招待</button></h3>
+            <input type="hidden" id="detailBandId">
+            <div class="image-picker-area"><div class="image-picker" id="detailIconPicker"><img id="detailBandIcon" src=""></div><input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)"></div>
+            <div class="form-group"><label class="form-label">バンド名</label><input type="text" id="detailBandName" class="form-input" readonly></div>
+            <div class="form-group"><label class="form-label">メンバー</label><div class="member-list-edit" id="detailMemberList"></div><button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button></div>
+            <div id="bandCreatorActions" class="hidden"><button class="btn-primary" onclick="updateBandName()">バンド名を変更</button><button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button><button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button><button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button></div>
+            <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()">バンドから脱退</button></div>
+            <!-- 管理者用: 予約リスト -->
+            <div id="adminBandBookingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:16px;">
+                <h4 style="margin:0 0 10px; font-size:14px; color:#0b57d0;">予約・合わせ履歴 (管理者のみ)</h4>
+                <div id="adminBandBookingsList" style="max-height:150px; overflow-y:auto; font-size:12px;">読み込み中...</div>
+            </div>
+            <button class="btn-secondary" onclick="closeModal('modal-band-detail')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="modal-add-member" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-add-member')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">メンバーを追加</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">追加したいメンバーを選択してください。</p>
+            <div class="form-group"><div class="member-select-list" id="addMemberSelectList"></div></div>
+            <button class="btn-primary" onclick="saveAddedMembers()">追加する</button>
+            <button class="btn-secondary" onclick="closeModal('modal-add-member')">キャンセル</button>
+        </div>
+    </div>
+
+    <div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3>
+            <input type="hidden" id="editingBookingId" value="">
+            <div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div></div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="checkAllDay" onchange="toggleAllDay()"> 終日 (9:00 - 22:00)</label></div>
+            <div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;"><div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span style="margin-top:15px;">〜</span><div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div></div>
+            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;"><label class="form-label">登録種別</label><div class="radio-group"><label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label><label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label></div></div>
+            <div id="groupBandSelect" class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div>
+            <div id="groupEventTitle" class="form-group hidden"><label class="form-label">イベント名 / 理由</label><input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会"></div>
+            <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
+            <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button>
+            <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
+            <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- 予約一覧モーダル（重複時用） -->
+    <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">予約一覧</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p>
+            <div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+            <button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
 
         const firebaseConfig = {
@@ -235,846 +547,1087 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
         const auth = getAuth(app);
+        const MY_LIFF_ID = "2008162165-vVODNp12"; 
+        const MY_PAGE_URL = "https://liff.line.me/2008162165-znd24peg";
 
-        // State Variables
         let currentUser = null; let currentProfile = null; let currentUserData = null; 
         let displayDate = new Date(); let selectedTimeSlot = null; let selectionStartHour = null; let selectionEndHour = null;
         let myBandsAll = []; let currentBandTab = 'active'; let calendarMode = 'month';
         let isSelecting = false; let selectionTimer = null; let editingBookingData = null;
-        let currentEditingBandId = null; let currentEditingBandMembers = []; 
-        let tempBandIconBlob = null; 
+        let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBase64 = null;
         let allUsersCache = []; let adminEditingUserId = null;
         let allBandsCache = []; // 管理者用バンドキャッシュ
         let tempLotterySchedule = null; // 抽選結果一時保存用
 
-        // --- Auth & Init ---
-        async function main() {
+        // --- システム設定管理 (予約ルール) ---
+        let currentSystemSettings = { bookingMode: 'first_come', lotteryConfig: { mode: 'auto', daysBefore: 2, time: 0 } };
+
+        // 設定画面を開くときに最新データを読み込む
+        window.openAdminSettings = async () => {
+            openPage('admin-calendar-stub');
             try {
-                await signInAnonymously(auth);
-                auth.onAuthStateChanged(async (user) => {
-                    if (user) {
-                        currentUser = user.uid;
-                        await checkUserProfile();
-                        initApp();
+                // systemコレクションのsettingsドキュメントを取得
+                const docRef = doc(db, "system", "settings");
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    currentSystemSettings = docSnap.data();
+                }
+
+                // ラジオボタンに反映
+                const mode = currentSystemSettings.bookingMode || 'first_come';
+                const radios = document.getElementsByName('adminBookingMode');
+                radios.forEach(r => {
+                    if(r.value === mode) r.checked = true;
+                });
+                
+                // 抽選設定の反映
+                if (currentSystemSettings.lotteryConfig) {
+                    const lc = currentSystemSettings.lotteryConfig;
+                    const execRadios = document.getElementsByName('lotteryExecMode');
+                    execRadios.forEach(r => { if(r.value === (lc.mode || 'auto')) r.checked = true; });
+                    document.getElementById('lotteryAutoDays').value = lc.daysBefore || 2;
+                    document.getElementById('lotteryAutoTime').value = lc.time || 0;
+                }
+
+                toggleLotterySettings(); // UIの初期状態セット
+
+            } catch(e) {
+                console.error("設定読み込みエラー", e);
+            }
+        };
+
+        // 抽選設定エリアの表示切替
+        window.toggleLotterySettings = () => {
+            const isLottery = document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked;
+            const area = document.getElementById('lotterySettingsArea');
+            if (isLottery) {
+                area.classList.remove('hidden');
+                toggleLotteryExecUI();
+            } else {
+                area.classList.add('hidden');
+            }
+        };
+
+        // 抽選実行モード(自動/手動)のUI切替
+        window.toggleLotteryExecUI = () => {
+            const mode = document.querySelector('input[name="lotteryExecMode"]:checked').value;
+            const autoConfig = document.getElementById('lotteryAutoConfig');
+            const manualConfig = document.getElementById('lotteryManualConfig');
+            if (mode === 'auto') {
+                autoConfig.classList.remove('hidden');
+                manualConfig.classList.add('hidden');
+            } else {
+                autoConfig.classList.add('hidden');
+                manualConfig.classList.remove('hidden');
+            }
+        };
+
+        // --- 抽選ロジック本体 ---
+        window.runManualLottery = async () => {
+            const dateVal = document.getElementById('manualLotteryDate').value;
+            if(!dateVal) return alert("日付を選択してください");
+            if(!confirm(`${dateVal} の抽選を実行しますか？`)) return;
+            
+            const logBox = document.getElementById('lotteryLog');
+            logBox.innerHTML = '<div class="log-line">データ取得中...</div>';
+            logBox.classList.remove('hidden');
+            document.getElementById('btnApplyLottery').classList.add('hidden');
+
+            const targetDate = new Date(dateVal);
+            const startOfDay = new Date(targetDate); startOfDay.setHours(0,0,0,0);
+            const endOfDay = new Date(targetDate); endOfDay.setHours(23,59,59,999);
+
+            try {
+                // 1. 対象日の予約を全取得
+                const q = query(collection(db, "bookings"), 
+                    where("startTime", ">=", startOfDay), 
+                    where("startTime", "<=", endOfDay)
+                );
+                const snapshot = await getDocs(q);
+                
+                let candidates = [];
+                let lockedSlots = []; // 確定済みの予約（先着やイベント）
+
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    if (d.status === 'pending' && d.type !== 'event') {
+                        // 抽選対象（承認待ち）
+                        candidates.push({ id: doc.id, ...d });
+                    } else if (d.status === 'confirmed' || d.type === 'event') {
+                        // 既に確定している予約（先着モードで入ったものやイベント）
+                        lockedSlots.push({
+                            start: d.startTime.toDate(),
+                            end: d.endTime.toDate(),
+                            title: d.bandName || d.title
+                        });
                     }
                 });
-            } catch(e) { console.error("Auth Error:", e); alert("認証エラー: " + e.message); }
-        }
-        
-        async function checkUserProfile() {
-            const userDoc = await getDoc(doc(db, "users", currentUser));
-            if (!userDoc.exists()) {
-                const name = prompt("あなたの名前(ニックネーム)を入力してください:");
-                if(name) {
-                    await setDoc(doc(db, "users", currentUser), {
-                        name: name, icon: "", part: "vocal", isAdmin: false, createdAt: new Date()
-                    });
-                    currentProfile = { name, icon: "", isAdmin: false };
+
+                if (candidates.length === 0) {
+                    logBox.innerHTML += '<div class="log-line log-warn">対象の予約(承認待ち)がありません。</div>';
+                    return;
                 }
-            } else {
-                currentProfile = userDoc.data();
-                currentUserData = userDoc.data(); // cache full data
-                if(currentProfile.icon) document.getElementById('headerUserIcon').src = currentProfile.icon;
-                if(currentProfile.isAdmin) document.getElementById('adminNav').classList.remove('hidden');
-            }
-        }
 
-        function initApp() {
-            loadBookings();
-            renderCalendarHeader();
-            switchPage('home'); // 初期表示
-            
-            // パラメータチェック (バンド招待など)
-            const urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.has('invite_band')) {
-                joinBandFromInvite(urlParams.get('invite_band'));
-            }
-        }
-        main();
+                logBox.innerHTML += `<div class="log-line">候補: ${candidates.length}件 / 確定済: ${lockedSlots.length}件</div>`;
 
-        // --- Navigation ---
-        window.switchPage = (pageId) => {
-            const content = document.getElementById('mainContent');
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            // Reset active state for nav items
-            const navMap = { 'home': 0, 'bands': 1, 'lottery': 2, 'profile': 3, 'admin': 4 };
-            if(navMap[pageId] !== undefined) document.querySelectorAll('.nav-item')[navMap[pageId]].classList.add('active');
+                // 2. バンドごとに希望枠を整理
+                const bandRequests = {};
+                candidates.forEach(c => {
+                    if (!bandRequests[c.bandId]) {
+                        bandRequests[c.bandId] = { 
+                            id: c.bandId, 
+                            name: c.bandName, 
+                            requests: [], 
+                            docIds: [] 
+                        };
+                    }
+                    bandRequests[c.bandId].requests.push({
+                        start: c.startTime.toDate(),
+                        end: c.endTime.toDate()
+                    });
+                    bandRequests[c.bandId].docIds.push(c.id);
+                });
 
-            if (pageId === 'home') {
-                renderHome();
-            } else if (pageId === 'bands') {
-                renderBandsPage();
-            } else if (pageId === 'lottery') {
-                renderLotteryPage();
-            } else if (pageId === 'profile') {
-                renderProfilePage();
-            } else if (pageId === 'admin') {
-                if(!currentProfile.isAdmin) { alert("権限がありません"); switchPage('home'); return; }
-                renderAdminPage();
+                const bands = Object.values(bandRequests);
+                logBox.innerHTML += `<div class="log-line">エントリー: ${bands.length}バンド</div>`;
+
+                // 3. スケジューリング実行
+                // lockedSlotsを渡して、その時間を埋めた状態で開始する
+                let schedule = null;
+                
+                logBox.innerHTML += '<div class="log-line">--- 60分枠で割り当て試行 ---</div>';
+                schedule = attemptSchedule(bands, 60, lockedSlots);
+                
+                if (schedule.successCount < bands.length) {
+                    logBox.innerHTML += `<div class="log-line log-warn">失敗: 全員入りません (${schedule.successCount}/${bands.length})</div>`;
+                    logBox.innerHTML += '<div class="log-line">--- 30分枠で再試行 ---</div>';
+                    schedule = attemptSchedule(bands, 30, lockedSlots);
+                } else {
+                    logBox.innerHTML += '<div class="log-line log-success">成功: 全員配置可能！</div>';
+                    logBox.innerHTML += '<div class="log-line">--- 余り時間で1.5時間へ拡張試行 ---</div>';
+                    schedule = extendSchedule(schedule, bands, 90);
+                }
+
+                // 結果表示
+                logBox.innerHTML += '<div class="log-line" style="margin-top:10px; border-top:1px dashed #666;">【最終結果】</div>';
+                let successCount = 0;
+                schedule.assignments.forEach(a => {
+                    const startStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2,'0')}`;
+                    const endStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2,'0')}`;
+                    const dur = (a.end - a.start) / (1000 * 60);
+                    logBox.innerHTML += `<div class="log-line log-success">✔ ${a.bandName}: ${startStr}-${endStr} (${dur}分)</div>`;
+                    successCount++;
+                });
+
+                if (schedule.failedBands.length > 0) {
+                    schedule.failedBands.forEach(b => {
+                        logBox.innerHTML += `<div class="log-line log-error">✖ ${b.name}: 確保不可</div>`;
+                    });
+                }
+
+                tempLotterySchedule = schedule; 
+                document.getElementById('btnApplyLottery').classList.remove('hidden');
+
+            } catch(e) {
+                console.error(e);
+                logBox.innerHTML += `<div class="log-line log-error">エラー発生: ${e.message}</div>`;
             }
         };
 
-        // --- Pages ---
-        function renderHome() {
-            const d = displayDate;
-            const dateStr = `${d.getFullYear()}年${d.getMonth()+1}月`;
-            document.getElementById('headerDate').innerText = dateStr;
-            
-            let html = `
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-xl font-bold">予約カレンダー</h2>
-                    <div class="flex bg-gray-200 rounded-lg p-1">
-                        <button onclick="setCalendarMode('month')" class="px-3 py-1 text-xs font-bold rounded-md ${calendarMode==='month'?'bg-white shadow text-indigo-600':''}">月</button>
-                        <button onclick="setCalendarMode('week')" class="px-3 py-1 text-xs font-bold rounded-md ${calendarMode==='week'?'bg-white shadow text-indigo-600':''}">週</button>
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <div class="flex justify-between items-center mb-4">
-                        <button onclick="changeMonth(-1)" class="p-2 hover:bg-gray-100 rounded-full"><span class="material-icons">chevron_left</span></button>
-                        <span class="font-bold text-lg">${d.getFullYear()}年 ${d.getMonth()+1}月</span>
-                        <button onclick="changeMonth(1)" class="p-2 hover:bg-gray-100 rounded-full"><span class="material-icons">chevron_right</span></button>
-                    </div>
-                    <div class="calendar-grid text-xs text-gray-400 font-medium mb-2">
-                        <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
-                    </div>
-                    <div id="calendarDays" class="calendar-grid"></div>
-                </div>
+        // スケジューリング・アルゴリズム
+        function attemptSchedule(bands, durationMinutes, lockedSlots) {
+            // タイムライン: 9:00 - 22:00 (分単位)
+            const START_HOUR = 9;
+            const END_HOUR = 22;
+            const TOTAL_MINUTES = (END_HOUR - START_HOUR) * 60;
+            const timeline = new Array(TOTAL_MINUTES).fill(null); 
 
-                <div class="card">
-                    <div class="flex justify-between items-center mb-2">
-                        <h3 class="font-bold text-gray-700" id="selectedDateLabel">12月31日(水)の予約</h3>
-                        <button class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded" onclick="scrollToCurrentTime()">現在時刻へ</button>
-                    </div>
-                    <div class="text-xs text-gray-400 mb-3 flex items-center gap-1"><span class="material-icons text-sm">touch_app</span> 空き時間をタップして予約（ドラッグで範囲選択）</div>
-                    <div id="timeTable" class="relative border-t border-gray-100">
-                        <!-- Time slots generated by JS -->
-                    </div>
-                </div>
-            `;
-            document.getElementById('mainContent').innerHTML = html;
-            renderCalendarDays();
-            renderTimeTable();
-        }
-
-        async function renderBandsPage() {
-            document.getElementById('headerDate').innerText = "My Bands";
-            const content = document.getElementById('mainContent');
-            content.innerHTML = `
-                <div class="flex justify-between items-end mb-4">
-                    <h2 class="text-2xl font-bold">バンド管理</h2>
-                    <button onclick="openBandModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-200">+ 新規作成</button>
-                </div>
-                
-                <div class="tab-group">
-                    <div class="tab-btn ${currentBandTab==='active'?'active':''}" onclick="setBandTab('active')">活動中</div>
-                    <div class="tab-btn ${currentBandTab==='archived'?'active':''}" onclick="setBandTab('archived')">解散済</div>
-                </div>
-
-                <div id="bandsList" class="space-y-3">
-                    <div class="skeleton h-24 w-full"></div>
-                    <div class="skeleton h-24 w-full"></div>
-                </div>
-            `;
-
-            const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
-            const snap = await getDocs(q);
-            myBandsAll = [];
-            snap.forEach(d => myBandsAll.push({id: d.id, ...d.data()}));
-            
-            updateBandsList();
-        }
-
-        // 抽選ページ (管理者のみ作成・編集可能、一般は閲覧のみ)
-        async function renderLotteryPage() {
-            document.getElementById('headerDate').innerText = "Lottery";
-            const isAdmin = currentProfile.isAdmin;
-            const content = document.getElementById('mainContent');
-            
-            // 最新の抽選設定を取得
-            const lotteryDocRef = doc(db, "system", "lottery_settings");
-            const lotteryDoc = await getDoc(lotteryDocRef);
-            const lotteryData = lotteryDoc.exists() ? lotteryDoc.data() : { is_open: false, target_month: "", entries: [] };
-            
-            content.innerHTML = `
-                <div class="mb-6">
-                    <h2 class="text-2xl font-bold mb-2">スタジオ抽選</h2>
-                    <p class="text-sm text-gray-500">来月分のバンド練習枠を抽選で決定します。</p>
-                </div>
-
-                ${isAdmin ? `
-                <div class="card border-l-4 border-indigo-500">
-                    <h3 class="font-bold mb-2">管理者メニュー</h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="toggleLotteryStatus()" class="p-2 bg-gray-100 rounded text-sm font-bold">${lotteryData.is_open ? '受付を終了する' : '受付を開始する'}</button>
-                        <button onclick="runLottery()" class="p-2 bg-indigo-600 text-white rounded text-sm font-bold">抽選を実行する</button>
-                    </div>
-                </div>
-                ` : ''}
-
-                <div class="card">
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-2 h-12 bg-${lotteryData.is_open ? 'green' : 'red'}-500 rounded-full"></div>
-                        <div>
-                            <div class="text-xs text-gray-400 font-bold uppercase">Status</div>
-                            <div class="text-lg font-bold">${lotteryData.is_open ? 'エントリー受付中' : '受付終了 / 抽選済み'}</div>
-                        </div>
-                    </div>
+            // 確定済み(locked)の予約を埋める
+            if (lockedSlots && lockedSlots.length > 0) {
+                lockedSlots.forEach(lock => {
+                    const startMin = (lock.start.getHours() - START_HOUR) * 60 + lock.start.getMinutes();
+                    const endMin = (lock.end.getHours() - START_HOUR) * 60 + lock.end.getMinutes();
                     
-                    ${lotteryData.is_open ? `
-                        <div class="bg-indigo-50 p-4 rounded-xl mb-4">
-                            <h4 class="font-bold text-indigo-900 mb-2">希望を提出する</h4>
-                            <p class="text-xs text-indigo-700 mb-3">各バンド、第3希望まで提出可能です。</p>
-                            <button onclick="openLotteryEntryModal()" class="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm">エントリー画面へ</button>
-                        </div>
-                    ` : `
-                        <div class="text-center py-8 text-gray-400">
-                            <span class="material-icons text-4xl mb-2">event_busy</span>
-                            <p>現在は抽選期間ではありません</p>
-                        </div>
-                    `}
-                </div>
-            `;
-        }
-
-        async function renderProfilePage() {
-            document.getElementById('headerDate').innerText = "Profile";
-            if(!currentProfile) return;
-            const content = document.getElementById('mainContent');
-            content.innerHTML = `
-                <div class="card flex flex-col items-center pt-6 pb-6">
-                    <div class="relative mb-4">
-                        <img id="profileIconPreview" src="${currentProfile.icon || 'https://placehold.jp/150x150.png'}" class="w-28 h-28 rounded-full object-cover border-4 border-white shadow-lg">
-                        <label for="profileIconInput" class="absolute bottom-0 right-0 bg-indigo-600 text-white p-2 rounded-full cursor-pointer shadow-md hover:bg-indigo-700 transition">
-                            <span class="material-icons text-sm">edit</span>
-                        </label>
-                        <input type="file" id="profileIconInput" class="hidden" accept="image/*" onchange="handleProfileIconUpload(this)">
-                    </div>
-                    <h2 class="text-2xl font-bold mb-1">${currentProfile.name}</h2>
-                    <span class="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full font-bold uppercase tracking-wider">${currentProfile.part || 'Part Undefined'}</span>
-                </div>
-
-                <div class="card space-y-4">
-                    <h3 class="font-bold text-gray-700 border-b pb-2">設定</h3>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">ニックネーム</label>
-                        <div class="flex gap-2">
-                            <input type="text" id="profileNameInput" value="${currentProfile.name}" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                            <button onclick="updateProfileName()" class="bg-indigo-600 text-white px-4 rounded-lg text-sm font-bold">保存</button>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 mb-1">担当パート</label>
-                        <select id="profilePartSelect" onchange="updateProfilePart(this.value)" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-                            <option value="vocal" ${currentProfile.part==='vocal'?'selected':''}>Vocal</option>
-                            <option value="guitar" ${currentProfile.part==='guitar'?'selected':''}>Guitar</option>
-                            <option value="bass" ${currentProfile.part==='bass'?'selected':''}>Bass</option>
-                            <option value="drums" ${currentProfile.part==='drums'?'selected':''}>Drums</option>
-                            <option value="keyboard" ${currentProfile.part==='keyboard'?'selected':''}>Keyboard</option>
-                        </select>
-                    </div>
-                </div>
-            `;
-        }
-
-        async function renderAdminPage() {
-            document.getElementById('headerDate').innerText = "Admin Console";
-            const content = document.getElementById('mainContent');
-            
-            content.innerHTML = `
-                <h2 class="text-2xl font-bold mb-4">管理者コンソール</h2>
-                
-                <div class="card mb-4">
-                    <h3 class="font-bold text-gray-700 mb-2">ユーザー管理</h3>
-                    <div class="flex gap-2 mb-2">
-                        <input type="text" id="adminSearchUser" placeholder="名前で検索..." class="flex-1 border p-2 rounded text-sm">
-                    </div>
-                    <div id="adminUserList" class="h-40 overflow-y-auto border rounded bg-gray-50 p-2 text-sm">Loading...</div>
-                </div>
-
-                <div class="card mb-4">
-                    <h3 class="font-bold text-gray-700 mb-2">バンド管理</h3>
-                    <div id="adminBandList" class="h-40 overflow-y-auto border rounded bg-gray-50 p-2 text-sm">Loading...</div>
-                </div>
-            `;
-
-            // ユーザーリスト取得
-            const uSnap = await getDocs(collection(db, "users"));
-            allUsersCache = [];
-            uSnap.forEach(d => allUsersCache.push({id: d.id, ...d.data()}));
-            renderAdminUserList();
-
-             // バンドリスト取得
-            const bSnap = await getDocs(collection(db, "bands"));
-            allBandsCache = [];
-            bSnap.forEach(d => allBandsCache.push({id: d.id, ...d.data()}));
-            renderAdminBandList();
-
-            // 検索フィルター
-            document.getElementById('adminSearchUser').addEventListener('input', (e) => {
-                renderAdminUserList(e.target.value);
-            });
-        }
-
-        function renderAdminUserList(filter = "") {
-            const list = document.getElementById('adminUserList');
-            list.innerHTML = "";
-            allUsersCache.filter(u => u.name.toLowerCase().includes(filter.toLowerCase())).forEach(u => {
-                const div = document.createElement('div');
-                div.className = "flex justify-between items-center p-2 border-b last:border-0";
-                div.innerHTML = `
-                    <span>${u.name} <span class="text-xs text-gray-400">(${u.part})</span></span>
-                    <div class="flex gap-1">
-                        <button onclick="adminToggleAdmin('${u.id}', ${!u.isAdmin})" class="text-xs px-2 py-1 rounded ${u.isAdmin ? 'bg-red-100 text-red-600' : 'bg-gray-200'}">${u.isAdmin ? '管理者解除' : '管理者へ'}</button>
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        function renderAdminBandList() {
-            const list = document.getElementById('adminBandList');
-            list.innerHTML = "";
-            allBandsCache.forEach(b => {
-                const div = document.createElement('div');
-                div.className = "flex justify-between items-center p-2 border-b last:border-0";
-                div.innerHTML = `
-                    <span>${b.name} <span class="text-xs text-gray-400">(${b.memberNames?.length||0}人)</span></span>
-                    <button onclick="adminDeleteBand('${b.id}')" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">削除</button>
-                `;
-                list.appendChild(div);
-            });
-        }
-
-        // --- Logic: Calendar & Booking ---
-        window.changeMonth = (delta) => {
-            displayDate.setMonth(displayDate.getMonth() + delta);
-            renderHome();
-        };
-        window.setCalendarMode = (mode) => {
-            calendarMode = mode;
-            renderHome();
-        };
-        window.scrollToCurrentTime = () => {
-             const now = new Date();
-             const hour = now.getHours();
-             const el = document.getElementById('timeTable');
-             // 1時間44px計算。少し手前(2時間前)にスクロール
-             el.scrollTop = Math.max(0, (hour - 2) * 44);
-        };
-
-        function renderCalendarDays() {
-            const container = document.getElementById('calendarDays');
-            container.innerHTML = "";
-            const y = displayDate.getFullYear(), m = displayDate.getMonth();
-            const firstDay = new Date(y, m, 1).getDay();
-            const lastDate = new Date(y, m + 1, 0).getDate();
-            
-            // Empty slots
-            for(let i=0; i<firstDay; i++) container.innerHTML += `<div></div>`;
-            
-            // Days
-            const today = new Date();
-            for(let d=1; d<=lastDate; d++) {
-                const div = document.createElement('div');
-                div.className = `calendar-day ${d===displayDate.getDate() ? 'selected' : ''}`;
-                if(y===today.getFullYear() && m===today.getMonth() && d===today.getDate()) div.classList.add('today');
-                div.innerText = d;
-                div.onclick = () => { displayDate.setDate(d); renderHome(); };
-                container.appendChild(div);
+                    // 範囲チェックと埋め込み
+                    const s = Math.max(0, startMin);
+                    const e = Math.min(TOTAL_MINUTES, endMin);
+                    
+                    for (let t = s; t < e; t++) {
+                        timeline[t] = "LOCKED";
+                    }
+                });
             }
-            
-            document.getElementById('selectedDateLabel').innerText = `${m+1}月${displayDate.getDate()}日(${['日','月','火','水','木','金','土'][displayDate.getDay()]})`;
+
+            const shuffledBands = [...bands].sort(() => Math.random() - 0.5); 
+            const assignments = [];
+            const failedBands = [];
+
+            shuffledBands.forEach(band => {
+                let assigned = false;
+                const requests = [...band.requests].sort(() => Math.random() - 0.5);
+
+                for (let req of requests) {
+                    if (assigned) break;
+                    
+                    const reqStartMin = (req.start.getHours() - START_HOUR) * 60 + req.start.getMinutes();
+                    const reqEndMin = (req.end.getHours() - START_HOUR) * 60 + req.end.getMinutes();
+
+                    // 30分刻みで探索
+                    for (let t = reqStartMin; t <= reqEndMin - durationMinutes; t += 30) {
+                        let isFree = true;
+                        for (let k = 0; k < durationMinutes; k++) {
+                            if (t + k >= TOTAL_MINUTES || timeline[t + k] !== null) {
+                                isFree = false;
+                                break;
+                            }
+                        }
+
+                        if (isFree) {
+                            for (let k = 0; k < durationMinutes; k++) {
+                                timeline[t + k] = band.name;
+                            }
+                            
+                            const sTime = new Date(req.start);
+                            sTime.setHours(START_HOUR + Math.floor(t / 60), t % 60, 0, 0);
+                            const eTime = new Date(sTime);
+                            eTime.setMinutes(sTime.getMinutes() + durationMinutes);
+
+                            assignments.push({
+                                bandId: band.id, 
+                                bandName: band.name,
+                                start: sTime,
+                                end: eTime,
+                                originalDocIds: band.docIds
+                            });
+                            assigned = true;
+                            break; 
+                        }
+                    }
+                }
+                if (!assigned) failedBands.push(band);
+            });
+
+            return {
+                assignments: assignments,
+                failedBands: failedBands,
+                successCount: assignments.length,
+                timeline: timeline,
+                startHour: START_HOUR
+            };
         }
 
-        async function loadBookings() {
-            // Firestoreから今月の予約を取得するなどの処理 (今回は簡略化のためonSnapshotをHomeレンダー時に設定)
-            // 実際はリスナー管理が必要
-            const startOfDay = new Date(displayDate); startOfDay.setHours(0,0,0,0);
-            const endOfDay = new Date(displayDate); endOfDay.setHours(23,59,59,999);
+        // スケジュール拡張 (1h -> 1.5h)
+        function extendSchedule(baseSchedule, bands, targetDuration) {
+            const currentAssignments = baseSchedule.assignments;
+            const timeline = baseSchedule.timeline; 
+            const START_HOUR = baseSchedule.startHour;
+            const extraMinutes = targetDuration - 60; 
+
+            const shuffled = [...currentAssignments].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(assign => {
+                const currentStartMin = (assign.start.getHours() - START_HOUR) * 60 + assign.start.getMinutes();
+                const currentEndMin = (assign.end.getHours() - START_HOUR) * 60 + assign.end.getMinutes();
+
+                let canExtendBack = true;
+                for(let k=0; k<extraMinutes; k++) {
+                    if(currentEndMin + k >= timeline.length || timeline[currentEndMin + k] !== null) {
+                        canExtendBack = false; break;
+                    }
+                }
+                
+                if(canExtendBack) {
+                    const band = bands.find(b => b.name === assign.bandName);
+                    const newEndTime = new Date(assign.end);
+                    newEndTime.setMinutes(newEndTime.getMinutes() + extraMinutes);
+                    
+                    let inRange = false;
+                    for(let req of band.requests) {
+                        if (req.start <= assign.start && req.end >= newEndTime) {
+                            inRange = true; break;
+                        }
+                    }
+                    if(!inRange) canExtendBack = false;
+                }
+
+                if (canExtendBack) {
+                    for(let k=0; k<extraMinutes; k++) timeline[currentEndMin + k] = assign.bandName;
+                    assign.end.setMinutes(assign.end.getMinutes() + extraMinutes);
+                }
+            });
+
+            return baseSchedule;
+        }
+
+        // 確定処理
+        window.applyLotteryResults = async () => {
+            if (!tempLotterySchedule || !confirm("この結果で予約を確定しますか？\n（古い希望枠は削除され、確定枠が作成されます）")) return;
             
-            const q = query(collection(db, "bookings"), 
-                where("startTime", ">=", Timestamp.fromDate(startOfDay)),
-                where("startTime", "<=", Timestamp.fromDate(endOfDay))
-            );
-            
-            onSnapshot(q, (snap) => {
-                document.querySelectorAll('.booking-block').forEach(e => e.remove());
-                snap.forEach(d => {
-                    const b = d.data();
-                    renderBookingBlock(d.id, b);
+            const batch = writeBatch(db);
+            const assignments = tempLotterySchedule.assignments;
+
+            // 1. 確定した予約を作成
+            assignments.forEach(a => {
+                const newRef = doc(collection(db, "bookings"));
+                batch.set(newRef, {
+                    bandId: getBandIdByName(a.bandName),
+                    bandName: a.bandName,
+                    creatorId: currentUser, 
+                    userName: "抽選確定", 
+                    startTime: a.start,
+                    endTime: a.end,
+                    type: 'normal',
+                    status: 'confirmed',
+                    source: 'lottery', // 抽選由来フラグ
+                    createdAt: new Date()
+                });
+                
+                a.originalDocIds.forEach(oldId => {
+                    const oldRef = doc(db, "bookings", oldId);
+                    batch.delete(oldRef);
                 });
             });
-        }
 
-        function renderTimeTable() {
-            const container = document.getElementById('timeTable');
-            container.innerHTML = "";
-            container.style.height = "400px";
-            container.style.overflowY = "auto";
-            
-            for(let h=9; h<24; h++) {
-                const row = document.createElement('div');
-                row.className = "time-slot";
-                row.dataset.hour = h;
-                
-                // Hour Label
-                const label = document.createElement('div');
-                label.className = "time-label";
-                label.innerText = `${h}:00`;
-                
-                // Track
-                const track = document.createElement('div');
-                track.className = "time-track";
-                // Touch/Mouse Events for range selection
-                addSelectionEvents(track, h);
+            tempLotterySchedule.failedBands.forEach(b => {
+                b.docIds.forEach(oldId => {
+                    const oldRef = doc(db, "bookings", oldId);
+                    batch.delete(oldRef);
+                });
+            });
 
-                row.appendChild(label);
-                row.appendChild(track);
-                container.appendChild(row);
+            try {
+                await batch.commit();
+                alert("抽選結果を反映しました！");
+                document.getElementById('lotteryLog').innerHTML = "";
+                document.getElementById('lotteryLog').classList.add('hidden');
+                document.getElementById('btnApplyLottery').classList.add('hidden');
+                closePage('admin-calendar-stub');
+            } catch(e) {
+                alert("反映エラー: " + e.message);
             }
-            // Load bookings immediately
-            loadBookings();
-        }
-
-        function addSelectionEvents(el, hour) {
-            const startSelection = (e) => {
-                // 既存の予約がある場合は無視（簡易）
-                if(e.target.classList.contains('booking-block')) return;
-                
-                isSelecting = true;
-                selectionStartHour = hour;
-                selectionEndHour = hour;
-                updateSelectionHighlight();
-                
-                // Prevent scroll on touch
-                // if(e.type === 'touchstart') e.preventDefault();
-            };
-
-            const moveSelection = (e) => {
-                if(!isSelecting) return;
-                // タッチ位置から要素特定は複雑なので、今回は簡易的に、
-                // トラック上でのmoveのみ検知。PC向け。
-                // モバイルのドラッグ選択はTouch APIで要素座標計算が必要だが
-                // ここではタップ＝1時間予約、ドラッグ未対応の簡易版とするか、
-                // あるいは別ロジックが必要。
-                // "Tap to select, Tap another to range" pattern is easier for mobile.
-            };
-
-            const endSelection = () => {
-                if(!isSelecting) return;
-                isSelecting = false;
-                clearSelectionHighlight();
-                openBookingModal(selectionStartHour, selectionEndHour + 1); // +1 for end time
-            };
-            
-            // Mobile: Tap to book 1 hour (Simple)
-            el.onclick = (e) => {
-                if(e.target.classList.contains('booking-block')) return;
-                openBookingModal(hour, hour+1);
-            };
-        }
-
-        function updateSelectionHighlight() {
-            // Visual feedback logic
-        }
-        function clearSelectionHighlight() {
-            document.querySelectorAll('.selection-highlight').forEach(e => e.remove());
-        }
-
-        function renderBookingBlock(id, data) {
-            const start = data.startTime.toDate();
-            const end = data.endTime.toDate();
-            const startH = start.getHours();
-            const endH = end.getHours(); // 簡易的に時間単位
-            const duration = endH - startH;
-            
-            // Find track
-            const track = document.querySelector(`.time-slot[data-hour="${startH}"] .time-track`);
-            if(!track) return;
-            
-            const block = document.createElement('div');
-            block.className = "booking-block shadow-sm";
-            block.style.height = `calc(${duration * 100}% - 4px)`;
-            block.style.top = "2px";
-            block.style.backgroundColor = data.bandId === 'lottery_blocked' ? '#EF4444' : '#6366F1';
-            
-            block.innerHTML = `<span class="font-bold">${data.bandName}</span> <span class="opacity-75 text-[10px]">${data.memberName}</span>`;
-            
-            block.onclick = (e) => {
-                e.stopPropagation();
-                openBookingEditModal(id, data);
-            };
-            
-            track.appendChild(block);
-        }
-
-        // --- Modals & Actions ---
-        window.openModal = (id) => {
-            const el = document.getElementById(id);
-            el.style.display = 'flex';
-        };
-        window.closeModal = (id) => {
-            document.getElementById(id).style.display = 'none';
         };
 
+        // Helper to get ID from band name (簡易的: 本来はassignments作成時にIDを保持すべき)
+        // 上記ロジック内で bandId を保持できない箇所があったため修正
+        // bandRequests の構造見直しが必要だが、ここでは attemptSchedule 内の assignments push 時に修正済み
+        function getBandIdByName(name) {
+            // この関数は使わず、attemptSchedule内でIDを紐付けるように修正しました
+            // が、commit時に originalDocIds から情報を引くのが安全
+            return "unknown"; 
+        }
+        
+        // attemptSchedule内の assignments.push の bandId 取得修正
+        // bandRequests はスコープ外なので、bands配列にidを持たせる
+        // runManualLottery 内で bandRequests を作る際に id も入れる
+        
+        // --- 修正版: runManualLottery内のデータ構造 ---
+        // bandRequests[c.bandId] = { id: c.bandId, ... } としておく
+
+        // 設定を保存する
+        window.saveSystemSettings = async () => {
+            const selectedMode = document.querySelector('input[name="adminBookingMode"]:checked').value;
+            
+            // 抽選設定の取得
+            const execMode = document.querySelector('input[name="lotteryExecMode"]:checked').value;
+            const daysBefore = parseInt(document.getElementById('lotteryAutoDays').value);
+            const time = parseInt(document.getElementById('lotteryAutoTime').value);
+
+            const lotteryConfig = {
+                mode: execMode,
+                daysBefore: daysBefore,
+                time: time
+            };
+
+            try {
+                // systemコレクションのsettingsドキュメントに保存（なければ作成）
+                await setDoc(doc(db, "system", "settings"), {
+                    bookingMode: selectedMode,
+                    lotteryConfig: lotteryConfig,
+                    updatedAt: serverTimestamp(),
+                    updatedBy: currentUser
+                }, { merge: true });
+
+                currentSystemSettings.bookingMode = selectedMode;
+                currentSystemSettings.lotteryConfig = lotteryConfig;
+                
+                alert("設定を保存しました。");
+                closePage('admin-calendar-stub');
+                
+            } catch(e) {
+                alert("保存エラー: " + e.message);
+            }
+        };
+
+        // アプリ起動時に設定を読み込んでおく
+        async function loadSystemConfig() {
+            try {
+                const docSnap = await getDoc(doc(db, "system", "settings"));
+                if (docSnap.exists()) {
+                    currentSystemSettings = docSnap.data();
+                    console.log("現在のモード:", currentSystemSettings.bookingMode);
+                }
+            } catch(e) {
+                console.log("設定なし(デフォルト使用)");
+            }
+        }
+
+        // --- グローバル関数 ---
+        window.switchScreen = (screenId, navEl) => {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById('screen-' + screenId).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            navEl.classList.add('active');
+            if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
+        };
+        window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
+        window.openPage = (pageId) => { document.getElementById('page-' + pageId).classList.add('open'); };
+        window.closePage = (pageId) => { document.getElementById('page-' + pageId).classList.remove('open'); };
+        window.openModal = (id) => document.getElementById(id).classList.add('open');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+        
+        // --- 管理者機能 ---
+        window.openAdminUsers = async () => {
+            openPage('admin-users');
+            document.getElementById('adminUserList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
+            try {
+                const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
+                const qs = await getDocs(q);
+                allUsersCache = [];
+                qs.forEach(doc => { 
+                    const data = doc.data();
+                    if(!data.affiliations && data.org) data.affiliations = [data.org];
+                    if(!data.affiliations) data.affiliations = [];
+                    allUsersCache.push({ id: doc.id, ...data }); 
+                });
+                renderAdminList(allUsersCache);
+            } catch(e) { document.getElementById('adminUserList').innerHTML = "エラー: " + e.message; }
+        };
+        function renderAdminList(users) {
+            const container = document.getElementById('adminUserList'); container.innerHTML = "";
+            if(users.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
+            users.forEach(u => {
+                const div = document.createElement('div'); div.className = 'user-list-item';
+                div.onclick = () => openAdminEdit(u);
+                let badges = "";
+                if(u.affiliations.includes('urakata')) badges += '<span style="color:#ea4335; font-size:10px; margin-right:4px;">●裏方</span>';
+                if(u.affiliations.includes('lmc')) badges += '<span style="color:#5f6368; font-size:10px;">●LMC</span>';
+                let roleHtml = u.role ? `<span style="font-size:10px; background:#e0e3e7; padding:2px 6px; border-radius:10px; margin-left:5px;">${u.role}</span>` : '';
+                div.innerHTML = `<img src="${u.icon || 'https://placehold.jp/40x40.png'}" class="mini-icon"><div class="user-info-main"><div class="user-name">${u.name} ${roleHtml}</div><div class="user-sub">${badges}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`;
+                container.appendChild(div);
+            });
+        }
+        document.getElementById('adminSearchInput').addEventListener('input', (e) => { const term = e.target.value.trim(); renderAdminList(term ? allUsersCache.filter(u => u.name.includes(term) || (u.kana && u.kana.includes(term))) : allUsersCache); });
+        
+        function openAdminEdit(user) {
+            adminEditingUserId = user.id; openPage('admin-edit');
+            document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img";
+            document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName;
+            document.getElementById('admin-edit-docId').innerText = user.id;
+            
+            // 閲覧用
+            document.getElementById('admin-show-name').innerText = user.name;
+            document.getElementById('admin-show-kana').innerText = user.kana || "-";
+            document.getElementById('admin-show-studentId').innerText = user.studentId || "-";
+            let affText = "";
+            if(user.affiliations && user.affiliations.includes('urakata')) affText += "裏方部 ";
+            if(user.affiliations && user.affiliations.includes('lmc')) affText += "LMC ";
+            document.getElementById('admin-show-aff').innerText = affText;
+            document.getElementById('admin-show-part').innerText = getPartLabel(user.part) || "-";
+
+            // 編集用
+            document.getElementById('admin-edit-role').value = user.role || "";
+            
+            // 所属バンド取得
+            loadAdminUserBands(user.id);
+        }
+        async function loadAdminUserBands(targetUserId) {
+            const listContainer = document.getElementById('admin-user-band-list'); listContainer.innerHTML = "読み込み中...";
+            try {
+                const q = query(collection(db, "bands"), where("memberIds", "array-contains", targetUserId));
+                const qs = await getDocs(q);
+                if(qs.empty) { listContainer.innerHTML = "所属バンドなし"; } 
+                else {
+                    let html = "<ul style='padding-left:20px; margin:0;'>";
+                    qs.forEach(doc => { const b = doc.data(); html += `<li>${b.name} ${b.creatorId === targetUserId ? '<span style="font-size:10px; color:#0b57d0;">(リーダー)</span>' : ''}</li>`; });
+                    html += "</ul>"; listContainer.innerHTML = html;
+                }
+            } catch(e) { listContainer.innerHTML = "取得エラー"; }
+        }
+        document.getElementById('btn-save-user-role').addEventListener('click', async () => {
+            if(!adminEditingUserId) return; const btn = document.getElementById('btn-save-user-role'); btn.innerText = "保存中...";
+            try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
+        });
+
+        // --- 管理者用バンド管理 ---
+        window.openAdminBands = async () => {
+            openPage('admin-bands');
+            document.getElementById('adminBandList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
+            try {
+                // アーカイブ含む全バンドを取得
+                const qs = await getDocs(collection(db, "bands"));
+                allBandsCache = [];
+                qs.forEach(doc => {
+                    const data = doc.data();
+                    allBandsCache.push({ id: doc.id, ...data });
+                });
+                // 作成日順などでソートしたい場合はここでsort
+                allBandsCache.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
+                
+                renderAdminBandList(allBandsCache);
+            } catch(e) {
+                document.getElementById('adminBandList').innerHTML = "エラー: " + e.message;
+            }
+        };
+
+        function renderAdminBandList(bands) {
+            const container = document.getElementById('adminBandList'); container.innerHTML = "";
+            if(bands.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
+            
+            bands.forEach(b => {
+                const div = document.createElement('div'); 
+                div.className = 'card band-card'; 
+                div.onclick = () => openBandDetail(b.id, b);
+                
+                let iconHtml = `<div class="band-icon">${b.name.charAt(0)}</div>`; 
+                if (b.icon) iconHtml = `<div class="band-icon"><img src="${b.icon}"></div>`;
+                
+                let statusBadge = "";
+                if(b.isArchived) statusBadge = `<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>`;
+                
+                let html = `<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}
+                    <div class="band-info">
+                        <div class="band-name">${b.name}${statusBadge}</div>
+                        <div class="band-members">${b.memberNames.join(', ')}</div>
+                    </div>
+                    <span class="material-icons" style="color:#ccc;">chevron_right</span>
+                </div>`;
+                div.innerHTML = html; 
+                container.appendChild(div);
+            });
+        }
+        const bandSearchInput = document.getElementById('adminBandSearchInput');
+        if(bandSearchInput) {
+             bandSearchInput.addEventListener('input', (e) => { 
+                const term = e.target.value.trim(); 
+                renderAdminBandList(term ? allBandsCache.filter(b => b.name.includes(term)) : allBandsCache); 
+            });
+        }
+
+        async function loadBandBookings(bandId) {
+            const list = document.getElementById('adminBandBookingsList');
+            if(!list) return;
+            list.innerHTML = "読み込み中...";
+            try {
+                // Firestoreの複合インデックス制限を回避するため、bandIdだけで引いてJSでソートする
+                const q = query(collection(db, "bookings"), where("bandId", "==", bandId));
+                const qs = await getDocs(q);
+                
+                if(qs.empty) {
+                    list.innerHTML = "予約なし";
+                    return;
+                }
+                
+                const bookings = [];
+                qs.forEach(doc => { bookings.push(doc.data()); });
+                
+                // 日付順にソート (新しい順)
+                bookings.sort((a, b) => b.startTime.toDate() - a.startTime.toDate());
+                
+                let html = "";
+                bookings.forEach(bk => {
+                    const d = bk.startTime.toDate();
+                    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+                    
+                    let statusLabel = "";
+                    if(bk.status === 'confirmed') statusLabel = `<span class="status-badge status-confirmed">確定</span>`;
+                    else statusLabel = `<span class="status-badge status-pending">承認待ち</span>`;
+                    
+                    html += `<div class="booking-list-item">
+                        <div>${dateStr}</div>
+                        <div style="display:flex; align-items:center;">${bk.type==='event' ? '(イベント)' : ''} ${statusLabel}</div>
+                    </div>`;
+                });
+                list.innerHTML = html;
+                
+            } catch(e) {
+                list.innerHTML = "エラー: " + e.message;
+            }
+        }
+
+        // --- メイン処理 ---
+        async function main() {
+            try {
+                // ▼▼▼ 追加: Firebase Auth 認証処理 ▼▼▼
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (authError) {
+                    console.warn("Firebase Auth Warning (無視して続行します):", authError);
+                    // auth/configuration-not-found の場合は、匿名ログインが無効になっていますが、
+                    // FirestoreのルールがOpenなら動作するため、ここでは処理を止めずに次に進みます。
+                }
+                // ▲▲▲ 追加終わり ▲▲▲
+
+                await liff.init({ liffId: MY_LIFF_ID });
+                const urlParams = new URLSearchParams(window.location.search);
+                const action = urlParams.get('action');
+                const inviteBandId = urlParams.get('bandId');
+                const targetPage = urlParams.get('page');
+
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                const profile = await liff.getProfile();
+                currentUser = profile.userId; currentProfile = profile;
+                const userRef = doc(db, "users", currentUser);
+                const userSnap = await getDoc(userRef);
+                if (!userSnap.exists()) { alert("利用には会員登録が必要です"); window.location.href = MY_PAGE_URL; return; }
+                
+                await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
+                currentUserData = userSnap.data(); renderHeaderIcons(currentUserData);
+                
+                // システム設定を読み込む
+                await loadSystemConfig();
+                
+                // ダイレクト遷移
+                if (targetPage) {
+                    let navSelector = '';
+                    if(targetPage === 'calendar') navSelector = '.nav-item:nth-child(2)';
+                    else if(targetPage === 'cuesheet') navSelector = '.nav-item:nth-child(3)';
+                    else if(targetPage === 'bands') navSelector = '.nav-item:nth-child(1)';
+                    const navEl = document.querySelector(navSelector);
+                    if(navEl) switchScreen(targetPage, navEl);
+                }
+
+                if (action === 'invite' && inviteBandId) { await handleInvite(inviteBandId); window.history.replaceState(null, null, window.location.pathname); }
+                loadMyBands();
+            } catch(e) { console.error(e); }
+        }
+
+        // --- マイバンド ---
+        function loadMyBands() {
+            const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
+            onSnapshot(q, (snapshot) => { myBandsAll = []; snapshot.forEach(docSnap => { const data = docSnap.data(); myBandsAll.push({ id: docSnap.id, ...data }); }); renderBandList(); });
+        }
+        window.switchBandTab = (tab) => { currentBandTab = tab; document.querySelectorAll('.band-tab').forEach(el => el.classList.remove('active')); const idx = tab === 'active' ? 0 : 1; document.querySelectorAll('.band-tab')[idx].classList.add('active'); renderBandList(); };
+        function renderBandList() {
+            const container = document.getElementById('bandListContainer'); container.innerHTML = "";
+            const targetBands = myBandsAll.filter(b => currentBandTab === 'active' ? !b.isArchived : b.isArchived);
+            if (targetBands.length === 0) { container.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">${currentBandTab === 'active' ? 'バンドがありません' : 'アーカイブはありません'}</div>`; return; }
+            targetBands.forEach(b => {
+                const div = document.createElement('div'); div.className = 'card band-card'; div.onclick = () => openBandDetail(b.id, b);
+                let iconHtml = `<div class="band-icon">${b.name.charAt(0)}</div>`; if (b.icon) iconHtml = `<div class="band-icon"><img src="${b.icon}"></div>`;
+                let html = `<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}<div class="band-info"><div class="band-name">${b.name}</div><div class="band-members">${b.memberNames.join(', ')}</div></div>`;
+                if (b.creatorId === currentUser && !b.isArchived) { html += `<button class="btn-outline" onclick="event.stopPropagation(); shareBandInvite('${b.id}', '${b.name}')"><span class="material-icons" style="font-size:14px;">share</span> 招待</button>`; } html += `</div>`;
+                div.innerHTML = html; container.appendChild(div);
+            });
+        }
+        
         // バンド作成 (画像保存つき)
         window.openBandModal = () => { 
             document.getElementById('inputBandName').value = ""; document.getElementById('userSelectList').innerHTML = "読み込み中...";
-            tempBandIconBlob = null; document.getElementById('previewBandIcon').classList.add('hidden');
+            tempBandIconBase64 = null; document.getElementById('previewBandIcon').classList.add('hidden');
             loadUserList('userSelectList'); openModal('modal-band'); 
         };
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return alert("バンド名を入力してください");
             const selectedEls = document.querySelectorAll('#userSelectList .member-option.selected');
-            const memberIds = [currentUser]; const memberNames = [currentProfile.displayName || currentProfile.name]; // fix name ref
+            const memberIds = [currentUser]; const memberNames = [currentProfile.displayName];
             selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); });
-            
-            const btn = document.querySelector('#modal-band .btn-primary');
-            const originalText = btn.innerText;
-            btn.innerText = "作成中...";
-            btn.disabled = true;
-
             try {
                 const docRef = await addDoc(collection(db, "bands"), { name: name, memberIds: memberIds, memberNames: memberNames, creatorId: currentUser, isArchived: false, createdAt: new Date() });
-                
-                // Blobを使ってアップロード (uploadBytes)
-                if (tempBandIconBlob) { 
-                    const storageRef = ref(storage, `band_icons/${docRef.id}.jpg`); 
-                    await uploadBytes(storageRef, tempBandIconBlob); 
-                    const url = await getDownloadURL(storageRef); 
-                    await updateDoc(doc(db, "bands", docRef.id), { icon: url }); 
-                }
-
+                if (tempBandIconBase64) { const storageRef = ref(storage, `band_icons/${docRef.id}.jpg`); await uploadString(storageRef, tempBandIconBase64, 'data_url'); const url = await getDownloadURL(storageRef); await updateDoc(doc(db, "bands", docRef.id), { icon: url }); }
                 closeModal('modal-band'); document.getElementById('inputBandName').value = "";
-                if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name); else showToast("バンドを作成しました");
-                renderBandsPage();
-            } catch(e) { 
-                console.error(e);
-                alert("エラー: " + e.message); 
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+                if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name); else alert("作成しました");
+            } catch(e) { alert("エラー: " + e.message); }
         };
+        window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
+        async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); } } catch(e) { alert("エラー: " + e.message); } }
+        window.openBandDetail = (bandId, data) => {
+            document.getElementById('detailBandId').value = bandId; document.getElementById('detailBandName').value = data.name; document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
+            currentEditingBandId = bandId; currentEditingBandMembers = data.memberIds;
+            const detailIcon = document.getElementById('detailBandIcon'); const detailPicker = document.getElementById('detailIconPicker');
+            if (data.icon) { detailIcon.src = data.icon; detailIcon.style.display = 'block'; } else { detailIcon.src = 'https://placehold.jp/80x80.png?text=No+Img'; }
+            const isCreator = (data.creatorId === currentUser);
+            // 管理者かどうかのチェック
+            const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
+            const canEdit = isCreator || isAdmin;
 
-        // 予約モーダル
-        window.openBookingModal = async (startH, endH) => {
-            selectedTimeSlot = { start: startH, end: endH };
-            document.getElementById('bookingTimeDisplay').innerText = `${startH}:00 〜 ${endH}:00`;
-            document.getElementById('bookingMemo').value = "";
-            document.getElementById('btnDeleteBooking').classList.add('hidden');
-            editingBookingData = null;
+            // 管理者ならアイコン変更も許可（アーカイブされてなければ）
+            if (canEdit && !data.isArchived) { detailPicker.onclick = () => document.getElementById('editBandIconInput').click(); } else { detailPicker.onclick = null; }
+            const memberListDiv = document.getElementById('detailMemberList'); memberListDiv.innerHTML = "";
+            const nameInput = document.getElementById('detailBandName'); const btnArchive = document.getElementById('btnArchive'); const btnRestore = document.getElementById('btnRestore'); const btnAddMember = document.getElementById('btnAddMemberToBand');
+            if (data.isArchived) { btnArchive.classList.add('hidden'); btnRestore.classList.remove('hidden'); nameInput.readOnly = true; btnAddMember.classList.add('hidden'); } else { btnArchive.classList.remove('hidden'); btnRestore.classList.add('hidden'); if(canEdit) { nameInput.readOnly = false; btnAddMember.classList.remove('hidden'); } else { btnAddMember.classList.add('hidden'); } }
+            if (canEdit) { document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden'); } else { nameInput.readOnly = true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden'); }
+            data.memberIds.forEach((uid, idx) => { const name = data.memberNames[idx] || "不明"; const row = document.createElement('div'); row.className = 'member-row'; let rowHtml = `<span>${name}</span>`; if (canEdit && uid !== currentUser) { rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`; } else if (uid === data.creatorId) { rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`; } row.innerHTML = rowHtml; memberListDiv.appendChild(row); });
             
-            // Load My Bands
-            const sel = document.getElementById('bookingBandSelect');
-            sel.innerHTML = "";
-            // キャッシュか再取得
-            const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser), where("isArchived", "==", false));
-            const snap = await getDocs(q);
-            if(snap.empty) {
-                const op = document.createElement('option');
-                op.text = "所属バンドがありません";
-                sel.add(op);
-                sel.disabled = true;
+            // 管理者用予約リスト表示
+            const bookingArea = document.getElementById('adminBandBookingsArea');
+            if(isAdmin) {
+                bookingArea.classList.remove('hidden');
+                loadBandBookings(bandId); // Ensure this function is defined
             } else {
-                sel.disabled = false;
-                snap.forEach(d => {
-                    const op = document.createElement('option');
-                    op.value = d.id;
-                    op.text = d.data().name;
-                    op.dataset.name = d.data().name;
-                    sel.add(op);
-                });
+                bookingArea.classList.add('hidden');
             }
-            openModal('modal-booking');
-        };
-
-        window.openBookingEditModal = (id, data) => {
-            // 自分または管理者のみ編集可能
-            if(data.userId !== currentUser && !currentProfile.isAdmin) {
-                alert("予約者のみ変更できます");
-                return;
-            }
-            editingBookingData = { id, ...data };
-            const startH = data.startTime.toDate().getHours();
-            const endH = data.endTime.toDate().getHours();
-            
-            document.getElementById('bookingTimeDisplay').innerText = `${startH}:00 〜 ${endH}:00`;
-            document.getElementById('bookingMemo').value = data.memo || "";
-            
-            // バンド選択復元
-            const sel = document.getElementById('bookingBandSelect');
-            sel.innerHTML = `<option value="${data.bandId}">${data.bandName}</option>`; // 簡易表示
-            sel.disabled = true;
-
-            document.getElementById('btnDeleteBooking').classList.remove('hidden');
-            openModal('modal-booking');
-        };
-
-        window.confirmBooking = async () => {
-            const sel = document.getElementById('bookingBandSelect');
-            if(sel.disabled && !editingBookingData) { alert("バンドを作成してください"); return; }
-            
-            const memo = document.getElementById('bookingMemo').value;
-            
-            // Date Objects
-            const sDate = new Date(displayDate); sDate.setHours(editingBookingData ? editingBookingData.startTime.toDate().getHours() : selectedTimeSlot.start, 0, 0);
-            const eDate = new Date(displayDate); eDate.setHours(editingBookingData ? editingBookingData.endTime.toDate().getHours() : selectedTimeSlot.end, 0, 0);
-            
-            try {
-                if(editingBookingData) {
-                    await updateDoc(doc(db, "bookings", editingBookingData.id), {
-                        memo: memo
-                    });
-                    showToast("予約を更新しました");
-                } else {
-                    const bandId = sel.value;
-                    const bandName = sel.options[sel.selectedIndex].text;
-                    
-                    await addDoc(collection(db, "bookings"), {
-                        bandId, bandName, 
-                        userId: currentUser, memberName: currentProfile.name,
-                        startTime: Timestamp.fromDate(sDate),
-                        endTime: Timestamp.fromDate(eDate),
-                        memo, createdAt: serverTimestamp()
-                    });
-                    showToast("予約しました！");
-                }
-                closeModal('modal-booking');
-            } catch(e) {
-                console.error(e);
-                alert("予約エラー: " + e.message);
-            }
-        };
-
-        window.deleteBooking = async () => {
-            if(!editingBookingData) return;
-            if(!confirm("予約を取り消しますか？")) return;
-            try {
-                await deleteDoc(doc(db, "bookings", editingBookingData.id));
-                closeModal('modal-booking');
-                showToast("予約を取り消しました");
-            } catch(e) { alert(e.message); }
-        };
-
-        // --- Band Detail & Edit ---
-        window.openBandDetail = async (bandId) => {
-            const d = await getDoc(doc(db, "bands", bandId));
-            if(!d.exists()) return;
-            const b = d.data();
-            currentEditingBandId = bandId;
-            currentEditingBandMembers = b.memberIds;
-
-            document.getElementById('detailBandName').innerText = b.name;
-            document.getElementById('detailBandIcon').src = b.icon || 'https://placehold.jp/150x150.png';
-            document.getElementById('detailBandMemberCount').innerText = `${b.memberIds.length} members`;
-            document.getElementById('detailBandId').value = bandId;
-            
-            const list = document.getElementById('detailMemberList');
-            list.innerHTML = "";
-            
-            // メンバー詳細取得
-            // 実際はmemberIdsからUser取得だが、ここではmemberNamesを簡易使用、
-            // または個別に取得。今回は簡易的に名前表示のみ。
-            // 正確にはPromise.allでUser取得すべき。
-            b.memberIds.forEach(async (uid) => {
-                const uSnap = await getDoc(doc(db, "users", uid));
-                const uData = uSnap.exists() ? uSnap.data() : {name: "Unknown", part: ""};
-                const row = document.createElement('div');
-                row.className = "flex justify-between items-center p-2 bg-gray-50 rounded-lg";
-                row.innerHTML = `
-                    <div class="flex items-center gap-2">
-                        <img src="${uData.icon||'https://placehold.jp/32x32.png'}" class="w-8 h-8 rounded-full object-cover">
-                        <div class="text-sm font-bold">${uData.name} <span class="text-xs font-normal text-gray-500">${uData.part}</span></div>
-                    </div>
-                    ${(b.creatorId === currentUser || currentProfile.isAdmin) && uid !== currentUser ? 
-                        `<button onclick="removeMember('${uid}')" class="text-gray-400 hover:text-red-500"><span class="material-icons text-sm">remove_circle</span></button>` : ''}
-                `;
-                list.appendChild(row);
-            });
 
             openModal('modal-band-detail');
         };
+        window.archiveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("アーカイブしますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: true }); alert("アーカイブしました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.restoreBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("復元しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: false }); alert("復元しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.updateBandName = async () => { const bandId = document.getElementById('detailBandId').value; const newName = document.getElementById('detailBandName').value.trim(); if(!newName) return alert("バンド名を入力してください"); try { await updateDoc(doc(db, "bands", bandId), { name: newName }); alert("変更しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.removeMember = async (bandId, uid, name) => { if(!confirm(`${name} さんを削除しますか？`)) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(uid), memberNames: arrayRemove(name) }); alert("削除しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.deleteBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に解散しますか？")) return; try { await deleteDoc(doc(db, "bands", bandId)); alert("解散しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.leaveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に脱退しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); alert("脱退しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
+        window.openAddMemberModal = async () => { if (!currentEditingBandId) return; const list = document.getElementById('addMemberSelectList'); list.innerHTML = "読み込み中..."; loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); }
+        window.saveAddedMembers = async () => { if(!currentEditingBandId) return; const selectedEls = document.querySelectorAll('#addMemberSelectList .member-option.selected'); if(selectedEls.length === 0) return alert("メンバーを選択してください"); const memberIds = []; const memberNames = []; selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); }); try { await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...memberIds), memberNames: arrayUnion(...memberNames) }); alert("追加しました"); closeModal('modal-add-member'); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } }
         
-        // 画像処理 (大幅修正: uploadBytesを使用するように変更)
-        window.handleImageSelect = (input, previewId) => { 
-            if (input.files && input.files[0]) { 
-                compressImage(input.files[0]).then(blob => { 
-                    tempBandIconBlob = blob; 
-                    const img = document.getElementById(previewId); 
-                    img.src = URL.createObjectURL(blob); // BlobからプレビューURL生成
-                    img.classList.remove('hidden'); 
-                }).catch(e => alert("画像処理エラー: " + e.message));
-            } 
-        };
-
-        window.handleImageEdit = async (input) => { 
-            if (input.files && input.files[0]) { 
-                if(!confirm("バンドアイコンを変更しますか？")) return;
-                
-                const detailIcon = document.getElementById('detailBandIcon');
-                const originalSrc = detailIcon.src;
-                detailIcon.style.opacity = "0.5"; // 処理中表示
-
-                try {
-                    const blob = await compressImage(input.files[0]); 
-                    const bandId = document.getElementById('detailBandId').value; 
-                    const storageRef = ref(storage, `band_icons/${bandId}.jpg`); 
-                    
-                    await uploadBytes(storageRef, blob); // uploadBytesに変更
-                    const url = await getDownloadURL(storageRef); 
-                    
-                    await updateDoc(doc(db, "bands", bandId), { icon: url }); 
-                    detailIcon.src = url; 
-                    showToast("アイコンを変更しました"); 
-                } catch(e) { 
-                    console.error(e);
-                    detailIcon.src = originalSrc;
-                    alert("画像アップロードエラー: " + e.message); 
-                } finally {
-                    detailIcon.style.opacity = "1";
-                }
-            } 
-        };
-        
-        // プロフィール画像
-        window.handleProfileIconUpload = async (input) => {
-            if (input.files && input.files[0]) {
-                const imgEl = document.getElementById('profileIconPreview');
-                imgEl.style.opacity = "0.5";
-                try {
-                    const blob = await compressImage(input.files[0]);
-                    const storageRef = ref(storage, `user_icons/${currentUser}.jpg`);
-                    await uploadBytes(storageRef, blob);
-                    const url = await getDownloadURL(storageRef);
-                    
-                    await updateDoc(doc(db, "users", currentUser), { icon: url });
-                    currentProfile.icon = url;
-                    imgEl.src = url;
-                    document.getElementById('headerUserIcon').src = url;
-                    showToast("プロフィール画像を変更しました");
-                } catch(e) { alert("Error: " + e.message); }
-                finally { imgEl.style.opacity = "1"; }
-            }
-        };
-
-        // Canvasを使って画像を圧縮し、Blobを返す関数
-        const compressImage = (file) => { 
-            return new Promise((resolve, reject) => { 
-                const img = new Image(); 
-                img.src = URL.createObjectURL(file); 
-                img.onload = () => { 
-                    const canvas = document.createElement('canvas'); 
-                    const ctx = canvas.getContext('2d'); 
-                    const size = 300; // サイズを少し大きくしました(200->300)
-                    canvas.width = size; 
-                    canvas.height = size; 
-                    
-                    let sWidth = img.width; 
-                    let sHeight = img.height; 
-                    let sx = 0; 
-                    let sy = 0; 
-                    
-                    // 中央トリミング計算
-                    if (sWidth > sHeight) { 
-                        sWidth = sHeight; 
-                        sx = (img.width - sHeight) / 2; 
-                    } else { 
-                        sHeight = sWidth; 
-                        sy = (img.height - sWidth) / 2; 
-                    } 
-                    
-                    ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size); 
-                    
-                    // Blobとして出力 (Quality 0.8)
-                    canvas.toBlob((blob) => {
-                        if (blob) resolve(blob);
-                        else reject(new Error("画像の変換に失敗しました"));
-                    }, 'image/jpeg', 0.8); 
-                }; 
-                img.onerror = (e) => reject(e);
-            }); 
-        };
-
-        // --- Util Functions ---
+        // 画像処理
+        window.handleImageSelect = (input, previewId) => { if (input.files && input.files[0]) { compressImage(input.files[0]).then(base64 => { tempBandIconBase64 = base64; const img = document.getElementById(previewId); img.src = base64; img.classList.remove('hidden'); }); } };
+        window.handleImageEdit = async (input) => { if (input.files && input.files[0]) { if(!confirm("バンドアイコンを変更しますか？")) return; const base64 = await compressImage(input.files[0]); const bandId = document.getElementById('detailBandId').value; try { const storageRef = ref(storage, `band_icons/${bandId}.jpg`); await uploadString(storageRef, base64, 'data_url'); const url = await getDownloadURL(storageRef); await updateDoc(doc(db, "bands", bandId), { icon: url }); document.getElementById('detailBandIcon').src = url; alert("アイコンを変更しました"); } catch(e) { alert("画像アップロードエラー: " + e.message); } } };
+        const compressImage = (file) => { return new Promise((resolve) => { const img = new Image(); img.src = URL.createObjectURL(file); img.onload = () => { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const size = 200; canvas.width = size; canvas.height = size; let sWidth = img.width; let sHeight = img.height; let sx = 0; let sy = 0; if (sWidth > sHeight) { sWidth = sHeight; sx = (img.width - sHeight) / 2; } else { sHeight = sWidth; sy = (img.height - sWidth) / 2; } ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }); };
         async function loadUserList(targetId = 'userSelectList', excludeIds = []) { const list = document.getElementById(targetId); const qs = await getDocs(collection(db, "users")); list.innerHTML = ""; let count = 0; qs.forEach(doc => { const u = doc.data(); if(doc.id === currentUser || excludeIds.includes(doc.id)) return; const div = document.createElement('div'); div.className = 'member-option'; div.dataset.uid = doc.id; div.dataset.uname = u.name; div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; }; div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part ? '('+getPartLabel(u.part)+')' : ''}</span></div>`; list.appendChild(div); count++; }); if(count === 0) list.innerHTML = '<div style="padding:10px; color:#999;">追加できるユーザーがいません</div>'; }
         function getPartLabel(part) { if (part === "vocal") return "Vo"; if (part === "guitar") return "Gt"; if (part === "bass") return "Ba"; if (part === "drums") return "Dr"; if (part === "keyboard") return "Key"; return ""; }
-        
-        window.updateBandsList = () => {
-            const container = document.getElementById('bandsList');
-            if(!container) return;
-            container.innerHTML = "";
-            const filtered = myBandsAll.filter(b => (b.isArchived === (currentBandTab === 'archived')));
-            
-            if(filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400">バンドがありません</div>`;
-                return;
-            }
 
-            filtered.forEach(b => {
+        // カレンダー & 予約
+        window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
+        window.switchCalendarView = (mode) => { calendarMode = mode; updateViewMenuUI(); document.getElementById('viewMenu').classList.remove('open'); renderCalendar(); };
+        function updateViewMenuUI() { document.getElementById('currentViewName').innerText = calendarMode === 'month' ? '月表示' : '日表示'; document.getElementById('calMonthView').classList.toggle('hidden', calendarMode !== 'month'); document.getElementById('calDayView').classList.toggle('hidden', calendarMode !== 'day'); }
+        window.changeDate = (diff) => { if (calendarMode === 'month') displayDate.setMonth(displayDate.getMonth() + diff); else displayDate.setDate(displayDate.getDate() + diff); renderCalendar(); };
+        function renderCalendar() { const y = displayDate.getFullYear(); const m = displayDate.getMonth() + 1; if (calendarMode === 'month') { document.getElementById('calHeaderDate').innerText = `${y}年 ${m}月`; renderMonthView(); } else { const d = displayDate.getDate(); const w = ['日','月','火','水','木','金','土'][displayDate.getDay()]; document.getElementById('calHeaderDate').innerText = `${m}月`; document.getElementById('dayViewDateLabel').innerText = `${m}/${d} (${w})`; renderDayView(); } }
+        function renderMonthView() { const grid = document.getElementById('monthGrid'); grid.innerHTML = ""; ['日','月','火','水','木','金','土'].forEach(wd => { const div = document.createElement('div'); div.className = 'weekday-label'; div.innerText = wd; grid.appendChild(div); }); const year = displayDate.getFullYear(); const month = displayDate.getMonth(); const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0); for(let i=0; i<firstDay.getDay(); i++) { const div = document.createElement('div'); div.className = 'day-cell other-month'; grid.appendChild(div); } const today = new Date(); for(let d=1; d<=lastDay.getDate(); d++) { const div = document.createElement('div'); div.className = 'day-cell'; div.id = `day-${year}-${month+1}-${d}`; if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) div.classList.add('today'); div.onclick = () => { displayDate.setDate(d); switchCalendarView('day'); }; div.innerHTML = `<div class="day-num">${d}</div><div class="event-dots" id="dots-${year}-${month+1}-${d}"></div>`; grid.appendChild(div); } loadMonthBookings(year, month); }
+        function loadMonthBookings(year, month) { const start = new Date(year, month, 1); const end = new Date(year, month + 1, 0, 23, 59, 59); const q = query(collection(db, "bookings"), where("startTime", ">=", start), where("startTime", "<=", end)); onSnapshot(q, (qs) => { document.querySelectorAll('.event-dots').forEach(el => el.innerHTML = ""); document.querySelectorAll('.day-cell.unavailable').forEach(el => el.classList.remove('unavailable')); qs.forEach(doc => { const data = doc.data(); const d = data.startTime.toDate(); if(data.type === 'event') { const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`)?.parentElement; if(cell) cell.classList.add('unavailable'); } else { const container = document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); if (container && container.children.length < 3) { const dot = document.createElement('div'); dot.className = 'dot'; container.appendChild(dot); } } }); }); }
+        
+        function renderDayView() { const container = document.getElementById('timeline'); container.innerHTML = ""; for (let hour = 9; hour < 22; hour++) { const slot = document.createElement('div'); slot.className = 'time-slot'; slot.innerHTML = `<div class="time-label">${hour}:00</div>`; const content = document.createElement('div'); content.className = 'time-content'; content.dataset.hour = hour; content.addEventListener('touchstart', handleTouchStart, {passive: false}); content.addEventListener('touchmove', handleTouchMove, {passive: false}); content.addEventListener('touchend', handleTouchEnd); content.addEventListener('mousedown', handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove', handleMouseMove); container.addEventListener('mouseup', handleMouseUp); loadDayBookings(); }
+        function handleTouchStart(e) { if (e.target.classList.contains('event-block')) return; const hour = parseInt(e.target.dataset.hour); if(isNaN(hour)) return; selectionTimer = setTimeout(() => { isSelecting = true; selectionStartHour = hour; selectionEndHour = hour; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate) navigator.vibrate(50); }, 500); }
+        function handleTouchMove(e) { if (!isSelecting) { clearTimeout(selectionTimer); return; } e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (target && target.classList.contains('time-content')) { const hour = parseInt(target.dataset.hour); if (!isNaN(hour)) { selectionEndHour = hour; updateSelectionUI(); } } }
+        function handleTouchEnd(e) { clearTimeout(selectionTimer); if (isSelecting) { isSelecting = false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(); } }
+        function handleMouseDown(e) { if(!e.target.classList.contains('time-content')) return; isSelecting = true; selectionStartHour = parseInt(e.target.dataset.hour); selectionEndHour = selectionStartHour; updateSelectionUI(); }
+        function handleMouseMove(e) { if(!isSelecting) return; if(e.target.classList.contains('time-content')) { selectionEndHour = parseInt(e.target.dataset.hour); updateSelectionUI(); } }
+        function handleMouseUp() { if(isSelecting) { isSelecting = false; openBookingModalRange(); } }
+        function updateSelectionUI() { document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting')); if (selectionStartHour === null || selectionEndHour === null) return; const start = Math.min(selectionStartHour, selectionEndHour); const end = Math.max(selectionStartHour, selectionEndHour); for (let h = start; h <= end; h++) { const el = document.querySelector(`.time-content[data-hour="${h}"]`); if (el) el.classList.add('selecting'); } }
+        function generateTimeOptions() { const options = []; for (let h = 9; h <= 22; h++) { options.push(`${h}:00`); if (h < 22) options.push(`${h}:30`); } return options; }
+        window.toggleAllDay = () => { const isAllDay = document.getElementById('checkAllDay').checked; const timeArea = document.getElementById('timeSelectArea'); if(isAllDay) { timeArea.style.opacity = "0.5"; timeArea.style.pointerEvents = "none"; document.getElementById('selectStartTime').value = "9:00"; document.getElementById('selectEndTime').value = "22:00"; } else { timeArea.style.opacity = "1"; timeArea.style.pointerEvents = "auto"; } };
+        window.toggleBookingInputs = () => { const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal'; if (type === 'event') { document.getElementById('groupBandSelect').classList.add('hidden'); document.getElementById('groupEventTitle').classList.remove('hidden'); } else { document.getElementById('groupBandSelect').classList.remove('hidden'); document.getElementById('groupEventTitle').classList.add('hidden'); } };
+        
+        function openBookingModalRange() { document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting')); const start = Math.min(selectionStartHour, selectionEndHour); const end = Math.max(selectionStartHour, selectionEndHour); document.getElementById('bookingModalTitle').innerText = "新規予約"; document.getElementById('btnSaveBooking').innerText = "予約を確定する"; document.getElementById('btnDeleteBooking').classList.add('hidden'); document.getElementById('btnAddToGCal').classList.add('hidden'); document.getElementById('editingBookingId').value = ""; const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role; const typeSelector = document.getElementById('bookingTypeSelector'); if(isAdmin) { typeSelector.classList.remove('hidden'); document.querySelector('input[name="bookingType"][value="normal"]').checked = true; } else { typeSelector.classList.add('hidden'); } toggleBookingInputs(); const m = displayDate.getMonth() + 1; const d = displayDate.getDate(); document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`; setupTimeSelects(`${start}:00`, `${end+1}:00`); document.getElementById('checkAllDay').checked = false; toggleAllDay(); updateBandSelect(); openModal('modal-booking'); }
+        function openEditBookingModal(id, data) { if (data.creatorId !== currentUser) { if(data.type === 'event') alert(`【${data.title}】\n予定のため予約できません`); else alert("他人の予約は変更できません"); return; } document.getElementById('bookingModalTitle').innerText = "予約の編集"; document.getElementById('btnSaveBooking').innerText = "変更を保存"; document.getElementById('btnDeleteBooking').classList.remove('hidden'); document.getElementById('btnAddToGCal').classList.remove('hidden'); document.getElementById('editingBookingId').value = id; editingBookingData = data; const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role; const typeSelector = document.getElementById('bookingTypeSelector'); if(isAdmin) { typeSelector.classList.remove('hidden'); const t = data.type || 'normal'; document.querySelector(`input[name="bookingType"][value="${t}"]`).checked = true; } else { typeSelector.classList.add('hidden'); } toggleBookingInputs(); const s = data.startTime.toDate(); const e = data.endTime.toDate(); const m = s.getMonth() + 1; const d = s.getDate(); document.getElementById('bookingDateDisplay').innerText = `${m}月 ${d}日`; const startStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`; const endStr = `${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; const isAll = (startStr === "9:00" && endStr === "22:00"); document.getElementById('checkAllDay').checked = isAll; setupTimeSelects(startStr, endStr); toggleAllDay(); if(data.type === 'event') document.getElementById('inputEventTitle').value = data.title || ""; else updateBandSelect(data.bandId); openModal('modal-booking'); }
+        function setupTimeSelects(defaultStart, defaultEnd) { const startSel = document.getElementById('selectStartTime'); const endSel = document.getElementById('selectEndTime'); startSel.innerHTML = ""; endSel.innerHTML = ""; generateTimeOptions().forEach(t => { startSel.appendChild(new Option(t, t)); endSel.appendChild(new Option(t, t)); }); if (defaultStart) startSel.value = defaultStart; if (defaultEnd) endSel.value = defaultEnd; }
+        function updateBandSelect(selectedBandId = "") { const select = document.getElementById('selectBookingBand'); select.innerHTML = ""; const activeBands = myBandsAll.filter(b => !b.isArchived); if (activeBands.length === 0) { select.appendChild(new Option("バンドがありません", "")); } else { activeBands.forEach(b => { const op = new Option(b.name, b.id); if(b.id === selectedBandId) op.selected = true; select.appendChild(op); }); } }
+        
+        // --- 予約重複時のリスト表示 ---
+        window.openEventListModal = (events) => {
+            const container = document.getElementById('eventListContainer');
+            container.innerHTML = "";
+            events.sort((a,b) => a.startTime.toDate() - b.startTime.toDate());
+            
+            events.forEach(data => {
                 const div = document.createElement('div');
-                div.className = "card flex items-center p-3 cursor-pointer hover:bg-gray-50 transition";
-                div.onclick = () => openBandDetail(b.id);
-                div.innerHTML = `
-                    <img src="${b.icon || 'https://placehold.jp/100x100.png'}" class="band-icon-sm mr-3">
-                    <div class="flex-1">
-                        <div class="font-bold text-base">${b.name}</div>
-                        <div class="text-xs text-gray-500">${b.memberNames ? b.memberNames.length : 0} members</div>
-                    </div>
-                    <span class="material-icons text-gray-300">chevron_right</span>
-                `;
+                div.className = "card";
+                div.style.marginBottom = "10px";
+                div.style.padding = "10px";
+                div.style.cursor = "pointer";
+                
+                const s = data.startTime.toDate();
+                const e = data.endTime.toDate();
+                const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`;
+                
+                let html = `<div style="font-weight:bold; font-size:14px; color:#0b57d0;">${timeStr}</div>`;
+                if(data.type === 'event') {
+                    html += `<div style="font-weight:bold;">${data.title}</div><div style="font-size:11px; color:#137333;">イベント</div>`;
+                } else {
+                    html += `<div style="font-weight:bold;">${data.bandName}</div><div style="font-size:11px; color:#5f6368;">${data.userName}</div>`;
+                }
+                
+                if(data.status === 'pending') {
+                    html += `<div style="font-size:10px; color:#b06000; margin-top:4px;">●承認待ち</div>`;
+                }
+                
+                div.innerHTML = html;
+                div.onclick = () => {
+                    closeModal('modal-event-list');
+                    openEditBookingModal(data.id, data);
+                };
                 container.appendChild(div);
             });
-        };
-        window.setBandTab = (tab) => { currentBandTab = tab; renderBandsPage(); };
-        
-        window.showToast = (msg) => {
-            const con = document.getElementById('toast-container');
-            const el = document.createElement('div');
-            el.className = 'toast';
-            el.innerText = msg;
-            con.appendChild(el);
-            setTimeout(() => el.classList.add('show'), 10);
-            setTimeout(() => { el.classList.remove('show'); setTimeout(()=>el.remove(), 300); }, 3000);
+            openModal('modal-event-list');
         };
 
-        // --- Admin Functions ---
-        window.adminToggleAdmin = async (uid, newStatus) => {
-            if(!confirm(`管理者権限を${newStatus?'付与':'剥奪'}しますか？`)) return;
-            await updateDoc(doc(db, "users", uid), { isAdmin: newStatus });
-            renderAdminPage();
-        };
-        window.adminDeleteBand = async (bid) => {
-            if(!confirm("本当にこのバンドを削除しますか？")) return;
-            await deleteDoc(doc(db, "bands", bid));
-            renderAdminPage();
-        };
+        // --- 予約読み込みとレイアウト計算 ---
+        function loadDayBookings() { 
+            const startOfDay = new Date(displayDate); startOfDay.setHours(0,0,0,0); 
+            const endOfDay = new Date(displayDate); endOfDay.setHours(23,59,59,999); 
+            const q = query(collection(db, "bookings"), where("startTime", ">=", startOfDay), where("startTime", "<=", endOfDay)); 
+            
+            onSnapshot(q, (qs) => { 
+                document.querySelectorAll('.event-block').forEach(el => el.remove()); 
+                const events = [];
+                qs.forEach(docSnap => {
+                    const d = docSnap.data();
+                    d.id = docSnap.id;
+                    events.push(d);
+                });
+                
+                if(events.length === 0) return;
 
-        // --- Other Helpers ---
-        window.shareBandInvite = (bandId, bandName) => {
-            const url = `${window.location.origin}${window.location.pathname}?invite_band=${bandId}`;
-            if(navigator.share) {
-                navigator.share({ title: 'バンド招待', text: `「${bandName}」に招待されています！`, url: url });
-            } else {
-                prompt("以下のURLをコピーして送ってください", url);
+                // レイアウト計算
+                // 1. 時間順にソート
+                events.sort((a,b) => a.startTime.toDate() - b.startTime.toDate());
+
+                // 2. クラスタリング (重なり合うイベントのグループ化)
+                const clusters = [];
+                let currentCluster = [];
+                let clusterEnd = 0;
+
+                events.forEach(ev => {
+                    const startT = ev.startTime.toDate().getTime();
+                    const endT = ev.endTime.toDate().getTime();
+                    
+                    if (currentCluster.length === 0) {
+                        currentCluster.push(ev);
+                        clusterEnd = endT;
+                    } else {
+                        // 現在のクラスタの最後の終了時間より開始時間が前なら重なっているとみなす
+                        if (startT < clusterEnd) {
+                            currentCluster.push(ev);
+                            if (endT > clusterEnd) clusterEnd = endT;
+                        } else {
+                            clusters.push(currentCluster);
+                            currentCluster = [ev];
+                            clusterEnd = endT;
+                        }
+                    }
+                });
+                if(currentCluster.length > 0) clusters.push(currentCluster);
+
+                // 3. 各クラスタの描画処理
+                const MAX_COLS = 3; // これを超えるとスタック表示
+
+                clusters.forEach(cluster => {
+                    // クラスタ内の最大同時並行数を計算
+                    let points = [];
+                    cluster.forEach(ev => {
+                        points.push({t: ev.startTime.toDate().getTime(), type: 1}); // start
+                        points.push({t: ev.endTime.toDate().getTime(), type: -1}); // end
+                    });
+                    // 時間順、同時刻なら終了(-1)を開始(1)より先に処理して接するだけなら重複としない
+                    // ただし見た目の重複回避のため、厳密には同時刻start/endは重なりとしない
+                    points.sort((a,b) => a.t - b.t || a.type - b.type);
+
+                    let maxConcurrent = 0;
+                    let currentConcurrent = 0;
+                    points.forEach(p => {
+                        currentConcurrent += p.type;
+                        if(currentConcurrent > maxConcurrent) maxConcurrent = currentConcurrent;
+                    });
+
+                    // 描画
+                    if (maxConcurrent > MAX_COLS) {
+                        // まとめて表示
+                        const minStart = new Date(Math.min(...cluster.map(e => e.startTime.toDate().getTime())));
+                        const maxEnd = new Date(Math.max(...cluster.map(e => e.endTime.toDate().getTime())));
+                        renderSummaryBlock(cluster, minStart, maxEnd);
+                    } else {
+                        // カラムレイアウト (Greedy packing)
+                        const columns = []; // 各カラムの「最後に配置したイベントの終了時間」
+                        cluster.forEach(ev => {
+                            let placed = false;
+                            const evStart = ev.startTime.toDate().getTime();
+                            const evEnd = ev.endTime.toDate().getTime();
+                            
+                            for(let i=0; i<columns.length; i++) {
+                                if(columns[i] <= evStart) {
+                                    ev.colIndex = i;
+                                    columns[i] = evEnd;
+                                    placed = true;
+                                    break;
+                                }
+                            }
+                            if(!placed) {
+                                ev.colIndex = columns.length;
+                                columns.push(evEnd);
+                            }
+                        });
+                        
+                        // 全体の幅をカラム数で割る
+                        const widthPct = 100 / columns.length;
+                        cluster.forEach(ev => {
+                            renderEventBlock(ev, ev.colIndex * widthPct, widthPct);
+                        });
+                    }
+                });
+            }); 
+        }
+
+        function renderEventBlock(data, leftPct, widthPct) {
+            const s = data.startTime.toDate(); 
+            const e = data.endTime.toDate(); 
+            const startMin = (s.getHours() - 9) * 60 + s.getMinutes(); 
+            const endMin = (e.getHours() - 9) * 60 + e.getMinutes(); 
+            const durationMin = endMin - startMin; 
+            const slotIndex = s.getHours() - 9; 
+            const slots = document.querySelectorAll('.time-slot'); 
+            
+            if (slotIndex >= 0 && slotIndex < slots.length) { 
+                const contentArea = slots[slotIndex].querySelector('.time-content'); 
+                const div = document.createElement('div'); 
+                div.className = 'event-block'; 
+                div.style.top = (s.getMinutes() + 1) + "px"; 
+                div.style.height = (durationMin - 2) + "px"; 
+                div.style.left = leftPct + "%";
+                div.style.width = widthPct + "%";
+                div.style.zIndex = "20"; 
+
+                if (data.type === 'event') { 
+                    div.classList.add('special-event'); 
+                    div.innerHTML = `<div class="event-title">${data.title}</div>`; 
+                } else { 
+                    div.innerHTML = `<div class="event-title">${data.bandName}</div>`; 
+                    if (data.status === 'pending') {
+                        div.classList.add('pending');
+                    }
+                    
+                    const myBandIds = myBandsAll.map(b => b.id); 
+                    if (myBandIds.includes(data.bandId)) { 
+                        // ▼▼▼ 自分のバンド（確定時）の色を緑系に変更 ▼▼▼
+                        if(data.status !== 'pending') {
+                            div.style.backgroundColor = "#e6f4ea"; // 薄い緑
+                            div.style.borderLeftColor = "#34A853"; // 緑
+                            div.style.color = "#0d652d";           // 濃い緑
+                        }
+                    } else { 
+                        if(data.status !== 'pending') {
+                            div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; 
+                        }
+                    } 
+                    
+                    // 抽選確定の場合は薄紫にする
+                    if (data.source === 'lottery') {
+                        div.classList.add('lottery-confirmed');
+                        // インラインスタイルを上書きする必要があるため、important付きクラスにするか、ここでスタイル直接指定
+                        div.style.backgroundColor = "#f3e5f5";
+                        div.style.borderLeftColor = "#ab47bc";
+                        div.style.color = "#4a148c";
+                    }
+                } 
+                div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(data.id, data); }; 
+                contentArea.appendChild(div); 
             }
+        }
+
+        function renderSummaryBlock(events, startTime, endTime) {
+            const startMin = (startTime.getHours() - 9) * 60 + startTime.getMinutes();
+            const endMin = (endTime.getHours() - 9) * 60 + endTime.getMinutes();
+            const durationMin = endMin - startMin;
+            const slotIndex = startTime.getHours() - 9;
+            const slots = document.querySelectorAll('.time-slot');
+
+            if (slotIndex >= 0 && slotIndex < slots.length) {
+                const contentArea = slots[slotIndex].querySelector('.time-content');
+                const div = document.createElement('div');
+                div.className = 'event-block cluster';
+                div.style.top = (startTime.getMinutes() + 1) + "px";
+                div.style.height = (durationMin - 2) + "px";
+                div.style.left = "0%";
+                div.style.width = "100%";
+                
+                div.innerHTML = `<div class="event-title">予約 ${events.length}件<br><span style="font-size:10px; font-weight:normal;">(タップで詳細)</span></div>`;
+                
+                div.onclick = (ev) => {
+                    ev.stopPropagation();
+                    openEventListModal(events);
+                };
+                contentArea.appendChild(div);
+            }
+        }
+
+        window.saveBooking = async () => {
+            const editingId = document.getElementById('editingBookingId').value;
+            const type = document.querySelector('input[name="bookingType"]:checked') ? document.querySelector('input[name="bookingType"]:checked').value : 'normal';
+            let bookingData = { creatorId: currentUser, userName: currentProfile.displayName, type: type, createdAt: new Date() };
+            if (type === 'normal') {
+                if (myBandsAll.filter(b => !b.isArchived).length === 0) return alert("バンドを作成してください");
+                const selectBand = document.getElementById('selectBookingBand');
+                bookingData.bandId = selectBand.value; bookingData.bandName = selectBand.options[selectBand.selectedIndex].text;
+            } else {
+                const title = document.getElementById('inputEventTitle').value.trim();
+                if (!title) return alert("イベント名を入力してください");
+                bookingData.title = title; bookingData.bandName = title;
+            }
+            let sH, sM, eH, eM;
+            if (document.getElementById('checkAllDay').checked) { sH = 9; sM = 0; eH = 22; eM = 0; }
+            else { const sTimeStr = document.getElementById('selectStartTime').value; const eTimeStr = document.getElementById('selectEndTime').value; [sH, sM] = sTimeStr.split(':').map(Number); [eH, eM] = eTimeStr.split(':').map(Number); }
+            const startTime = new Date(displayDate); startTime.setHours(sH, sM, 0, 0); const endTime = new Date(displayDate); endTime.setHours(eH, eM, 0, 0);
+            if (startTime.getTime() >= endTime.getTime()) return alert("終了時間は開始時間より後にしてね");
+            bookingData.startTime = startTime; bookingData.endTime = endTime;
+
+            // モードによる処理分岐
+            const mode = currentSystemSettings.bookingMode || 'first_come';
+            
+            // 早い者勝ちモードの場合のみ重複チェック
+            if (mode === 'first_come') {
+                // Firestoreの複合インデックス不要な方法：
+                // その日の予約をすべて取得し、メモリ上で重複計算する
+                const dayStart = new Date(startTime);
+                dayStart.setHours(0, 0, 0, 0);
+                const dayEnd = new Date(startTime);
+                dayEnd.setHours(23, 59, 59, 999);
+
+                const qDay = query(collection(db, "bookings"), 
+                    where("startTime", ">=", dayStart), 
+                    where("startTime", "<=", dayEnd)
+                );
+
+                try {
+                    const snap = await getDocs(qDay);
+                    let hasOverlap = false;
+                    
+                    snap.forEach(doc => {
+                        // 自分自身（編集中の予約）との比較はスキップ
+                        if (editingId && doc.id === editingId) return;
+
+                        const existing = doc.data();
+                        const exStart = existing.startTime.toDate();
+                        const exEnd = existing.endTime.toDate();
+
+                        // 重複判定: (StartA < EndB) && (EndA > StartB)
+                        // これで包含関係も部分重複もすべて検知できる
+                        if (exStart < endTime && exEnd > startTime) {
+                            hasOverlap = true;
+                        }
+                    });
+                    
+                    if(hasOverlap) {
+                        return alert("【早い者勝ちモード】\n重複する予約があります。\n(包含する時間や重なる時間は予約できません)");
+                    }
+                    bookingData.status = 'confirmed'; // 確定
+                } catch(e) {
+                    console.error("重複チェックエラー", e);
+                    return alert("エラー: 予約状況の確認に失敗しました。\n" + e.message);
+                }
+            } else {
+                // 抽選モード: 重複OK、ステータスはPending
+                bookingData.status = 'pending';
+            }
+
+            try {
+                if (editingId) { delete bookingData.createdAt; await updateDoc(doc(db, "bookings", editingId), bookingData); alert("変更しました"); editingBookingData = { ...editingBookingData, ...bookingData }; }
+                else { 
+                    await addDoc(collection(db, "bookings"), bookingData); 
+                    if(mode === 'lottery') alert("抽選希望を提出しました！\n(まだ確定ではありません)");
+                    else alert("予約しました！");
+                }
+                closeModal('modal-booking');
+            } catch(e) { alert("エラー: " + e.message); }
         };
 
-        // --- Profile Update ---
-        window.updateProfileName = async () => {
-            const name = document.getElementById('profileNameInput').value.trim();
-            if(!name) return;
-            await updateDoc(doc(db, "users", currentUser), { name });
-            currentProfile.name = name;
-            showToast("名前を更新しました");
-        };
-        window.updateProfilePart = async (val) => {
-            await updateDoc(doc(db, "users", currentUser), { part: val });
-            currentProfile.part = val;
-            showToast("パートを更新しました");
-        };
+        window.addToGoogleCalendar = () => { if (!editingBookingData) return; const title = editingBookingData.bandName || "バンド練習"; const start = editingBookingData.startTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const end = editingBookingData.endTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g, ""); const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=LMC+Mobileからの予約`; window.open(url, '_blank'); };
+        window.deleteBooking = async () => { const editingId = document.getElementById('editingBookingId').value; if (!editingId) return; if(!confirm("本当に削除しますか？")) return; try { await deleteDoc(doc(db, "bookings", editingId)); alert("削除しました"); closeModal('modal-booking'); } catch(e) { alert("エラー: " + e.message); } };
+        
+        function renderHeaderIcons(data) { let ringClass = ""; const affs = data.affiliations || []; const isUrakata = affs.includes("urakata"); let isBirthday = false; if (data.birthday) { const today = new Date(); const bday = new Date(data.birthday); if (today.getMonth() === bday.getMonth() && today.getDate() === bday.getDate()) isBirthday = true; } if (isBirthday) ringClass = "ring-birthday"; else if (isUrakata) { if(data.job === "sound") ringClass = "ring-sound"; else if(data.job === "light") ringClass = "ring-light"; else if(data.job === "stage") ringClass = "ring-stage"; else if(data.job === "video") ringClass = "ring-video"; else ringClass = "ring-rainbow"; } const iconHtml = `<img src="${data.icon || 'https://placehold.jp/40x40.png'}" alt="icon">`; ['headerIconBands', 'headerIconCal', 'headerIconCue', 'headerIconAdmin'].forEach(id => { const el = document.getElementById(id); if(el) { el.innerHTML = iconHtml; el.className = "header-avatar " + ringClass; } }); if(isUrakata && data.role) document.getElementById('nav-admin').classList.remove('hidden'); }
 
+        main();
     </script>
 </body>
 </html>
