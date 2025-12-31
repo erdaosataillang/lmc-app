@@ -528,10 +528,11 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-        import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        // uploadStringをuploadBytesに変更
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
@@ -554,7 +555,8 @@
         let displayDate = new Date(); let selectedTimeSlot = null; let selectionStartHour = null; let selectionEndHour = null;
         let myBandsAll = []; let currentBandTab = 'active'; let calendarMode = 'month';
         let isSelecting = false; let selectionTimer = null; let editingBookingData = null;
-        let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBase64 = null;
+        // Base64 -> Blob 変数名変更
+        let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBlob = null;
         let allUsersCache = []; let adminEditingUserId = null;
         let allBandsCache = []; // 管理者用バンドキャッシュ
         let tempLotterySchedule = null; // 抽選結果一時保存用
@@ -1225,10 +1227,10 @@
             });
         }
         
-        // バンド作成 (画像保存つき)
+        // バンド作成 (画像保存修正: Base64 -> Blob & uploadBytes)
         window.openBandModal = () => { 
             document.getElementById('inputBandName').value = ""; document.getElementById('userSelectList').innerHTML = "読み込み中...";
-            tempBandIconBase64 = null; document.getElementById('previewBandIcon').classList.add('hidden');
+            tempBandIconBlob = null; document.getElementById('previewBandIcon').classList.add('hidden');
             loadUserList('userSelectList'); openModal('modal-band'); 
         };
         window.saveBand = async () => {
@@ -1238,7 +1240,15 @@
             selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); });
             try {
                 const docRef = await addDoc(collection(db, "bands"), { name: name, memberIds: memberIds, memberNames: memberNames, creatorId: currentUser, isArchived: false, createdAt: new Date() });
-                if (tempBandIconBase64) { const storageRef = ref(storage, `band_icons/${docRef.id}.jpg`); await uploadString(storageRef, tempBandIconBase64, 'data_url'); const url = await getDownloadURL(storageRef); await updateDoc(doc(db, "bands", docRef.id), { icon: url }); }
+                
+                // Blobを使ってアップロード (uploadBytes)
+                if (tempBandIconBlob) { 
+                    const storageRef = ref(storage, `band_icons/${docRef.id}.jpg`); 
+                    await uploadBytes(storageRef, tempBandIconBlob); 
+                    const url = await getDownloadURL(storageRef); 
+                    await updateDoc(doc(db, "bands", docRef.id), { icon: url }); 
+                }
+
                 closeModal('modal-band'); document.getElementById('inputBandName').value = "";
                 if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name); else alert("作成しました");
             } catch(e) { alert("エラー: " + e.message); }
@@ -1283,10 +1293,83 @@
         window.openAddMemberModal = async () => { if (!currentEditingBandId) return; const list = document.getElementById('addMemberSelectList'); list.innerHTML = "読み込み中..."; loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); }
         window.saveAddedMembers = async () => { if(!currentEditingBandId) return; const selectedEls = document.querySelectorAll('#addMemberSelectList .member-option.selected'); if(selectedEls.length === 0) return alert("メンバーを選択してください"); const memberIds = []; const memberNames = []; selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); }); try { await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...memberIds), memberNames: arrayUnion(...memberNames) }); alert("追加しました"); closeModal('modal-add-member'); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } }
         
-        // 画像処理
-        window.handleImageSelect = (input, previewId) => { if (input.files && input.files[0]) { compressImage(input.files[0]).then(base64 => { tempBandIconBase64 = base64; const img = document.getElementById(previewId); img.src = base64; img.classList.remove('hidden'); }); } };
-        window.handleImageEdit = async (input) => { if (input.files && input.files[0]) { if(!confirm("バンドアイコンを変更しますか？")) return; const base64 = await compressImage(input.files[0]); const bandId = document.getElementById('detailBandId').value; try { const storageRef = ref(storage, `band_icons/${bandId}.jpg`); await uploadString(storageRef, base64, 'data_url'); const url = await getDownloadURL(storageRef); await updateDoc(doc(db, "bands", bandId), { icon: url }); document.getElementById('detailBandIcon').src = url; alert("アイコンを変更しました"); } catch(e) { alert("画像アップロードエラー: " + e.message); } } };
-        const compressImage = (file) => { return new Promise((resolve) => { const img = new Image(); img.src = URL.createObjectURL(file); img.onload = () => { const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const size = 200; canvas.width = size; canvas.height = size; let sWidth = img.width; let sHeight = img.height; let sx = 0; let sy = 0; if (sWidth > sHeight) { sWidth = sHeight; sx = (img.width - sHeight) / 2; } else { sHeight = sWidth; sy = (img.height - sWidth) / 2; } ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }); };
+        // 画像処理 (大幅修正: uploadBytesを使用するように変更)
+        window.handleImageSelect = (input, previewId) => { 
+            if (input.files && input.files[0]) { 
+                compressImage(input.files[0]).then(blob => { 
+                    tempBandIconBlob = blob; 
+                    const img = document.getElementById(previewId); 
+                    img.src = URL.createObjectURL(blob); // BlobからプレビューURL生成
+                    img.classList.remove('hidden'); 
+                }).catch(e => alert("画像処理エラー: " + e.message));
+            } 
+        };
+
+        window.handleImageEdit = async (input) => { 
+            if (input.files && input.files[0]) { 
+                if(!confirm("バンドアイコンを変更しますか？")) return;
+                
+                const detailIcon = document.getElementById('detailBandIcon');
+                detailIcon.style.opacity = "0.5"; // 処理中表示
+
+                try {
+                    const blob = await compressImage(input.files[0]); 
+                    const bandId = document.getElementById('detailBandId').value; 
+                    const storageRef = ref(storage, `band_icons/${bandId}.jpg`); 
+                    
+                    await uploadBytes(storageRef, blob); // uploadBytesに変更
+                    const url = await getDownloadURL(storageRef); 
+                    
+                    await updateDoc(doc(db, "bands", bandId), { icon: url }); 
+                    detailIcon.src = url; 
+                    alert("アイコンを変更しました"); 
+                } catch(e) { 
+                    console.error(e);
+                    alert("画像アップロードエラー: " + e.message); 
+                } finally {
+                    detailIcon.style.opacity = "1";
+                }
+            } 
+        };
+
+        // Canvasを使って画像を圧縮し、Blobを返す関数
+        const compressImage = (file) => { 
+            return new Promise((resolve, reject) => { 
+                const img = new Image(); 
+                img.src = URL.createObjectURL(file); 
+                img.onload = () => { 
+                    const canvas = document.createElement('canvas'); 
+                    const ctx = canvas.getContext('2d'); 
+                    const size = 200; 
+                    canvas.width = size; 
+                    canvas.height = size; 
+                    
+                    let sWidth = img.width; 
+                    let sHeight = img.height; 
+                    let sx = 0; 
+                    let sy = 0; 
+                    
+                    // 中央トリミング計算
+                    if (sWidth > sHeight) { 
+                        sWidth = sHeight; 
+                        sx = (img.width - sHeight) / 2; 
+                    } else { 
+                        sHeight = sWidth; 
+                        sy = (img.height - sWidth) / 2; 
+                    } 
+                    
+                    ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size); 
+                    
+                    // Blobとして出力 (Quality 0.8)
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error("画像の変換に失敗しました"));
+                    }, 'image/jpeg', 0.8); 
+                }; 
+                img.onerror = (e) => reject(e);
+            }); 
+        };
+
         async function loadUserList(targetId = 'userSelectList', excludeIds = []) { const list = document.getElementById(targetId); const qs = await getDocs(collection(db, "users")); list.innerHTML = ""; let count = 0; qs.forEach(doc => { const u = doc.data(); if(doc.id === currentUser || excludeIds.includes(doc.id)) return; const div = document.createElement('div'); div.className = 'member-option'; div.dataset.uid = doc.id; div.dataset.uname = u.name; div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; }; div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part ? '('+getPartLabel(u.part)+')' : ''}</span></div>`; list.appendChild(div); count++; }); if(count === 0) list.innerHTML = '<div style="padding:10px; color:#999;">追加できるユーザーがいません</div>'; }
         function getPartLabel(part) { if (part === "vocal") return "Vo"; if (part === "guitar") return "Gt"; if (part === "bass") return "Ba"; if (part === "drums") return "Dr"; if (part === "keyboard") return "Key"; return ""; }
 
