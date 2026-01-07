@@ -1806,7 +1806,8 @@
                     div.classList.add('special-event'); 
                     div.innerHTML = `<div class="event-title">${data.title}</div>`; 
                 } else { 
-                    div.innerHTML = `<div class="event-title">${data.bandName}</div>`; 
+                    // 修正: バンド名の下に登録者名を表示
+                    div.innerHTML = `<div class="event-title">${data.bandName}</div><div style="font-size:10px; opacity:0.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.userName || ''}</div>`; 
                     if (data.status === 'pending') {
                         div.classList.add('pending');
                     }
