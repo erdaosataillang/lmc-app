@@ -403,6 +403,27 @@
     <div id="page-admin-fees-settings" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-settings')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の設定</div></div>
         <div class="content-area" style="padding-top:20px;">
+            <!-- 追加: 徴収状況サマリー -->
+            <div class="card" style="background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 20px; text-align: center; margin-bottom: 20px; border: none; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">
+                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">現在の徴収合計</div>
+                <div style="font-size: 32px; font-weight: bold; margin-bottom: 16px;">¥ <span id="feeTotalAmount">0</span></div>
+                
+                <div style="display: flex; justify-content: space-around; align-items: center;">
+                     <!-- 円グラフ -->
+                    <div class="pie-chart" id="feeProgressChart" style="width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(rgba(255,255,255,0.8) 0% 0%, rgba(255,255,255,0.2) 0% 100%); position: relative; display: flex; justify-content: center; align-items: center;">
+                        <div style="width: 64px; height: 64px; background: #7C5DF3; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px;">
+                            <span>徴収率</span>
+                            <span id="feeProgressPercent" style="font-size: 14px; font-weight: bold;">0%</span>
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: left; font-size: 13px;">
+                        <div style="margin-bottom: 6px;">前期: <span id="feeTotalTerm1" style="font-weight:bold;">¥0</span> <span id="feeCountTerm1" style="font-size:10px; opacity:0.8;">(0人)</span></div>
+                        <div>後期: <span id="feeTotalTerm2" style="font-weight:bold;">¥0</span> <span id="feeCountTerm2" style="font-size:10px; opacity:0.8;">(0人)</span></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="form-group">
                     <label class="form-label">対象年度</label>
