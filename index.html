@@ -405,7 +405,10 @@
         <div class="content-area" style="padding-top:20px;">
             <!-- 追加: 徴収状況サマリー -->
             <div class="card" style="background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 20px; text-align: center; margin-bottom: 20px; border: none; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">
-                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">現在の徴収合計</div>
+                <!-- 修正: 何年度のものかを表示 -->
+                <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">
+                    <span id="feeSummaryYearLabel" style="font-weight:bold; font-size:15px; margin-right:4px;">--</span>年度 徴収合計
+                </div>
                 <div style="font-size: 32px; font-weight: bold; margin-bottom: 16px;">¥ <span id="feeTotalAmount">0</span></div>
                 
                 <div style="display: flex; justify-content: space-around; align-items: center;">
@@ -751,64 +754,64 @@
         let myBandsAll = []; let currentBandTab = 'active'; let calendarMode = 'month';
         let isSelecting = false; let selectionTimer = null; let editingBookingData = null;
         let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBlob = null;
-        let allUsersCache = []; let adminEditingUserId = null;
-        let allBandsCache = [];
-        let tempLotterySchedule = null;
-
-        let currentSystemSettings = { bookingMode: 'first_come', lotteryConfig: { mode: 'auto', daysBefore: 2, time: 0 } };
-        
-        // 部費管理用の設定変数
-        let currentFeeSettings = { year: new Date().getFullYear(), term1_amount: 0, term2_amount: 0 };
-
-        // --- 部費管理機能 ---
-        
-        // 1. メニュー
-        window.openAdminFeesMenu = () => {
-            openPage('admin-fees-menu');
-        };
-
-        window.openAdminFeeHistory = async () => {
-            openPage('admin-fees-history');
-            
-            // セレクトボックスの初期化
-            const yearSelect = document.getElementById('scanFeeYear');
-            yearSelect.innerHTML = "";
-            const currentYear = new Date().getFullYear();
-            // 前後1年分を表示
-            [currentYear-1, currentYear, currentYear+1].forEach(y => {
-                const op = document.createElement('option');
-                op.value = y;
-                op.text = `${y}年度`;
-                if(y === currentYear) op.selected = true;
-                yearSelect.appendChild(op);
-            });
-            
-            // ユーザーデータをキャッシュしておく（スキャン時の照合用）
+        // 集計関数 (追加)
+        async function loadFeeSummary() {
+            // ユーザーデータ確保
             if(allUsersCache.length === 0) {
                  const qs = await getDocs(collection(db, "users"));
                  allUsersCache = [];
                  qs.forEach(doc => allUsersCache.push({ id: doc.id, ...doc.data() }));
             }
-        };
 
-        // 2. 設定画面
-        window.openAdminFeeSettings = async () => {
-            openPage('admin-fees-settings');
-            try {
-                const docSnap = await getDoc(doc(db, "system", "fees"));
-                if (docSnap.exists()) {
-                    currentFeeSettings = docSnap.data();
-                } else {
-                    // 初期値
-                    currentFeeSettings = { year: new Date().getFullYear(), term1_amount: 0, term2_amount: 0 };
+            const year = currentFeeSettings.year || new Date().getFullYear();
+            
+            // 修正: 集計対象の年度を表示に反映
+            const yearLabel = document.getElementById('feeSummaryYearLabel');
+            if(yearLabel) yearLabel.innerText = year;
+
+            const t1 = parseInt(currentFeeSettings.term1_amount) || 0;
+            const t2 = parseInt(currentFeeSettings.term2_amount) || 0;
+            
+            const k1 = `${year}_1`;
+            const k2 = `${year}_2`;
+            
+            let count1 = 0;
+            let count2 = 0;
+            let totalUsers = allUsersCache.length; // 母数（全員が払う前提）
+
+            allUsersCache.forEach(u => {
+                if(u.feeStatus) {
+                    if(u.feeStatus[k1]) count1++;
+                    if(u.feeStatus[k2]) count2++;
                 }
-                document.getElementById('feeSettingYear').value = currentFeeSettings.year;
-                document.getElementById('feeSettingTerm1').value = currentFeeSettings.term1_amount;
-                document.getElementById('feeSettingTerm2').value = currentFeeSettings.term2_amount;
-            } catch(e) {
-                console.error("Fee setting load error", e);
+            });
+
+            const sum1 = count1 * t1;
+            const sum2 = count2 * t2;
+            const total = sum1 + sum2;
+
+            // 想定最大額（全員が両方払った場合）
+            // 0円設定の場合は除外して計算
+            let maxTotal = 0;
+            if(t1 > 0) maxTotal += totalUsers * t1;
+            if(t2 > 0) maxTotal += totalUsers * t2;
+            
+            let percent = 0;
+            if (maxTotal > 0) {
+                percent = Math.round((total / maxTotal) * 100);
             }
-        };
+
+            // UI反映
+            document.getElementById('feeTotalAmount').innerText = total.toLocaleString();
+            document.getElementById('feeTotalTerm1').innerText = '¥' + sum1.toLocaleString();
+            document.getElementById('feeCountTerm1').innerText = `(${count1}/${totalUsers}人)`;
+            document.getElementById('feeTotalTerm2').innerText = '¥' + sum2.toLocaleString();
+            document.getElementById('feeCountTerm2').innerText = `(${count2}/${totalUsers}人)`;
+            
+            document.getElementById('feeProgressPercent').innerText = `${percent}%`;
+            // 円グラフ更新
+            document.getElementById('feeProgressChart').style.background = `conic-gradient(rgba(255,255,255,0.9) 0% ${percent}%, rgba(255,255,255,0.2) ${percent}% 100%)`;
+        }
 
         window.saveFeeSettings = async () => {
             const year = parseInt(document.getElementById('feeSettingYear').value);
