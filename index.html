@@ -1664,7 +1664,6 @@
                         points.push({t: ev.endTime.toDate().getTime(), type: -1}); // end
                     });
                     // 時間順、同時刻なら終了(-1)を開始(1)より先に処理して接するだけなら重複としない
-                    // ただし見た目の重複回避のため、厳密には同時刻start/endは重なりとしない
                     points.sort((a,b) => a.t - b.t || a.type - b.type);
 
                     let maxConcurrent = 0;
@@ -1702,8 +1701,9 @@
                             }
                         });
                         
-                        // 全体の幅をカラム数で割る
-                        const widthPct = 100 / columns.length;
+                        // 全体の幅をカラム数で割る (右側に15%の余白を残す)
+                        const USABLE_WIDTH = 85; 
+                        const widthPct = USABLE_WIDTH / columns.length;
                         cluster.forEach(ev => {
                             renderEventBlock(ev, ev.colIndex * widthPct, widthPct);
                         });
@@ -1782,7 +1782,7 @@
                 div.style.top = (startTime.getMinutes() + 1) + "px";
                 div.style.height = (durationMin - 2) + "px";
                 div.style.left = "0%";
-                div.style.width = "100%";
+                div.style.width = "85%"; // まとめて表示の場合も右側に余白を残す
                 
                 div.innerHTML = `<div class="event-title">予約 ${events.length}件<br><span style="font-size:10px; font-weight:normal;">(タップで詳細)</span></div>`;
                 
