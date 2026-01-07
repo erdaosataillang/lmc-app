@@ -146,7 +146,8 @@
         .icon-admin-user { background-color: #e8eaf6; color: #283593; }
         .icon-admin-doc { background-color: #e0f2f1; color: #00695c; }
         .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; }
-        
+        .icon-admin-fee { background-color: #fff8e1; color: #f57f17; } /* 部費アイコン用 */
+
         .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; }
         .page-container.open { transform: translateX(0); }
         .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
@@ -175,6 +176,16 @@
         .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
         .status-confirmed { background: #e6f4ea; color: #0d652d; }
         .status-pending { background: #fff8e1; color: #b06000; }
+
+        /* 部費リスト用 */
+        .fee-user-item { background: white; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .fee-check-group { display: flex; gap: 8px; }
+        .fee-checkbox { display: flex; flex-direction: column; align-items: center; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; padding: 8px; width: 60px; transition: all 0.2s; }
+        .fee-checkbox.checked { background-color: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
+        .fee-checkbox input { display: none; }
+        .fee-label { font-size: 10px; font-weight: bold; margin-bottom: 4px; }
+        .fee-status-icon { font-size: 20px; color: #ddd; }
+        .fee-checkbox.checked .fee-status-icon { color: #4caf50; }
     </style>
 </head>
 <body>
@@ -285,6 +296,16 @@
         </div>
         <div class="scroll-content">
             <div class="menu-list">
+                <!-- 追加: 部費の管理 -->
+                <button class="menu-btn" onclick="openAdminFeesMenu()">
+                    <div class="menu-icon-wrapper icon-admin-fee"><span class="material-icons">attach_money</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">部費の管理</span>
+                        <span class="menu-subtitle">金額設定、徴収状況の管理</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+
                 <button class="menu-btn" onclick="openAdminSettings()">
                     <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
                     <div class="menu-content">
@@ -344,6 +365,77 @@
 
     <!-- --- サブページ群 --- -->
     
+    <!-- 部費管理メニュー -->
+    <div id="page-admin-fees-menu" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-menu')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の管理</div></div>
+        <div class="content-area">
+            <div class="menu-list">
+                <button class="menu-btn" onclick="openAdminFeeSettings()">
+                    <div class="menu-icon-wrapper" style="background:#f3e5f5; color:#7b1fa2;"><span class="material-icons">settings</span></div>
+                    <div class="menu-content"><span class="menu-title">部費の設定</span><span class="menu-subtitle">前期・後期の金額設定</span></div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+                <button class="menu-btn" onclick="openAdminFeeList()">
+                    <div class="menu-icon-wrapper" style="background:#e8eaf6; color:#283593;"><span class="material-icons">list_alt</span></div>
+                    <div class="menu-content"><span class="menu-title">部費の徴収リスト</span><span class="menu-subtitle">徴収状況の確認・更新</span></div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+                <button class="menu-btn" onclick="openAdminFeeHistory()">
+                    <div class="menu-icon-wrapper" style="background:#e0f2f1; color:#00695c;"><span class="material-icons">history</span></div>
+                    <div class="menu-content"><span class="menu-title">部費の徴収記録</span><span class="menu-subtitle">過去の履歴など（準備中）</span></div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 部費設定画面 -->
+    <div id="page-admin-fees-settings" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-settings')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の設定</div></div>
+        <div class="content-area" style="padding-top:20px;">
+            <div class="card">
+                <div class="form-group">
+                    <label class="form-label">対象年度</label>
+                    <input type="number" id="feeSettingYear" class="form-input" placeholder="例: 2025">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">前期の部費 (円)</label>
+                    <input type="number" id="feeSettingTerm1" class="form-input" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">後期の部費 (円)</label>
+                    <input type="number" id="feeSettingTerm2" class="form-input" placeholder="0">
+                </div>
+                <button class="btn-primary" onclick="saveFeeSettings()">設定を保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 部費徴収リスト画面 -->
+    <div id="page-admin-fees-list" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-list')"><span class="material-icons">arrow_back</span></button><div class="page-title">徴収リスト</div></div>
+        <div class="content-area">
+            <div style="background:#fff3e0; padding:10px; border-radius:8px; margin-bottom:15px; font-size:12px; color:#e65100;">
+                <span id="feeListYearLabel" style="font-weight:bold;">2025</span>年度の徴収状況
+            </div>
+            <div class="search-bar">
+                <span class="material-icons" style="color:#5f6368;">search</span>
+                <input type="text" id="feeListSearchInput" placeholder="名前で検索...">
+            </div>
+            <div id="feeUserList">読み込み中...</div>
+        </div>
+    </div>
+
+    <!-- 部費記録画面（スタブ） -->
+    <div id="page-admin-fees-history" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-history')"><span class="material-icons">arrow_back</span></button><div class="page-title">徴収記録</div></div>
+        <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
+            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>
+            準備中: 履歴・ログ機能
+        </div>
+    </div>
+
+    <!-- 既存のページ群 -->
     <div id="page-admin-users" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div>
         <div class="content-area">
@@ -493,6 +585,7 @@
         </div>
     </div>
 
+    <!-- モーダル群 (変更なし) -->
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
         <div class="modal-content">
             <h3 style="margin-top:0;">バンド結成</h3>
@@ -519,7 +612,6 @@
             <div class="form-group"><label class="form-label">メンバー</label><div class="member-list-edit" id="detailMemberList"></div><button id="btnAddMemberToBand" class="btn-add-member hidden" onclick="openAddMemberModal()"><span class="material-icons">person_add</span> メンバーを追加</button></div>
             <div id="bandCreatorActions" class="hidden"><button class="btn-primary" onclick="updateBandName()">バンド名を変更</button><button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="background:#fff3e0; color:#e65100;">アーカイブへ移動</button><button id="btnRestore" class="btn-primary hidden" onclick="restoreBand()" style="background:#fff3e0; color:#e65100;">活動中に復元</button><button class="btn-danger" onclick="deleteBand()">バンドを解散（削除）</button></div>
             <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()">バンドから脱退</button></div>
-            <!-- 管理者用: 予約リスト -->
             <div id="adminBandBookingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:16px;">
                 <h4 style="margin:0 0 10px; font-size:14px; color:#0b57d0;">予約・合わせ履歴 (管理者のみ)</h4>
                 <div id="adminBandBookingsList" style="max-height:150px; overflow-y:auto; font-size:12px;">読み込み中...</div>
@@ -555,7 +647,7 @@
         </div>
     </div>
 
-    <!-- 予約一覧モーダル（重複時用） -->
+    <!-- 予約一覧モーダル -->
     <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')">
         <div class="modal-content">
             <h3 style="margin-top:0;">予約一覧</h3>
@@ -568,7 +660,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        // Firebase Storageのインポートを削除
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
         const firebaseConfig = {
@@ -583,7 +674,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        // const storage = getStorage(app); // 削除
         const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; 
         const MY_PAGE_URL = "https://liff.line.me/2008162165-znd24peg";
@@ -592,35 +682,197 @@
         let displayDate = new Date(); let selectedTimeSlot = null; let selectionStartHour = null; let selectionEndHour = null;
         let myBandsAll = []; let currentBandTab = 'active'; let calendarMode = 'month';
         let isSelecting = false; let selectionTimer = null; let editingBookingData = null;
-        // Base64 -> Blob 変数名変更
         let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBlob = null;
         let allUsersCache = []; let adminEditingUserId = null;
-        let allBandsCache = []; // 管理者用バンドキャッシュ
-        let tempLotterySchedule = null; // 抽選結果一時保存用
+        let allBandsCache = [];
+        let tempLotterySchedule = null;
 
-        // --- システム設定管理 (予約ルール) ---
         let currentSystemSettings = { bookingMode: 'first_come', lotteryConfig: { mode: 'auto', daysBefore: 2, time: 0 } };
+        
+        // 部費管理用の設定変数
+        let currentFeeSettings = { year: new Date().getFullYear(), term1_amount: 0, term2_amount: 0 };
 
-        // 設定画面を開くときに最新データを読み込む
+        // --- 部費管理機能 ---
+        
+        // 1. メニュー
+        window.openAdminFeesMenu = () => {
+            openPage('admin-fees-menu');
+        };
+
+        window.openAdminFeeHistory = () => {
+            openPage('admin-fees-history');
+        };
+
+        // 2. 設定画面
+        window.openAdminFeeSettings = async () => {
+            openPage('admin-fees-settings');
+            try {
+                const docSnap = await getDoc(doc(db, "system", "fees"));
+                if (docSnap.exists()) {
+                    currentFeeSettings = docSnap.data();
+                } else {
+                    // 初期値
+                    currentFeeSettings = { year: new Date().getFullYear(), term1_amount: 0, term2_amount: 0 };
+                }
+                document.getElementById('feeSettingYear').value = currentFeeSettings.year;
+                document.getElementById('feeSettingTerm1').value = currentFeeSettings.term1_amount;
+                document.getElementById('feeSettingTerm2').value = currentFeeSettings.term2_amount;
+            } catch(e) {
+                console.error("Fee setting load error", e);
+            }
+        };
+
+        window.saveFeeSettings = async () => {
+            const year = parseInt(document.getElementById('feeSettingYear').value);
+            const t1 = parseInt(document.getElementById('feeSettingTerm1').value);
+            const t2 = parseInt(document.getElementById('feeSettingTerm2').value);
+            
+            if (!year) return alert("年度を入力してください");
+
+            try {
+                await setDoc(doc(db, "system", "fees"), {
+                    year: year,
+                    term1_amount: t1 || 0,
+                    term2_amount: t2 || 0,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+                
+                currentFeeSettings = { year, term1_amount: t1, term2_amount: t2 };
+                alert("保存しました");
+                closePage('admin-fees-settings');
+            } catch(e) {
+                alert("保存エラー: " + e.message);
+            }
+        };
+
+        // 3. 徴収リスト画面
+        window.openAdminFeeList = async () => {
+            openPage('admin-fees-list');
+            document.getElementById('feeUserList').innerHTML = "読み込み中...";
+            
+            // まず最新の設定を取得（年度や金額を知るため）
+            await getDoc(doc(db, "system", "fees")).then(snap => {
+                if(snap.exists()) currentFeeSettings = snap.data();
+            });
+            
+            document.getElementById('feeListYearLabel').innerText = currentFeeSettings.year || new Date().getFullYear();
+            
+            loadFeeUserList();
+        };
+
+        async function loadFeeUserList() {
+            const container = document.getElementById('feeUserList');
+            container.innerHTML = "ユーザー取得中...";
+            
+            try {
+                // 全ユーザー取得
+                const q = query(collection(db, "users"), orderBy("studentId", "asc")); // 学籍番号順が見やすい
+                const qs = await getDocs(q);
+                
+                allUsersCache = [];
+                qs.forEach(doc => allUsersCache.push({ id: doc.id, ...doc.data() }));
+                
+                renderFeeUserList(allUsersCache);
+            } catch(e) {
+                container.innerHTML = "エラー: " + e.message;
+            }
+        }
+
+        function renderFeeUserList(users) {
+            const container = document.getElementById('feeUserList');
+            container.innerHTML = "";
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div style="padding:20px; text-align:center;">ユーザーがいません</div>';
+                return;
+            }
+
+            const targetYear = currentFeeSettings.year || new Date().getFullYear();
+            const term1Key = `${targetYear}_1`;
+            const term2Key = `${targetYear}_2`;
+
+            users.forEach(u => {
+                const statusMap = u.feeStatus || {};
+                const isPaid1 = !!statusMap[term1Key];
+                const isPaid2 = !!statusMap[term2Key];
+                
+                const div = document.createElement('div');
+                div.className = 'fee-user-item';
+                
+                div.innerHTML = `
+                    <div>
+                        <div style="font-weight:bold;">${u.name}</div>
+                        <div style="font-size:11px; color:#888;">${u.studentId || '-'} ${u.part ? '('+getPartLabel(u.part)+')' : ''}</div>
+                    </div>
+                    <div class="fee-check-group">
+                        <div class="fee-checkbox ${isPaid1 ? 'checked' : ''}" onclick="toggleFeeStatus('${u.id}', '${term1Key}', this)">
+                            <div class="fee-label">前期</div>
+                            <div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term1_amount||0}</div>
+                            <span class="material-icons fee-status-icon">check_circle</span>
+                        </div>
+                        <div class="fee-checkbox ${isPaid2 ? 'checked' : ''}" onclick="toggleFeeStatus('${u.id}', '${term2Key}', this)">
+                            <div class="fee-label">後期</div>
+                            <div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term2_amount||0}</div>
+                            <span class="material-icons fee-status-icon">check_circle</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // 検索機能
+        document.getElementById('feeListSearchInput')?.addEventListener('input', (e) => {
+            const term = e.target.value.trim();
+            renderFeeUserList(term ? allUsersCache.filter(u => u.name.includes(term) || (u.kana && u.kana.includes(term))) : allUsersCache);
+        });
+
+        // 徴収ステータスのトグル
+        window.toggleFeeStatus = async (uid, key, element) => {
+            // UIを即時更新 (楽観的UI)
+            const isChecked = element.classList.contains('checked');
+            if (isChecked) element.classList.remove('checked');
+            else element.classList.add('checked');
+            
+            const newVal = !isChecked;
+            
+            try {
+                // Firestore更新: userドキュメントのfeeStatusマップ内の特定キーを更新
+                // updateDocでネストされたフィールドを更新するには "feeStatus.key": value の形式を使う
+                const updateData = {};
+                updateData[`feeStatus.${key}`] = newVal;
+                
+                await updateDoc(doc(db, "users", uid), updateData);
+                
+                // キャッシュも更新しておくと検索などで便利
+                const user = allUsersCache.find(u => u.id === uid);
+                if (user) {
+                    if (!user.feeStatus) user.feeStatus = {};
+                    user.feeStatus[key] = newVal;
+                }
+                
+            } catch(e) {
+                console.error("Fee update error", e);
+                alert("更新に失敗しました: " + e.message);
+                // 失敗したらUIを戻す
+                if (isChecked) element.classList.add('checked');
+                else element.classList.remove('checked');
+            }
+        };
+
+
+        // --- システム設定管理 (既存) ---
         window.openAdminSettings = async () => {
             openPage('admin-calendar-stub');
             try {
-                // systemコレクションのsettingsドキュメントを取得
                 const docRef = doc(db, "system", "settings");
                 const docSnap = await getDoc(docRef);
-                
                 if (docSnap.exists()) {
                     currentSystemSettings = docSnap.data();
                 }
-
-                // ラジオボタンに反映
                 const mode = currentSystemSettings.bookingMode || 'first_come';
                 const radios = document.getElementsByName('adminBookingMode');
-                radios.forEach(r => {
-                    if(r.value === mode) r.checked = true;
-                });
-                
-                // 抽選設定の反映
+                radios.forEach(r => { if(r.value === mode) r.checked = true; });
                 if (currentSystemSettings.lotteryConfig) {
                     const lc = currentSystemSettings.lotteryConfig;
                     const execRadios = document.getElementsByName('lotteryExecMode');
@@ -628,116 +880,58 @@
                     document.getElementById('lotteryAutoDays').value = lc.daysBefore || 2;
                     document.getElementById('lotteryAutoTime').value = lc.time || 0;
                 }
-
-                toggleLotterySettings(); // UIの初期状態セット
-
-            } catch(e) {
-                console.error("設定読み込みエラー", e);
-            }
+                toggleLotterySettings();
+            } catch(e) { console.error(e); }
         };
 
-        // 抽選設定エリアの表示切替
         window.toggleLotterySettings = () => {
             const isLottery = document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked;
             const area = document.getElementById('lotterySettingsArea');
-            if (isLottery) {
-                area.classList.remove('hidden');
-                toggleLotteryExecUI();
-            } else {
-                area.classList.add('hidden');
-            }
+            if (isLottery) { area.classList.remove('hidden'); toggleLotteryExecUI(); } 
+            else { area.classList.add('hidden'); }
         };
 
-        // 抽選実行モード(自動/手動)のUI切替
         window.toggleLotteryExecUI = () => {
             const mode = document.querySelector('input[name="lotteryExecMode"]:checked').value;
             const autoConfig = document.getElementById('lotteryAutoConfig');
             const manualConfig = document.getElementById('lotteryManualConfig');
-            if (mode === 'auto') {
-                autoConfig.classList.remove('hidden');
-                manualConfig.classList.add('hidden');
-            } else {
-                autoConfig.classList.add('hidden');
-                manualConfig.classList.remove('hidden');
-            }
+            if (mode === 'auto') { autoConfig.classList.remove('hidden'); manualConfig.classList.add('hidden'); } 
+            else { autoConfig.classList.add('hidden'); manualConfig.classList.remove('hidden'); }
         };
 
-        // --- 抽選ロジック本体 ---
         window.runManualLottery = async () => {
             const dateVal = document.getElementById('manualLotteryDate').value;
             if(!dateVal) return alert("日付を選択してください");
             if(!confirm(`${dateVal} の抽選を実行しますか？`)) return;
-            
             const logBox = document.getElementById('lotteryLog');
             logBox.innerHTML = '<div class="log-line">データ取得中...</div>';
             logBox.classList.remove('hidden');
             document.getElementById('btnApplyLottery').classList.add('hidden');
-
             const targetDate = new Date(dateVal);
             const startOfDay = new Date(targetDate); startOfDay.setHours(0,0,0,0);
             const endOfDay = new Date(targetDate); endOfDay.setHours(23,59,59,999);
-
             try {
-                // 1. 対象日の予約を全取得
-                const q = query(collection(db, "bookings"), 
-                    where("startTime", ">=", startOfDay), 
-                    where("startTime", "<=", endOfDay)
-                );
+                const q = query(collection(db, "bookings"), where("startTime", ">=", startOfDay), where("startTime", "<=", endOfDay));
                 const snapshot = await getDocs(q);
-                
-                let candidates = [];
-                let lockedSlots = []; // 確定済みの予約（先着やイベント）
-
+                let candidates = []; let lockedSlots = [];
                 snapshot.forEach(doc => {
                     const d = doc.data();
-                    if (d.status === 'pending' && d.type !== 'event') {
-                        // 抽選対象（承認待ち）
-                        candidates.push({ id: doc.id, ...d });
-                    } else if (d.status === 'confirmed' || d.type === 'event') {
-                        // 既に確定している予約（先着モードで入ったものやイベント）
-                        lockedSlots.push({
-                            start: d.startTime.toDate(),
-                            end: d.endTime.toDate(),
-                            title: d.bandName || d.title
-                        });
-                    }
+                    if (d.status === 'pending' && d.type !== 'event') { candidates.push({ id: doc.id, ...d }); } 
+                    else if (d.status === 'confirmed' || d.type === 'event') { lockedSlots.push({ start: d.startTime.toDate(), end: d.endTime.toDate(), title: d.bandName || d.title }); }
                 });
-
-                if (candidates.length === 0) {
-                    logBox.innerHTML += '<div class="log-line log-warn">対象の予約(承認待ち)がありません。</div>';
-                    return;
-                }
-
+                if (candidates.length === 0) { logBox.innerHTML += '<div class="log-line log-warn">対象の予約(承認待ち)がありません。</div>'; return; }
                 logBox.innerHTML += `<div class="log-line">候補: ${candidates.length}件 / 確定済: ${lockedSlots.length}件</div>`;
-
-                // 2. バンドごとに希望枠を整理
                 const bandRequests = {};
                 candidates.forEach(c => {
-                    if (!bandRequests[c.bandId]) {
-                        bandRequests[c.bandId] = { 
-                            id: c.bandId, 
-                            name: c.bandName, 
-                            requests: [], 
-                            docIds: [] 
-                        };
-                    }
-                    bandRequests[c.bandId].requests.push({
-                        start: c.startTime.toDate(),
-                        end: c.endTime.toDate()
-                    });
+                    if (!bandRequests[c.bandId]) { bandRequests[c.bandId] = { id: c.bandId, name: c.bandName, requests: [], docIds: [] }; }
+                    bandRequests[c.bandId].requests.push({ start: c.startTime.toDate(), end: c.endTime.toDate() });
                     bandRequests[c.bandId].docIds.push(c.id);
                 });
-
                 const bands = Object.values(bandRequests);
                 logBox.innerHTML += `<div class="log-line">エントリー: ${bands.length}バンド</div>`;
-
-                // 3. スケジューリング実行
-                // lockedSlotsを渡して、その時間を埋めた状態で開始する
                 let schedule = null;
-                
                 logBox.innerHTML += '<div class="log-line">--- 60分枠で割り当て試行 ---</div>';
                 schedule = attemptSchedule(bands, 60, lockedSlots);
-                
                 if (schedule.successCount < bands.length) {
                     logBox.innerHTML += `<div class="log-line log-warn">失敗: 全員入りません (${schedule.successCount}/${bands.length})</div>`;
                     logBox.innerHTML += '<div class="log-line">--- 30分枠で再試行 ---</div>';
@@ -747,8 +941,6 @@
                     logBox.innerHTML += '<div class="log-line">--- 余り時間で1.5時間へ拡張試行 ---</div>';
                     schedule = extendSchedule(schedule, bands, 90);
                 }
-
-                // 結果表示
                 logBox.innerHTML += '<div class="log-line" style="margin-top:10px; border-top:1px dashed #666;">【最終結果】</div>';
                 let successCount = 0;
                 schedule.assignments.forEach(a => {
@@ -758,257 +950,105 @@
                     logBox.innerHTML += `<div class="log-line log-success">✔ ${a.bandName}: ${startStr}-${endStr} (${dur}分)</div>`;
                     successCount++;
                 });
-
-                if (schedule.failedBands.length > 0) {
-                    schedule.failedBands.forEach(b => {
-                        logBox.innerHTML += `<div class="log-line log-error">✖ ${b.name}: 確保不可</div>`;
-                    });
-                }
-
+                if (schedule.failedBands.length > 0) { schedule.failedBands.forEach(b => { logBox.innerHTML += `<div class="log-line log-error">✖ ${b.name}: 確保不可</div>`; }); }
                 tempLotterySchedule = schedule; 
                 document.getElementById('btnApplyLottery').classList.remove('hidden');
-
-            } catch(e) {
-                console.error(e);
-                logBox.innerHTML += `<div class="log-line log-error">エラー発生: ${e.message}</div>`;
-            }
+            } catch(e) { console.error(e); logBox.innerHTML += `<div class="log-line log-error">エラー発生: ${e.message}</div>`; }
         };
 
-        // スケジューリング・アルゴリズム
         function attemptSchedule(bands, durationMinutes, lockedSlots) {
-            // タイムライン: 9:00 - 22:00 (分単位)
-            const START_HOUR = 9;
-            const END_HOUR = 22;
-            const TOTAL_MINUTES = (END_HOUR - START_HOUR) * 60;
+            const START_HOUR = 9; const END_HOUR = 22; const TOTAL_MINUTES = (END_HOUR - START_HOUR) * 60;
             const timeline = new Array(TOTAL_MINUTES).fill(null); 
-
-            // 確定済み(locked)の予約を埋める
             if (lockedSlots && lockedSlots.length > 0) {
                 lockedSlots.forEach(lock => {
                     const startMin = (lock.start.getHours() - START_HOUR) * 60 + lock.start.getMinutes();
                     const endMin = (lock.end.getHours() - START_HOUR) * 60 + lock.end.getMinutes();
-                    
-                    // 範囲チェックと埋め込み
-                    const s = Math.max(0, startMin);
-                    const e = Math.min(TOTAL_MINUTES, endMin);
-                    
-                    for (let t = s; t < e; t++) {
-                        timeline[t] = "LOCKED";
-                    }
+                    const s = Math.max(0, startMin); const e = Math.min(TOTAL_MINUTES, endMin);
+                    for (let t = s; t < e; t++) { timeline[t] = "LOCKED"; }
                 });
             }
-
             const shuffledBands = [...bands].sort(() => Math.random() - 0.5); 
-            const assignments = [];
-            const failedBands = [];
-
+            const assignments = []; const failedBands = [];
             shuffledBands.forEach(band => {
-                let assigned = false;
-                const requests = [...band.requests].sort(() => Math.random() - 0.5);
-
+                let assigned = false; const requests = [...band.requests].sort(() => Math.random() - 0.5);
                 for (let req of requests) {
                     if (assigned) break;
-                    
                     const reqStartMin = (req.start.getHours() - START_HOUR) * 60 + req.start.getMinutes();
                     const reqEndMin = (req.end.getHours() - START_HOUR) * 60 + req.end.getMinutes();
-
-                    // 30分刻みで探索
                     for (let t = reqStartMin; t <= reqEndMin - durationMinutes; t += 30) {
                         let isFree = true;
-                        for (let k = 0; k < durationMinutes; k++) {
-                            if (t + k >= TOTAL_MINUTES || timeline[t + k] !== null) {
-                                isFree = false;
-                                break;
-                            }
-                        }
-
+                        for (let k = 0; k < durationMinutes; k++) { if (t + k >= TOTAL_MINUTES || timeline[t + k] !== null) { isFree = false; break; } }
                         if (isFree) {
-                            for (let k = 0; k < durationMinutes; k++) {
-                                timeline[t + k] = band.name;
-                            }
-                            
-                            const sTime = new Date(req.start);
-                            sTime.setHours(START_HOUR + Math.floor(t / 60), t % 60, 0, 0);
-                            const eTime = new Date(sTime);
-                            eTime.setMinutes(sTime.getMinutes() + durationMinutes);
-
-                            assignments.push({
-                                bandId: band.id, 
-                                bandName: band.name,
-                                start: sTime,
-                                end: eTime,
-                                originalDocIds: band.docIds
-                            });
-                            assigned = true;
-                            break; 
+                            for (let k = 0; k < durationMinutes; k++) { timeline[t + k] = band.name; }
+                            const sTime = new Date(req.start); sTime.setHours(START_HOUR + Math.floor(t / 60), t % 60, 0, 0);
+                            const eTime = new Date(sTime); eTime.setMinutes(sTime.getMinutes() + durationMinutes);
+                            assignments.push({ bandId: band.id, bandName: band.name, start: sTime, end: eTime, originalDocIds: band.docIds });
+                            assigned = true; break; 
                         }
                     }
                 }
                 if (!assigned) failedBands.push(band);
             });
-
-            return {
-                assignments: assignments,
-                failedBands: failedBands,
-                successCount: assignments.length,
-                timeline: timeline,
-                startHour: START_HOUR
-            };
+            return { assignments, failedBands, successCount: assignments.length, timeline, startHour: START_HOUR };
         }
 
-        // スケジュール拡張 (1h -> 1.5h)
         function extendSchedule(baseSchedule, bands, targetDuration) {
-            const currentAssignments = baseSchedule.assignments;
-            const timeline = baseSchedule.timeline; 
-            const START_HOUR = baseSchedule.startHour;
-            const extraMinutes = targetDuration - 60; 
-
+            const currentAssignments = baseSchedule.assignments; const timeline = baseSchedule.timeline; 
+            const START_HOUR = baseSchedule.startHour; const extraMinutes = targetDuration - 60; 
             const shuffled = [...currentAssignments].sort(() => Math.random() - 0.5);
-
             shuffled.forEach(assign => {
                 const currentStartMin = (assign.start.getHours() - START_HOUR) * 60 + assign.start.getMinutes();
                 const currentEndMin = (assign.end.getHours() - START_HOUR) * 60 + assign.end.getMinutes();
-
                 let canExtendBack = true;
-                for(let k=0; k<extraMinutes; k++) {
-                    if(currentEndMin + k >= timeline.length || timeline[currentEndMin + k] !== null) {
-                        canExtendBack = false; break;
-                    }
-                }
-                
+                for(let k=0; k<extraMinutes; k++) { if(currentEndMin + k >= timeline.length || timeline[currentEndMin + k] !== null) { canExtendBack = false; break; } }
                 if(canExtendBack) {
                     const band = bands.find(b => b.name === assign.bandName);
-                    const newEndTime = new Date(assign.end);
-                    newEndTime.setMinutes(newEndTime.getMinutes() + extraMinutes);
-                    
+                    const newEndTime = new Date(assign.end); newEndTime.setMinutes(newEndTime.getMinutes() + extraMinutes);
                     let inRange = false;
-                    for(let req of band.requests) {
-                        if (req.start <= assign.start && req.end >= newEndTime) {
-                            inRange = true; break;
-                        }
-                    }
+                    for(let req of band.requests) { if (req.start <= assign.start && req.end >= newEndTime) { inRange = true; break; } }
                     if(!inRange) canExtendBack = false;
                 }
-
                 if (canExtendBack) {
                     for(let k=0; k<extraMinutes; k++) timeline[currentEndMin + k] = assign.bandName;
                     assign.end.setMinutes(assign.end.getMinutes() + extraMinutes);
                 }
             });
-
             return baseSchedule;
         }
 
-        // 確定処理
         window.applyLotteryResults = async () => {
             if (!tempLotterySchedule || !confirm("この結果で予約を確定しますか？\n（古い希望枠は削除され、確定枠が作成されます）")) return;
-            
-            const batch = writeBatch(db);
-            const assignments = tempLotterySchedule.assignments;
-
-            // 1. 確定した予約を作成
+            const batch = writeBatch(db); const assignments = tempLotterySchedule.assignments;
             assignments.forEach(a => {
                 const newRef = doc(collection(db, "bookings"));
-                batch.set(newRef, {
-                    bandId: getBandIdByName(a.bandName),
-                    bandName: a.bandName,
-                    creatorId: currentUser, 
-                    userName: "抽選確定", 
-                    startTime: a.start,
-                    endTime: a.end,
-                    type: 'normal',
-                    status: 'confirmed',
-                    source: 'lottery', // 抽選由来フラグ
-                    createdAt: new Date()
-                });
-                
-                a.originalDocIds.forEach(oldId => {
-                    const oldRef = doc(db, "bookings", oldId);
-                    batch.delete(oldRef);
-                });
+                batch.set(newRef, { bandId: getBandIdByName(a.bandName), bandName: a.bandName, creatorId: currentUser, userName: "抽選確定", startTime: a.start, endTime: a.end, type: 'normal', status: 'confirmed', source: 'lottery', createdAt: new Date() });
+                a.originalDocIds.forEach(oldId => { const oldRef = doc(db, "bookings", oldId); batch.delete(oldRef); });
             });
-
-            tempLotterySchedule.failedBands.forEach(b => {
-                b.docIds.forEach(oldId => {
-                    const oldRef = doc(db, "bookings", oldId);
-                    batch.delete(oldRef);
-                });
-            });
-
+            tempLotterySchedule.failedBands.forEach(b => { b.docIds.forEach(oldId => { const oldRef = doc(db, "bookings", oldId); batch.delete(oldRef); }); });
             try {
                 await batch.commit();
                 alert("抽選結果を反映しました！");
-                document.getElementById('lotteryLog').innerHTML = "";
-                document.getElementById('lotteryLog').classList.add('hidden');
-                document.getElementById('btnApplyLottery').classList.add('hidden');
-                closePage('admin-calendar-stub');
-            } catch(e) {
-                alert("反映エラー: " + e.message);
-            }
+                document.getElementById('lotteryLog').innerHTML = ""; document.getElementById('lotteryLog').classList.add('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); closePage('admin-calendar-stub');
+            } catch(e) { alert("反映エラー: " + e.message); }
         };
-
-        // Helper to get ID from band name (簡易的: 本来はassignments作成時にIDを保持すべき)
-        // 上記ロジック内で bandId を保持できない箇所があったため修正
-        // bandRequests の構造見直しが必要だが、ここでは attemptSchedule 内の assignments push 時に修正済み
-        function getBandIdByName(name) {
-            // この関数は使わず、attemptSchedule内でIDを紐付けるように修正しました
-            // が、commit時に originalDocIds から情報を引くのが安全
-            return "unknown"; 
-        }
-        
-        // attemptSchedule内の assignments.push の bandId 取得修正
-        // bandRequests はスコープ外なので、bands配列にidを持たせる
-        // runManualLottery 内で bandRequests を作る際に id も入れる
-        
-        // --- 修正版: runManualLottery内のデータ構造 ---
-        // bandRequests[c.bandId] = { id: c.bandId, ... } としておく
-
-        // 設定を保存する
+        function getBandIdByName(name) { return "unknown"; }
         window.saveSystemSettings = async () => {
             const selectedMode = document.querySelector('input[name="adminBookingMode"]:checked').value;
-            
-            // 抽選設定の取得
             const execMode = document.querySelector('input[name="lotteryExecMode"]:checked').value;
             const daysBefore = parseInt(document.getElementById('lotteryAutoDays').value);
             const time = parseInt(document.getElementById('lotteryAutoTime').value);
-
-            const lotteryConfig = {
-                mode: execMode,
-                daysBefore: daysBefore,
-                time: time
-            };
-
+            const lotteryConfig = { mode: execMode, daysBefore: daysBefore, time: time };
             try {
-                // systemコレクションのsettingsドキュメントに保存（なければ作成）
-                await setDoc(doc(db, "system", "settings"), {
-                    bookingMode: selectedMode,
-                    lotteryConfig: lotteryConfig,
-                    updatedAt: serverTimestamp(),
-                    updatedBy: currentUser
-                }, { merge: true });
-
-                currentSystemSettings.bookingMode = selectedMode;
-                currentSystemSettings.lotteryConfig = lotteryConfig;
-                
-                alert("設定を保存しました。");
-                closePage('admin-calendar-stub');
-                
-            } catch(e) {
-                alert("保存エラー: " + e.message);
-            }
+                await setDoc(doc(db, "system", "settings"), { bookingMode: selectedMode, lotteryConfig: lotteryConfig, updatedAt: serverTimestamp(), updatedBy: currentUser }, { merge: true });
+                currentSystemSettings.bookingMode = selectedMode; currentSystemSettings.lotteryConfig = lotteryConfig;
+                alert("設定を保存しました。"); closePage('admin-calendar-stub');
+            } catch(e) { alert("保存エラー: " + e.message); }
         };
-
-        // アプリ起動時に設定を読み込んでおく
         async function loadSystemConfig() {
             try {
                 const docSnap = await getDoc(doc(db, "system", "settings"));
-                if (docSnap.exists()) {
-                    currentSystemSettings = docSnap.data();
-                    console.log("現在のモード:", currentSystemSettings.bookingMode);
-                }
-            } catch(e) {
-                console.log("設定なし(デフォルト使用)");
-            }
+                if (docSnap.exists()) { currentSystemSettings = docSnap.data(); console.log("現在のモード:", currentSystemSettings.bookingMode); }
+            } catch(e) { console.log("設定なし(デフォルト使用)"); }
         }
 
         // --- グローバル関数 ---
@@ -1018,12 +1058,7 @@
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             navEl.classList.add('active');
             if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
-            
-            // Cueシート画面への切り替え時、リストを表示状態にする
-            if (screenId === 'cuesheet') {
-                closeCuesheetDetail();
-                renderCuesheetBandList();
-            }
+            if (screenId === 'cuesheet') { closeCuesheetDetail(); renderCuesheetBandList(); }
         };
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
         window.openPage = (pageId) => { document.getElementById('page-' + pageId).classList.add('open'); };
@@ -1069,8 +1104,6 @@
             document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img";
             document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName;
             document.getElementById('admin-edit-docId').innerText = user.id;
-            
-            // 閲覧用
             document.getElementById('admin-show-name').innerText = user.name;
             document.getElementById('admin-show-kana').innerText = user.kana || "-";
             document.getElementById('admin-show-studentId').innerText = user.studentId || "-";
@@ -1079,11 +1112,7 @@
             if(user.affiliations && user.affiliations.includes('lmc')) affText += "LMC ";
             document.getElementById('admin-show-aff').innerText = affText;
             document.getElementById('admin-show-part').innerText = getPartLabel(user.part) || "-";
-
-            // 編集用
             document.getElementById('admin-edit-role').value = user.role || "";
-            
-            // 所属バンド取得
             loadAdminUserBands(user.id);
         }
         async function loadAdminUserBands(targetUserId) {
@@ -1104,21 +1133,17 @@
             try { await updateDoc(doc(db, "users", adminEditingUserId), { role: document.getElementById('admin-edit-role').value }); alert("役職を保存しました"); closePage('admin-edit'); loadAdminData(); } catch(e) { alert("エラー: " + e.message); } finally { btn.innerText = "役職を保存"; }
         });
 
-        // --- 管理者用バンド管理 ---
         window.openAdminBands = async () => {
             openPage('admin-bands');
             document.getElementById('adminBandList').innerHTML = '<div style="text-align:center; padding:20px;">読み込み中...</div>';
             try {
-                // アーカイブ含む全バンドを取得
                 const qs = await getDocs(collection(db, "bands"));
                 allBandsCache = [];
                 qs.forEach(doc => {
                     const data = doc.data();
                     allBandsCache.push({ id: doc.id, ...data });
                 });
-                // 作成日順などでソートしたい場合はここでsort
                 allBandsCache.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-                
                 renderAdminBandList(allBandsCache);
             } catch(e) {
                 document.getElementById('adminBandList').innerHTML = "エラー: " + e.message;
@@ -1128,27 +1153,13 @@
         function renderAdminBandList(bands) {
             const container = document.getElementById('adminBandList'); container.innerHTML = "";
             if(bands.length === 0) { container.innerHTML = '<div style="padding:20px;">なし</div>'; return; }
-            
             bands.forEach(b => {
-                const div = document.createElement('div'); 
-                div.className = 'card band-card'; 
-                div.onclick = () => openBandDetail(b.id, b);
-                
-                let iconHtml = `<div class="band-icon">${b.name.charAt(0)}</div>`; 
-                if (b.icon) iconHtml = `<div class="band-icon"><img src="${b.icon}"></div>`;
-                
+                const div = document.createElement('div'); div.className = 'card band-card'; div.onclick = () => openBandDetail(b.id, b);
+                let iconHtml = `<div class="band-icon">${b.name.charAt(0)}</div>`; if (b.icon) iconHtml = `<div class="band-icon"><img src="${b.icon}"></div>`;
                 let statusBadge = "";
                 if(b.isArchived) statusBadge = `<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>`;
-                
-                let html = `<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}
-                    <div class="band-info">
-                        <div class="band-name">${b.name}${statusBadge}</div>
-                        <div class="band-members">${b.memberNames.join(', ')}</div>
-                    </div>
-                    <span class="material-icons" style="color:#ccc;">chevron_right</span>
-                </div>`;
-                div.innerHTML = html; 
-                container.appendChild(div);
+                let html = `<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}<div class="band-info"><div class="band-name">${b.name}${statusBadge}</div><div class="band-members">${b.memberNames.join(', ')}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`;
+                div.innerHTML = html; container.appendChild(div);
             });
         }
         const bandSearchInput = document.getElementById('adminBandSearchInput');
@@ -1164,79 +1175,44 @@
             if(!list) return;
             list.innerHTML = "読み込み中...";
             try {
-                // Firestoreの複合インデックス制限を回避するため、bandIdだけで引いてJSでソートする
                 const q = query(collection(db, "bookings"), where("bandId", "==", bandId));
                 const qs = await getDocs(q);
-                
-                if(qs.empty) {
-                    list.innerHTML = "予約なし";
-                    return;
-                }
-                
+                if(qs.empty) { list.innerHTML = "予約なし"; return; }
                 const bookings = [];
                 qs.forEach(doc => { bookings.push(doc.data()); });
-                
-                // 日付順にソート (新しい順)
                 bookings.sort((a, b) => b.startTime.toDate() - a.startTime.toDate());
-                
                 let html = "";
                 bookings.forEach(bk => {
                     const d = bk.startTime.toDate();
                     const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-                    
                     let statusLabel = "";
                     if(bk.status === 'confirmed') statusLabel = `<span class="status-badge status-confirmed">確定</span>`;
                     else statusLabel = `<span class="status-badge status-pending">承認待ち</span>`;
-                    
-                    html += `<div class="booking-list-item">
-                        <div>${dateStr}</div>
-                        <div style="display:flex; align-items:center;">${bk.type==='event' ? '(イベント)' : ''} ${statusLabel}</div>
-                    </div>`;
+                    html += `<div class="booking-list-item"><div>${dateStr}</div><div style="display:flex; align-items:center;">${bk.type==='event' ? '(イベント)' : ''} ${statusLabel}</div></div>`;
                 });
                 list.innerHTML = html;
-                
-            } catch(e) {
-                list.innerHTML = "エラー: " + e.message;
-            }
+            } catch(e) { list.innerHTML = "エラー: " + e.message; }
         }
 
-        // --- メイン処理 ---
         async function main() {
             try {
-                // ▼▼▼ 追加: Firebase Auth 認証処理 ▼▼▼
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (authError) {
-                    console.warn("Firebase Auth Warning (無視して続行します):", authError);
-                    // auth/configuration-not-found の場合は、匿名ログインが無効になっていますが、
-                    // FirestoreのルールがOpenなら動作するため、ここでは処理を止めずに次に進みます。
-                }
-                // ▲▲▲ 追加終わり ▲▲▲
-
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) { await signInWithCustomToken(auth, __initial_auth_token); } else { await signInAnonymously(auth); }
+                } catch (authError) { console.warn("Firebase Auth Warning (無視して続行します):", authError); }
                 await liff.init({ liffId: MY_LIFF_ID });
                 const urlParams = new URLSearchParams(window.location.search);
                 const action = urlParams.get('action');
                 const inviteBandId = urlParams.get('bandId');
                 const targetPage = urlParams.get('page');
-
                 if (!liff.isLoggedIn()) { liff.login(); return; }
                 const profile = await liff.getProfile();
                 currentUser = profile.userId; currentProfile = profile;
                 const userRef = doc(db, "users", currentUser);
                 const userSnap = await getDoc(userRef);
                 if (!userSnap.exists()) { alert("利用には会員登録が必要です"); window.location.href = MY_PAGE_URL; return; }
-                
                 await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
                 currentUserData = userSnap.data(); renderHeaderIcons(currentUserData);
-                
-                // システム設定を読み込む
                 await loadSystemConfig();
-                
-                // ダイレクト遷移
                 if (targetPage) {
                     let navSelector = '';
                     if(targetPage === 'calendar') navSelector = '.nav-item:nth-child(2)';
@@ -1245,130 +1221,76 @@
                     const navEl = document.querySelector(navSelector);
                     if(navEl) switchScreen(targetPage, navEl);
                 }
-
                 if (action === 'invite' && inviteBandId) { await handleInvite(inviteBandId); window.history.replaceState(null, null, window.location.pathname); }
                 loadMyBands();
             } catch(e) { console.error(e); }
         }
 
-        // --- Cueシート関連 ---
-        
-        // バンド一覧の表示 (プルダウン廃止 -> リスト表示)
         function renderCuesheetBandList() {
             const container = document.getElementById('cuesheetBandList');
             if(!container) return;
             container.innerHTML = "";
-            
-            // myBandsAll はすでにロードされている前提
             const activeBands = myBandsAll.filter(b => !b.isArchived);
-
-            if (activeBands.length === 0) {
-                container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">活動中のバンドがありません</div>';
-                return;
-            }
-            
+            if (activeBands.length === 0) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">活動中のバンドがありません</div>'; return; }
             activeBands.forEach(b => {
                 const div = document.createElement('div');
-                div.className = 'card band-card'; // Reuse existing styles
+                div.className = 'card band-card'; 
                 div.onclick = () => openCuesheetDetail(b);
-                
                 let iconHtml = `<div class="band-icon">${b.name.charAt(0)}</div>`;
                 if (b.icon) iconHtml = `<div class="band-icon"><img src="${b.icon}"></div>`;
-                
-                // Simple list item
-                let html = `
-                    <div class="band-item" style="border:none; margin:0; padding:0;">
-                        ${iconHtml}
-                        <div class="band-info">
-                            <div class="band-name">${b.name}</div>
-                        </div>
-                        <span class="material-icons" style="color:#ccc;">chevron_right</span>
-                    </div>
-                `;
+                let html = `<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}<div class="band-info"><div class="band-name">${b.name}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`;
                 div.innerHTML = html;
                 container.appendChild(div);
             });
         }
-
         window.openCuesheetDetail = function(band) {
             document.getElementById('cuesheetBandListContainer').classList.add('hidden');
             document.getElementById('cuesheetDetailView').classList.remove('hidden');
-            
             document.getElementById('cuesheetTargetBandName').innerText = band.name;
             loadBandCuesheetData(band.id);
         }
-
         window.closeCuesheetDetail = function() {
             document.getElementById('cuesheetDetailView').classList.add('hidden');
             document.getElementById('cuesheetBandListContainer').classList.remove('hidden');
-            // Reset view
             document.getElementById('cuesheetImage').src = "";
             document.getElementById('cuesheetContent').classList.add('hidden');
             document.getElementById('cuesheetEmpty').classList.add('hidden');
-            if(currentCuesheetUnsub) {
-                currentCuesheetUnsub(); // Stop listener
-                currentCuesheetUnsub = null;
-            }
+            if(currentCuesheetUnsub) { currentCuesheetUnsub(); currentCuesheetUnsub = null; }
         }
-
-        let currentCuesheetUnsub = null; // リスナー解除用
+        let currentCuesheetUnsub = null; 
 
         function loadBandCuesheetData(bandId) {
             if(!bandId) return;
-            if(currentCuesheetUnsub) currentCuesheetUnsub(); // 前の監視を解除
-            
+            if(currentCuesheetUnsub) currentCuesheetUnsub(); 
             const loading = document.getElementById('cuesheetLoading');
             const content = document.getElementById('cuesheetContent');
             const empty = document.getElementById('cuesheetEmpty');
             const img = document.getElementById('cuesheetImage');
             const debugBox = document.getElementById('cuesheetDebug');
-
-            loading.style.display = 'block';
-            content.classList.add('hidden');
-            empty.classList.add('hidden');
+            loading.style.display = 'block'; content.classList.add('hidden'); empty.classList.add('hidden');
             if(debugBox) debugBox.innerHTML = "";
-
             currentCuesheetUnsub = onSnapshot(doc(db, "bands", bandId), (docSnap) => {
                 loading.style.display = 'none';
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     if (data.latestCuesheetUrl) {
-                        img.src = data.latestCuesheetUrl;
-                        content.classList.remove('hidden');
-                        empty.classList.add('hidden');
+                        img.src = data.latestCuesheetUrl; content.classList.remove('hidden'); empty.classList.add('hidden');
                         if(debugBox) debugBox.innerHTML = `Loaded ID: ${bandId}`;
                     } else {
-                        content.classList.add('hidden');
-                        empty.classList.remove('hidden');
+                        content.classList.add('hidden'); empty.classList.remove('hidden');
                         if(debugBox) debugBox.innerHTML = `No cuesheet url`;
                     }
-                } else {
-                     content.classList.add('hidden');
-                     empty.classList.remove('hidden');
-                }
-            }, (error) => {
-                console.error(error);
-                loading.style.display = 'block';
-                loading.innerText = "読み込みエラー: " + error.message;
-            });
+                } else { content.classList.add('hidden'); empty.classList.remove('hidden'); }
+            }, (error) => { console.error(error); loading.style.display = 'block'; loading.innerText = "読み込みエラー: " + error.message; });
         }
 
-        // --- マイバンド ---
         function loadMyBands() {
             const q = query(collection(db, "bands"), where("memberIds", "array-contains", currentUser));
             onSnapshot(q, (snapshot) => { 
                 myBandsAll = []; 
-                snapshot.forEach(docSnap => { 
-                    const data = docSnap.data(); 
-                    myBandsAll.push({ id: docSnap.id, ...data }); 
-                }); 
+                snapshot.forEach(docSnap => { const data = docSnap.data(); myBandsAll.push({ id: docSnap.id, ...data }); }); 
                 renderBandList(); 
-                // Cueシート画面が開いている場合はリストを更新（詳細画面を開いている場合は更新しない）
-                if(document.getElementById('screen-cuesheet').classList.contains('active') && 
-                   document.getElementById('cuesheetBandListContainer') &&
-                   !document.getElementById('cuesheetBandListContainer').classList.contains('hidden')) {
-                    renderCuesheetBandList();
-                }
+                if(document.getElementById('screen-cuesheet').classList.contains('active') && document.getElementById('cuesheetBandListContainer') && !document.getElementById('cuesheetBandListContainer').classList.contains('hidden')) { renderCuesheetBandList(); }
             });
         }
         window.switchBandTab = (tab) => { currentBandTab = tab; document.querySelectorAll('.band-tab').forEach(el => el.classList.remove('active')); const idx = tab === 'active' ? 0 : 1; document.querySelectorAll('.band-tab')[idx].classList.add('active'); renderBandList(); };
@@ -1385,32 +1307,16 @@
             });
         }
         
-        // 外部アップローダーへの送信関数
         async function uploadImageToExternal(blob) {
-            const formData = new FormData();
-            formData.append('files', blob, 'image.jpg'); 
-            
+            const formData = new FormData(); formData.append('files', blob, 'image.jpg'); 
             try {
-                const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: formData });
                 if(!res.ok) throw new Error(`Upload failed: ${res.status}`);
                 const json = await res.json();
-                
-                // レスポンス例: {"files":[{"name":"...","url":"..."}]}
-                if(json.files && json.files[0] && json.files[0].url) {
-                    return json.files[0].url;
-                } else {
-                    throw new Error('Unexpected response format');
-                }
-            } catch(e) {
-                throw new Error('外部アップロードエラー: ' + e.message);
-            }
+                if(json.files && json.files[0] && json.files[0].url) { return json.files[0].url; } else { throw new Error('Unexpected response format'); }
+            } catch(e) { throw new Error('外部アップロードエラー: ' + e.message); }
         }
 
-        // バンド作成 (画像保存修正: 外部アップローダー使用)
         window.openBandModal = () => { 
             document.getElementById('inputBandName').value = ""; document.getElementById('userSelectList').innerHTML = "読み込み中...";
             tempBandIconBlob = null; document.getElementById('previewBandIcon').classList.add('hidden');
@@ -1421,36 +1327,19 @@
             const selectedEls = document.querySelectorAll('#userSelectList .member-option.selected');
             const memberIds = [currentUser]; const memberNames = [currentProfile.displayName];
             selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); });
-            
             const btn = document.querySelector('#modal-band .btn-primary');
-            const originalText = btn.innerText;
-            btn.innerText = "処理中...";
-            btn.disabled = true;
-
+            const originalText = btn.innerText; btn.innerText = "処理中..."; btn.disabled = true;
             try {
-                // 1. バンドのドキュメントを作成
                 const docRef = await addDoc(collection(db, "bands"), { name: name, memberIds: memberIds, memberNames: memberNames, creatorId: currentUser, isArchived: false, createdAt: new Date() });
-                
-                // 2. 画像があればアップロード (ここだけ失敗してもバンド作成は取り消さない)
                 if (tempBandIconBlob) { 
                     try {
                         const url = await uploadImageToExternal(tempBandIconBlob);
                         await updateDoc(doc(db, "bands", docRef.id), { icon: url }); 
-                    } catch (imgError) {
-                        console.error("Image upload failed:", imgError);
-                        alert("バンドは作成されましたが、画像のアップロードに失敗しました。\n" + imgError.message);
-                    }
+                    } catch (imgError) { console.error("Image upload failed:", imgError); alert("バンドは作成されましたが、画像のアップロードに失敗しました。\n" + imgError.message); }
                 }
-
                 closeModal('modal-band'); document.getElementById('inputBandName').value = "";
                 if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name); else alert("作成しました");
-            } catch(e) { 
-                console.error(e);
-                alert("作成エラー: " + e.message); 
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+            } catch(e) { console.error(e); alert("作成エラー: " + e.message); } finally { btn.innerText = originalText; btn.disabled = false; }
         };
         window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
         async function handleInvite(bandId) { try { const bandRef = doc(db, "bands", bandId); const bandSnap = await getDoc(bandRef); if (!bandSnap.exists()) return alert("存在しないバンドです"); const data = bandSnap.data(); if (data.memberIds.includes(currentUser)) return alert(`すでに参加済みです`); if (confirm(`「${data.name}」に参加しますか？`)) { await updateDoc(bandRef, { memberIds: arrayUnion(currentUser), memberNames: arrayUnion(currentProfile.displayName) }); alert(`参加しました！`); } } catch(e) { alert("エラー: " + e.message); } }
@@ -1460,27 +1349,16 @@
             const detailIcon = document.getElementById('detailBandIcon'); const detailPicker = document.getElementById('detailIconPicker');
             if (data.icon) { detailIcon.src = data.icon; detailIcon.style.display = 'block'; } else { detailIcon.src = 'https://placehold.jp/80x80.png?text=No+Img'; }
             const isCreator = (data.creatorId === currentUser);
-            // 管理者かどうかのチェック
             const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
             const canEdit = isCreator || isAdmin;
-
-            // 管理者ならアイコン変更も許可（アーカイブされてなければ）
             if (canEdit && !data.isArchived) { detailPicker.onclick = () => document.getElementById('editBandIconInput').click(); } else { detailPicker.onclick = null; }
             const memberListDiv = document.getElementById('detailMemberList'); memberListDiv.innerHTML = "";
             const nameInput = document.getElementById('detailBandName'); const btnArchive = document.getElementById('btnArchive'); const btnRestore = document.getElementById('btnRestore'); const btnAddMember = document.getElementById('btnAddMemberToBand');
             if (data.isArchived) { btnArchive.classList.add('hidden'); btnRestore.classList.remove('hidden'); nameInput.readOnly = true; btnAddMember.classList.add('hidden'); } else { btnArchive.classList.remove('hidden'); btnRestore.classList.add('hidden'); if(canEdit) { nameInput.readOnly = false; btnAddMember.classList.remove('hidden'); } else { btnAddMember.classList.add('hidden'); } }
             if (canEdit) { document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden'); } else { nameInput.readOnly = true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden'); }
             data.memberIds.forEach((uid, idx) => { const name = data.memberNames[idx] || "不明"; const row = document.createElement('div'); row.className = 'member-row'; let rowHtml = `<span>${name}</span>`; if (canEdit && uid !== currentUser) { rowHtml += `<button class="btn-remove-member" onclick="removeMember('${bandId}', '${uid}', '${name}')">削除</button>`; } else if (uid === data.creatorId) { rowHtml += `<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px;">リーダー</span>`; } row.innerHTML = rowHtml; memberListDiv.appendChild(row); });
-            
-            // 管理者用予約リスト表示
             const bookingArea = document.getElementById('adminBandBookingsArea');
-            if(isAdmin) {
-                bookingArea.classList.remove('hidden');
-                loadBandBookings(bandId); // Ensure this function is defined
-            } else {
-                bookingArea.classList.add('hidden');
-            }
-
+            if(isAdmin) { bookingArea.classList.remove('hidden'); loadBandBookings(bandId); } else { bookingArea.classList.add('hidden'); }
             openModal('modal-band-detail');
         };
         window.archiveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("アーカイブしますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { isArchived: true }); alert("アーカイブしました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
@@ -1491,89 +1369,35 @@
         window.leaveBand = async () => { const bandId = document.getElementById('detailBandId').value; if(!confirm("本当に脱退しますか？")) return; try { await updateDoc(doc(db, "bands", bandId), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); alert("脱退しました"); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } };
         window.openAddMemberModal = async () => { if (!currentEditingBandId) return; const list = document.getElementById('addMemberSelectList'); list.innerHTML = "読み込み中..."; loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); }
         window.saveAddedMembers = async () => { if(!currentEditingBandId) return; const selectedEls = document.querySelectorAll('#addMemberSelectList .member-option.selected'); if(selectedEls.length === 0) return alert("メンバーを選択してください"); const memberIds = []; const memberNames = []; selectedEls.forEach(el => { memberIds.push(el.dataset.uid); memberNames.push(el.dataset.uname); }); try { await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...memberIds), memberNames: arrayUnion(...memberNames) }); alert("追加しました"); closeModal('modal-add-member'); closeModal('modal-band-detail'); } catch(e) { alert("エラー: " + e.message); } }
-        
-        // 画像処理 (大幅修正: uploadBytesを使用するように変更)
         window.handleImageSelect = (input, previewId) => { 
             if (input.files && input.files[0]) { 
-                compressImage(input.files[0]).then(blob => { 
-                    tempBandIconBlob = blob; 
-                    const img = document.getElementById(previewId); 
-                    img.src = URL.createObjectURL(blob); // BlobからプレビューURL生成
-                    img.classList.remove('hidden'); 
-                }).catch(e => alert("画像処理エラー: " + e.message));
+                compressImage(input.files[0]).then(blob => { tempBandIconBlob = blob; const img = document.getElementById(previewId); img.src = URL.createObjectURL(blob); img.classList.remove('hidden'); }).catch(e => alert("画像処理エラー: " + e.message));
             } 
         };
-
         window.handleImageEdit = async (input) => { 
             if (input.files && input.files[0]) { 
                 if(!confirm("バンドアイコンを変更しますか？")) return;
-                
-                const detailIcon = document.getElementById('detailBandIcon');
-                const originalSrc = detailIcon.src;
-                detailIcon.style.opacity = "0.5"; // 処理中表示
-
+                const detailIcon = document.getElementById('detailBandIcon'); const originalSrc = detailIcon.src; detailIcon.style.opacity = "0.5"; 
                 try {
-                    const blob = await compressImage(input.files[0]); 
-                    const bandId = document.getElementById('detailBandId').value; 
-                    
-                    // 外部アップローダーを使用
-                    const url = await uploadImageToExternal(blob);
-                    
-                    await updateDoc(doc(db, "bands", bandId), { icon: url }); 
-                    detailIcon.src = url; 
-                    alert("アイコンを変更しました"); 
-                } catch(e) { 
-                    console.error(e);
-                    detailIcon.src = originalSrc; // 戻す
-                    alert("画像アップロードエラー: " + e.message); 
-                } finally {
-                    detailIcon.style.opacity = "1";
-                }
+                    const blob = await compressImage(input.files[0]); const bandId = document.getElementById('detailBandId').value; const url = await uploadImageToExternal(blob); await updateDoc(doc(db, "bands", bandId), { icon: url }); detailIcon.src = url; alert("アイコンを変更しました"); 
+                } catch(e) { console.error(e); detailIcon.src = originalSrc; alert("画像アップロードエラー: " + e.message); } finally { detailIcon.style.opacity = "1"; }
             } 
         };
-
-        // Canvasを使って画像を圧縮し、Blobを返す関数
         const compressImage = (file) => { 
             return new Promise((resolve, reject) => { 
-                const img = new Image(); 
-                img.src = URL.createObjectURL(file); 
+                const img = new Image(); img.src = URL.createObjectURL(file); 
                 img.onload = () => { 
-                    const canvas = document.createElement('canvas'); 
-                    const ctx = canvas.getContext('2d'); 
-                    const size = 200; 
-                    canvas.width = size; 
-                    canvas.height = size; 
-                    
-                    let sWidth = img.width; 
-                    let sHeight = img.height; 
-                    let sx = 0; 
-                    let sy = 0; 
-                    
-                    // 中央トリミング計算
-                    if (sWidth > sHeight) { 
-                        sWidth = sHeight; 
-                        sx = (img.width - sHeight) / 2; 
-                    } else { 
-                        sHeight = sWidth; 
-                        sy = (img.height - sWidth) / 2; 
-                    } 
-                    
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d'); const size = 200; canvas.width = size; canvas.height = size; 
+                    let sWidth = img.width; let sHeight = img.height; let sx = 0; let sy = 0; 
+                    if (sWidth > sHeight) { sWidth = sHeight; sx = (img.width - sHeight) / 2; } else { sHeight = sWidth; sy = (img.height - sWidth) / 2; } 
                     ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size); 
-                    
-                    // Blobとして出力 (Quality 0.8)
-                    canvas.toBlob((blob) => {
-                        if (blob) resolve(blob);
-                        else reject(new Error("画像の変換に失敗しました"));
-                    }, 'image/jpeg', 0.8); 
+                    canvas.toBlob((blob) => { if (blob) resolve(blob); else reject(new Error("画像の変換に失敗しました")); }, 'image/jpeg', 0.8); 
                 }; 
                 img.onerror = (e) => reject(e);
             }); 
         };
-
         async function loadUserList(targetId = 'userSelectList', excludeIds = []) { const list = document.getElementById(targetId); const qs = await getDocs(collection(db, "users")); list.innerHTML = ""; let count = 0; qs.forEach(doc => { const u = doc.data(); if(doc.id === currentUser || excludeIds.includes(doc.id)) return; const div = document.createElement('div'); div.className = 'member-option'; div.dataset.uid = doc.id; div.dataset.uname = u.name; div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; }; div.innerHTML = `<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon || 'https://placehold.jp/32x32.png'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part ? '('+getPartLabel(u.part)+')' : ''}</span></div>`; list.appendChild(div); count++; }); if(count === 0) list.innerHTML = '<div style="padding:10px; color:#999;">追加できるユーザーがいません</div>'; }
         function getPartLabel(part) { if (part === "vocal") return "Vo"; if (part === "guitar") return "Gt"; if (part === "bass") return "Ba"; if (part === "drums") return "Dr"; if (part === "keyboard") return "Key"; return ""; }
-
-        // カレンダー & 予約
         window.toggleViewMenu = () => { document.getElementById('viewMenu').classList.toggle('open'); };
         window.switchCalendarView = (mode) => { calendarMode = mode; updateViewMenuUI(); document.getElementById('viewMenu').classList.remove('open'); renderCalendar(); };
         function updateViewMenuUI() { document.getElementById('currentViewName').innerText = calendarMode === 'month' ? '月表示' : '日表示'; document.getElementById('calMonthView').classList.toggle('hidden', calendarMode !== 'month'); document.getElementById('calDayView').classList.toggle('hidden', calendarMode !== 'day'); }
@@ -1581,45 +1405,10 @@
         function renderCalendar() { const y = displayDate.getFullYear(); const m = displayDate.getMonth() + 1; if (calendarMode === 'month') { document.getElementById('calHeaderDate').innerText = `${y}年 ${m}月`; renderMonthView(); } else { const d = displayDate.getDate(); const w = ['日','月','火','水','木','金','土'][displayDate.getDay()]; document.getElementById('calHeaderDate').innerText = `${m}月`; document.getElementById('dayViewDateLabel').innerText = `${m}/${d} (${w})`; renderDayView(); } }
         function renderMonthView() { const grid = document.getElementById('monthGrid'); grid.innerHTML = ""; ['日','月','火','水','木','金','土'].forEach(wd => { const div = document.createElement('div'); div.className = 'weekday-label'; div.innerText = wd; grid.appendChild(div); }); const year = displayDate.getFullYear(); const month = displayDate.getMonth(); const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0); for(let i=0; i<firstDay.getDay(); i++) { const div = document.createElement('div'); div.className = 'day-cell other-month'; grid.appendChild(div); } const today = new Date(); for(let d=1; d<=lastDay.getDate(); d++) { const div = document.createElement('div'); div.className = 'day-cell'; div.id = `day-${year}-${month+1}-${d}`; if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) div.classList.add('today'); div.onclick = () => { displayDate.setDate(d); switchCalendarView('day'); }; div.innerHTML = `<div class="day-num">${d}</div><div class="event-dots" id="dots-${year}-${month+1}-${d}"></div>`; grid.appendChild(div); } loadMonthBookings(year, month); }
         function loadMonthBookings(year, month) { const start = new Date(year, month, 1); const end = new Date(year, month + 1, 0, 23, 59, 59); const q = query(collection(db, "bookings"), where("startTime", ">=", start), where("startTime", "<=", end)); onSnapshot(q, (qs) => { document.querySelectorAll('.event-dots').forEach(el => el.innerHTML = ""); document.querySelectorAll('.day-cell.unavailable').forEach(el => el.classList.remove('unavailable')); qs.forEach(doc => { const data = doc.data(); const d = data.startTime.toDate(); if(data.type === 'event') { const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`)?.parentElement; if(cell) cell.classList.add('unavailable'); } else { const container = document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); if (container && container.children.length < 3) { const dot = document.createElement('div'); dot.className = 'dot'; container.appendChild(dot); } } }); }); }
-        
         function renderDayView() { 
-            // ▼▼▼ モード表示の更新 (追加) ▼▼▼
-            const banner = document.getElementById('bookingModeBanner');
-            const mode = currentSystemSettings.bookingMode || 'first_come';
-            
-            if (mode === 'lottery') {
-                // 抽選モードのデザイン
-                banner.style.backgroundColor = '#fff3e0'; // 薄いオレンジ
-                banner.style.color = '#e65100';           // 濃いオレンジ
-                banner.style.border = '1px solid #ffe0b2';
-                banner.innerHTML = `
-                    <div style="font-weight:bold; font-size:14px; margin-bottom:2px;">
-                        <span class="material-icons" style="font-size:18px; vertical-align:text-bottom;">casino</span> 
-                        抽選受付中
-                    </div>
-                    <div style="font-size:11px; opacity:0.9;">
-                        希望を提出してください。重複も可能です。<br>
-                        予約は即時確定せず、後ほど管理者が確定します。
-                    </div>
-                `;
-            } else {
-                // 先着モードのデザイン
-                banner.style.backgroundColor = '#e8f0fe'; // 薄い青
-                banner.style.color = '#1967d2';           // 濃い青
-                banner.style.border = '1px solid #d2e3fc';
-                banner.innerHTML = `
-                    <div style="font-weight:bold; font-size:14px; margin-bottom:2px;">
-                        <span class="material-icons" style="font-size:18px; vertical-align:text-bottom;">flash_on</span> 
-                        先着順モード
-                    </div>
-                    <div style="font-size:11px; opacity:0.9;">
-                        予約は早い者勝ちで即時確定します。<br>
-                        他と被る時間は予約できません。
-                    </div>
-                `;
-            }
-            // ▲▲▲ 追加終わり ▲▲▲
-
+            const banner = document.getElementById('bookingModeBanner'); const mode = currentSystemSettings.bookingMode || 'first_come';
+            if (mode === 'lottery') { banner.style.backgroundColor = '#fff3e0'; banner.style.color = '#e65100'; banner.style.border = '1px solid #ffe0b2'; banner.innerHTML = `<div style="font-weight:bold; font-size:14px; margin-bottom:2px;"><span class="material-icons" style="font-size:18px; vertical-align:text-bottom;">casino</span> 抽選受付中</div><div style="font-size:11px; opacity:0.9;">希望を提出してください。重複も可能です。<br>予約は即時確定せず、後ほど管理者が確定します。</div>`; } 
+            else { banner.style.backgroundColor = '#e8f0fe'; banner.style.color = '#1967d2'; banner.style.border = '1px solid #d2e3fc'; banner.innerHTML = `<div style="font-weight:bold; font-size:14px; margin-bottom:2px;"><span class="material-icons" style="font-size:18px; vertical-align:text-bottom;">flash_on</span> 先着順モード</div><div style="font-size:11px; opacity:0.9;">予約は早い者勝ちで即時確定します。<br>他と被る時間は予約できません。</div>`; }
             const container = document.getElementById('timeline'); container.innerHTML = ""; for (let hour = 9; hour < 22; hour++) { const slot = document.createElement('div'); slot.className = 'time-slot'; slot.innerHTML = `<div class="time-label">${hour}:00</div>`; const content = document.createElement('div'); content.className = 'time-content'; content.dataset.hour = hour; content.addEventListener('touchstart', handleTouchStart, {passive: false}); content.addEventListener('touchmove', handleTouchMove, {passive: false}); content.addEventListener('touchend', handleTouchEnd); content.addEventListener('mousedown', handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove', handleMouseMove); container.addEventListener('mouseup', handleMouseUp); loadDayBookings(); 
         }
         function handleTouchStart(e) { if (e.target.classList.contains('event-block')) return; const hour = parseInt(e.target.dataset.hour); if(isNaN(hour)) return; selectionTimer = setTimeout(() => { isSelecting = true; selectionStartHour = hour; selectionEndHour = hour; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate) navigator.vibrate(50); }, 500); }
@@ -1638,231 +1427,83 @@
         function setupTimeSelects(defaultStart, defaultEnd) { const startSel = document.getElementById('selectStartTime'); const endSel = document.getElementById('selectEndTime'); startSel.innerHTML = ""; endSel.innerHTML = ""; generateTimeOptions().forEach(t => { startSel.appendChild(new Option(t, t)); endSel.appendChild(new Option(t, t)); }); if (defaultStart) startSel.value = defaultStart; if (defaultEnd) endSel.value = defaultEnd; }
         function updateBandSelect(selectedBandId = "") { const select = document.getElementById('selectBookingBand'); select.innerHTML = ""; const activeBands = myBandsAll.filter(b => !b.isArchived); if (activeBands.length === 0) { select.appendChild(new Option("バンドがありません", "")); } else { activeBands.forEach(b => { const op = new Option(b.name, b.id); if(b.id === selectedBandId) op.selected = true; select.appendChild(op); }); } }
         
-        // --- 予約重複時のリスト表示 ---
         window.openEventListModal = (events) => {
-            const container = document.getElementById('eventListContainer');
-            container.innerHTML = "";
+            const container = document.getElementById('eventListContainer'); container.innerHTML = "";
             events.sort((a,b) => a.startTime.toDate() - b.startTime.toDate());
-            
             events.forEach(data => {
-                const div = document.createElement('div');
-                div.className = "card";
-                div.style.marginBottom = "10px";
-                div.style.padding = "10px";
-                div.style.cursor = "pointer";
-                
-                const s = data.startTime.toDate();
-                const e = data.endTime.toDate();
-                const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`;
-                
+                const div = document.createElement('div'); div.className = "card"; div.style.marginBottom = "10px"; div.style.padding = "10px"; div.style.cursor = "pointer";
+                const s = data.startTime.toDate(); const e = data.endTime.toDate(); const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`;
                 let html = `<div style="font-weight:bold; font-size:14px; color:#0b57d0;">${timeStr}</div>`;
-                if(data.type === 'event') {
-                    html += `<div style="font-weight:bold;">${data.title}</div><div style="font-size:11px; color:#137333;">イベント</div>`;
-                } else {
-                    html += `<div style="font-weight:bold;">${data.bandName}</div><div style="font-size:11px; color:#5f6368;">${data.userName}</div>`;
-                }
-                
-                if(data.status === 'pending') {
-                    html += `<div style="font-size:10px; color:#b06000; margin-top:4px;">●承認待ち</div>`;
-                }
-                
-                div.innerHTML = html;
-                div.onclick = () => {
-                    closeModal('modal-event-list');
-                    openEditBookingModal(data.id, data);
-                };
-                container.appendChild(div);
+                if(data.type === 'event') { html += `<div style="font-weight:bold;">${data.title}</div><div style="font-size:11px; color:#137333;">イベント</div>`; } 
+                else { html += `<div style="font-weight:bold;">${data.bandName}</div><div style="font-size:11px; color:#5f6368;">${data.userName}</div>`; }
+                if(data.status === 'pending') { html += `<div style="font-size:10px; color:#b06000; margin-top:4px;">●承認待ち</div>`; }
+                div.innerHTML = html; div.onclick = () => { closeModal('modal-event-list'); openEditBookingModal(data.id, data); }; container.appendChild(div);
             });
             openModal('modal-event-list');
         };
-
-        // --- 予約読み込みとレイアウト計算 ---
+        
         function loadDayBookings() { 
-            const startOfDay = new Date(displayDate); startOfDay.setHours(0,0,0,0); 
-            const endOfDay = new Date(displayDate); endOfDay.setHours(23,59,59,999); 
+            const startOfDay = new Date(displayDate); startOfDay.setHours(0,0,0,0); const endOfDay = new Date(displayDate); endOfDay.setHours(23,59,59,999); 
             const q = query(collection(db, "bookings"), where("startTime", ">=", startOfDay), where("startTime", "<=", endOfDay)); 
-            
             onSnapshot(q, (qs) => { 
-                document.querySelectorAll('.event-block').forEach(el => el.remove()); 
-                const events = [];
-                qs.forEach(docSnap => {
-                    const d = docSnap.data();
-                    d.id = docSnap.id;
-                    events.push(d);
-                });
-                
+                document.querySelectorAll('.event-block').forEach(el => el.remove()); const events = []; qs.forEach(docSnap => { const d = docSnap.data(); d.id = docSnap.id; events.push(d); });
                 if(events.length === 0) return;
-
-                // レイアウト計算
-                // 1. 時間順にソート
                 events.sort((a,b) => a.startTime.toDate() - b.startTime.toDate());
-
-                // 2. クラスタリング (重なり合うイベントのグループ化)
-                const clusters = [];
-                let currentCluster = [];
-                let clusterEnd = 0;
-
+                const clusters = []; let currentCluster = []; let clusterEnd = 0;
                 events.forEach(ev => {
-                    const startT = ev.startTime.toDate().getTime();
-                    const endT = ev.endTime.toDate().getTime();
-                    
-                    if (currentCluster.length === 0) {
-                        currentCluster.push(ev);
-                        clusterEnd = endT;
-                    } else {
-                        // 現在のクラスタの最後の終了時間より開始時間が前なら重なっているとみなす
-                        if (startT < clusterEnd) {
-                            currentCluster.push(ev);
-                            if (endT > clusterEnd) clusterEnd = endT;
-                        } else {
-                            clusters.push(currentCluster);
-                            currentCluster = [ev];
-                            clusterEnd = endT;
-                        }
-                    }
+                    const startT = ev.startTime.toDate().getTime(); const endT = ev.endTime.toDate().getTime();
+                    if (currentCluster.length === 0) { currentCluster.push(ev); clusterEnd = endT; } 
+                    else { if (startT < clusterEnd) { currentCluster.push(ev); if (endT > clusterEnd) clusterEnd = endT; } else { clusters.push(currentCluster); currentCluster = [ev]; clusterEnd = endT; } }
                 });
                 if(currentCluster.length > 0) clusters.push(currentCluster);
-
-                // 3. 各クラスタの描画処理
-                const MAX_COLS = 3; // これを超えるとスタック表示
-
+                const MAX_COLS = 3; 
                 clusters.forEach(cluster => {
-                    // クラスタ内の最大同時並行数を計算
-                    let points = [];
-                    cluster.forEach(ev => {
-                        points.push({t: ev.startTime.toDate().getTime(), type: 1}); // start
-                        points.push({t: ev.endTime.toDate().getTime(), type: -1}); // end
-                    });
-                    // 時間順、同時刻なら終了(-1)を開始(1)より先に処理して接するだけなら重複としない
-                    // ただし見た目の重複回避のため、厳密には同時刻start/endは重なりとしない
+                    let points = []; cluster.forEach(ev => { points.push({t: ev.startTime.toDate().getTime(), type: 1}); points.push({t: ev.endTime.toDate().getTime(), type: -1}); });
                     points.sort((a,b) => a.t - b.t || a.type - b.type);
-
-                    let maxConcurrent = 0;
-                    let currentConcurrent = 0;
-                    points.forEach(p => {
-                        currentConcurrent += p.type;
-                        if(currentConcurrent > maxConcurrent) maxConcurrent = currentConcurrent;
-                    });
-
-                    // 描画
-                    if (maxConcurrent > MAX_COLS) {
-                        // まとめて表示
-                        const minStart = new Date(Math.min(...cluster.map(e => e.startTime.toDate().getTime())));
-                        const maxEnd = new Date(Math.max(...cluster.map(e => e.endTime.toDate().getTime())));
-                        renderSummaryBlock(cluster, minStart, maxEnd);
-                    } else {
-                        // カラムレイアウト (Greedy packing)
-                        const columns = []; // 各カラムの「最後に配置したイベントの終了時間」
+                    let maxConcurrent = 0; let currentConcurrent = 0; points.forEach(p => { currentConcurrent += p.type; if(currentConcurrent > maxConcurrent) maxConcurrent = currentConcurrent; });
+                    if (maxConcurrent > MAX_COLS) { const minStart = new Date(Math.min(...cluster.map(e => e.startTime.toDate().getTime()))); const maxEnd = new Date(Math.max(...cluster.map(e => e.endTime.toDate().getTime()))); renderSummaryBlock(cluster, minStart, maxEnd); } 
+                    else {
+                        const columns = []; 
                         cluster.forEach(ev => {
-                            let placed = false;
-                            const evStart = ev.startTime.toDate().getTime();
-                            const evEnd = ev.endTime.toDate().getTime();
-                            
-                            for(let i=0; i<columns.length; i++) {
-                                if(columns[i] <= evStart) {
-                                    ev.colIndex = i;
-                                    columns[i] = evEnd;
-                                    placed = true;
-                                    break;
-                                }
-                            }
-                            if(!placed) {
-                                ev.colIndex = columns.length;
-                                columns.push(evEnd);
-                            }
+                            let placed = false; const evStart = ev.startTime.toDate().getTime(); const evEnd = ev.endTime.toDate().getTime();
+                            for(let i=0; i<columns.length; i++) { if(columns[i] <= evStart) { ev.colIndex = i; columns[i] = evEnd; placed = true; break; } }
+                            if(!placed) { ev.colIndex = columns.length; columns.push(evEnd); }
                         });
-                        
-                        // 全体の幅をカラム数で割る (右側に15%の余白を残す)
-                        const USABLE_WIDTH = 85; 
-                        const widthPct = USABLE_WIDTH / columns.length;
-                        cluster.forEach(ev => {
-                            renderEventBlock(ev, ev.colIndex * widthPct, widthPct);
-                        });
+                        const USABLE_WIDTH = 85; const widthPct = USABLE_WIDTH / columns.length;
+                        cluster.forEach(ev => { renderEventBlock(ev, ev.colIndex * widthPct, widthPct); });
                     }
                 });
             }); 
         }
 
         function renderEventBlock(data, leftPct, widthPct) {
-            const s = data.startTime.toDate(); 
-            const e = data.endTime.toDate(); 
-            const startMin = (s.getHours() - 9) * 60 + s.getMinutes(); 
-            const endMin = (e.getHours() - 9) * 60 + e.getMinutes(); 
-            const durationMin = endMin - startMin; 
-            const slotIndex = s.getHours() - 9; 
-            const slots = document.querySelectorAll('.time-slot'); 
-            
+            const s = data.startTime.toDate(); const e = data.endTime.toDate(); 
+            const startMin = (s.getHours() - 9) * 60 + s.getMinutes(); const endMin = (e.getHours() - 9) * 60 + e.getMinutes(); 
+            const durationMin = endMin - startMin; const slotIndex = s.getHours() - 9; const slots = document.querySelectorAll('.time-slot'); 
             if (slotIndex >= 0 && slotIndex < slots.length) { 
-                const contentArea = slots[slotIndex].querySelector('.time-content'); 
-                const div = document.createElement('div'); 
-                div.className = 'event-block'; 
-                div.style.top = (s.getMinutes() + 1) + "px"; 
-                div.style.height = (durationMin - 2) + "px"; 
-                div.style.left = leftPct + "%";
-                div.style.width = widthPct + "%";
-                div.style.zIndex = "20"; 
-
-                if (data.type === 'event') { 
-                    div.classList.add('special-event'); 
-                    div.innerHTML = `<div class="event-title">${data.title}</div>`; 
-                } else { 
-                    // 修正: バンド名の下に登録者名を表示
+                const contentArea = slots[slotIndex].querySelector('.time-content'); const div = document.createElement('div'); div.className = 'event-block'; 
+                div.style.top = (s.getMinutes() + 1) + "px"; div.style.height = (durationMin - 2) + "px"; div.style.left = leftPct + "%"; div.style.width = widthPct + "%"; div.style.zIndex = "20"; 
+                if (data.type === 'event') { div.classList.add('special-event'); div.innerHTML = `<div class="event-title">${data.title}</div>`; } 
+                else { 
                     div.innerHTML = `<div class="event-title">${data.bandName}</div><div style="font-size:10px; opacity:0.8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${data.userName || ''}</div>`; 
-                    if (data.status === 'pending') {
-                        div.classList.add('pending');
-                    }
-                    
+                    if (data.status === 'pending') { div.classList.add('pending'); }
                     const myBandIds = myBandsAll.map(b => b.id); 
-                    if (myBandIds.includes(data.bandId)) { 
-                        // ▼▼▼ 自分のバンド（確定時）の色を緑系に変更 ▼▼▼
-                        if(data.status !== 'pending') {
-                            div.style.backgroundColor = "#e6f4ea"; // 薄い緑
-                            div.style.borderLeftColor = "#34A853"; // 緑
-                            div.style.color = "#0d652d";           // 濃い緑
-                        }
-                    } else { 
-                        if(data.status !== 'pending') {
-                            div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; 
-                        }
-                    } 
-                    
-                    // 抽選確定の場合は薄紫にする
-                    if (data.source === 'lottery') {
-                        div.classList.add('lottery-confirmed');
-                        // インラインスタイルを上書きする必要があるため、important付きクラスにするか、ここでスタイル直接指定
-                        div.style.backgroundColor = "#f3e5f5";
-                        div.style.borderLeftColor = "#ab47bc";
-                        div.style.color = "#4a148c";
-                    }
+                    if (myBandIds.includes(data.bandId)) { if(data.status !== 'pending') { div.style.backgroundColor = "#e6f4ea"; div.style.borderLeftColor = "#34A853"; div.style.color = "#0d652d"; } } 
+                    else { if(data.status !== 'pending') { div.style.backgroundColor = "#f1f3f4"; div.style.borderLeftColor = "#9aa0a6"; div.style.color = "#5f6368"; } } 
+                    if (data.source === 'lottery') { div.classList.add('lottery-confirmed'); div.style.backgroundColor = "#f3e5f5"; div.style.borderLeftColor = "#ab47bc"; div.style.color = "#4a148c"; }
                 } 
-                div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(data.id, data); }; 
-                contentArea.appendChild(div); 
+                div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(data.id, data); }; contentArea.appendChild(div); 
             }
         }
 
         function renderSummaryBlock(events, startTime, endTime) {
-            const startMin = (startTime.getHours() - 9) * 60 + startTime.getMinutes();
-            const endMin = (endTime.getHours() - 9) * 60 + endTime.getMinutes();
-            const durationMin = endMin - startMin;
-            const slotIndex = startTime.getHours() - 9;
-            const slots = document.querySelectorAll('.time-slot');
-
+            const startMin = (startTime.getHours() - 9) * 60 + startTime.getMinutes(); const endMin = (endTime.getHours() - 9) * 60 + endTime.getMinutes();
+            const durationMin = endMin - startMin; const slotIndex = startTime.getHours() - 9; const slots = document.querySelectorAll('.time-slot');
             if (slotIndex >= 0 && slotIndex < slots.length) {
-                const contentArea = slots[slotIndex].querySelector('.time-content');
-                const div = document.createElement('div');
-                div.className = 'event-block cluster';
-                div.style.top = (startTime.getMinutes() + 1) + "px";
-                div.style.height = (durationMin - 2) + "px";
-                div.style.left = "0%";
-                div.style.width = "85%"; // まとめて表示の場合も右側に余白を残す
-                
+                const contentArea = slots[slotIndex].querySelector('.time-content'); const div = document.createElement('div');
+                div.className = 'event-block cluster'; div.style.top = (startTime.getMinutes() + 1) + "px"; div.style.height = (durationMin - 2) + "px"; div.style.left = "0%"; div.style.width = "85%"; 
                 div.innerHTML = `<div class="event-title">予約 ${events.length}件<br><span style="font-size:10px; font-weight:normal;">(タップで詳細)</span></div>`;
-                
-                div.onclick = (ev) => {
-                    ev.stopPropagation();
-                    openEventListModal(events);
-                };
-                contentArea.appendChild(div);
+                div.onclick = (ev) => { ev.stopPropagation(); openEventListModal(events); }; contentArea.appendChild(div);
             }
         }
 
@@ -1872,12 +1513,9 @@
             let bookingData = { creatorId: currentUser, userName: currentProfile.displayName, type: type, createdAt: new Date() };
             if (type === 'normal') {
                 if (myBandsAll.filter(b => !b.isArchived).length === 0) return alert("バンドを作成してください");
-                const selectBand = document.getElementById('selectBookingBand');
-                bookingData.bandId = selectBand.value; bookingData.bandName = selectBand.options[selectBand.selectedIndex].text;
+                const selectBand = document.getElementById('selectBookingBand'); bookingData.bandId = selectBand.value; bookingData.bandName = selectBand.options[selectBand.selectedIndex].text;
             } else {
-                const title = document.getElementById('inputEventTitle').value.trim();
-                if (!title) return alert("イベント名を入力してください");
-                bookingData.title = title; bookingData.bandName = title;
+                const title = document.getElementById('inputEventTitle').value.trim(); if (!title) return alert("イベント名を入力してください"); bookingData.title = title; bookingData.bandName = title;
             }
             let sH, sM, eH, eM;
             if (document.getElementById('checkAllDay').checked) { sH = 9; sM = 0; eH = 22; eM = 0; }
@@ -1886,62 +1524,25 @@
             if (startTime.getTime() >= endTime.getTime()) return alert("終了時間は開始時間より後にしてね");
             bookingData.startTime = startTime; bookingData.endTime = endTime;
 
-            // モードによる処理分岐
             const mode = currentSystemSettings.bookingMode || 'first_come';
-            
-            // 早い者勝ちモードの場合のみ重複チェック
             if (mode === 'first_come') {
-                // Firestoreの複合インデックス不要な方法：
-                // その日の予約をすべて取得し、メモリ上で重複計算する
-                const dayStart = new Date(startTime);
-                dayStart.setHours(0, 0, 0, 0);
-                const dayEnd = new Date(startTime);
-                dayEnd.setHours(23, 59, 59, 999);
-
-                const qDay = query(collection(db, "bookings"), 
-                    where("startTime", ">=", dayStart), 
-                    where("startTime", "<=", dayEnd)
-                );
-
+                const dayStart = new Date(startTime); dayStart.setHours(0, 0, 0, 0); const dayEnd = new Date(startTime); dayEnd.setHours(23, 59, 59, 999);
+                const qDay = query(collection(db, "bookings"), where("startTime", ">=", dayStart), where("startTime", "<=", dayEnd));
                 try {
-                    const snap = await getDocs(qDay);
-                    let hasOverlap = false;
-                    
+                    const snap = await getDocs(qDay); let hasOverlap = false;
                     snap.forEach(doc => {
-                        // 自分自身（編集中の予約）との比較はスキップ
                         if (editingId && doc.id === editingId) return;
-
-                        const existing = doc.data();
-                        const exStart = existing.startTime.toDate();
-                        const exEnd = existing.endTime.toDate();
-
-                        // 重複判定: (StartA < EndB) && (EndA > StartB)
-                        // これで包含関係も部分重複もすべて検知できる
-                        if (exStart < endTime && exEnd > startTime) {
-                            hasOverlap = true;
-                        }
+                        const existing = doc.data(); const exStart = existing.startTime.toDate(); const exEnd = existing.endTime.toDate();
+                        if (exStart < endTime && exEnd > startTime) { hasOverlap = true; }
                     });
-                    
-                    if(hasOverlap) {
-                        return alert("【早い者勝ちモード】\n重複する予約があります。\n(包含する時間や重なる時間は予約できません)");
-                    }
-                    bookingData.status = 'confirmed'; // 確定
-                } catch(e) {
-                    console.error("重複チェックエラー", e);
-                    return alert("エラー: 予約状況の確認に失敗しました。\n" + e.message);
-                }
-            } else {
-                // 抽選モード: 重複OK、ステータスはPending
-                bookingData.status = 'pending';
-            }
+                    if(hasOverlap) { return alert("【早い者勝ちモード】\n重複する予約があります。\n(包含する時間や重なる時間は予約できません)"); }
+                    bookingData.status = 'confirmed'; 
+                } catch(e) { console.error("重複チェックエラー", e); return alert("エラー: 予約状況の確認に失敗しました。\n" + e.message); }
+            } else { bookingData.status = 'pending'; }
 
             try {
                 if (editingId) { delete bookingData.createdAt; await updateDoc(doc(db, "bookings", editingId), bookingData); alert("変更しました"); editingBookingData = { ...editingBookingData, ...bookingData }; }
-                else { 
-                    await addDoc(collection(db, "bookings"), bookingData); 
-                    if(mode === 'lottery') alert("抽選希望を提出しました！\n(まだ確定ではありません)");
-                    else alert("予約しました！");
-                }
+                else { await addDoc(collection(db, "bookings"), bookingData); if(mode === 'lottery') alert("抽選希望を提出しました！\n(まだ確定ではありません)"); else alert("予約しました！"); }
                 closeModal('modal-booking');
             } catch(e) { alert("エラー: " + e.message); }
         };
