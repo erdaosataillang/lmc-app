@@ -224,6 +224,10 @@
             <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
             <div id="calDayView" class="hidden">
                 <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
+                
+                <!-- 予約モード表示バナー (追加) -->
+                <div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div>
+
                 <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
                 <div class="timeline-container" id="timeline"></div>
             </div>
@@ -1551,7 +1555,46 @@
         function renderMonthView() { const grid = document.getElementById('monthGrid'); grid.innerHTML = ""; ['日','月','火','水','木','金','土'].forEach(wd => { const div = document.createElement('div'); div.className = 'weekday-label'; div.innerText = wd; grid.appendChild(div); }); const year = displayDate.getFullYear(); const month = displayDate.getMonth(); const firstDay = new Date(year, month, 1); const lastDay = new Date(year, month + 1, 0); for(let i=0; i<firstDay.getDay(); i++) { const div = document.createElement('div'); div.className = 'day-cell other-month'; grid.appendChild(div); } const today = new Date(); for(let d=1; d<=lastDay.getDate(); d++) { const div = document.createElement('div'); div.className = 'day-cell'; div.id = `day-${year}-${month+1}-${d}`; if(year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) div.classList.add('today'); div.onclick = () => { displayDate.setDate(d); switchCalendarView('day'); }; div.innerHTML = `<div class="day-num">${d}</div><div class="event-dots" id="dots-${year}-${month+1}-${d}"></div>`; grid.appendChild(div); } loadMonthBookings(year, month); }
         function loadMonthBookings(year, month) { const start = new Date(year, month, 1); const end = new Date(year, month + 1, 0, 23, 59, 59); const q = query(collection(db, "bookings"), where("startTime", ">=", start), where("startTime", "<=", end)); onSnapshot(q, (qs) => { document.querySelectorAll('.event-dots').forEach(el => el.innerHTML = ""); document.querySelectorAll('.day-cell.unavailable').forEach(el => el.classList.remove('unavailable')); qs.forEach(doc => { const data = doc.data(); const d = data.startTime.toDate(); if(data.type === 'event') { const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`)?.parentElement; if(cell) cell.classList.add('unavailable'); } else { const container = document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); if (container && container.children.length < 3) { const dot = document.createElement('div'); dot.className = 'dot'; container.appendChild(dot); } } }); }); }
         
-        function renderDayView() { const container = document.getElementById('timeline'); container.innerHTML = ""; for (let hour = 9; hour < 22; hour++) { const slot = document.createElement('div'); slot.className = 'time-slot'; slot.innerHTML = `<div class="time-label">${hour}:00</div>`; const content = document.createElement('div'); content.className = 'time-content'; content.dataset.hour = hour; content.addEventListener('touchstart', handleTouchStart, {passive: false}); content.addEventListener('touchmove', handleTouchMove, {passive: false}); content.addEventListener('touchend', handleTouchEnd); content.addEventListener('mousedown', handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove', handleMouseMove); container.addEventListener('mouseup', handleMouseUp); loadDayBookings(); }
+        function renderDayView() { 
+            // ▼▼▼ モード表示の更新 (追加) ▼▼▼
+            const banner = document.getElementById('bookingModeBanner');
+            const mode = currentSystemSettings.bookingMode || 'first_come';
+            
+            if (mode === 'lottery') {
+                // 抽選モードのデザイン
+                banner.style.backgroundColor = '#fff3e0'; // 薄いオレンジ
+                banner.style.color = '#e65100';           // 濃いオレンジ
+                banner.style.border = '1px solid #ffe0b2';
+                banner.innerHTML = `
+                    <div style="font-weight:bold; font-size:14px; margin-bottom:2px;">
+                        <span class="material-icons" style="font-size:18px; vertical-align:text-bottom;">casino</span> 
+                        抽選受付中
+                    </div>
+                    <div style="font-size:11px; opacity:0.9;">
+                        希望を提出してください。重複も可能です。<br>
+                        予約は即時確定せず、後ほど管理者が確定します。
+                    </div>
+                `;
+            } else {
+                // 先着モードのデザイン
+                banner.style.backgroundColor = '#e8f0fe'; // 薄い青
+                banner.style.color = '#1967d2';           // 濃い青
+                banner.style.border = '1px solid #d2e3fc';
+                banner.innerHTML = `
+                    <div style="font-weight:bold; font-size:14px; margin-bottom:2px;">
+                        <span class="material-icons" style="font-size:18px; vertical-align:text-bottom;">flash_on</span> 
+                        先着順モード
+                    </div>
+                    <div style="font-size:11px; opacity:0.9;">
+                        予約は早い者勝ちで即時確定します。<br>
+                        他と被る時間は予約できません。
+                    </div>
+                `;
+            }
+            // ▲▲▲ 追加終わり ▲▲▲
+
+            const container = document.getElementById('timeline'); container.innerHTML = ""; for (let hour = 9; hour < 22; hour++) { const slot = document.createElement('div'); slot.className = 'time-slot'; slot.innerHTML = `<div class="time-label">${hour}:00</div>`; const content = document.createElement('div'); content.className = 'time-content'; content.dataset.hour = hour; content.addEventListener('touchstart', handleTouchStart, {passive: false}); content.addEventListener('touchmove', handleTouchMove, {passive: false}); content.addEventListener('touchend', handleTouchEnd); content.addEventListener('mousedown', handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove', handleMouseMove); container.addEventListener('mouseup', handleMouseUp); loadDayBookings(); 
+        }
         function handleTouchStart(e) { if (e.target.classList.contains('event-block')) return; const hour = parseInt(e.target.dataset.hour); if(isNaN(hour)) return; selectionTimer = setTimeout(() => { isSelecting = true; selectionStartHour = hour; selectionEndHour = hour; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate) navigator.vibrate(50); }, 500); }
         function handleTouchMove(e) { if (!isSelecting) { clearTimeout(selectionTimer); return; } e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (target && target.classList.contains('time-content')) { const hour = parseInt(target.dataset.hour); if (!isNaN(hour)) { selectionEndHour = hour; updateSelectionUI(); } } }
         function handleTouchEnd(e) { clearTimeout(selectionTimer); if (isSelecting) { isSelecting = false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(); } }
