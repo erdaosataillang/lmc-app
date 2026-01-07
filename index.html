@@ -243,7 +243,7 @@
         <div class="scroll-content">
             <!-- バンド一覧表示エリア -->
             <div id="cuesheetBandListContainer">
-                <div style="padding: 10px 4px; font-size: 12px; color: #5f6368;">バンドを選択してください</div>
+                <div style="padding: 10px 4px; font-size: 12px; color: #5f6368;">閲覧するバンドを選択</div>
                 <div id="cuesheetBandList"></div>
             </div>
 
@@ -1019,9 +1019,10 @@
             navEl.classList.add('active');
             if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
             
-            // Cueシート画面への切り替え時、バンド選択肢を更新する
+            // Cueシート画面への切り替え時、リストを表示状態にする
             if (screenId === 'cuesheet') {
-                updateCuesheetBandSelect();
+                closeCuesheetDetail();
+                renderCuesheetBandList();
             }
         };
         window.goToMyPage = () => { window.location.href = MY_PAGE_URL; };
@@ -1202,7 +1203,18 @@
         // --- メイン処理 ---
         async function main() {
             try {
-                // ... existing auth code ...
+                // ▼▼▼ 追加: Firebase Auth 認証処理 ▼▼▼
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (authError) {
+                    console.warn("Firebase Auth Warning (無視して続行します):", authError);
+                    // auth/configuration-not-found の場合は、匿名ログインが無効になっていますが、
+                    // FirestoreのルールがOpenなら動作するため、ここでは処理を止めずに次に進みます。
+                }
                 // ▲▲▲ 追加終わり ▲▲▲
 
                 await liff.init({ liffId: MY_LIFF_ID });
@@ -1224,9 +1236,6 @@
                 // システム設定を読み込む
                 await loadSystemConfig();
                 
-                // Cueシート初期化（不要なグローバルロードは削除し、リスト表示待機）
-                // loadCuesheet(); // 削除
-
                 // ダイレクト遷移
                 if (targetPage) {
                     let navSelector = '';
@@ -1356,6 +1365,7 @@
                 renderBandList(); 
                 // Cueシート画面が開いている場合はリストを更新（詳細画面を開いている場合は更新しない）
                 if(document.getElementById('screen-cuesheet').classList.contains('active') && 
+                   document.getElementById('cuesheetBandListContainer') &&
                    !document.getElementById('cuesheetBandListContainer').classList.contains('hidden')) {
                     renderCuesheetBandList();
                 }
@@ -1428,18 +1438,18 @@
                         await updateDoc(doc(db, "bands", docRef.id), { icon: url }); 
                     } catch (imgError) {
                         console.error("Image upload failed:", imgError);
-        // --- グローバル関数 ---
-        window.switchScreen = (screenId, navEl) => {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById('screen-' + screenId).classList.add('active');
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            navEl.classList.add('active');
-            if (screenId === 'calendar') { calendarMode = 'month'; updateViewMenuUI(); renderCalendar(); }
-            
-            // Cueシート画面への切り替え時、リストを表示状態にする
-            if (screenId === 'cuesheet') {
-                closeCuesheetDetail();
-                renderCuesheetBandList();
+                        alert("バンドは作成されましたが、画像のアップロードに失敗しました。\n" + imgError.message);
+                    }
+                }
+
+                closeModal('modal-band'); document.getElementById('inputBandName').value = "";
+                if (confirm(`「${name}」を作成しました！\nLINEで招待状も送りますか？`)) shareBandInvite(docRef.id, name); else alert("作成しました");
+            } catch(e) { 
+                console.error(e);
+                alert("作成エラー: " + e.message); 
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
             }
         };
         window.shareBandInvite = async (bandId, bandName) => { const inviteUrl = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bandId}&action=invite`; if (liff.isApiAvailable('shareTargetPicker')) { try { await liff.shareTargetPicker([{ type: "flex", altText: `${bandName} への招待`, contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [ { type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446", size: "sm" }, { type: "text", text: bandName, weight: "bold", size: "xl", margin: "md", wrap: true }, { type: "text", text: "このバンドのメンバーとして招待されました。", size: "xs", color: "#aaaaaa", margin: "sm", wrap: true } ] }, footer: { type: "box", layout: "vertical", spacing: "sm", contents: [{ type: "button", style: "primary", height: "sm", color: "#0b57d0", action: { type: "uri", label: "参加する", uri: inviteUrl } }] } } }]); } catch (error) { alert("送信できませんでした"); } } else { alert("招待機能が使えません"); } };
@@ -1724,6 +1734,7 @@
                         points.push({t: ev.endTime.toDate().getTime(), type: -1}); // end
                     });
                     // 時間順、同時刻なら終了(-1)を開始(1)より先に処理して接するだけなら重複としない
+                    // ただし見た目の重複回避のため、厳密には同時刻start/endは重なりとしない
                     points.sort((a,b) => a.t - b.t || a.type - b.type);
 
                     let maxConcurrent = 0;
