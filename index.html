@@ -729,9 +729,9 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
@@ -754,7 +754,69 @@
         let myBandsAll = []; let currentBandTab = 'active'; let calendarMode = 'month';
         let isSelecting = false; let selectionTimer = null; let editingBookingData = null;
         let currentEditingBandId = null; let currentEditingBandMembers = []; let tempBandIconBlob = null;
-        // 集計関数 (追加)
+        let allUsersCache = []; let adminEditingUserId = null;
+        let allBandsCache = [];
+        let tempLotterySchedule = null;
+
+        let currentSystemSettings = { bookingMode: 'first_come', lotteryConfig: { mode: 'auto', daysBefore: 2, time: 0 } };
+        
+        // 部費管理用の設定変数
+        let currentFeeSettings = { year: new Date().getFullYear(), term1_amount: 0, term2_amount: 0 };
+
+        // --- 部費管理機能 ---
+        
+        // 1. メニュー
+        window.openAdminFeesMenu = () => {
+            openPage('admin-fees-menu');
+        };
+
+        window.openAdminFeeHistory = async () => {
+            openPage('admin-fees-history');
+            
+            // セレクトボックスの初期化
+            const yearSelect = document.getElementById('scanFeeYear');
+            yearSelect.innerHTML = "";
+            const currentYear = new Date().getFullYear();
+            // 前後1年分を表示
+            [currentYear-1, currentYear, currentYear+1].forEach(y => {
+                const op = document.createElement('option');
+                op.value = y;
+                op.text = `${y}年度`;
+                if(y === currentYear) op.selected = true;
+                yearSelect.appendChild(op);
+            });
+            
+            // ユーザーデータをキャッシュしておく（スキャン時の照合用）
+            if(allUsersCache.length === 0) {
+                 const qs = await getDocs(collection(db, "users"));
+                 allUsersCache = [];
+                 qs.forEach(doc => allUsersCache.push({ id: doc.id, ...doc.data() }));
+            }
+        };
+
+        // 2. 設定画面
+        window.openAdminFeeSettings = async () => {
+            openPage('admin-fees-settings');
+            try {
+                const docSnap = await getDoc(doc(db, "system", "fees"));
+                if (docSnap.exists()) {
+                    currentFeeSettings = docSnap.data();
+                } else {
+                    // 初期値
+                    currentFeeSettings = { year: new Date().getFullYear(), term1_amount: 0, term2_amount: 0 };
+                }
+                document.getElementById('feeSettingYear').value = currentFeeSettings.year;
+                document.getElementById('feeSettingTerm1').value = currentFeeSettings.term1_amount;
+                document.getElementById('feeSettingTerm2').value = currentFeeSettings.term2_amount;
+                
+                // 集計表示
+                loadFeeSummary();
+                
+            } catch(e) {
+                console.error("Fee setting load error", e);
+            }
+        };
+
         async function loadFeeSummary() {
             // ユーザーデータ確保
             if(allUsersCache.length === 0) {
@@ -830,7 +892,7 @@
                 
                 currentFeeSettings = { year, term1_amount: t1, term2_amount: t2 };
                 alert("保存しました");
-                closePage('admin-fees-settings');
+                loadFeeSummary(); // 保存後に再集計
             } catch(e) {
                 alert("保存エラー: " + e.message);
             }
