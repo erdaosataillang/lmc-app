@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LMC Mobile</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <!-- QRコード読み取りライブラリ jsQR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
@@ -186,6 +188,14 @@
         .fee-label { font-size: 10px; font-weight: bold; margin-bottom: 4px; }
         .fee-status-icon { font-size: 20px; color: #ddd; }
         .fee-checkbox.checked .fee-status-icon { color: #4caf50; }
+
+        /* カメラエリア用 */
+        #video-container { width: 100%; border-radius: 12px; overflow: hidden; background: #000; position: relative; display: none; aspect-ratio: 1 / 1; }
+        #camera-video { width: 100%; height: 100%; object-fit: cover; }
+        #qr-canvas { display: none; }
+        #scan-result-area { margin-top: 10px; padding: 10px; background: white; border-radius: 12px; display: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .scan-success-msg { color: #2e7d32; font-weight: bold; text-align: center; }
+        .overlay-guide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 40px solid rgba(0,0,0,0.5); box-sizing: border-box; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -381,8 +391,8 @@
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
                 <button class="menu-btn" onclick="openAdminFeeHistory()">
-                    <div class="menu-icon-wrapper" style="background:#e0f2f1; color:#00695c;"><span class="material-icons">history</span></div>
-                    <div class="menu-content"><span class="menu-title">部費の徴収記録</span><span class="menu-subtitle">過去の履歴など（準備中）</span></div>
+                    <div class="menu-icon-wrapper" style="background:#e0f2f1; color:#00695c;"><span class="material-icons">qr_code_scanner</span></div>
+                    <div class="menu-content"><span class="menu-title">QRで徴収する</span><span class="menu-subtitle">QRスキャンで徴収記録をつける</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
             </div>
@@ -426,12 +436,49 @@
         </div>
     </div>
 
-    <!-- 部費記録画面（スタブ） -->
+    <!-- QR徴収画面 -->
     <div id="page-admin-fees-history" class="page-container">
-        <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-history')"><span class="material-icons">arrow_back</span></button><div class="page-title">徴収記録</div></div>
-        <div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;">
-            <span class="material-icons" style="font-size:48px; margin-bottom:10px;">construction</span><br>
-            準備中: 履歴・ログ機能
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-history'); stopQRScanner();"><span class="material-icons">arrow_back</span></button><div class="page-title">QR徴収</div></div>
+        <div class="content-area">
+            <div class="card" style="margin-top:16px;">
+                <div class="form-group">
+                    <label class="form-label">徴収する部費の対象</label>
+                    <div style="display:flex; gap:10px;">
+                        <select id="scanFeeYear" class="form-input" style="flex:1;">
+                            <!-- JSで生成 -->
+                        </select>
+                        <select id="scanFeeTerm" class="form-input" style="flex:1;">
+                            <option value="1">前期</option>
+                            <option value="2">後期</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- カメラ映像 -->
+                <div id="video-container">
+                    <video id="camera-video" playsinline></video>
+                    <div class="overlay-guide"></div>
+                </div>
+                <canvas id="qr-canvas"></canvas>
+
+                <div id="scan-result-area">
+                    <div class="scan-success-msg">
+                        <span class="material-icons" style="font-size:48px;">check_circle</span><br>
+                        <span id="scannedUserName">ユーザー名</span><br>
+                        徴収完了！
+                    </div>
+                </div>
+
+                <div id="scan-start-btn-area" style="text-align:center; padding:20px;">
+                    <button class="btn-primary" onclick="startQRScanner()">
+                        <span class="material-icons" style="vertical-align:middle; margin-right:4px;">photo_camera</span>
+                        カメラを起動する
+                    </button>
+                    <div style="margin-top:10px; font-size:12px; color:#666;">
+                        部員の会員QRコード（LINE ID）をスキャンしてください
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -699,8 +746,28 @@
             openPage('admin-fees-menu');
         };
 
-        window.openAdminFeeHistory = () => {
+        window.openAdminFeeHistory = async () => {
             openPage('admin-fees-history');
+            
+            // セレクトボックスの初期化
+            const yearSelect = document.getElementById('scanFeeYear');
+            yearSelect.innerHTML = "";
+            const currentYear = new Date().getFullYear();
+            // 前後1年分を表示
+            [currentYear-1, currentYear, currentYear+1].forEach(y => {
+                const op = document.createElement('option');
+                op.value = y;
+                op.text = `${y}年度`;
+                if(y === currentYear) op.selected = true;
+                yearSelect.appendChild(op);
+            });
+            
+            // ユーザーデータをキャッシュしておく（スキャン時の照合用）
+            if(allUsersCache.length === 0) {
+                 const qs = await getDocs(collection(db, "users"));
+                 allUsersCache = [];
+                 qs.forEach(doc => allUsersCache.push({ id: doc.id, ...doc.data() }));
+            }
         };
 
         // 2. 設定画面
@@ -837,28 +904,145 @@
             const newVal = !isChecked;
             
             try {
-                // Firestore更新: userドキュメントのfeeStatusマップ内の特定キーを更新
-                // updateDocでネストされたフィールドを更新するには "feeStatus.key": value の形式を使う
                 const updateData = {};
                 updateData[`feeStatus.${key}`] = newVal;
-                
                 await updateDoc(doc(db, "users", uid), updateData);
                 
-                // キャッシュも更新しておくと検索などで便利
+                // キャッシュも更新
                 const user = allUsersCache.find(u => u.id === uid);
                 if (user) {
                     if (!user.feeStatus) user.feeStatus = {};
                     user.feeStatus[key] = newVal;
                 }
-                
             } catch(e) {
                 console.error("Fee update error", e);
                 alert("更新に失敗しました: " + e.message);
-                // 失敗したらUIを戻す
                 if (isChecked) element.classList.add('checked');
                 else element.classList.remove('checked');
             }
         };
+
+        // --- QRスキャナーロジック ---
+        let videoStream = null;
+        let isScanning = false;
+        let scanLock = false; // 連続読み取り防止用ロック
+
+        window.startQRScanner = async () => {
+            const video = document.getElementById('camera-video');
+            const canvasElement = document.getElementById('qr-canvas');
+            const canvas = canvasElement.getContext('2d');
+            const resultArea = document.getElementById('scan-result-area');
+            const btnArea = document.getElementById('scan-start-btn-area');
+
+            // UI切り替え
+            document.getElementById('video-container').style.display = 'block';
+            btnArea.style.display = 'none';
+            resultArea.style.display = 'none';
+
+            try {
+                // リアカメラを優先
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = videoStream;
+                video.setAttribute("playsinline", true); // iOS対応
+                video.play();
+                isScanning = true;
+                requestAnimationFrame(scanLoop);
+            } catch(e) {
+                alert("カメラの起動に失敗しました。\n・HTTPS環境で実行してください\n・カメラの許可を確認してください");
+                console.error(e);
+                window.stopQRScanner();
+            }
+        };
+
+        window.stopQRScanner = () => {
+            isScanning = false;
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            document.getElementById('video-container').style.display = 'none';
+            document.getElementById('scan-start-btn-area').style.display = 'block';
+            document.getElementById('scan-result-area').style.display = 'none';
+        };
+
+        function scanLoop() {
+            if (!isScanning) return;
+            
+            const video = document.getElementById('camera-video');
+            const canvasElement = document.getElementById('qr-canvas');
+            const canvas = canvasElement.getContext('2d');
+
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvasElement.height = video.videoHeight;
+                canvasElement.width = video.videoWidth;
+                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                
+                const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                
+                // jsQRで解析
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+
+                if (code && !scanLock) {
+                    // QRコード検出！
+                    handleScanSuccess(code.data);
+                }
+            }
+            requestAnimationFrame(scanLoop);
+        }
+
+        async function handleScanSuccess(data) {
+            // 連続読み取り防止 (2秒ロック)
+            scanLock = true;
+            
+            // ユーザー特定ロジック
+            // QRコードの中身は userId そのものと仮定
+            const userId = data; 
+            const targetUser = allUsersCache.find(u => u.id === userId);
+
+            const resultArea = document.getElementById('scan-result-area');
+            const nameSpan = document.getElementById('scannedUserName');
+            
+            resultArea.style.display = 'block';
+
+            if (targetUser) {
+                nameSpan.innerText = targetUser.name;
+                nameSpan.style.color = '#1f1f1f';
+
+                // DB更新
+                const year = document.getElementById('scanFeeYear').value;
+                const term = document.getElementById('scanFeeTerm').value;
+                const key = `${year}_${term}`;
+                
+                try {
+                    const updateData = {};
+                    updateData[`feeStatus.${key}`] = true;
+                    await updateDoc(doc(db, "users", userId), updateData);
+                    
+                    // キャッシュ更新
+                    if(!targetUser.feeStatus) targetUser.feeStatus = {};
+                    targetUser.feeStatus[key] = true;
+                    
+                    // 音を鳴らす（オプション）
+                    if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                    
+                } catch(e) {
+                    alert("更新エラー: " + e.message);
+                }
+
+            } else {
+                nameSpan.innerText = "未登録ユーザー (" + userId.substring(0,6) + "...)";
+                nameSpan.style.color = 'red';
+                if(navigator.vibrate) navigator.vibrate(500);
+            }
+
+            // 2秒後にロック解除して表示を消す（連続スキャンしやすくする）
+            setTimeout(() => {
+                scanLock = false;
+                resultArea.style.display = 'none';
+            }, 2000);
+        }
 
 
         // --- システム設定管理 (既存) ---
