@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LMC Mobile</title>
+    <title>LMC Mobile (AI)</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <!-- QRコード読み取りライブラリ jsQR -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
@@ -64,10 +64,8 @@
         .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
         .event-block.pending { opacity: 0.9; background: #fff8e1; border-left: 4px solid #ffb300; color: #b06000; border: 1px dashed #ffb300; border-left-style: solid; }
-        /* 抽選確定済み（薄紫） */
         .event-block.lottery-confirmed { background: #f3e5f5; border-left: 4px solid #ab47bc; color: #4a148c; }
         
-        /* 予約重複時のまとめ表示用 */
         .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; }
         .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
 
@@ -100,6 +98,17 @@
         .btn-google { background: #fff; color: #3c4043; border: 1px solid #dadce0; padding: 10px; border-radius: 20px; font-weight: bold; width: 100%; margin-top: 16px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .btn-add-member { margin-top: 10px; width: 100%; padding: 10px; border: 1px dashed #0b57d0; background: #e8f0fe; color: #0b57d0; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
+        /* AI解析用スタイル */
+        .ai-analysis-container { background: #f8f9fa; border-radius: 12px; padding: 16px; margin-top: 16px; border: 1px solid #e0e0e0; }
+        .ai-btn { background: linear-gradient(135deg, #1a73e8, #8ab4f8); color: white; border: none; padding: 10px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; box-shadow: 0 2px 5px rgba(26,115,232,0.3); }
+        .ai-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .ai-result-box { margin-top: 12px; font-size: 14px; color: #333; display: none; }
+        .ai-result-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .ai-result-label { color: #5f6368; font-size: 12px; font-weight: bold; }
+        .ai-result-value { font-weight: 500; }
+        .ai-loading { display: none; text-align: center; margin-top: 10px; font-size: 12px; color: #666; }
+        .sparkle-icon { color: #ffffb0; text-shadow: 0 0 5px rgba(255, 255, 0, 0.5); }
+
         /* 画像選択 */
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; }
         .image-picker { width: 80px; height: 80px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
@@ -107,7 +116,6 @@
         .image-picker i { font-size: 24px; z-index: 1; } .image-picker span { font-size: 10px; z-index: 1; margin-top: 4px; }
 
         /* モーダル */
-        /* z-indexを3000に上げ、管理画面(2500)より上に表示されるように修正 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: none; justify-content: center; align-items: flex-end; }
         .modal-overlay.open { display: flex; }
         .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
@@ -121,9 +129,6 @@
         .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; }
         .member-option.selected { background: #e8f0fe; } .member-check { margin-right: 10px; color: #0b57d0; }
         
-        .hidden { display: none !important; }
-        
-        /* z-indexを3500に上げ、モーダルよりさらに上に表示 */
         #selectionToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 3500; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
         #selectionToast.show { opacity: 1; }
         
@@ -148,7 +153,7 @@
         .icon-admin-user { background-color: #e8eaf6; color: #283593; }
         .icon-admin-doc { background-color: #e0f2f1; color: #00695c; }
         .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; }
-        .icon-admin-fee { background-color: #fff8e1; color: #f57f17; } /* 部費アイコン用 */
+        .icon-admin-fee { background-color: #fff8e1; color: #f57f17; }
 
         .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; }
         .page-container.open { transform: translateX(0); }
@@ -163,23 +168,19 @@
         .user-info-main { flex-grow: 1; } .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } .user-sub { font-size: 12px; color: #5f6368; }
         .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
         .info-row .label { color: #5f6368; font-size: 13px; } .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
-        /* 管理者用保存ボタン */
         .btn-admin-save { background: #c2185b; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
         
-        /* 抽選ログ用 */
         .lottery-log-box { background: #2b2b2b; color: #fff; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto; margin-top: 10px; }
         .log-line { margin-bottom: 4px; border-bottom: 1px solid #444; padding-bottom: 2px; }
         .log-success { color: #8bc34a; }
         .log-warn { color: #ffeb3b; }
         .log-error { color: #f44336; }
 
-        /* 予約履歴用 */
         .booking-list-item { padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
         .status-badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; }
         .status-confirmed { background: #e6f4ea; color: #0d652d; }
         .status-pending { background: #fff8e1; color: #b06000; }
 
-        /* 部費リスト用 */
         .fee-user-item { background: white; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .fee-check-group { display: flex; gap: 8px; }
         .fee-checkbox { display: flex; flex-direction: column; align-items: center; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; padding: 8px; width: 60px; transition: all 0.2s; }
@@ -189,7 +190,6 @@
         .fee-status-icon { font-size: 20px; color: #ddd; }
         .fee-checkbox.checked .fee-status-icon { color: #4caf50; }
 
-        /* カメラエリア用 */
         #video-container { width: 100%; border-radius: 12px; overflow: hidden; background: #000; position: relative; display: none; aspect-ratio: 1 / 1; }
         #camera-video { width: 100%; height: 100%; object-fit: cover; }
         #qr-canvas { display: none; }
@@ -197,7 +197,6 @@
         .scan-success-msg { color: #2e7d32; font-weight: bold; text-align: center; }
         .overlay-guide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 40px solid rgba(0,0,0,0.5); box-sizing: border-box; pointer-events: none; }
         
-        /* ユーザーステータスモーダル用 */
         .user-status-card { text-align: center; padding: 20px; }
         .user-status-icon { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 4px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .user-status-name { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
@@ -255,7 +254,6 @@
             <div id="calDayView" class="hidden">
                 <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div>
                 
-                <!-- 予約モード表示バナー (追加) -->
                 <div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div>
 
                 <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
@@ -292,8 +290,32 @@
                     
                     <div id="cuesheetContent" class="hidden" style="width:100%; box-sizing:border-box;">
                         <!-- referrerpolicyを追加して、外部サイトからのブロックを防ぐ -->
-                        <img id="cuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; height:auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);" onclick="window.open(this.src, '_blank')">
+                        <!-- crossoriginを追加し、JSでのFetchを可能にする (サーバー側の許可が必要) -->
+                        <img id="cuesheetImage" src="" referrerpolicy="no-referrer" crossorigin="anonymous" style="width:100%; height:auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);" onclick="window.open(this.src, '_blank')">
                         <div style="margin-top:10px; font-size:12px; color:#999; text-align:center;">タップで拡大表示</div>
+
+                        <!-- Gemini AI解析エリア -->
+                        <div class="ai-analysis-container">
+                            <button id="btn-analyze-ai" class="ai-btn" onclick="analyzeCuesheetAI()">
+                                <span class="material-icons sparkle-icon">auto_awesome</span>
+                                AIで日程を読み取る
+                            </button>
+                            <div id="ai-loading" class="ai-loading">
+                                Geminiが画像を解析中...<br>
+                                <span style="font-size:10px;">(数秒かかります)</span>
+                            </div>
+                            <div id="ai-result" class="ai-result-box">
+                                <div class="ai-result-item">
+                                    <span class="ai-result-label">初合わせ</span>
+                                    <span id="res-first-date" class="ai-result-value">--</span>
+                                </div>
+                                <div class="ai-result-item" style="flex-direction:column; gap:4px;">
+                                    <span class="ai-result-label">出演NG日</span>
+                                    <span id="res-ng-dates" class="ai-result-value" style="font-size:13px; color:#d93025;">--</span>
+                                </div>
+                                <div style="text-align:right; font-size:10px; color:#999; margin-top:8px;">Powered by Gemini 1.5 Flash</div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div id="cuesheetEmpty" class="hidden" style="margin-top:50px; text-align:center; color:#5f6368;">
@@ -301,7 +323,6 @@
                         Cueシートはまだありません
                     </div>
                     
-                    <!-- デバッグ情報表示エリア -->
                     <div id="cuesheetDebug" style="margin-top:20px; padding:10px; font-size:10px; color:#999; width:90%; word-break:break-all; border-top:1px dashed #eee;"></div>
                 </div>
             </div>
@@ -315,7 +336,6 @@
         </div>
         <div class="scroll-content">
             <div class="menu-list">
-                <!-- 追加: 部費の管理 -->
                 <button class="menu-btn" onclick="openAdminFeesMenu()">
                     <div class="menu-icon-wrapper icon-admin-fee"><span class="material-icons">attach_money</span></div>
                     <div class="menu-content">
@@ -412,16 +432,13 @@
     <div id="page-admin-fees-settings" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-settings')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の設定</div></div>
         <div class="content-area" style="padding-top:20px;">
-            <!-- 追加: 徴収状況サマリー -->
             <div class="card" style="background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 20px; text-align: center; margin-bottom: 20px; border: none; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">
-                <!-- 修正: 何年度のものかを表示 -->
                 <div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;">
                     <span id="feeSummaryYearLabel" style="font-weight:bold; font-size:15px; margin-right:4px;">--</span>年度 徴収合計
                 </div>
                 <div style="font-size: 32px; font-weight: bold; margin-bottom: 16px;">¥ <span id="feeTotalAmount">0</span></div>
                 
                 <div style="display: flex; justify-content: space-around; align-items: center;">
-                     <!-- 円グラフ -->
                     <div class="pie-chart" id="feeProgressChart" style="width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(rgba(255,255,255,0.8) 0% 0%, rgba(255,255,255,0.2) 0% 100%); position: relative; display: flex; justify-content: center; align-items: center;">
                         <div style="width: 64px; height: 64px; background: #7C5DF3; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px;">
                             <span>徴収率</span>
@@ -781,6 +798,10 @@
             measurementId: "G-9ZRMD26XNJ"
         };
 
+        // --- GEMINI API CONSTANTS ---
+        const GEMINI_API_KEY = "AIzaSyBCk3d1rkI771ogPABMAS5GKNjC-A1oVHM"; // User Provided
+        const GEMINI_MODEL = "gemini-1.5-flash"; // Using 1.5-flash as default stable flash model
+
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
@@ -800,6 +821,94 @@
         
         // 部費管理用の設定変数
         let currentFeeSettings = { year: new Date().getFullYear(), term1_amount: 0, term2_amount: 0 };
+
+        // --- GEMINI API LOGIC ---
+        
+        window.analyzeCuesheetAI = async () => {
+            const imgEl = document.getElementById('cuesheetImage');
+            const resultBox = document.getElementById('ai-result');
+            const loadingBox = document.getElementById('ai-loading');
+            const btn = document.getElementById('btn-analyze-ai');
+            const firstDateEl = document.getElementById('res-first-date');
+            const ngDatesEl = document.getElementById('res-ng-dates');
+
+            if (!imgEl.src || imgEl.src.includes('html')) return alert("画像が読み込まれていません");
+
+            // UI State Change
+            btn.disabled = true;
+            loadingBox.style.display = 'block';
+            resultBox.style.display = 'none';
+
+            try {
+                // 1. Fetch Image & Convert to Base64
+                // Note: Image needs to be fetchable (CORS). If base64 fails, this will catch.
+                const base64Data = await imageUrlToBase64(imgEl.src);
+                
+                // 2. Prepare Payload for Gemini
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: "この画像の「初合わせ日（初合わせ）」と「出演NG日（NG日）」を読み取ってください。JSON形式で { \"firstRehearsal\": \"...\", \"ngDates\": \"...\" } のように返してください。見つからない場合は '不明' としてください。" },
+                            { inline_data: { mime_type: "image/jpeg", data: base64Data } }
+                        ]
+                    }],
+                    generationConfig: {
+                        response_mime_type: "application/json"
+                    }
+                };
+
+                // 3. Call API
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+                const data = await response.json();
+                const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (textResult) {
+                    const jsonRes = JSON.parse(textResult);
+                    firstDateEl.innerText = jsonRes.firstRehearsal || "不明";
+                    ngDatesEl.innerText = jsonRes.ngDates || "なし";
+                    
+                    // Show Result
+                    loadingBox.style.display = 'none';
+                    resultBox.style.display = 'block';
+                } else {
+                    throw new Error("解析結果が空でした");
+                }
+
+            } catch (e) {
+                console.error("AI Analysis Error", e);
+                alert("解析に失敗しました: " + e.message + "\n(画像の権限設定または通信状況を確認してください)");
+                loadingBox.style.display = 'none';
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        // Helper: Convert Image URL to Base64 (without prefix)
+        async function imageUrlToBase64(url) {
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64String = reader.result.replace('data:', '').replace(/^.+,/, '');
+                        resolve(base64String);
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                throw new Error("画像の取得に失敗 (CORS制限の可能性があります)");
+            }
+        }
+
 
         // --- ユーザーステータスモーダル ---
         window.openUserStatusModal = async () => {
@@ -1610,6 +1719,12 @@
             document.getElementById('cuesheetImage').src = "";
             document.getElementById('cuesheetContent').classList.add('hidden');
             document.getElementById('cuesheetEmpty').classList.add('hidden');
+            
+            // AIリセット
+            document.getElementById('ai-result').style.display = 'none';
+            document.getElementById('res-first-date').innerText = '--';
+            document.getElementById('res-ng-dates').innerText = '--';
+            
             if(currentCuesheetUnsub) { currentCuesheetUnsub(); currentCuesheetUnsub = null; }
         }
         let currentCuesheetUnsub = null; 
