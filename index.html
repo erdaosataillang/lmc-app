@@ -818,7 +818,7 @@
             const status = currentUserData.feeStatus || {};
             
             // UI更新
-            document.getElementById('modalUserIcon').src = currentUserData.icon || 'https://placehold.jp/150x150.png';
+            document.getElementById('modalUserIcon').src = currentUserData.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
             document.getElementById('modalUserName').innerText = currentUserData.name + " さん";
             
             const isPaid1 = !!status[`${year}_1`];
@@ -1448,7 +1448,7 @@
                 if(u.affiliations.includes('urakata')) badges += '<span style="color:#ea4335; font-size:10px; margin-right:4px;">●裏方</span>';
                 if(u.affiliations.includes('lmc')) badges += '<span style="color:#5f6368; font-size:10px;">●LMC</span>';
                 let roleHtml = u.role ? `<span style="font-size:10px; background:#e0e3e7; padding:2px 6px; border-radius:10px; margin-left:5px;">${u.role}</span>` : '';
-                div.innerHTML = `<img src="${u.icon || 'https://placehold.jp/40x40.png'}" class="mini-icon"><div class="user-info-main"><div class="user-name">${u.name} ${roleHtml}</div><div class="user-sub">${badges}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`;
+                div.innerHTML = `<img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon"><div class="user-info-main"><div class="user-name">${u.name} ${roleHtml}</div><div class="user-sub">${badges}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`;
                 container.appendChild(div);
             });
         }
@@ -1456,7 +1456,7 @@
         
         function openAdminEdit(user) {
             adminEditingUserId = user.id; openPage('admin-edit');
-            document.getElementById('admin-user-icon').src = user.icon || "https://placehold.jp/80x80.png?text=No+Img";
+            document.getElementById('admin-user-icon').src = user.icon || "https://ul.h3z.jp/Vnukmtvq.jpg";
             document.getElementById('admin-user-lineName').innerText = "LINE: " + user.lineDisplayName;
             document.getElementById('admin-edit-docId').innerText = user.id;
             document.getElementById('admin-show-name').innerText = user.name;
@@ -1701,7 +1701,7 @@
             document.getElementById('detailBandId').value = bandId; document.getElementById('detailBandName').value = data.name; document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bandId, data.name);
             currentEditingBandId = bandId; currentEditingBandMembers = data.memberIds;
             const detailIcon = document.getElementById('detailBandIcon'); const detailPicker = document.getElementById('detailIconPicker');
-            if (data.icon) { detailIcon.src = data.icon; detailIcon.style.display = 'block'; } else { detailIcon.src = 'https://placehold.jp/80x80.png?text=No+Img'; }
+            if (data.icon) { detailIcon.src = data.icon; detailIcon.style.display = 'block'; } else { detailIcon.src = 'https://ul.h3z.jp/Vnukmtvq.jpg'; }
             const isCreator = (data.creatorId === currentUser);
             const isAdmin = currentUserData && currentUserData.affiliations.includes('urakata') && currentUserData.role;
             const canEdit = isCreator || isAdmin;
