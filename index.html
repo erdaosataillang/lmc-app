@@ -20,9 +20,11 @@
         .screen { display: none; flex-direction: column; height: 100%; width: 100%; } .screen.active { display: flex; }
         .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
         .calendar-controls { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 16px; border-radius: 12px; margin: 0 16px 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 400; }
-        .cal-view-toggle { font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; background: #f1f3f4; padding: 6px 12px; border-radius: 8px; }
-        .view-menu { position: absolute; top: 50px; left: 16px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 120px; z-index: 600; display: none; flex-direction: column; } .view-menu.open { display: flex; }
-        .view-menu-item { padding: 12px 16px; font-size: 14px; cursor: pointer; } .view-menu-item.active { background: #e8f0fe; color: #0b57d0; font-weight: bold; }
+        .view-switcher { display: flex; position: relative; background: #f1f3f4; border-radius: 20px; padding: 2px; width: 90px; height: 32px; }
+        .switcher-item { flex: 1; z-index: 2; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.3s; color: #5f6368; }
+        .switcher-item.active { color: #0b57d0; }
+        .switcher-slide { position: absolute; width: 44px; height: 28px; background: white; border-radius: 18px; top: 2px; left: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1; }
+        .view-switcher.day-mode .switcher-slide { transform: translateX(42px); }
         .month-grid { background: white; border-radius: 12px; padding: 10px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; }
         .weekday-label { font-size: 11px; color: #5f6368; padding-bottom: 8px; font-weight: bold; }
         .weekday-label.sun { color: #d93025; } .weekday-label.sat { color: #1a73e8; }
@@ -108,8 +110,11 @@
     <div id="screen-calendar" class="screen">
         <div class="app-header"><div class="header-title">合わせ予約</div><div class="header-avatar" id="headerIconCal"></div></div>
         <div class="calendar-controls">
-            <div class="cal-view-toggle" onclick="toggleViewMenu()"><span id="currentViewName">月表示</span><span class="material-icons">arrow_drop_down</span></div>
-            <div class="view-menu" id="viewMenu"><div class="view-menu-item active" onclick="switchCalendarView('month')">月表示</div><div class="view-menu-item" onclick="switchCalendarView('day')">日表示</div></div>
+            <div class="view-switcher" id="viewSwitcher">
+                <div class="switcher-slide"></div>
+                <div class="switcher-item active" data-mode="month" onclick="switchCalendarView('month')">月</div>
+                <div class="switcher-item" data-mode="day" onclick="switchCalendarView('day')">日</div>
+            </div>
             <div style="display:flex; align-items:center;"><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span><div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px;"></div><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span></div>
         </div>
         <div class="scroll-content"><div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div><div id="calDayView" class="hidden"><div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div><div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div><div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div><div class="timeline-container" id="timeline"></div></div></div>
@@ -224,7 +229,7 @@
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         window.toggleViewMenu=()=>document.getElementById('viewMenu').classList.toggle('open');
         window.switchCalendarView=(m)=>{ calendarMode=m; updateViewMenuUI(); document.getElementById('viewMenu').classList.remove('open'); renderCalendar(); };
-        function updateViewMenuUI(){ document.getElementById('currentViewName').innerText=(calendarMode==='month')?'月表示':'日表示'; document.getElementById('calMonthView').classList.toggle('hidden',calendarMode!=='month'); document.getElementById('calDayView').classList.toggle('hidden',calendarMode!=='day'); }
+        function updateViewMenuUI(){ const isMonth = (calendarMode === 'month'); document.getElementById('calMonthView').classList.toggle('hidden', !isMonth); document.getElementById('calDayView').classList.toggle('hidden', isMonth); const switcher = document.getElementById('viewSwitcher'); switcher.classList.toggle('day-mode', !isMonth); document.querySelectorAll('.switcher-item').forEach(el => { el.classList.toggle('active', el.dataset.mode === calendarMode); }); }
         window.changeDate=(d)=>{ if(calendarMode==='month')displayDate.setMonth(displayDate.getMonth()+d); else displayDate.setDate(displayDate.getDate()+d); renderCalendar(); };
         function renderCalendar(){ const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; if(calendarMode==='month'){document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; renderMonthView();} else {const d=displayDate.getDate(), w=['日','月','火','水','木','金','土'][displayDate.getDay()]; document.getElementById('calHeaderDate').innerText=`${m}月`; document.getElementById('dayViewDateLabel').innerText=`${m}/${d} (${w})`; renderDayView();} }
         function renderMonthView(){ const grid=document.getElementById('monthGrid'); grid.innerHTML=""; ['日','月','火','水','木','金','土'].forEach(wd=>{const div=document.createElement('div'); div.className='weekday-label'; div.innerText=wd; if(wd==='日')div.classList.add('sun'); if(wd==='土')div.classList.add('sat'); grid.appendChild(div);}); const y=displayDate.getFullYear(), m=displayDate.getMonth(), firstD=new Date(y,m,1), lastD=new Date(y,m+1,0), today=new Date(); for(let i=0; i<firstD.getDay(); i++)grid.appendChild(document.createElement('div')); for(let d=1; d<=lastD.getDate(); d++){ const div=document.createElement('div'); div.className='day-cell'; div.id=`day-${y}-${m+1}-${d}`; if(y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate())div.classList.add('today'); div.onclick=()=>{displayDate.setDate(d); switchCalendarView('day');}; div.innerHTML=`<div class="day-num">${d}</div><div class="status-label"></div><div class="event-dots" id="dots-${y}-${m+1}-${d}"></div>`; grid.appendChild(div); } loadMonthBookings(y,m); }
