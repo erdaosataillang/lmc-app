@@ -173,6 +173,8 @@
     <div id="page-admin-users" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div><div class="content-area"><div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="adminSearchInput" placeholder="ユーザー検索..."></div><div style="display:flex; gap:8px; margin-bottom:16px;"><button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button><button class="btn-outline" onclick="sortUsers('kana')"><span class="material-icons" style="font-size:14px;">sort_by_alpha</span> 五十音順</button></div><div id="adminUserList"></div></div></div>
     <div id="page-admin-bands" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-bands')"><span class="material-icons">arrow_back</span></button><div class="page-title">バンドの管理</div></div><div class="content-area"><div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="adminBandSearchInput" placeholder="バンド名検索..."></div><div id="adminBandList"></div></div></div>
     <div id="page-admin-events" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-events')"><span class="material-icons">arrow_back</span></button><div class="page-title">イベントの管理</div></div><div class="content-area" style="padding-top:16px;"><button class="btn-primary" style="margin-bottom:20px;" onclick="openCreateEventModal()"><span class="material-icons" style="vertical-align:middle; margin-right:4px;">add</span>新規イベント作成</button><div id="adminEventList">読み込み中...</div></div></div>
+    <div id="page-admin-calendar-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div><div class="content-area" style="padding-top: 20px;"><div class="card"><h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center;"><span class="material-icons" style="margin-right:8px;">tune</span>現在の予約モード</h3><div class="form-group"><div class="radio-group" style="flex-direction: column; gap: 16px;"><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">早い者勝ち (即時確定)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div></div></label><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">抽選式 (希望提出)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div></div></label></div></div><div id="lotterySettingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">抽選実行設定</h3><div class="form-group"><label class="form-label">実行タイミング</label><div class="radio-group" style="flex-direction: column; gap: 10px;"><label class="radio-label"><input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()">自動 (指定日時に実行)</label><div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 10px;"><select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="1">1日前</option><option value="2" selected>2日前</option><option value="3">3日前</option><option value="7">7日前</option></select> の <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="0">0:00</option><option value="9">9:00</option><option value="12">12:00</option><option value="18">18:00</option><option value="21">21:00</option></select> に確定</div><label class="radio-label"><input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()">手動 (管理者がボタンで実行)</label><div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:10px; border-radius:8px;"><div style="font-size:12px; margin-bottom:8px;">対象日を選んで実行します</div><input type="date" id="manualLotteryDate" class="form-input"><button class="btn-primary" style="margin-top:8px; background:#e65100;" onclick="runManualLottery()">今すぐ抽選を実行</button><div id="lotteryLog" class="lottery-log-box hidden"></div><button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:8px;" onclick="applyLotteryResults()">この結果で確定する</button></div></div></div></div><button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button></div><div style="margin-top:20px; font-size:12px; color:#5f6368; padding:0 10px;">※ 設定を変更すると部員全員のアプリの挙動が切り替わります。</div></div></div>
+    <div id="page-admin-docs-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div><div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">print</span><br>準備中: 書類PDF出力機能</div></div>
     <div id="page-admin-edit" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button><div class="page-title">ユーザー詳細</div></div><div class="content-area"><div style="text-align:center; margin-bottom:20px;"><img id="admin-user-icon" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; background:#eee;"><div id="admin-user-lineName" style="font-size:12px; color:#999; margin-top:8px;"></div></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">基本情報</h3><div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div><div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div><div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div><div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div><div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div><div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">権限設定</h3><div class="form-group"><label class="form-label">役職</label><input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など"></div><button id="btn-save-user-role" class="btn-admin-save">役職を保存</button></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">所属バンド</h3><div id="admin-user-band-list" style="font-size:14px;">読み込み中...</div></div><div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">USER ID: <span id="admin-edit-docId"></span></div></div></div>
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')"><div class="modal-content"><h3 style="margin-top:0;">バンド結成</h3><p style="font-size:12px; color:#5f6368; margin-bottom:20px;">リストから選ぶか、後から招待リンクを送ってください。</p><div class="image-picker-area"><div class="image-picker" onclick="document.getElementById('bandIconInput').click()"><i class="material-icons">add_a_photo</i><span>写真</span><img id="previewBandIcon" class="hidden" src=""></div><input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')"></div><div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム"></div><div class="form-group"><label class="form-label">メンバーを検索</label><input type="text" id="bandMemberSearchInput" class="form-input" placeholder="氏名またはかなで検索..."></div><div class="form-group"><label class="form-label">メンバー選択 (登録済みユーザー)</label><div class="member-select-list" id="userSelectList"></div></div><button class="btn-primary" onclick="saveBand()">作成する</button><button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button></div></div>
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
@@ -181,6 +183,7 @@
                 <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 20px; color: #5f6368;">close</span></button>
                 
                 <div style="display: flex; align-items: flex-start; gap: 20px; margin-top: 20px;">
+                    <!-- Left: Avatar (Strictly Square container for Round image) -->
                     <div class="image-picker-area" style="position: relative; width: 88px; height: 88px; flex-shrink: 0; overflow: visible; margin: 0;">
                         <div class="image-picker" id="detailIconPicker" style="width: 88px; height: 88px; border-radius: 50%; border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: visible; position: relative; background: #fafafa; padding: 0;">
                             <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; aspect-ratio: 1/1;">
@@ -190,6 +193,8 @@
                         </div>
                         <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
                     </div>
+
+                    <!-- Right: Info -->
                     <div style="flex-grow: 1; padding-top: 4px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
                             <div style="position: relative; flex-grow: 1; min-width: 0;">
@@ -197,6 +202,7 @@
                             </div>
                             <button class="btn-outline" id="btnInviteInModal" style="border-radius: 12px; border: 1px solid #dadce0; padding: 4px 10px; font-size: 11px; font-weight: bold; color: #1f1f1f; background: white; white-space: nowrap; flex-shrink: 0;"><span class="material-icons" style="font-size: 14px; margin-right: 4px;">share</span>招待</button>
                         </div>
+                        
                         <div style="display: flex; gap: 8px;">
                             <div class="stat-badge">
                                 <span class="stat-value" id="stat-booking-count">--</span>
@@ -210,8 +216,11 @@
                     </div>
                 </div>
             </div>
+
             <div style="padding: 20px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
                 <input type="hidden" id="detailBandId">
+                
+                <!-- Members Section -->
                 <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                     <span class="material-icons" style="font-size: 16px; margin-right: 6px;">groups</span>メンバー
                 </div>
@@ -221,6 +230,8 @@
                         <span class="material-icons" style="font-size: 18px; margin-right: 6px;">person_add</span>メンバーを追加
                     </button>
                 </div>
+
+                <!-- Upcoming Rehearsals Section -->
                 <div id="adminBandBookingsArea">
                     <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                         <span class="material-icons" style="font-size: 16px; margin-right: 6px;">calendar_today</span>直近のあわせ
@@ -229,6 +240,8 @@
                         <div id="adminBandBookingsList" style="max-height: 150px; overflow-y: auto;"></div>
                     </div>
                 </div>
+
+                <!-- Performance Records Section (Dummy) -->
                 <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                     <span class="material-icons" style="font-size: 16px; margin-right: 6px;">mic_external_on</span>演奏記録(仮)
                 </div>
@@ -244,6 +257,8 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Actions Section -->
                 <div id="bandCreatorActions" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
                     <button class="btn-secondary" onclick="updateBandName()" style="background: #f1f3f4; color: #1f1f1f; border: none;">名前を保存</button>
                     <div style="display: flex; gap: 10px;">
@@ -281,16 +296,9 @@
                 <label class="form-label">イベント名</label>
                 <input type="text" id="inputEventName" class="form-input" placeholder="例: 2025年度 定期演奏会">
             </div>
-            <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px;">
-                <div style="flex:1;">
-                    <label class="form-label">開始日</label>
-                    <input type="date" id="inputEventStartDate" class="form-input">
-                </div>
-                <div style="padding-top:20px;">〜</div>
-                <div style="flex:1;">
-                    <label class="form-label">終了日</label>
-                    <input type="date" id="inputEventEndDate" class="form-input">
-                </div>
+            <div class="form-group">
+                <label class="form-label">開催日</label>
+                <input type="date" id="inputEventDate" class="form-input">
             </div>
             <div class="form-group">
                 <label class="form-label">詳細・メモ</label>
@@ -370,7 +378,7 @@
         window.stopQRScanner=()=>{ isScanning=false; if(videoStream){videoStream.getTracks().forEach(t=>t.stop()); videoStream=null;} document.getElementById('video-container').style.display='none'; document.getElementById('scan-start-btn-area').style.display='block'; document.getElementById('scan-result-area').style.display='none'; };
         function scanLoop(){ if(!isScanning)return; const video=document.getElementById('camera-video'), canvasElement=document.getElementById('qr-canvas'), canvas=canvasElement.getContext('2d'); if(video.readyState===video.HAVE_ENOUGH_DATA){ canvasElement.height=video.videoHeight; canvasElement.width=video.videoWidth; canvas.drawImage(video,0,0,canvasElement.width,canvasElement.height); const code=jsQR(canvas.getImageData(0,0,canvasElement.width,canvasElement.height).data,canvasElement.width,canvasElement.height,{inversionAttempts:"dontInvert"}); if(code&&!scanLock)handleScanSuccess(code.data); } requestAnimationFrame(scanLoop); }
         async function handleScanSuccess(data){ scanLock=true; const userId=data, targetUser=allUsersCache.find(u=>u.id===userId), resultArea=document.getElementById('scan-result-area'), nameSpan=document.getElementById('scannedUserName'); resultArea.style.display='block'; if(targetUser){ nameSpan.innerText=targetUser.name; nameSpan.style.color='#1f1f1f'; const year=document.getElementById('scanFeeYear').value, term=document.getElementById('scanFeeTerm').value, key=`${year}_${term}`; try{ const updateData={}; updateData[`feeStatus.${key}`]=true; await updateDoc(doc(db,"users",userId),updateData); if(!targetUser.feeStatus)targetUser.feeStatus={}; targetUser.feeStatus[key]=true; if(navigator.vibrate)navigator.vibrate([100,50,100]); }catch(e){await showCustomAlert("更新エラー: " + e.message, "エラー")} }else{ nameSpan.innerText="未登録 ("+userId.substring(0,6)+"...)"; nameSpan.style.color='red'; if(navigator.vibrate)navigator.vibrate(50); } setTimeout(()=>{scanLock=false; resultArea.style.display='none';},2000); }
-        window.openAdminSettings=async()=>{ openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=snap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
+        window.openAdminSettings=async()=>{ openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=docSnap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
         window.toggleLotterySettings=()=>{ const isL=document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked, area=document.getElementById('lotterySettingsArea'); if(isL){area.classList.remove('hidden'); toggleLotteryExecUI();} else area.classList.add('hidden'); };
         window.toggleLotteryExecUI=()=>{ const mode=document.querySelector('input[name="lotteryExecMode"]:checked').value, autoC=document.getElementById('lotteryAutoConfig'), manuC=document.getElementById('lotteryManualConfig'); if(mode==='auto'){autoC.classList.remove('hidden'); manuC.classList.add('hidden');} else {autoC.classList.add('hidden'); manuC.classList.remove('hidden');} };
         window.runManualLottery=async()=>{ const dVal=document.getElementById('manualLotteryDate').value; if(!dVal)return await showCustomAlert("日付を選択してください", "入力不足"); if(!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認"))return; const logB=document.getElementById('lotteryLog'); logB.innerHTML='<div class="log-line">データ取得中...</div>'; logB.classList.remove('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); const targetD=new Date(dVal), startD=new Date(targetD), endD=new Date(targetD); startD.setHours(0,0,0,0); endD.setHours(23,59,59,999); try{ const q=query(collection(db,"bookings"),where("startTime",">=",startD),where("startTime","<=",endD)); const snapshot=await getDocs(q); let candidates=[], locked=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.status==='pending'&&d.type!=='event')candidates.push({id:doc.id,...d}); else if(d.status==='confirmed'||d.type==='event')locked.push({start:d.startTime.toDate(),end:d.endTime.toDate(),title:d.bandName||d.title}); }); if(candidates.length===0){logB.innerHTML+='<div class="log-line log-warn">候補なし</div>'; return;} const bandReqs={}; candidates.forEach(c=>{ if(!bandReqs[c.bandId])bandReqs[c.bandId]={id:c.bandId,name:c.bandName,requests:[],docIds:[]}; bandReqs[c.bandId].requests.push({start:c.startTime.toDate(),end:c.endTime.toDate()}); bandReqs[c.bandId].docIds.push(c.id); }); const bands=Object.values(bandReqs); logB.innerHTML+=`<div class="log-line">候補:${candidates.length} エントリー:${bands.length}</div>`; let schedule=attemptSchedule(bands,60,locked); if(schedule.successCount<bands.length)schedule=attemptSchedule(bands,30,locked); else schedule=extendSchedule(schedule,bands,90); logB.innerHTML+='<div class="log-line" style="border-top:1px dashed #666;">結果</div>'; schedule.assignments.forEach(a=>{ const sStr=`${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2,'0')}`, eStr=`${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2,'0')}`; logB.innerHTML+=`<div class="log-line log-success">✔ ${a.bandName}: ${sStr}-${eStr}</div>`; }); schedule.failedBands.forEach(b=>{logB.innerHTML+=`<div class="log-line log-error">✖ ${b.name}: 不可</div>`}); tempLotterySchedule=schedule; document.getElementById('btnApplyLottery').classList.remove('hidden'); }catch(e){console.error(e); logB.innerHTML+='<div class="log-line log-error">エラー</div>';} };
@@ -396,7 +404,7 @@
         function renderAdminBandList(bands){ const container=document.getElementById('adminBandList'); container.innerHTML=""; if(bands.length===0){container.innerHTML='<div style="padding:20px;">なし</div>';return;} bands.forEach(b=>{ const div=document.createElement('div'); div.className='card band-card'; div.onclick=()=>openBandDetail(b.id,b); let iconHtml=b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`; const names = b.memberIds.map(id => getNameById(id)).join(', '); div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}<div class="band-info"><div class="band-name">${b.name}${b.isArchived?'<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>':''}</div><div class="band-members">${names}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`; container.appendChild(div); }); }
         document.getElementById('adminBandSearchInput')?.addEventListener('input',(e)=>{ const t=e.target.value.trim(); renderAdminBandList(t?allBandsCache.filter(b=>b.name.includes(t)):allBandsCache); });
         async function loadBandBookings(bid){ const list=document.getElementById('adminBandBookingsList'); if(!list)return; list.innerHTML="読み込み中..."; try{ const q=query(collection(db,"bookings"),where("bandId","==",bid)), qs=await getDocs(q); if(qs.empty){list.innerHTML="<div style='padding:12px 16px; color:#999; font-size:12px;'>なし</div>";return;} const bks=[]; qs.forEach(doc=>bks.push(doc.data())); bks.sort((a,b)=>b.startTime.toDate()-a.startTime.toDate()); let h=""; bks.forEach(bk=>{ const d=bk.startTime.toDate(), dStr=`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`, sL=(bk.status==='confirmed')?`<span class="booking-status" style="background:#e6f4ea; color:#0d652d;">確定</span>`:`<span class="booking-status" style="background:#fff8e1; color:#b06000;">承認待ち</span>`; h+=`<div class="booking-history-item"><div class="booking-date">${dStr}</div><div>${bk.type==='event'?'(イベント)':''} ${sL}</div></div>`; }); list.innerHTML=h; }catch(e){list.innerHTML=e.message} }
-
+        
         // Admin Event Functions
         window.openAdminEvents = async () => {
             openPage('admin-events');
@@ -407,11 +415,11 @@
             const container = document.getElementById('adminEventList');
             container.innerHTML = "読み込み中...";
             try {
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'), orderBy("startDate", "desc"));
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'), orderBy("date", "desc"));
                 const qs = await getDocs(q);
                 container.innerHTML = "";
                 if (qs.empty) {
-                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">登録されているイベントはありません</div>';
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">イベントがありません</div>';
                     return;
                 }
                 qs.forEach(docSnap => {
@@ -423,17 +431,11 @@
                     const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' };
                     const iconName = iconMap[ev.type] || 'event';
                     
-                    const sD = new Date(ev.startDate);
-                    const eD = new Date(ev.endDate || ev.startDate);
-                    const dateStr = (ev.startDate === ev.endDate || !ev.endDate) 
-                        ? `${sD.getMonth()+1}/${sD.getDate()}`
-                        : `${sD.getMonth()+1}/${sD.getDate()} 〜 ${eD.getMonth()+1}/${eD.getDate()}`;
-
                     div.innerHTML = `
                         <div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div>
                         <div class="event-admin-info">
                             <div class="event-admin-name">${ev.name}</div>
-                            <div class="event-admin-date">${dateStr}</div>
+                            <div class="event-admin-date">${ev.date ? ev.date.split('-').join('/') : '-'}</div>
                         </div>
                         <button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.name}')">削除</button>
                     `;
@@ -446,8 +448,7 @@
 
         window.openCreateEventModal = () => {
             document.getElementById('inputEventName').value = "";
-            document.getElementById('inputEventStartDate').value = "";
-            document.getElementById('inputEventEndDate').value = "";
+            document.getElementById('inputEventDate').value = "";
             document.getElementById('inputEventDesc').value = "";
             document.getElementById('inputEventType').value = "";
             document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
@@ -460,6 +461,7 @@
                 document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
                 chip.classList.add('selected');
                 document.getElementById('inputEventType').value = chip.dataset.type;
+                // Auto-fill name if empty
                 const nameInput = document.getElementById('inputEventName');
                 if (!nameInput.value) {
                     nameInput.value = chip.innerText;
@@ -470,25 +472,20 @@
         window.saveAdminEvent = async () => {
             const type = document.getElementById('inputEventType').value;
             const name = document.getElementById('inputEventName').value.trim();
-            const startDate = document.getElementById('inputEventStartDate').value;
-            const endDate = document.getElementById('inputEventEndDate').value || startDate;
+            const date = document.getElementById('inputEventDate').value;
             const desc = document.getElementById('inputEventDesc').value.trim();
 
-            if (!type || !name || !startDate) {
-                return await showCustomAlert("種別、イベント名、開始日をすべて入力してください。", "入力エラー");
-            }
-
-            if (new Date(startDate) > new Date(endDate)) {
-                return await showCustomAlert("終了日は開始日より後の日付を指定してください。", "日付不正");
+            if (!type || !name || !date) {
+                return await showCustomAlert("種別、名前、日付を入力してください。", "入力エラー");
             }
 
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
-                    type, name, startDate, endDate, desc,
+                    type, name, date, desc,
                     createdAt: serverTimestamp(),
                     createdBy: currentUser
                 });
-                await showCustomAlert("イベントを登録しました。");
+                await showCustomAlert("イベントを作成しました。");
                 closeModal('modal-event-admin');
                 await loadAdminEvents();
             } catch (e) {
@@ -500,7 +497,7 @@
             if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', id));
-                    await showCustomAlert("イベントを削除しました。");
+                    await showCustomAlert("削除しました。");
                     await loadAdminEvents();
                 } catch (e) {
                     await showCustomAlert(e.message, "エラー");
@@ -609,119 +606,6 @@
         window.addToGoogleCalendar=()=>{ if(!editingBookingData)return; const t=editingBookingData.bandName||"練習", s=editingBookingData.startTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g,""), e=editingBookingData.endTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g,""); window.open(`https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(t)}&dates=${s}/${e}`, '_blank'); };
         window.deleteBooking=async()=>{ const eid=document.getElementById('editingBookingId').value; if(eid && await showCustomConfirm("この予約を削除しますか？", "予約削除")){try{await deleteDoc(doc(db,"bookings",eid)); await showCustomAlert("予約を削除しました。"); closeModal('modal-booking');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         function renderHeaderIcons(d){ let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata"); if(d.birthday){const t=new Date(), b=new Date(d.birthday); if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate())r="ring-birthday";} if(!r&&isU)r=d.job?`ring-${d.job}`:"ring-rainbow"; const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; ['headerIconBands','headerIconCal','headerIconCue','headerIconAdmin'].forEach(id=>{ const el=document.getElementById(id); if(el){el.innerHTML=h; el.className="header-avatar "+r; el.onclick=openUserStatusModal;} }); if(isU&&d.role)document.getElementById('nav-admin').classList.remove('hidden'); }
-
-        // Admin Event Functions
-        window.openAdminEvents = async () => {
-            openPage('admin-events');
-            await loadAdminEvents();
-        };
-
-        async function loadAdminEvents() {
-            const container = document.getElementById('adminEventList');
-            container.innerHTML = "読み込み中...";
-            try {
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'), orderBy("startDate", "desc"));
-                const qs = await getDocs(q);
-                container.innerHTML = "";
-                if (qs.empty) {
-                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">登録されているイベントはありません</div>';
-                    return;
-                }
-                qs.forEach(docSnap => {
-                    const ev = docSnap.data();
-                    const id = docSnap.id;
-                    const div = document.createElement('div');
-                    div.className = 'event-admin-item';
-                    const iconClass = `type-${ev.type || 'other'}`;
-                    const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' };
-                    const iconName = iconMap[ev.type] || 'event';
-                    
-                    const sD = new Date(ev.startDate);
-                    const eD = new Date(ev.endDate || ev.startDate);
-                    const dateStr = (ev.startDate === ev.endDate || !ev.endDate) 
-                        ? `${sD.getMonth()+1}/${sD.getDate()}`
-                        : `${sD.getMonth()+1}/${sD.getDate()} 〜 ${eD.getMonth()+1}/${eD.getDate()}`;
-
-                    div.innerHTML = `
-                        <div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div>
-                        <div class="event-admin-info">
-                            <div class="event-admin-name">${ev.name}</div>
-                            <div class="event-admin-date">${dateStr}</div>
-                        </div>
-                        <button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.name}')">削除</button>
-                    `;
-                    container.appendChild(div);
-                });
-            } catch (e) {
-                container.innerHTML = "エラー: " + e.message;
-            }
-        }
-
-        window.openCreateEventModal = () => {
-            document.getElementById('inputEventName').value = "";
-            document.getElementById('inputEventStartDate').value = "";
-            document.getElementById('inputEventEndDate').value = "";
-            document.getElementById('inputEventDesc').value = "";
-            document.getElementById('inputEventType').value = "";
-            document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
-            openModal('modal-event-admin');
-        };
-
-        // Event Type Chip Handling (Only one event listener setup)
-        document.querySelectorAll('.event-type-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
-                chip.classList.add('selected');
-                document.getElementById('inputEventType').value = chip.dataset.type;
-                const nameInput = document.getElementById('inputEventName');
-                if (!nameInput.value) {
-                    nameInput.value = chip.innerText;
-                }
-            });
-        });
-
-        window.saveAdminEvent = async () => {
-            const type = document.getElementById('inputEventType').value;
-            const name = document.getElementById('inputEventName').value.trim();
-            const startDate = document.getElementById('inputEventStartDate').value;
-            const endDate = document.getElementById('inputEventEndDate').value || startDate;
-            const desc = document.getElementById('inputEventDesc').value.trim();
-
-            if (!type || !name || !startDate) {
-                return await showCustomAlert("種別、イベント名、開始日をすべて入力してください。", "入力エラー");
-            }
-
-            if (new Date(startDate) > new Date(endDate)) {
-                return await showCustomAlert("終了日は開始日より後の日付を指定してください。", "日付不正");
-            }
-
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
-                    type, name, startDate, endDate, desc,
-                    createdAt: serverTimestamp(),
-                    createdBy: currentUser
-                });
-                await showCustomAlert("イベントを登録しました。");
-                closeModal('modal-event-admin');
-                await loadAdminEvents();
-            } catch (e) {
-                await showCustomAlert("保存エラー: " + e.message, "エラー");
-            }
-        };
-
-        window.deleteAdminEvent = async (id, name) => {
-            if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) {
-                try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', id));
-                    await showCustomAlert("イベントを削除しました。");
-                    await loadAdminEvents();
-                } catch (e) {
-                    await showCustomAlert(e.message, "エラー");
-                }
-            }
-        };
-
-        async function main(){ try{ try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} await liff.init({liffId:MY_LIFF_ID}); if(!liff.isLoggedIn()){liff.login();return;} const profile=await liff.getProfile(); currentUser=profile.userId; currentProfile=profile; const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); currentUserData=userSnap.data(); renderHeaderIcons(currentUserData); await refreshAllUsersCache(); await loadSystemConfig(); const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'), tP=urlParams.get('page'); if(tP){ const navIdx=(tP==='calendar')?2:(tP==='cuesheet')?3:1, navEl=document.querySelector(`.nav-item:nth-child(${navIdx})`); if(navEl)switchScreen(tP,navEl); } if(act==='invite'&&iBid){await handleInvite(iBid); window.history.replaceState(null,null,window.location.pathname);} loadMyBands(); }catch(e){console.error(e)} }
         main();
     </script>
 </body>
