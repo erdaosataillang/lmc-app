@@ -231,6 +231,20 @@
                     </button>
                 </div>
 
+                <!-- Songs Section (NEW) -->
+                <div id="bandSongsArea">
+                    <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
+                        <span class="material-icons" style="font-size: 16px; margin-right: 6px;">music_note</span>持ち曲
+                    </div>
+                    <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                        <div id="bandSongsList" style="padding: 0;"></div>
+                        <div id="bandSongAddArea" class="hidden" style="padding: 10px; background: #fff; border-top: 1px solid #f0f0f0; display: flex; gap: 8px; align-items: center;">
+                            <input type="text" id="inputNewSong" class="form-input" style="padding: 8px; font-size: 14px; flex-grow: 1;" placeholder="曲名を入力...">
+                            <button class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 13px; margin: 0; border-radius: 8px;" onclick="addSongToBand()">追加</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Upcoming Rehearsals Section -->
                 <div id="adminBandBookingsArea">
                     <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
@@ -431,14 +445,7 @@
                     const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' };
                     const iconName = iconMap[ev.type] || 'event';
                     
-                    div.innerHTML = `
-                        <div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div>
-                        <div class="event-admin-info">
-                            <div class="event-admin-name">${ev.name}</div>
-                            <div class="event-admin-date">${ev.date ? ev.date.split('-').join('/') : '-'}</div>
-                        </div>
-                        <button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.name}')">削除</button>
-                    `;
+                    div.innerHTML = `<div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div><div class="event-admin-info"><div class="event-admin-name">${ev.name}</div><div class="event-admin-date">${ev.date ? ev.date.split('-').join('/') : '-'}</div></div><button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.name}')">削除</button>`;
                     container.appendChild(div);
                 });
             } catch (e) {
@@ -534,7 +541,30 @@
             if(canE){document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden');} else {nInp.readOnly=true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden');}
             
             document.getElementById('stat-booking-count').innerText = "0";
-            document.getElementById('stat-song-count').innerText = "0";
+            
+            // --- SONGS LOGIC (NEW) ---
+            const songs = data.songs || [];
+            document.getElementById('stat-song-count').innerText = songs.length;
+            const songListEl = document.getElementById('bandSongsList');
+            songListEl.innerHTML = "";
+            if(songs.length === 0){
+                songListEl.innerHTML = '<div style="padding: 12px 16px; color: #999; font-size: 12px;">登録された曲はありません</div>';
+            } else {
+                songs.forEach(song => {
+                    const row = document.createElement('div');
+                    row.className = 'member-row-rich';
+                    const delBtn = canE ? `<button class="btn-remove-member" style="margin-left:auto;" onclick="removeSongFromBand('${song}')">削除</button>` : '';
+                    row.innerHTML = `<span class="material-icons" style="color:#0b57d0; font-size:16px; margin-right:12px; background:#e8f0fe; padding:6px; border-radius:50%;">music_note</span><div class="member-info-rich"><div class="member-name-rich">${song}</div></div>${delBtn}`;
+                    songListEl.appendChild(row);
+                });
+            }
+            if(canE){
+                document.getElementById('bandSongAddArea').classList.remove('hidden');
+                document.getElementById('inputNewSong').value = "";
+            } else {
+                document.getElementById('bandSongAddArea').classList.add('hidden');
+            }
+            // ------------------------
 
             data.memberIds.forEach((uid)=>{ 
                 const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg' };
@@ -552,6 +582,40 @@
             
             openModal('modal-band-detail'); 
         };
+
+        // --- NEW FUNCTIONS FOR SONGS ---
+        window.addSongToBand = async () => {
+            const songName = document.getElementById('inputNewSong').value.trim();
+            if(!songName) return;
+            const bid = document.getElementById('detailBandId').value;
+            try {
+                await updateDoc(doc(db, "bands", bid), {
+                    songs: arrayUnion(songName)
+                });
+                // 画面リフレッシュのためにデータを再取得
+                const snap = await getDoc(doc(db, "bands", bid));
+                openBandDetail(bid, {id: bid, ...snap.data()});
+            } catch(e) {
+                await showCustomAlert("追加に失敗しました: " + e.message, "エラー");
+            }
+        };
+
+        window.removeSongFromBand = async (songName) => {
+            if(!await showCustomConfirm(`「${songName}」を削除しますか？`, "削除確認")) return;
+            const bid = document.getElementById('detailBandId').value;
+            try {
+                await updateDoc(doc(db, "bands", bid), {
+                    songs: arrayRemove(songName)
+                });
+                // 画面リフレッシュ
+                const snap = await getDoc(doc(db, "bands", bid));
+                openBandDetail(bid, {id: bid, ...snap.data()});
+            } catch(e) {
+                await showCustomAlert("削除に失敗しました: " + e.message, "エラー");
+            }
+        };
+        // --------------------------------
+
         window.archiveBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(await showCustomConfirm("このバンドをアーカイブへ移動しますか？", "アーカイブの確認")){try{await updateDoc(doc(db,"bands",bid),{isArchived:true}); await showCustomAlert("アーカイブへ移動しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         window.restoreBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(await showCustomConfirm("このバンドを活動中に復元しますか？", "復元の確認")){try{await updateDoc(doc(db,"bands",bid),{isArchived:false}); await showCustomAlert("活動中に復元しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         window.updateBandName=async()=>{ const bid=document.getElementById('detailBandId').value, nn=document.getElementById('detailBandName').value.trim(); if(!nn)return; try{await updateDoc(doc(db,"bands",bid),{name:nn}); await showCustomAlert("バンド名を変更しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")} };
