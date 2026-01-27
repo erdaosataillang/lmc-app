@@ -154,11 +154,11 @@
             <div class="band-detail-header" style="background: white; padding: 24px 20px; border-bottom: 1px solid #f0f0f0; position: relative;">
                 <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 20px; color: #5f6368;">close</span></button>
                 
-                <div style="display: flex; align-items: flex-start; gap: 24px; margin-top: 20px;">
-                    <!-- Left: Avatar -->
-                    <div class="image-picker-area" style="position: relative; width: 88px; flex-shrink: 0; overflow: visible; margin: 0;">
-                        <div class="image-picker" id="detailIconPicker" style="width: 88px; height: 88px; border-radius: 50%; border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: visible; position: relative; background: #fafafa;">
-                            <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">
+                <div style="display: flex; align-items: flex-start; gap: 20px; margin-top: 20px;">
+                    <!-- Left: Avatar (Strictly Square container for Round image) -->
+                    <div class="image-picker-area" style="position: relative; width: 88px; height: 88px; flex-shrink: 0; overflow: visible; margin: 0;">
+                        <div class="image-picker" id="detailIconPicker" style="width: 88px; height: 88px; border-radius: 50%; border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: visible; position: relative; background: #fafafa; padding: 0;">
+                            <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; aspect-ratio: 1/1;">
                             <div class="edit-badge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 20; transform: translate(15%, 15%);">
                                 <span class="material-icons" style="font-size: 16px;">edit</span>
                             </div>
@@ -168,11 +168,11 @@
 
                     <!-- Right: Info -->
                     <div style="flex-grow: 1; padding-top: 4px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                            <div style="position: relative; flex-grow: 1; max-width: 160px;">
-                                <input type="text" id="detailBandName" class="band-name-input" value="バンド名" readonly style="font-size: 18px; font-weight: bold; border: none; background: transparent; width: 100%; color: #1f1f1f; padding: 0;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
+                            <div style="position: relative; flex-grow: 1; min-width: 0;">
+                                <input type="text" id="detailBandName" class="band-name-input" value="バンド名" readonly style="font-size: 18px; font-weight: bold; border: none; background: transparent; width: 100%; color: #1f1f1f; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                             </div>
-                            <button class="btn-outline" id="btnInviteInModal" style="border-radius: 12px; border: 1px solid #dadce0; padding: 4px 10px; font-size: 11px; font-weight: bold; color: #1f1f1f; background: white;"><span class="material-icons" style="font-size: 14px; margin-right: 4px;">share</span>招待</button>
+                            <button class="btn-outline" id="btnInviteInModal" style="border-radius: 12px; border: 1px solid #dadce0; padding: 4px 10px; font-size: 11px; font-weight: bold; color: #1f1f1f; background: white; white-space: nowrap; flex-shrink: 0;"><span class="material-icons" style="font-size: 14px; margin-right: 4px;">share</span>招待</button>
                         </div>
                         
                         <div style="display: flex; gap: 8px;">
@@ -191,6 +191,8 @@
 
             <div style="padding: 20px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
                 <input type="hidden" id="detailBandId">
+                
+                <!-- Members Section -->
                 <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                     <span class="material-icons" style="font-size: 16px; margin-right: 6px;">groups</span>メンバー
                 </div>
@@ -200,14 +202,35 @@
                         <span class="material-icons" style="font-size: 18px; margin-right: 6px;">person_add</span>メンバーを追加
                     </button>
                 </div>
+
+                <!-- Upcoming Rehearsals Section -->
                 <div id="adminBandBookingsArea">
                     <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
-                        <span class="material-icons" style="font-size: 16px; margin-right: 6px;">history</span>最近の活動
+                        <span class="material-icons" style="font-size: 16px; margin-right: 6px;">calendar_today</span>直近のあわせ
                     </div>
-                    <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 24px; min-height: 60px;">
-                        <div id="adminBandBookingsList" style="max-height: 200px; overflow-y: auto;"></div>
+                    <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 24px; min-height: 40px;">
+                        <div id="adminBandBookingsList" style="max-height: 150px; overflow-y: auto;"></div>
                     </div>
                 </div>
+
+                <!-- Performance Records Section (Dummy) -->
+                <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
+                    <span class="material-icons" style="font-size: 16px; margin-right: 6px;">mic_external_on</span>演奏記録(仮)
+                </div>
+                <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
+                    <div id="performanceRecordsList">
+                        <div class="booking-history-item">
+                            <div class="booking-date">2024/12/20</div>
+                            <div style="font-size: 13px; color: #1f1f1f;">冬の定期演奏会 <span style="font-size: 10px; color: #999;">@大ホール</span></div>
+                        </div>
+                        <div class="booking-history-item" style="opacity: 0.6;">
+                            <div class="booking-date">----/--/--</div>
+                            <div style="font-size: 13px; color: #999;">データなし</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Section -->
                 <div id="bandCreatorActions" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
                     <button class="btn-secondary" onclick="updateBandName()" style="background: #f1f3f4; color: #1f1f1f; border: none;">名前を保存</button>
                     <div style="display: flex; gap: 10px;">
@@ -311,9 +334,9 @@
             if(data.isArchived){bArc.classList.add('hidden'); bRes.classList.remove('hidden'); nInp.readOnly=true; bAdd.classList.add('hidden');} else {bArc.classList.remove('hidden'); bRes.classList.add('hidden'); if(canE){nInp.readOnly=false; bAdd.classList.remove('hidden');} else bAdd.classList.add('hidden');} 
             if(canE){document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden');} else {nInp.readOnly=true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden');}
             
-            // Stats fetching (Dummy for now, could be derived from bookings)
-            document.getElementById('stat-booking-count').innerText = "0"; // To be updated by real logic
-            document.getElementById('stat-song-count').innerText = "0"; // Placeholder
+            // Stats fetching
+            document.getElementById('stat-booking-count').innerText = "0";
+            document.getElementById('stat-song-count').innerText = "0";
 
             data.memberIds.forEach((uid)=>{ 
                 const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg' };
