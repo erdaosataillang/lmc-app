@@ -183,7 +183,6 @@
                 <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 20px; color: #5f6368;">close</span></button>
                 
                 <div style="display: flex; align-items: flex-start; gap: 20px; margin-top: 20px;">
-                    <!-- Left: Avatar (Strictly Square container for Round image) -->
                     <div class="image-picker-area" style="position: relative; width: 88px; height: 88px; flex-shrink: 0; overflow: visible; margin: 0;">
                         <div class="image-picker" id="detailIconPicker" style="width: 88px; height: 88px; border-radius: 50%; border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: visible; position: relative; background: #fafafa; padding: 0;">
                             <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; aspect-ratio: 1/1;">
@@ -193,8 +192,6 @@
                         </div>
                         <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
                     </div>
-
-                    <!-- Right: Info -->
                     <div style="flex-grow: 1; padding-top: 4px;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;">
                             <div style="position: relative; flex-grow: 1; min-width: 0;">
@@ -202,7 +199,6 @@
                             </div>
                             <button class="btn-outline" id="btnInviteInModal" style="border-radius: 12px; border: 1px solid #dadce0; padding: 4px 10px; font-size: 11px; font-weight: bold; color: #1f1f1f; background: white; white-space: nowrap; flex-shrink: 0;"><span class="material-icons" style="font-size: 14px; margin-right: 4px;">share</span>招待</button>
                         </div>
-                        
                         <div style="display: flex; gap: 8px;">
                             <div class="stat-badge">
                                 <span class="stat-value" id="stat-booking-count">--</span>
@@ -216,11 +212,8 @@
                     </div>
                 </div>
             </div>
-
             <div style="padding: 20px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
                 <input type="hidden" id="detailBandId">
-                
-                <!-- Members Section -->
                 <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                     <span class="material-icons" style="font-size: 16px; margin-right: 6px;">groups</span>メンバー
                 </div>
@@ -230,8 +223,6 @@
                         <span class="material-icons" style="font-size: 18px; margin-right: 6px;">person_add</span>メンバーを追加
                     </button>
                 </div>
-
-                <!-- Upcoming Rehearsals Section -->
                 <div id="adminBandBookingsArea">
                     <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                         <span class="material-icons" style="font-size: 16px; margin-right: 6px;">calendar_today</span>直近のあわせ
@@ -240,8 +231,6 @@
                         <div id="adminBandBookingsList" style="max-height: 150px; overflow-y: auto;"></div>
                     </div>
                 </div>
-
-                <!-- Performance Records Section (Dummy) -->
                 <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                     <span class="material-icons" style="font-size: 16px; margin-right: 6px;">mic_external_on</span>演奏記録(仮)
                 </div>
@@ -257,8 +246,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Actions Section -->
                 <div id="bandCreatorActions" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
                     <button class="btn-secondary" onclick="updateBandName()" style="background: #f1f3f4; color: #1f1f1f; border: none;">名前を保存</button>
                     <div style="display: flex; gap: 10px;">
@@ -385,7 +372,7 @@
         window.stopQRScanner=()=>{ isScanning=false; if(videoStream){videoStream.getTracks().forEach(t=>t.stop()); videoStream=null;} document.getElementById('video-container').style.display='none'; document.getElementById('scan-start-btn-area').style.display='block'; document.getElementById('scan-result-area').style.display='none'; };
         function scanLoop(){ if(!isScanning)return; const video=document.getElementById('camera-video'), canvasElement=document.getElementById('qr-canvas'), canvas=canvasElement.getContext('2d'); if(video.readyState===video.HAVE_ENOUGH_DATA){ canvasElement.height=video.videoHeight; canvasElement.width=video.videoWidth; canvas.drawImage(video,0,0,canvasElement.width,canvasElement.height); const code=jsQR(canvas.getImageData(0,0,canvasElement.width,canvasElement.height).data,canvasElement.width,canvasElement.height,{inversionAttempts:"dontInvert"}); if(code&&!scanLock)handleScanSuccess(code.data); } requestAnimationFrame(scanLoop); }
         async function handleScanSuccess(data){ scanLock=true; const userId=data, targetUser=allUsersCache.find(u=>u.id===userId), resultArea=document.getElementById('scan-result-area'), nameSpan=document.getElementById('scannedUserName'); resultArea.style.display='block'; if(targetUser){ nameSpan.innerText=targetUser.name; nameSpan.style.color='#1f1f1f'; const year=document.getElementById('scanFeeYear').value, term=document.getElementById('scanFeeTerm').value, key=`${year}_${term}`; try{ const updateData={}; updateData[`feeStatus.${key}`]=true; await updateDoc(doc(db,"users",userId),updateData); if(!targetUser.feeStatus)targetUser.feeStatus={}; targetUser.feeStatus[key]=true; if(navigator.vibrate)navigator.vibrate([100,50,100]); }catch(e){await showCustomAlert("更新エラー: " + e.message, "エラー")} }else{ nameSpan.innerText="未登録 ("+userId.substring(0,6)+"...)"; nameSpan.style.color='red'; if(navigator.vibrate)navigator.vibrate(50); } setTimeout(()=>{scanLock=false; resultArea.style.display='none';},2000); }
-        window.openAdminSettings=async()=>{ openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=docSnap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
+        window.openAdminSettings=async()=>{ openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=snap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
         window.toggleLotterySettings=()=>{ const isL=document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked, area=document.getElementById('lotterySettingsArea'); if(isL){area.classList.remove('hidden'); toggleLotteryExecUI();} else area.classList.add('hidden'); };
         window.toggleLotteryExecUI=()=>{ const mode=document.querySelector('input[name="lotteryExecMode"]:checked').value, autoC=document.getElementById('lotteryAutoConfig'), manuC=document.getElementById('lotteryManualConfig'); if(mode==='auto'){autoC.classList.remove('hidden'); manuC.classList.add('hidden');} else {autoC.classList.add('hidden'); manuC.classList.remove('hidden');} };
         window.runManualLottery=async()=>{ const dVal=document.getElementById('manualLotteryDate').value; if(!dVal)return await showCustomAlert("日付を選択してください", "入力不足"); if(!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認"))return; const logB=document.getElementById('lotteryLog'); logB.innerHTML='<div class="log-line">データ取得中...</div>'; logB.classList.remove('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); const targetD=new Date(dVal), startD=new Date(targetD), endD=new Date(targetD); startD.setHours(0,0,0,0); endD.setHours(23,59,59,999); try{ const q=query(collection(db,"bookings"),where("startTime",">=",startD),where("startTime","<=",endD)); const snapshot=await getDocs(q); let candidates=[], locked=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.status==='pending'&&d.type!=='event')candidates.push({id:doc.id,...d}); else if(d.status==='confirmed'||d.type==='event')locked.push({start:d.startTime.toDate(),end:d.endTime.toDate(),title:d.bandName||d.title}); }); if(candidates.length===0){logB.innerHTML+='<div class="log-line log-warn">候補なし</div>'; return;} const bandReqs={}; candidates.forEach(c=>{ if(!bandReqs[c.bandId])bandReqs[c.bandId]={id:c.bandId,name:c.bandName,requests:[],docIds:[]}; bandReqs[c.bandId].requests.push({start:c.startTime.toDate(),end:c.endTime.toDate()}); bandReqs[c.bandId].docIds.push(c.id); }); const bands=Object.values(bandReqs); logB.innerHTML+=`<div class="log-line">候補:${candidates.length} エントリー:${bands.length}</div>`; let schedule=attemptSchedule(bands,60,locked); if(schedule.successCount<bands.length)schedule=attemptSchedule(bands,30,locked); else schedule=extendSchedule(schedule,bands,90); logB.innerHTML+='<div class="log-line" style="border-top:1px dashed #666;">結果</div>'; schedule.assignments.forEach(a=>{ const sStr=`${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2,'0')}`, eStr=`${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2,'0')}`; logB.innerHTML+=`<div class="log-line log-success">✔ ${a.bandName}: ${sStr}-${eStr}</div>`; }); schedule.failedBands.forEach(b=>{logB.innerHTML+=`<div class="log-line log-error">✖ ${b.name}: 不可</div>`}); tempLotterySchedule=schedule; document.getElementById('btnApplyLottery').classList.remove('hidden'); }catch(e){console.error(e); logB.innerHTML+='<div class="log-line log-error">エラー</div>';} };
@@ -411,7 +398,7 @@
         function renderAdminBandList(bands){ const container=document.getElementById('adminBandList'); container.innerHTML=""; if(bands.length===0){container.innerHTML='<div style="padding:20px;">なし</div>';return;} bands.forEach(b=>{ const div=document.createElement('div'); div.className='card band-card'; div.onclick=()=>openBandDetail(b.id,b); let iconHtml=b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`; const names = b.memberIds.map(id => getNameById(id)).join(', '); div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${iconHtml}<div class="band-info"><div class="band-name">${b.name}${b.isArchived?'<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>':''}</div><div class="band-members">${names}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`; container.appendChild(div); }); }
         document.getElementById('adminBandSearchInput')?.addEventListener('input',(e)=>{ const t=e.target.value.trim(); renderAdminBandList(t?allBandsCache.filter(b=>b.name.includes(t)):allBandsCache); });
         async function loadBandBookings(bid){ const list=document.getElementById('adminBandBookingsList'); if(!list)return; list.innerHTML="読み込み中..."; try{ const q=query(collection(db,"bookings"),where("bandId","==",bid)), qs=await getDocs(q); if(qs.empty){list.innerHTML="<div style='padding:12px 16px; color:#999; font-size:12px;'>なし</div>";return;} const bks=[]; qs.forEach(doc=>bks.push(doc.data())); bks.sort((a,b)=>b.startTime.toDate()-a.startTime.toDate()); let h=""; bks.forEach(bk=>{ const d=bk.startTime.toDate(), dStr=`${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`, sL=(bk.status==='confirmed')?`<span class="booking-status" style="background:#e6f4ea; color:#0d652d;">確定</span>`:`<span class="booking-status" style="background:#fff8e1; color:#b06000;">承認待ち</span>`; h+=`<div class="booking-history-item"><div class="booking-date">${dStr}</div><div>${bk.type==='event'?'(イベント)':''} ${sL}</div></div>`; }); list.innerHTML=h; }catch(e){list.innerHTML=e.message} }
-        
+
         // Admin Event Functions
         window.openAdminEvents = async () => {
             openPage('admin-events');
@@ -438,9 +425,11 @@
                     const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' };
                     const iconName = iconMap[ev.type] || 'event';
                     
+                    const sD = new Date(ev.startDate);
+                    const eD = new Date(ev.endDate || ev.startDate);
                     const dateStr = (ev.startDate === ev.endDate || !ev.endDate) 
-                        ? ev.startDate.split('-').slice(1).join('/')
-                        : `${ev.startDate.split('-').slice(1).join('/')} 〜 ${ev.endDate.split('-').slice(1).join('/')}`;
+                        ? `${sD.getMonth()+1}/${sD.getDate()}`
+                        : `${sD.getMonth()+1}/${sD.getDate()} 〜 ${eD.getMonth()+1}/${eD.getDate()}`;
 
                     div.innerHTML = `
                         <div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div>
