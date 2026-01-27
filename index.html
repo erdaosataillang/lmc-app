@@ -234,7 +234,7 @@
                 <!-- Songs Section (NEW) -->
                 <div id="bandSongsArea">
                     <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
-                        <span class="material-icons" style="font-size: 16px; margin-right: 6px;">music_note</span>持ち曲
+                        <span class="material-icons" style="font-size: 16px; margin-right: 6px;">music_note</span>演奏曲
                     </div>
                     <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 24px;">
                         <div id="bandSongsList" style="padding: 0;"></div>
@@ -553,8 +553,12 @@
                 songs.forEach(song => {
                     const row = document.createElement('div');
                     row.className = 'member-row-rich';
-                    const delBtn = canE ? `<button class="btn-remove-member" style="margin-left:auto;" onclick="removeSongFromBand('${song}')">削除</button>` : '';
-                    row.innerHTML = `<span class="material-icons" style="color:#0b57d0; font-size:16px; margin-right:12px; background:#e8f0fe; padding:6px; border-radius:50%;">music_note</span><div class="member-info-rich"><div class="member-name-rich">${song}</div></div>${delBtn}`;
+                    // オブジェクトか文字列かを判定してタイトルを取得
+                    const songTitle = (typeof song === 'object' && song !== null && song.title) ? song.title : song;
+                    // 削除用エスケープ処理
+                    const safeTitle = songTitle.replace(/'/g, "\\'");
+                    const delBtn = canE ? `<button class="btn-remove-member" style="margin-left:auto;" onclick="removeSongFromBand('${safeTitle}')">削除</button>` : '';
+                    row.innerHTML = `<span class="material-icons" style="color:#0b57d0; font-size:16px; margin-right:12px; background:#e8f0fe; padding:6px; border-radius:50%;">music_note</span><div class="member-info-rich"><div class="member-name-rich">${songTitle}</div></div>${delBtn}`;
                     songListEl.appendChild(row);
                 });
             }
@@ -589,8 +593,9 @@
             if(!songName) return;
             const bid = document.getElementById('detailBandId').value;
             try {
+                // オブジェクト形式で保存 { title: "曲名" }
                 await updateDoc(doc(db, "bands", bid), {
-                    songs: arrayUnion(songName)
+                    songs: arrayUnion({ title: songName })
                 });
                 // 画面リフレッシュのためにデータを再取得
                 const snap = await getDoc(doc(db, "bands", bid));
@@ -604,12 +609,22 @@
             if(!await showCustomConfirm(`「${songName}」を削除しますか？`, "削除確認")) return;
             const bid = document.getElementById('detailBandId').value;
             try {
-                await updateDoc(doc(db, "bands", bid), {
-                    songs: arrayRemove(songName)
-                });
-                // 画面リフレッシュ
+                // 配列内のオブジェクトを削除するため、一度データを取得してフィルタリングして更新する
                 const snap = await getDoc(doc(db, "bands", bid));
-                openBandDetail(bid, {id: bid, ...snap.data()});
+                if(snap.exists()) {
+                    const currentSongs = snap.data().songs || [];
+                    // タイトルが一致しないものだけを残す（オブジェクトと文字列の両方に対応）
+                    const newSongs = currentSongs.filter(s => {
+                        const t = (typeof s === 'object' && s !== null && s.title) ? s.title : s;
+                        return t !== songName;
+                    });
+                    
+                    await updateDoc(doc(db, "bands", bid), {
+                        songs: newSongs
+                    });
+                    // 画面リフレッシュ
+                    openBandDetail(bid, {id: bid, ...snap.data(), songs: newSongs});
+                }
             } catch(e) {
                 await showCustomAlert("削除に失敗しました: " + e.message, "エラー");
             }
