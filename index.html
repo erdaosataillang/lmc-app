@@ -104,6 +104,10 @@
         .member-role-badge { font-size: 10px; background: #e8f0fe; color: #0b57d0; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
         .booking-history-item { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: space-between; } .booking-history-item:last-child { border-bottom: none; }
         .booking-date { font-weight: bold; font-size: 14px; color: #1f1f1f; } .booking-status { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+        /* Band Detail Instagram Style */
+        .stat-badge { background: #f8f9fa; padding: 6px 12px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; flex: 1; }
+        .stat-value { font-size: 15px; font-weight: bold; color: #0b57d0; }
+        .stat-label { font-size: 9px; color: #5f6368; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -147,24 +151,45 @@
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')"><div class="modal-content"><h3 style="margin-top:0;">バンド結成</h3><p style="font-size:12px; color:#5f6368; margin-bottom:20px;">リストから選ぶか、後から招待リンクを送ってください。</p><div class="image-picker-area"><div class="image-picker" onclick="document.getElementById('bandIconInput').click()"><i class="material-icons">add_a_photo</i><span>写真</span><img id="previewBandIcon" class="hidden" src=""></div><input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')"></div><div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム"></div><div class="form-group"><label class="form-label">メンバーを検索</label><input type="text" id="bandMemberSearchInput" class="form-input" placeholder="氏名またはかなで検索..."></div><div class="form-group"><label class="form-label">メンバー選択 (登録済みユーザー)</label><div class="member-select-list" id="userSelectList"></div></div><button class="btn-primary" onclick="saveBand()">作成する</button><button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button></div></div>
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
-            <div class="band-detail-header" style="background: linear-gradient(135deg, #e8f0fe 0%, #ffffff 100%); padding: 24px 20px; text-align: center; position: relative;">
-                <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 20px; color: #5f6368;">close</span></button>
-                <button class="btn-outline" id="btnInviteInModal" style="position: absolute; top: 16px; right: 16px; border-radius: 20px; background: rgba(255,255,255,0.8); box-shadow: 0 1px 2px rgba(0,0,0,0.1); border: none; padding: 6px 12px; font-weight: bold; color: #0b57d0;"><span class="material-icons" style="font-size: 16px; margin-right: 4px;">share</span>招待</button>
-                <div class="image-picker-area" style="margin-bottom: 12px; position: relative; width: 100px; margin: 0 auto 12px; overflow: visible;">
-                    <div class="image-picker" id="detailIconPicker" style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: 0 auto; overflow: visible; position: relative;">
-                        <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">
-                        <div class="edit-badge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); z-index: 20; transform: translate(25%, 25%);">
-                            <span class="material-icons" style="font-size: 18px;">edit</span>
+            <div class="band-detail-header" style="background: white; padding: 24px 20px; border-bottom: 1px solid #f0f0f0; position: relative;">
+                <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 20px; color: #5f6368;">close</span></button>
+                
+                <div style="display: flex; align-items: flex-start; gap: 24px; margin-top: 20px;">
+                    <!-- Left: Avatar -->
+                    <div class="image-picker-area" style="position: relative; width: 88px; flex-shrink: 0; overflow: visible; margin: 0;">
+                        <div class="image-picker" id="detailIconPicker" style="width: 88px; height: 88px; border-radius: 50%; border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: visible; position: relative; background: #fafafa;">
+                            <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block;">
+                            <div class="edit-badge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 20; transform: translate(15%, 15%);">
+                                <span class="material-icons" style="font-size: 16px;">edit</span>
+                            </div>
+                        </div>
+                        <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
+                    </div>
+
+                    <!-- Right: Info -->
+                    <div style="flex-grow: 1; padding-top: 4px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                            <div style="position: relative; flex-grow: 1; max-width: 160px;">
+                                <input type="text" id="detailBandName" class="band-name-input" value="バンド名" readonly style="font-size: 18px; font-weight: bold; border: none; background: transparent; width: 100%; color: #1f1f1f; padding: 0;">
+                            </div>
+                            <button class="btn-outline" id="btnInviteInModal" style="border-radius: 12px; border: 1px solid #dadce0; padding: 4px 10px; font-size: 11px; font-weight: bold; color: #1f1f1f; background: white;"><span class="material-icons" style="font-size: 14px; margin-right: 4px;">share</span>招待</button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px;">
+                            <div class="stat-badge">
+                                <span class="stat-value" id="stat-booking-count">--</span>
+                                <span class="stat-label">演奏回数</span>
+                            </div>
+                            <div class="stat-badge">
+                                <span class="stat-value" id="stat-song-count">--</span>
+                                <span class="stat-label">演奏曲数</span>
+                            </div>
                         </div>
                     </div>
-                    <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
-                </div>
-                <div style="position: relative; display: inline-block; max-width: 100%;">
-                    <input type="text" id="detailBandName" class="band-name-input" value="バンド名" readonly style="font-size: 20px; font-weight: bold; text-align: center; border: none; background: transparent; width: 100%; color: #1f1f1f; padding: 4px;">
-                    <span class="material-icons edit-name-icon" style="font-size: 16px; color: #999; position: absolute; right: -20px; top: 50%; transform: translateY(-50%); display: none;">edit</span>
                 </div>
             </div>
-            <div style="padding: 20px; overflow-y: auto; flex-grow: 1;">
+
+            <div style="padding: 20px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
                 <input type="hidden" id="detailBandId">
                 <div class="section-title" style="font-size: 13px; font-weight: bold; color: #5f6368; margin-bottom: 10px; display: flex; align-items: center;">
                     <span class="material-icons" style="font-size: 16px; margin-right: 6px;">groups</span>メンバー
@@ -271,16 +296,42 @@
         window.saveBand=async()=>{ const name=document.getElementById('inputBandName').value.trim(); if(!name)return alert("名前を入力"); const selected=document.querySelectorAll('#userSelectList .member-option.selected'), mIds=[currentUser], mNames=[currentProfile.displayName]; selected.forEach(el=>{mIds.push(el.dataset.uid); mNames.push(el.dataset.uname);}); const btn=document.querySelector('#modal-band .btn-primary'); btn.innerText="処理中..."; btn.disabled=true; try{ const docRef=await addDoc(collection(db,"bands"),{name:name,memberIds:mIds,memberNames:mNames,creatorId:currentUser,isArchived:false,createdAt:new Date()}); if(tempBandIconBlob){ try{ const url=await uploadImageToExternal(tempBandIconBlob); await updateDoc(doc(db,"bands",docRef.id),{icon:url}); }catch(ie){alert("画像失敗")} } closeModal('modal-band'); if(confirm("招待状を送りますか？"))shareBandInvite(docRef.id,name); else alert("作成完了"); }catch(e){alert(e.message)}finally{btn.innerText="作成する"; btn.disabled=false;} };
         window.shareBandInvite=async(bid,bn)=>{ const invU=`https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`; if(liff.isApiAvailable('shareTargetPicker')){ try{await liff.shareTargetPicker([{type:"flex",altText:bn+"への招待",contents:{type:"bubble",body:{type:"box",layout:"vertical",contents:[{type:"text",text:"🎸 バンド招待",weight:"bold",color:"#1DB446",size:"sm"},{type:"text",text:bn,weight:"bold",size:"xl",margin:"md",wrap:true},{type:"text",text:"招待されました。",size:"xs",color:"#aaaaaa",margin:"sm",wrap:true}]},footer:{type:"box",layout:"vertical",spacing:"sm",contents:[{type:"button",style:"primary",height:"sm",color:"#0b57d0",action:{type:"uri",label:"参加する",uri:invU}}]}}}]);}catch(e){alert("失敗")} }else alert("不可"); };
         async function handleInvite(bid){ try{ const snap=await getDoc(doc(db,"bands",bid)); if(!snap.exists())return alert("なし"); const d=snap.data(); if(d.memberIds.includes(currentUser))return alert("既に参加"); if(confirm(d.name+" に参加？")){ await updateDoc(doc(db,"bands",bid),{memberIds:arrayUnion(currentUser),memberNames:arrayUnion(currentProfile.displayName)}); alert("参加完了"); } }catch(e){alert(e.message)} }
-        window.openBandDetail=(bid,data)=>{ document.getElementById('detailBandId').value=bid; document.getElementById('detailBandName').value=data.name; document.getElementById('btnInviteInModal').onclick=()=>shareBandInvite(bid,data.name); currentEditingBandId=bid; currentEditingBandMembers=data.memberIds; const dIcon=document.getElementById('detailBandIcon'), dPick=document.getElementById('detailIconPicker'); dIcon.src=data.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role, canE=(data.creatorId===currentUser)||isAdmin; if(canE&&!data.isArchived)dPick.onclick=()=>document.getElementById('editBandIconInput').click(); else dPick.onclick=null; const mList=document.getElementById('detailMemberList'), nInp=document.getElementById('detailBandName'), bArc=document.getElementById('btnArchive'), bRes=document.getElementById('btnRestore'), bAdd=document.getElementById('btnAddMemberToBand'); mList.innerHTML=""; if(data.isArchived){bArc.classList.add('hidden'); bRes.classList.remove('hidden'); nInp.readOnly=true; bAdd.classList.add('hidden');} else {bArc.classList.remove('hidden'); bRes.classList.add('hidden'); if(canE){nInp.readOnly=false; bAdd.classList.remove('hidden');} else bAdd.classList.add('hidden');} if(canE){document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden');} else {nInp.readOnly=true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden');}
-        data.memberIds.forEach((uid)=>{ 
-            const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg' };
-            const row=document.createElement('div'); row.className='member-row-rich'; 
-            let roleBadge = (uid===data.creatorId) ? '<span class="member-role-badge">リーダー</span>' : '';
-            let deleteBtn = (canE && uid !== currentUser) ? `<button class="btn-remove-member" style="margin-left:auto;" onclick="removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
-            row.innerHTML=`<img src="${u.icon}" class="member-avatar-small"><div class="member-info-rich"><div class="member-name-rich">${u.name}${roleBadge}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${deleteBtn}`;
-            mList.appendChild(row); 
-        });
-        document.getElementById('adminBandBookingsArea').classList.remove('hidden'); loadBandBookings(bid); openModal('modal-band-detail'); };
+        window.openBandDetail=async(bid,data)=>{ 
+            document.getElementById('detailBandId').value=bid; 
+            document.getElementById('detailBandName').value=data.name; 
+            document.getElementById('btnInviteInModal').onclick=()=>shareBandInvite(bid,data.name); 
+            currentEditingBandId=bid; 
+            currentEditingBandMembers=data.memberIds; 
+            const dIcon=document.getElementById('detailBandIcon'), dPick=document.getElementById('detailIconPicker'); 
+            dIcon.src=data.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; 
+            const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role, canE=(data.creatorId===currentUser)||isAdmin; 
+            if(canE&&!data.isArchived)dPick.onclick=()=>document.getElementById('editBandIconInput').click(); else dPick.onclick=null; 
+            const mList=document.getElementById('detailMemberList'), nInp=document.getElementById('detailBandName'), bArc=document.getElementById('btnArchive'), bRes=document.getElementById('btnRestore'), bAdd=document.getElementById('btnAddMemberToBand'); 
+            mList.innerHTML=""; 
+            if(data.isArchived){bArc.classList.add('hidden'); bRes.classList.remove('hidden'); nInp.readOnly=true; bAdd.classList.add('hidden');} else {bArc.classList.remove('hidden'); bRes.classList.add('hidden'); if(canE){nInp.readOnly=false; bAdd.classList.remove('hidden');} else bAdd.classList.add('hidden');} 
+            if(canE){document.getElementById('bandCreatorActions').classList.remove('hidden'); document.getElementById('bandMemberActions').classList.add('hidden');} else {nInp.readOnly=true; document.getElementById('bandCreatorActions').classList.add('hidden'); document.getElementById('bandMemberActions').classList.remove('hidden');}
+            
+            // Stats fetching (Dummy for now, could be derived from bookings)
+            document.getElementById('stat-booking-count').innerText = "0"; // To be updated by real logic
+            document.getElementById('stat-song-count').innerText = "0"; // Placeholder
+
+            data.memberIds.forEach((uid)=>{ 
+                const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg' };
+                const row=document.createElement('div'); row.className='member-row-rich'; 
+                let roleBadge = (uid===data.creatorId) ? '<span class="member-role-badge">リーダー</span>' : '';
+                let deleteBtn = (canE && uid !== currentUser) ? `<button class="btn-remove-member" style="margin-left:auto;" onclick="removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
+                row.innerHTML=`<img src="${u.icon}" class="member-avatar-small"><div class="member-info-rich"><div class="member-name-rich">${u.name}${roleBadge}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${deleteBtn}`;
+                mList.appendChild(row); 
+            });
+            document.getElementById('adminBandBookingsArea').classList.remove('hidden'); 
+            loadBandBookings(bid); 
+            
+            // Real stats logic example
+            const bookingQS = await getDocs(query(collection(db, "bookings"), where("bandId", "==", bid), where("status", "==", "confirmed")));
+            document.getElementById('stat-booking-count').innerText = bookingQS.size;
+            
+            openModal('modal-band-detail'); 
+        };
         window.archiveBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(confirm("アーカイブ？")){try{await updateDoc(doc(db,"bands",bid),{isArchived:true}); alert("完了"); closeModal('modal-band-detail');}catch(e){alert(e.message)}} };
         window.restoreBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(confirm("復元？")){try{await updateDoc(doc(db,"bands",bid),{isArchived:false}); alert("完了"); closeModal('modal-band-detail');}catch(e){alert(e.message)}} };
         window.updateBandName=async()=>{ const bid=document.getElementById('detailBandId').value, nn=document.getElementById('detailBandName').value.trim(); if(!nn)return; try{await updateDoc(doc(db,"bands",bid),{name:nn}); alert("変更完了"); closeModal('modal-band-detail');}catch(e){alert(e.message)} };
@@ -301,9 +352,9 @@
             if(m==='day'){
                 const t=new Date();
                 if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) {
-                   // 同じ月の場合は日付を維持（リセットしない）
+                   // Same month, keep current date
                 } else {
-                    // 月が違う場合は1日にリセット（お好みで変更可）
+                    // Different month, default to 1st
                    displayDate.setDate(1);
                 }
             }
