@@ -296,9 +296,16 @@
                 <label class="form-label">イベント名</label>
                 <input type="text" id="inputEventName" class="form-input" placeholder="例: 2025年度 定期演奏会">
             </div>
-            <div class="form-group">
-                <label class="form-label">開催日</label>
-                <input type="date" id="inputEventDate" class="form-input">
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom:16px;">
+                <div style="flex:1;">
+                    <label class="form-label">開始日</label>
+                    <input type="date" id="inputEventStartDate" class="form-input">
+                </div>
+                <div style="padding-top:20px;">〜</div>
+                <div style="flex:1;">
+                    <label class="form-label">終了日</label>
+                    <input type="date" id="inputEventEndDate" class="form-input">
+                </div>
             </div>
             <div class="form-group">
                 <label class="form-label">詳細・メモ</label>
@@ -415,11 +422,11 @@
             const container = document.getElementById('adminEventList');
             container.innerHTML = "読み込み中...";
             try {
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'), orderBy("date", "desc"));
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'), orderBy("startDate", "desc"));
                 const qs = await getDocs(q);
                 container.innerHTML = "";
                 if (qs.empty) {
-                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">イベントがありません</div>';
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">登録されているイベントはありません</div>';
                     return;
                 }
                 qs.forEach(docSnap => {
@@ -431,11 +438,15 @@
                     const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' };
                     const iconName = iconMap[ev.type] || 'event';
                     
+                    const dateStr = (ev.startDate === ev.endDate || !ev.endDate) 
+                        ? ev.startDate.split('-').slice(1).join('/')
+                        : `${ev.startDate.split('-').slice(1).join('/')} 〜 ${ev.endDate.split('-').slice(1).join('/')}`;
+
                     div.innerHTML = `
                         <div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div>
                         <div class="event-admin-info">
                             <div class="event-admin-name">${ev.name}</div>
-                            <div class="event-admin-date">${ev.date ? ev.date.split('-').join('/') : '-'}</div>
+                            <div class="event-admin-date">${dateStr}</div>
                         </div>
                         <button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.name}')">削除</button>
                     `;
@@ -448,7 +459,8 @@
 
         window.openCreateEventModal = () => {
             document.getElementById('inputEventName').value = "";
-            document.getElementById('inputEventDate').value = "";
+            document.getElementById('inputEventStartDate').value = "";
+            document.getElementById('inputEventEndDate').value = "";
             document.getElementById('inputEventDesc').value = "";
             document.getElementById('inputEventType').value = "";
             document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
@@ -461,7 +473,6 @@
                 document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
                 chip.classList.add('selected');
                 document.getElementById('inputEventType').value = chip.dataset.type;
-                // Auto-fill name if empty
                 const nameInput = document.getElementById('inputEventName');
                 if (!nameInput.value) {
                     nameInput.value = chip.innerText;
@@ -472,20 +483,25 @@
         window.saveAdminEvent = async () => {
             const type = document.getElementById('inputEventType').value;
             const name = document.getElementById('inputEventName').value.trim();
-            const date = document.getElementById('inputEventDate').value;
+            const startDate = document.getElementById('inputEventStartDate').value;
+            const endDate = document.getElementById('inputEventEndDate').value || startDate;
             const desc = document.getElementById('inputEventDesc').value.trim();
 
-            if (!type || !name || !date) {
-                return await showCustomAlert("種別、名前、日付を入力してください。", "入力エラー");
+            if (!type || !name || !startDate) {
+                return await showCustomAlert("種別、イベント名、開始日をすべて入力してください。", "入力エラー");
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                return await showCustomAlert("終了日は開始日より後の日付を指定してください。", "日付不正");
             }
 
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
-                    type, name, date, desc,
+                    type, name, startDate, endDate, desc,
                     createdAt: serverTimestamp(),
                     createdBy: currentUser
                 });
-                await showCustomAlert("イベントを作成しました。");
+                await showCustomAlert("イベントを登録しました。");
                 closeModal('modal-event-admin');
                 await loadAdminEvents();
             } catch (e) {
@@ -497,7 +513,7 @@
             if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) {
                 try {
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', id));
-                    await showCustomAlert("削除しました。");
+                    await showCustomAlert("イベントを削除しました。");
                     await loadAdminEvents();
                 } catch (e) {
                     await showCustomAlert(e.message, "エラー");
@@ -607,6 +623,117 @@
         window.deleteBooking=async()=>{ const eid=document.getElementById('editingBookingId').value; if(eid && await showCustomConfirm("この予約を削除しますか？", "予約削除")){try{await deleteDoc(doc(db,"bookings",eid)); await showCustomAlert("予約を削除しました。"); closeModal('modal-booking');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         function renderHeaderIcons(d){ let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata"); if(d.birthday){const t=new Date(), b=new Date(d.birthday); if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate())r="ring-birthday";} if(!r&&isU)r=d.job?`ring-${d.job}`:"ring-rainbow"; const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; ['headerIconBands','headerIconCal','headerIconCue','headerIconAdmin'].forEach(id=>{ const el=document.getElementById(id); if(el){el.innerHTML=h; el.className="header-avatar "+r; el.onclick=openUserStatusModal;} }); if(isU&&d.role)document.getElementById('nav-admin').classList.remove('hidden'); }
         main();
+
+        // Admin Event Functions
+        window.openAdminEvents = async () => {
+            openPage('admin-events');
+            await loadAdminEvents();
+        };
+
+        async function loadAdminEvents() {
+            const container = document.getElementById('adminEventList');
+            container.innerHTML = "読み込み中...";
+            try {
+                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'), orderBy("startDate", "desc"));
+                const qs = await getDocs(q);
+                container.innerHTML = "";
+                if (qs.empty) {
+                    container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">登録されているイベントはありません</div>';
+                    return;
+                }
+                qs.forEach(docSnap => {
+                    const ev = docSnap.data();
+                    const id = docSnap.id;
+                    const div = document.createElement('div');
+                    div.className = 'event-admin-item';
+                    const iconClass = `type-${ev.type || 'other'}`;
+                    const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' };
+                    const iconName = iconMap[ev.type] || 'event';
+                    
+                    const sD = new Date(ev.startDate);
+                    const eD = new Date(ev.endDate || ev.startDate);
+                    const dateStr = (ev.startDate === ev.endDate || !ev.endDate) 
+                        ? `${sD.getMonth()+1}/${sD.getDate()}`
+                        : `${sD.getMonth()+1}/${sD.getDate()} 〜 ${eD.getMonth()+1}/${eD.getDate()}`;
+
+                    div.innerHTML = `
+                        <div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div>
+                        <div class="event-admin-info">
+                            <div class="event-admin-name">${ev.name}</div>
+                            <div class="event-admin-date">${dateStr}</div>
+                        </div>
+                        <button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.name}')">削除</button>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                container.innerHTML = "エラー: " + e.message;
+            }
+        }
+
+        window.openCreateEventModal = () => {
+            document.getElementById('inputEventName').value = "";
+            document.getElementById('inputEventStartDate').value = "";
+            document.getElementById('inputEventEndDate').value = "";
+            document.getElementById('inputEventDesc').value = "";
+            document.getElementById('inputEventType').value = "";
+            document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
+            openModal('modal-event-admin');
+        };
+
+        // Event Type Chip Handling
+        document.querySelectorAll('.event-type-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected'));
+                chip.classList.add('selected');
+                document.getElementById('inputEventType').value = chip.dataset.type;
+                const nameInput = document.getElementById('inputEventName');
+                if (!nameInput.value) {
+                    nameInput.value = chip.innerText;
+                }
+            });
+        });
+
+        window.saveAdminEvent = async () => {
+            const type = document.getElementById('inputEventType').value;
+            const name = document.getElementById('inputEventName').value.trim();
+            const startDate = document.getElementById('inputEventStartDate').value;
+            const endDate = document.getElementById('inputEventEndDate').value || startDate;
+            const desc = document.getElementById('inputEventDesc').value.trim();
+
+            if (!type || !name || !startDate) {
+                return await showCustomAlert("種別、イベント名、開始日をすべて入力してください。", "入力エラー");
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                return await showCustomAlert("終了日は開始日より後の日付を指定してください。", "日付不正");
+            }
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
+                    type, name, startDate, endDate, desc,
+                    createdAt: serverTimestamp(),
+                    createdBy: currentUser
+                });
+                await showCustomAlert("イベントを登録しました。");
+                closeModal('modal-event-admin');
+                await loadAdminEvents();
+            } catch (e) {
+                await showCustomAlert("保存エラー: " + e.message, "エラー");
+            }
+        };
+
+        window.deleteAdminEvent = async (id, name) => {
+            if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', id));
+                    await showCustomAlert("イベントを削除しました。");
+                    await loadAdminEvents();
+                } catch (e) {
+                    await showCustomAlert(e.message, "エラー");
+                }
+            }
+        };
     </script>
 </body>
 </html>
