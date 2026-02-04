@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LMC Mobile - Cueシート</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; padding-bottom: 88px; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; } .hidden { display: none !important; }
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
+        .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
+        .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
+        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); } .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
+        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52,168,83,0.5); } .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234,67,53,0.5); }
+        .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
+        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+        @keyframes spin { 100% { transform: rotate(360deg); } } @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
+        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; } .card.band-card:active { background-color: #f5f5f5; }
+        .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } .band-item:last-child { border: none; margin: 0; padding: 0; }
+        .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; } .band-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 16px; } .band-members { font-size: 12px; color: #5f6368; }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e0e3e7; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 2000; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
+        .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } .nav-item.active span { color: #1f1f1f; font-weight: bold; }
+        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .user-status-card { text-align: center; padding: 20px; } .user-status-icon { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 4px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); } .user-status-name { font-size: 18px; font-weight: bold; margin-bottom: 20px; } .fee-status-row { display: flex; gap: 10px; justify-content: center; margin-top: 10px; } .fee-status-badge { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: bold; } .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-header"><div class="header-title">Cueシート</div><div class="header-avatar" id="headerIconCue"></div></div>
+        <div class="scroll-content">
+            <div id="cuesheetBandListContainer"><div style="padding: 10px 4px; font-size: 12px; color: #5f6368;">閲覧するバンドを選択</div><div id="cuesheetBandList"></div></div>
+            <div id="cuesheetDetailView" class="hidden">
+                <div style="margin-bottom: 16px; display: flex; align-items: center; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                    <button onclick="closeCuesheetDetail()" style="background:#f1f3f4; border:none; padding:8px; border-radius:50%; margin-right:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:20px; color:#5f6368;">arrow_back</span></button>
+                    <div><div style="font-size:10px; color:#5f6368;">Selected Band</div><div id="cuesheetTargetBandName" style="font-weight:bold; font-size:16px;">Band Name</div></div>
+                </div>
+                <div id="cuesheetContainer" style="display:flex; flex-direction:column; align-items:center; min-height: 100%;">
+                    <div id="cuesheetLoading" style="margin-top:50px; color:#5f6368; display:none;">読み込み中...</div>
+                    <div id="cuesheetContent" class="hidden" style="width:100%; box-sizing:border-box;">
+                        <img id="cuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; height:auto; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);" onclick="window.open(this.src, '_blank')">
+                        <div style="margin-top:10px; font-size:12px; color:#999; text-align:center;">タップで拡大表示</div>
+                    </div>
+                    <div id="cuesheetEmpty" class="hidden" style="margin-top:50px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px; color:#e0e0e0;">image_not_supported</span><br>Cueシートはまだありません</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
+        <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
+        <div class="nav-item active" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
+        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
+    </div>
+
+    <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')"><div class="modal-content"><h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368;">マイステータス</h3><div class="user-status-card"><img id="modalUserIcon" src="" class="user-status-icon"><div id="modalUserName" class="user-status-name"></div><div style="background:#f9f9f9; padding:15px; border-radius:12px;"><div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">2025年度 部費</div><div class="fee-status-row"><div id="statusFeeTerm1" class="fee-status-badge">前期: -</div><div id="statusFeeTerm2" class="fee-status-badge">後期: -</div></div></div><div style="margin-top:20px;"><div style="font-size:12px; color:#999; margin-bottom:5px;">会員QRコード</div><div id="myQRCodeArea" style="width:150px; height:150px; background:#eee; margin:0 auto; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:48px; color:#ccc;">qr_code_2</span></div></div></div><button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button></div></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
+        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
+
+        window.openModal=(id)=>document.getElementById(id).classList.add('open');
+        window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
+        window.goToMyPage=()=>window.location.href=MY_PAGE_URL;
+        
+        async function main(){ try{ try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} await liff.init({liffId:MY_LIFF_ID}); if(!liff.isLoggedIn()){liff.login();return;} const profile=await liff.getProfile(); currentUser=profile.userId; currentProfile=profile; const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); if(!userSnap.exists()){alert("ご利用いただくには会員登録が必要です。"); window.location.href=MY_PAGE_URL; return;} await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); currentUserData=userSnap.data(); renderHeaderIcons(currentUserData); loadMyBands(); }catch(e){console.error(e)} }
+        function renderHeaderIcons(d){ let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata"); if(d.birthday){const t=new Date(), b=new Date(d.birthday); if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate())r="ring-birthday";} if(!r&&isU)r=d.job?`ring-${d.job}`:"ring-rainbow"; const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; const el=document.getElementById('headerIconCue'); if(el){el.innerHTML=h; el.className="header-avatar "+r; el.onclick=openUserStatusModal;} if(isU&&d.role)document.getElementById('nav-admin').classList.remove('hidden'); }
+        window.openUserStatusModal=async()=>{ if(!currentUserData)return; if(!currentFeeSettings.year){ try{ const snap=await getDoc(doc(db,"system","fees")); if(snap.exists())currentFeeSettings=snap.data(); }catch(e){console.error(e)} } const year=currentFeeSettings.year||new Date().getFullYear(); const status=currentUserData.feeStatus||{}; document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; document.getElementById('modalUserName').innerText=currentUserData.name+" さん"; const isPaid1=!!status[`${year}_1`], isPaid2=!!status[`${year}_2`], t1Text=isPaid1?'済':'未納', t2Text=isPaid2?'済':'未納', t1El=document.getElementById('statusFeeTerm1'), t2El=document.getElementById('statusFeeTerm2'); t1El.innerText=`前期: ${t1Text}`; t1El.className=`fee-status-badge ${isPaid1?'fee-paid':'fee-unpaid'}`; t2El.innerText=`後期: ${t2Text}`; t2El.className=`fee-status-badge ${isPaid2?'fee-paid':'fee-unpaid'}`; document.getElementById('statusFeeYear').innerText=`${year}年度 部費状況`; if(currentUser){ const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}`; document.getElementById('myQRCodeArea').innerHTML=`<img src="${qrUrl}" style="width:100%;height:100%;">`; } openModal('modal-user-status'); };
+
+        function loadMyBands(){ const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); onSnapshot(q,(snapshot)=>{ myBandsAll=[]; snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); renderCuesheetBandList(); }); }
+        
+        function renderCuesheetBandList(){ const container=document.getElementById('cuesheetBandList'); if(!container)return; container.innerHTML=""; const active=myBandsAll.filter(b=>!b.isArchived); if(active.length===0){container.innerHTML='<div style="text-align:center; padding:40px; color:#999;">なし</div>';return;} active.forEach(b=>{ const div=document.createElement('div'); div.className='card band-card'; div.onclick=()=>openCuesheetDetail(b); let iconH=b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`; div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${iconH}<div class="band-info"><div class="band-name">${b.name}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`; container.appendChild(div); }); }
+        window.openCuesheetDetail=function(b){ document.getElementById('cuesheetBandListContainer').classList.add('hidden'); document.getElementById('cuesheetDetailView').classList.remove('hidden'); document.getElementById('cuesheetTargetBandName').innerText=b.name; loadBandCuesheetData(b.id); };
+        window.closeCuesheetDetail=function(){ document.getElementById('cuesheetDetailView').classList.add('hidden'); document.getElementById('cuesheetBandListContainer').classList.remove('hidden'); document.getElementById('cuesheetImage').src=""; document.getElementById('cuesheetContent').classList.add('hidden'); document.getElementById('cuesheetEmpty').classList.add('hidden'); if(currentCuesheetUnsub){currentCuesheetUnsub();currentCuesheetUnsub=null;} };
+        let currentCuesheetUnsub=null; function loadBandCuesheetData(bid){ if(!bid)return; if(currentCuesheetUnsub)currentCuesheetUnsub(); const loading=document.getElementById('cuesheetLoading'), content=document.getElementById('cuesheetContent'), empty=document.getElementById('cuesheetEmpty'), img=document.getElementById('cuesheetImage'); loading.style.display='block'; content.classList.add('hidden'); empty.classList.add('hidden'); currentCuesheetUnsub=onSnapshot(doc(db,"bands",bid),(docSnap)=>{ loading.style.display='none'; if(docSnap.exists()){ const d=docSnap.data(); if(d.latestCuesheetUrl){img.src=d.latestCuesheetUrl; content.classList.remove('hidden'); empty.classList.add('hidden');} else {content.classList.add('hidden'); empty.classList.remove('hidden');} } else {content.classList.add('hidden'); empty.classList.remove('hidden');} },(e)=>{loading.innerText="エラー"}); }
+        
+        main();
+    </script>
+</body>
+</html>
