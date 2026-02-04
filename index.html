@@ -160,6 +160,11 @@
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        
+        // Cache Keys
+        const CACHE_KEY_USER = 'lmc_user_cache';
+        const CACHE_KEY_BANDS = 'lmc_bands_cache';
+
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab='active', currentEditingBandId=null, currentEditingBandMembers=[], tempBandIconBlob=null, allUsersCache=[], currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
@@ -170,11 +175,70 @@
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); }
         
-        async function main(){ try{ try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} await liff.init({liffId:MY_LIFF_ID}); if(!liff.isLoggedIn()){liff.login();return;} const profile=await liff.getProfile(); currentUser=profile.userId; currentProfile=profile; const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); currentUserData=userSnap.data(); renderHeaderIcons(currentUserData); await refreshAllUsersCache(); const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'); if(act==='invite'&&iBid){await handleInvite(iBid); window.history.replaceState(null,null,window.location.pathname);} loadMyBands(); }catch(e){console.error(e)} }
+        async function main(){ 
+            try{ 
+                // [高速化 1] ユーザー情報のキャッシュ表示
+                const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
+                if (cachedUserStr) {
+                    try {
+                        const u = JSON.parse(cachedUserStr);
+                        currentUserData = u; // 一時セット
+                        renderHeaderIcons(u);
+                    } catch (e) { console.error("User cache error", e); }
+                }
+
+                // [高速化 2] バンド一覧のキャッシュ表示
+                const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
+                if (cachedBandsStr) {
+                    try {
+                        myBandsAll = JSON.parse(cachedBandsStr);
+                        renderBandList(); 
+                    } catch (e) { console.error("Bands cache error", e); }
+                }
+
+                // 通常フロー
+                try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
+                
+                await liff.init({liffId:MY_LIFF_ID}); 
+                if(!liff.isLoggedIn()){liff.login();return;} 
+                
+                const profile=await liff.getProfile(); 
+                currentUser=profile.userId; 
+                currentProfile=profile; 
+                
+                const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
+                if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} 
+                
+                await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
+                currentUserData=userSnap.data(); 
+                
+                // キャッシュ更新と再描画
+                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                renderHeaderIcons(currentUserData); 
+                
+                await refreshAllUsersCache(); 
+                
+                const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'); 
+                if(act==='invite'&&iBid){await handleInvite(iBid); window.history.replaceState(null,null,window.location.pathname);} 
+                
+                loadMyBands(); 
+            }catch(e){console.error(e)} 
+        }
+
         function renderHeaderIcons(d){ let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata"); if(d.birthday){const t=new Date(), b=new Date(d.birthday); if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate())r="ring-birthday";} if(!r&&isU)r=d.job?`ring-${d.job}`:"ring-rainbow"; const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; const el=document.getElementById('headerIconBands'); if(el){el.innerHTML=h; el.className="header-avatar "+r; el.onclick=openUserStatusModal;} if(isU&&d.role)document.getElementById('nav-admin').classList.remove('hidden'); }
         window.openUserStatusModal=async()=>{ if(!currentUserData)return; if(!currentFeeSettings.year){ try{ const snap=await getDoc(doc(db,"system","fees")); if(snap.exists())currentFeeSettings=snap.data(); }catch(e){console.error(e)} } const year=currentFeeSettings.year||new Date().getFullYear(); const status=currentUserData.feeStatus||{}; document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; document.getElementById('modalUserName').innerText=currentUserData.name+" さん"; const isPaid1=!!status[`${year}_1`], isPaid2=!!status[`${year}_2`], t1Text=isPaid1?'済':'未納', t2Text=isPaid2?'済':'未納', t1El=document.getElementById('statusFeeTerm1'), t2El=document.getElementById('statusFeeTerm2'); t1El.innerText=`前期: ${t1Text}`; t1El.className=`fee-status-badge ${isPaid1?'fee-paid':'fee-unpaid'}`; t2El.innerText=`後期: ${t2Text}`; t2El.className=`fee-status-badge ${isPaid2?'fee-paid':'fee-unpaid'}`; document.getElementById('statusFeeYear').innerText=`${year}年度 部費状況`; if(currentUser){ const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}`; document.getElementById('myQRCodeArea').innerHTML=`<img src="${qrUrl}" style="width:100%;height:100%;">`; } openModal('modal-user-status'); };
 
-        function loadMyBands(){ const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); onSnapshot(q,(snapshot)=>{ myBandsAll=[]; snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); renderBandList(); }); }
+        function loadMyBands(){ 
+            const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); 
+            onSnapshot(q,(snapshot)=>{ 
+                myBandsAll=[]; 
+                snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); 
+                // キャッシュ更新
+                localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
+                renderBandList(); 
+            }); 
+        }
+        
         window.switchBandTab=(tab)=>{ currentBandTab=tab; document.querySelectorAll('.band-tab').forEach(el=>el.classList.remove('active')); const idx=(tab==='active')?0:1; document.querySelectorAll('.band-tab')[idx].classList.add('active'); renderBandList(); };
         function renderBandList(){ const container=document.getElementById('bandListContainer'); container.innerHTML=""; const target=myBandsAll.filter(b=>(currentBandTab==='active')?!b.isArchived:b.isArchived); if(target.length===0){container.innerHTML=`<div style="text-align:center; padding:40px; color:#999;">なし</div>`;return;} target.forEach(b=>{ const div=document.createElement('div'); div.className='card band-card'; div.onclick=()=>openBandDetail(b.id,b); let iconH=b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`; div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${iconH}<div class="band-info"><div class="band-name">${b.name}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`; container.appendChild(div); }); }
         
