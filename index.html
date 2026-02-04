@@ -429,7 +429,8 @@
             const container = document.getElementById('adminEventList');
             container.innerHTML = "読み込み中...";
             try {
-                const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'), orderBy("date", "desc"));
+                // CHANGED: 参照先をルートの 'events' コレクションに変更
+                const q = query(collection(db, 'events'), orderBy("startDate", "desc"));
                 const qs = await getDocs(q);
                 container.innerHTML = "";
                 if (qs.empty) {
@@ -445,7 +446,8 @@
                     const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' };
                     const iconName = iconMap[ev.type] || 'event';
                     
-                    div.innerHTML = `<div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div><div class="event-admin-info"><div class="event-admin-name">${ev.name}</div><div class="event-admin-date">${ev.date ? ev.date.split('-').join('/') : '-'}</div></div><button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.name}')">削除</button>`;
+                    // CHANGED: プロパティ名を event, startDate に変更
+                    div.innerHTML = `<div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div><div class="event-admin-info"><div class="event-admin-name">${ev.event}</div><div class="event-admin-date">${ev.startDate ? ev.startDate.split('-').join('/') : '-'}</div></div><button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.event}')">削除</button>`;
                     container.appendChild(div);
                 });
             } catch (e) {
@@ -487,11 +489,21 @@
             }
 
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
-                    type, name, date, desc,
+                // CHANGED: IDを eYYYYMMDD 形式で生成
+                const idDatePart = date.replace(/-/g, '');
+                const docId = `e${idDatePart}`;
+
+                // CHANGED: ルートの events コレクションに setDoc で保存
+                await setDoc(doc(db, 'events', docId), {
+                    event: name,       // field: event
+                    startDate: date,   // field: startDate
+                    endDate: date,     // field: endDate (今回は同日を設定)
+                    type, 
+                    desc,
                     createdAt: serverTimestamp(),
                     createdBy: currentUser
-                });
+                }, { merge: true });
+
                 await showCustomAlert("イベントを作成しました。");
                 closeModal('modal-event-admin');
                 await loadAdminEvents();
@@ -503,7 +515,8 @@
         window.deleteAdminEvent = async (id, name) => {
             if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) {
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', id));
+                    // CHANGED: ルートの events コレクションから削除
+                    await deleteDoc(doc(db, 'events', id));
                     await showCustomAlert("削除しました。");
                     await loadAdminEvents();
                 } catch (e) {
