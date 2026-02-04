@@ -560,6 +560,28 @@
             document.getElementById('stat-song-count').innerText = songs.length;
             const songListEl = document.getElementById('bandSongsList');
             songListEl.innerHTML = "";
+
+            // イベント名を取得するためのマップを作成
+            const eventIds = [...new Set(songs.map(s => (typeof s === 'object' && s !== null) ? s.eventId : null).filter(id => id))];
+            const eventMap = {};
+            
+            if (eventIds.length > 0) {
+                try {
+                    // eventIds を使ってイベント情報を取得
+                    // 一つずつ取得する (Firestoreの制約上、where-inは10個まで等の制限があるため、ここではシンプルにPromise.allで取得)
+                    const promises = eventIds.map(eid => getDoc(doc(db, 'events', eid)));
+                    const snapshots = await Promise.all(promises);
+                    snapshots.forEach(snap => {
+                        if (snap.exists()) {
+                            // eventフィールドにイベント名が入っている
+                            eventMap[snap.id] = snap.data().event || snap.data().name || "イベント";
+                        }
+                    });
+                } catch (e) {
+                    console.error("Error fetching events for songs:", e);
+                }
+            }
+
             if(songs.length === 0){
                 songListEl.innerHTML = '<div style="padding: 12px 16px; color: #999; font-size: 12px;">登録された曲はありません</div>';
             } else {
@@ -568,10 +590,20 @@
                     row.className = 'member-row-rich';
                     // オブジェクトか文字列かを判定してタイトルを取得
                     const songTitle = (typeof song === 'object' && song !== null && song.title) ? song.title : song;
+                    const eventId = (typeof song === 'object' && song !== null) ? song.eventId : null;
+                    const eventName = eventId && eventMap[eventId] ? eventMap[eventId] : "";
+
                     // 削除用エスケープ処理
                     const safeTitle = songTitle.replace(/'/g, "\\'");
                     const delBtn = canE ? `<button class="btn-remove-member" style="margin-left:auto;" onclick="removeSongFromBand('${safeTitle}')">削除</button>` : '';
-                    row.innerHTML = `<span class="material-icons" style="color:#0b57d0; font-size:16px; margin-right:12px; background:#e8f0fe; padding:6px; border-radius:50%;">music_note</span><div class="member-info-rich"><div class="member-name-rich">${songTitle}</div></div>${delBtn}`;
+                    
+                    let htmlContent = `<div class="member-info-rich"><div class="member-name-rich">${songTitle}</div>`;
+                    if (eventName) {
+                        htmlContent += `<div style="font-size:10px; color:#666; margin-top:2px;"><span class="material-icons" style="font-size:10px; vertical-align:middle; margin-right:2px;">event</span>${eventName}</div>`;
+                    }
+                    htmlContent += `</div>`;
+
+                    row.innerHTML = `<span class="material-icons" style="color:#0b57d0; font-size:16px; margin-right:12px; background:#e8f0fe; padding:6px; border-radius:50%;">music_note</span>${htmlContent}${delBtn}`;
                     songListEl.appendChild(row);
                 });
             }
