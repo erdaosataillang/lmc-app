@@ -36,8 +36,9 @@
         .day-cell.partial-event { background-color: #fff7e6; border-color: #ffd591; }
         .day-cell.partial-event .day-num { color: #d46b08; }
         .status-label { font-size: 8px; color: #cf1322; font-weight: bold; height: 12px; transform: scale(0.9); }
-        .event-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; min-height: 5px; } 
+        .event-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; min-height: 5px; align-items: center; } 
         .dot { width: 4px; height: 4px; border-radius: 50%; background: #34A853; } .dot.event { background: #137333; transform: scale(1.2); }
+        .dot-plus { font-size: 10px; color: #137333; font-weight: bold; margin-left: 2px; line-height: 1; }
         .timeline-container { background: white; border-radius: 12px; padding: 10px 0; position: relative; height: auto; min-height: 600px; }
         .time-slot { height: 60px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; position: relative; }
         .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
@@ -148,7 +149,7 @@
                     for(let i=1; i<=lastD.getDate(); i++){
                         let cls = 'day-cell';
                         if(i === d.getDate()) cls += ' today';
-                        html += '<div class="'+cls+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots"></div></div>';
+                        html += '<div class="'+cls+'" id="day-'+y+'-'+(m+1)+'-'+i+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots" id="dots-'+y+'-'+(m+1)+'-'+i+'"></div></div>';
                     }
                     grid.innerHTML = html;
                 }
@@ -341,34 +342,73 @@
             document.querySelectorAll('.event-dots').forEach(el=>el.innerHTML=""); 
             document.querySelectorAll('.day-cell.unavailable, .day-cell.partial-event').forEach(el=>{ 
                 el.classList.remove('unavailable', 'partial-event'); 
-                const st = el.querySelector('.status-label'); if(st) st.innerHTML = ""; 
+                const st = el.querySelector('.status-label'); if(st) st.innerText = ""; 
             }); 
-            
-            bookings.forEach(bk=>{ 
+
+            // 日付ごとの集計
+            const stats = {};
+            bookings.forEach(bk => {
                 const d = new Date(bk.startTime);
-                const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); 
-                const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); 
+                // ID形式: day-yyyy-m-d
+                const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
                 
-                if(bk.type==='event' && cell){ 
+                if (!stats[key]) stats[key] = { count: 0, eventType: null };
+
+                if (bk.type === 'event') {
+                    const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime);
                     const sH = d.getHours();
                     const eH = e.getHours();
                     const isAllDay = (sH <= 9 && eH >= 20);
-
+                    // 優先度: 終日(unavailable) > 部分(partial) > なし
                     if (isAllDay) {
-                        cell.classList.remove('partial-event'); 
-                        cell.classList.add('unavailable'); 
-                        const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可"; 
-                    } else {
-                        if (!cell.classList.contains('unavailable')) {
-                            cell.classList.add('partial-event');
-                            const st = cell.querySelector('.status-label'); if(st) st.innerText = ""; 
+                        stats[key].eventType = 'unavailable';
+                    } else if (stats[key].eventType !== 'unavailable') {
+                        stats[key].eventType = 'partial';
+                    }
+                } else {
+                    stats[key].count++;
+                }
+            });
+
+            // 描画
+            Object.keys(stats).forEach(key => {
+                const data = stats[key];
+                const cell = document.getElementById(key);
+                if (!cell) return;
+
+                // イベント表示
+                if (data.eventType === 'unavailable') {
+                    cell.classList.add('unavailable');
+                    const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可";
+                } else if (data.eventType === 'partial') {
+                    cell.classList.add('partial-event');
+                }
+
+                // ドット表示
+                if (data.count > 0) {
+                    // ID形式: dots-yyyy-m-d
+                    const dotsContainer = document.getElementById(key.replace('day-', 'dots-'));
+                    if (dotsContainer) {
+                        if (data.count <= 3) {
+                            for(let i=0; i<data.count; i++) {
+                                const dot = document.createElement('div');
+                                dot.className = 'dot';
+                                dotsContainer.appendChild(dot);
+                            }
+                        } else {
+                            // 4件以上: 1個の点 + 残り件数
+                            const dot = document.createElement('div');
+                            dot.className = 'dot';
+                            dotsContainer.appendChild(dot);
+
+                            const plus = document.createElement('div');
+                            plus.className = 'dot-plus';
+                            plus.innerText = `+${data.count - 1}`;
+                            dotsContainer.appendChild(plus);
                         }
                     }
-                } else if(cell) { 
-                    const c=document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); 
-                    if(c&&c.children.length<3){const dot=document.createElement('div'); dot.className='dot'; c.appendChild(dot);} 
-                } 
-            }); 
+                }
+            });
         }
 
         function renderDayView(){ const banner=document.getElementById('bookingModeBanner'), mode=currentSystemSettings.bookingMode||'first_come'; if(mode==='lottery'){banner.style.backgroundColor='#fff3e0'; banner.style.color='#e65100'; banner.style.border='1px solid #ffe0b2'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">casino</span> 抽選受付中</div><div style="font-size:11px;">希望を提出してください。</div>`;} else {banner.style.backgroundColor='#e8f0fe'; banner.style.color='#1967d2'; banner.style.border='1px solid #d2e3fc'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">即時確定します。</div>`;} const container=document.getElementById('timeline'); container.innerHTML=""; for(let h=9;h<20;h++){ const slot=document.createElement('div'); slot.className='time-slot'; slot.innerHTML=`<div class="time-label">${h}:00</div>`; const content=document.createElement('div'); content.className='time-content'; content.dataset.hour=h; content.addEventListener('touchstart',handleTouchStart,{passive:false}); content.addEventListener('touchmove',handleTouchMove,{passive:false}); content.addEventListener('touchend',handleTouchEnd); content.addEventListener('mousedown',handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove',handleMouseMove); container.addEventListener('mouseup',handleMouseUp); loadDayBookings(); }
