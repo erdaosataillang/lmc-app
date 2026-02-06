@@ -33,6 +33,8 @@
         .day-cell.other-month { opacity: 0.15; cursor: default; pointer-events: none; } 
         .day-cell.unavailable { background-color: #fff1f0; border-color: #ffccc7; } 
         .day-cell.unavailable .day-num { color: #cf1322; }
+        .day-cell.partial-event { background-color: #fff7e6; border-color: #ffd591; }
+        .day-cell.partial-event .day-num { color: #d46b08; }
         .status-label { font-size: 8px; color: #cf1322; font-weight: bold; height: 12px; transform: scale(0.9); }
         .event-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; min-height: 5px; } 
         .dot { width: 4px; height: 4px; border-radius: 50%; background: #34A853; } .dot.event { background: #137333; transform: scale(1.2); }
@@ -273,6 +275,7 @@
                     bookings.push({
                         ...d,
                         startTime: d.startTime.toDate().toISOString(), // JSON用
+                        endTime: d.endTime.toDate().toISOString(),     // JSON用 (追加)
                         type: d.type
                     });
                 });
@@ -287,14 +290,30 @@
 
         function applyBookingDataToMonth(bookings) {
             document.querySelectorAll('.event-dots').forEach(el=>el.innerHTML=""); 
-            document.querySelectorAll('.day-cell.unavailable').forEach(el=>{ el.classList.remove('unavailable'); const st = el.querySelector('.status-label'); if(st) st.innerHTML = ""; }); 
+            document.querySelectorAll('.day-cell.unavailable, .day-cell.partial-event').forEach(el=>{ 
+                el.classList.remove('unavailable', 'partial-event'); 
+                const st = el.querySelector('.status-label'); if(st) st.innerHTML = ""; 
+            }); 
             
             bookings.forEach(bk=>{ 
                 const d = new Date(bk.startTime);
+                const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); 
                 const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); 
+                
                 if(bk.type==='event' && cell){ 
-                    cell.classList.add('unavailable'); 
-                    const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可"; 
+                    const sH = d.getHours();
+                    const eH = e.getHours();
+                    const isAllDay = (sH <= 9 && eH >= 20);
+
+                    if (isAllDay) {
+                        cell.classList.remove('partial-event'); 
+                        cell.classList.add('unavailable'); 
+                        const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可"; 
+                    } else {
+                        if (!cell.classList.contains('unavailable')) {
+                            cell.classList.add('partial-event');
+                        }
+                    }
                 } else if(cell) { 
                     const c=document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); 
                     if(c&&c.children.length<3){const dot=document.createElement('div'); dot.className='dot'; c.appendChild(dot);} 
