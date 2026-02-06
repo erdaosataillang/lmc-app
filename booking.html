@@ -121,6 +121,41 @@
     <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')"><div class="modal-content"><h3 style="margin-top:0;">予約一覧</h3><p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p><div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div><button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button></div></div>
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')"><div class="modal-content"><h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368;">マイステータス</h3><div class="user-status-card"><img id="modalUserIcon" src="" class="user-status-icon"><div id="modalUserName" class="user-status-name"></div><div style="background:#f9f9f9; padding:15px; border-radius:12px;"><div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">2025年度 部費</div><div class="fee-status-row"><div id="statusFeeTerm1" class="fee-status-badge">前期: -</div><div id="statusFeeTerm2" class="fee-status-badge">後期: -</div></div></div><div style="margin-top:20px;"><div style="font-size:12px; color:#999; margin-bottom:5px;">会員QRコード</div><div id="myQRCodeArea" style="width:150px; height:150px; background:#eee; margin:0 auto; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:48px; color:#ccc;">qr_code_2</span></div></div></div><button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button></div></div>
 
+    <script>
+        // 外部ライブラリ読み込み待ちの間にカレンダー枠を表示する即時実行スクリプト
+        (function(){
+            document.addEventListener('DOMContentLoaded', function() {
+                const grid = document.getElementById('monthGrid');
+                if(grid && grid.innerHTML.trim() === "") {
+                    const d = new Date();
+                    const y = d.getFullYear();
+                    const m = d.getMonth();
+                    const header = document.getElementById('calHeaderDate');
+                    if(header) header.innerText = y + "年 " + (m+1) + "月";
+                    
+                    const wds = ['日','月','火','水','木','金','土'];
+                    let html = "";
+                    wds.forEach((wd, i) => {
+                        let cls = 'weekday-label';
+                        if(i===0) cls+=' sun';
+                        if(i===6) cls+=' sat';
+                        html += '<div class="'+cls+'">'+wd+'</div>';
+                    });
+
+                    const firstD = new Date(y, m, 1);
+                    const lastD = new Date(y, m+1, 0);
+                    for(let i=0; i<firstD.getDay(); i++) html += '<div></div>';
+                    for(let i=1; i<=lastD.getDate(); i++){
+                        let cls = 'day-cell';
+                        if(i === d.getDate()) cls += ' today';
+                        html += '<div class="'+cls+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots"></div></div>';
+                    }
+                    grid.innerHTML = html;
+                }
+            });
+        })();
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
@@ -203,14 +238,15 @@
                     renderHeaderIcons(currentUserData);
                 } catch (e) {
                     console.error("LIFF/Auth Error:", e);
-                    // エラー時はログインを試みる（アラートは出さない）
                     try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; }
                     return;
                 }
                 
                 await loadSystemConfig(); 
                 loadMyBands(); 
-                switchCalendarView('month'); // 最新データを取得して更新
+                
+                // データ更新（同期）開始
+                switchCalendarView('month'); 
             }catch(e){console.error(e)} 
         }
 
@@ -222,7 +258,6 @@
             onSnapshot(q,(snapshot)=>{ 
                 myBandsAll=[]; 
                 snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); 
-                // キャッシュ更新
                 localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
             }); 
         }
@@ -231,8 +266,7 @@
         function updateViewMenuUI(){ const isMonth = (calendarMode === 'month'); document.getElementById('calMonthView').classList.toggle('hidden', !isMonth); document.getElementById('calDayView').classList.toggle('hidden', isMonth); const switcher = document.getElementById('viewSwitcher'); switcher.classList.toggle('day-mode', !isMonth); document.querySelectorAll('.switcher-item').forEach(el => { el.classList.toggle('active', el.dataset.mode === calendarMode); }); }
         window.changeDate=(d)=>{ if(calendarMode==='month')displayDate.setMonth(displayDate.getMonth()+d); else displayDate.setDate(displayDate.getDate()+d); renderCalendar(); };
         
-        // useCache: trueの場合、キャッシュがあればそれを表示してリターン（初期表示用）
-        // falseの場合、通常通り最新データを取得しにいく（ただしloadMonthBookings内でキャッシュロジックあり）
+        // useCache: trueの場合、キャッシュがあればそれを表示してリターン。通信はしない。
         function renderCalendar(useCache = false){ 
             const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; 
             if(calendarMode==='month'){
@@ -247,7 +281,15 @@
         }
 
         function renderMonthView(y, m, useCache){ 
-            const grid=document.getElementById('monthGrid'); grid.innerHTML=""; 
+            const grid=document.getElementById('monthGrid'); 
+            if(!grid) return;
+            // 既に描画済み（先行描画）で、キャッシュ利用モードなら何もしない（チラつき防止）
+            if(useCache && grid.innerHTML.trim() !== "") {
+                loadMonthBookings(y, m, true); // キャッシュデータの適用だけ行う
+                return;
+            }
+
+            grid.innerHTML=""; 
             ['日','月','火','水','木','金','土'].forEach(wd=>{const div=document.createElement('div'); div.className='weekday-label'; div.innerText=wd; if(wd==='日')div.classList.add('sun'); if(wd==='土')div.classList.add('sat'); grid.appendChild(div);}); 
             const firstD=new Date(y,m,1), lastD=new Date(y,m+1,0), today=new Date(); 
             for(let i=0; i<firstD.getDay(); i++)grid.appendChild(document.createElement('div')); 
@@ -264,43 +306,33 @@
         function loadMonthBookings(y,m, useCache){ 
             const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${m}`;
             
-            // キャッシュ表示ロジック
-            if(useCache) {
-                const cached = localStorage.getItem(cacheKey);
-                if(cached) {
-                    try {
-                        const data = JSON.parse(cached);
-                        applyBookingDataToMonth(data);
-                        return; // キャッシュ表示のみの場合はここで終了
-                    } catch(e) {}
-                }
-            } else {
-                // 通常ロード時も、まずはキャッシュがあれば表示しておく（チラつき防止）
-                const cached = localStorage.getItem(cacheKey);
-                if(cached) { try { applyBookingDataToMonth(JSON.parse(cached)); } catch(e){} }
+            // 1. キャッシュがあれば即適用
+            const cached = localStorage.getItem(cacheKey);
+            if(cached) {
+                try {
+                    const data = JSON.parse(cached);
+                    applyBookingDataToMonth(data);
+                } catch(e) {}
             }
 
-            // 最新データ取得
+            // 2. 初期表示モード(useCache=true)なら、ここで終了。通信しない。
+            if (useCache) return;
+
+            // 3. 通常モードなら最新データを監視
             onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{ 
                 const bookings = [];
                 qs.forEach(docSnap => {
                     const d = docSnap.data();
-                    // Timestampを変換して保存できるようにする
                     bookings.push({
                         ...d,
-                        startTime: d.startTime.toDate().toISOString(), // JSON用
-                        endTime: d.endTime.toDate().toISOString(),     // JSON用 (追加)
+                        startTime: d.startTime.toDate().toISOString(), 
+                        endTime: d.endTime.toDate().toISOString(),     
                         type: d.type
                     });
                 });
                 
-                // キャッシュ更新
                 localStorage.setItem(cacheKey, JSON.stringify(bookings));
-                
-                // 描画
                 applyBookingDataToMonth(bookings);
-                
-                // データ更新完了でインジケーターを消す
                 hideSyncIndicator();
             }); 
         }
@@ -329,6 +361,7 @@
                     } else {
                         if (!cell.classList.contains('unavailable')) {
                             cell.classList.add('partial-event');
+                            const st = cell.querySelector('.status-label'); if(st) st.innerText = ""; 
                         }
                     }
                 } else if(cell) { 
