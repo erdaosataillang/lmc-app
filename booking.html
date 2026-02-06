@@ -121,6 +121,7 @@
         // Cache Keys
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
+        const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
 
         let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date(), selectedTimeSlot=null, selectionStartHour=null, selectionEndHour=null;
         let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
@@ -150,34 +151,45 @@
                 // [高速化 2] バンド一覧のキャッシュ表示（予約モーダル用）
                 const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
                 if (cachedBandsStr) {
-                    try {
-                        myBandsAll = JSON.parse(cachedBandsStr);
-                    } catch (e) { console.error("Bands cache error", e); }
+                    try { myBandsAll = JSON.parse(cachedBandsStr); } catch (e) { console.error("Bands cache error", e); }
                 }
 
-                // 通常フロー
+                // [高速化 3] カレンダーのキャッシュ表示
+                // デフォルトは今月表示
+                renderCalendar(true); // useCache = true
+
+                // 認証開始
                 try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
                 
-                await liff.init({liffId:MY_LIFF_ID}); 
-                if(!liff.isLoggedIn()){liff.login();return;} 
-                
-                const profile=await liff.getProfile(); 
-                currentUser=profile.userId; 
-                currentProfile=profile; 
-                
-                const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
-                if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} 
-                
-                await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
-                currentUserData=userSnap.data(); 
-                
-                // キャッシュ更新と再描画
-                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
-                renderHeaderIcons(currentUserData); 
+                try {
+                    await liff.init({liffId:MY_LIFF_ID}); 
+                    if(!liff.isLoggedIn()){liff.login();return;} 
+                    const profile=await liff.getProfile(); 
+                    currentUser=profile.userId; 
+                    currentProfile=profile; 
+                    
+                    const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
+                    if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} 
+                    
+                    await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
+                    currentUserData=userSnap.data(); 
+                    
+                    // キャッシュ更新と再描画
+                    localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                    renderHeaderIcons(currentUserData);
+                } catch (e) {
+                    console.error("LIFF Init Error:", e);
+                    // 400エラー等でも画面が真っ白にならないように、アラートを出すが処理は続行させる（Authが通っていればデータは見れる可能性があるため）
+                    // ただし、currentUserがないとFirestoreのセキュリティルールで弾かれる可能性が高い
+                    if (!currentUser && auth.currentUser) {
+                        // Firebase Authで匿名ログインできていれば、一応IDはある
+                        currentUser = auth.currentUser.uid;
+                    }
+                }
                 
                 await loadSystemConfig(); 
                 loadMyBands(); 
-                switchCalendarView('month'); 
+                switchCalendarView('month'); // 最新データを取得
             }catch(e){console.error(e)} 
         }
 
@@ -197,9 +209,94 @@
         window.switchCalendarView=(m, keepDate = false)=>{ calendarMode=m; if(m==='day'){ if(!keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } } } updateViewMenuUI(); renderCalendar(); };
         function updateViewMenuUI(){ const isMonth = (calendarMode === 'month'); document.getElementById('calMonthView').classList.toggle('hidden', !isMonth); document.getElementById('calDayView').classList.toggle('hidden', isMonth); const switcher = document.getElementById('viewSwitcher'); switcher.classList.toggle('day-mode', !isMonth); document.querySelectorAll('.switcher-item').forEach(el => { el.classList.toggle('active', el.dataset.mode === calendarMode); }); }
         window.changeDate=(d)=>{ if(calendarMode==='month')displayDate.setMonth(displayDate.getMonth()+d); else displayDate.setDate(displayDate.getDate()+d); renderCalendar(); };
-        function renderCalendar(){ const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; if(calendarMode==='month'){document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; renderMonthView();} else {const d=displayDate.getDate(), w=['日','月','火','水','木','金','土'][displayDate.getDay()]; document.getElementById('calHeaderDate').innerText=`${m}月`; document.getElementById('dayViewDateLabel').innerText=`${m}/${d} (${w})`; renderDayView();} }
-        function renderMonthView(){ const grid=document.getElementById('monthGrid'); grid.innerHTML=""; ['日','月','火','水','木','金','土'].forEach(wd=>{const div=document.createElement('div'); div.className='weekday-label'; div.innerText=wd; if(wd==='日')div.classList.add('sun'); if(wd==='土')div.classList.add('sat'); grid.appendChild(div);}); const y=displayDate.getFullYear(), m=displayDate.getMonth(), firstD=new Date(y,m,1), lastD=new Date(y,m+1,0), today=new Date(); for(let i=0; i<firstD.getDay(); i++)grid.appendChild(document.createElement('div')); for(let d=1; d<=lastD.getDate(); d++){ const div=document.createElement('div'); div.className='day-cell'; div.id=`day-${y}-${m+1}-${d}`; if(y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate())div.classList.add('today'); div.onclick=()=>{displayDate.setDate(d); switchCalendarView('day', true);}; div.innerHTML=`<div class="day-num">${d}</div><div class="status-label"></div><div class="event-dots" id="dots-${y}-${m+1}-${d}"></div>`; grid.appendChild(div); } loadMonthBookings(y,m); }
-        function loadMonthBookings(y,m){ onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{ document.querySelectorAll('.event-dots').forEach(el=>el.innerHTML=""); document.querySelectorAll('.day-cell.unavailable').forEach(el=>{ el.classList.remove('unavailable'); const st = el.querySelector('.status-label'); if(st) st.innerHTML = ""; }); qs.forEach(docSnap=>{ const d=docSnap.data().startTime.toDate(); const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); if(docSnap.data().type==='event' && cell){ cell.classList.add('unavailable'); const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可"; } else if(cell) { const c=document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); if(c&&c.children.length<3){const dot=document.createElement('div'); dot.className='dot'; c.appendChild(dot);} } }); }); }
+        
+        // useCache: trueの場合、キャッシュがあればそれを表示してリターン（初期表示用）
+        // falseの場合、通常通り最新データを取得しにいく（ただしloadMonthBookings内でキャッシュロジックあり）
+        function renderCalendar(useCache = false){ 
+            const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; 
+            if(calendarMode==='month'){
+                document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; 
+                renderMonthView(y, m-1, useCache);
+            } else {
+                const d=displayDate.getDate(), w=['日','月','火','水','木','金','土'][displayDate.getDay()]; 
+                document.getElementById('calHeaderDate').innerText=`${m}月`; 
+                document.getElementById('dayViewDateLabel').innerText=`${m}/${d} (${w})`; 
+                renderDayView();
+            } 
+        }
+
+        function renderMonthView(y, m, useCache){ 
+            const grid=document.getElementById('monthGrid'); grid.innerHTML=""; 
+            ['日','月','火','水','木','金','土'].forEach(wd=>{const div=document.createElement('div'); div.className='weekday-label'; div.innerText=wd; if(wd==='日')div.classList.add('sun'); if(wd==='土')div.classList.add('sat'); grid.appendChild(div);}); 
+            const firstD=new Date(y,m,1), lastD=new Date(y,m+1,0), today=new Date(); 
+            for(let i=0; i<firstD.getDay(); i++)grid.appendChild(document.createElement('div')); 
+            for(let d=1; d<=lastD.getDate(); d++){ 
+                const div=document.createElement('div'); div.className='day-cell'; div.id=`day-${y}-${m+1}-${d}`; 
+                if(y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate())div.classList.add('today'); 
+                div.onclick=()=>{displayDate.setDate(d); switchCalendarView('day', true);}; 
+                div.innerHTML=`<div class="day-num">${d}</div><div class="status-label"></div><div class="event-dots" id="dots-${y}-${m+1}-${d}"></div>`; 
+                grid.appendChild(div); 
+            } 
+            loadMonthBookings(y,m, useCache); 
+        }
+
+        function loadMonthBookings(y,m, useCache){ 
+            const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${m}`;
+            
+            // キャッシュ表示ロジック
+            if(useCache) {
+                const cached = localStorage.getItem(cacheKey);
+                if(cached) {
+                    try {
+                        const data = JSON.parse(cached);
+                        applyBookingDataToMonth(data);
+                        return; // キャッシュ表示のみの場合はここで終了
+                    } catch(e) {}
+                }
+            } else {
+                // 通常ロード時も、まずはキャッシュがあれば表示しておく（チラつき防止）
+                const cached = localStorage.getItem(cacheKey);
+                if(cached) { try { applyBookingDataToMonth(JSON.parse(cached)); } catch(e){} }
+            }
+
+            // 最新データ取得
+            onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{ 
+                const bookings = [];
+                qs.forEach(docSnap => {
+                    const d = docSnap.data();
+                    // Timestampを変換して保存できるようにする
+                    bookings.push({
+                        ...d,
+                        startTime: d.startTime.toDate().toISOString(), // JSON用
+                        type: d.type
+                    });
+                });
+                
+                // キャッシュ更新
+                localStorage.setItem(cacheKey, JSON.stringify(bookings));
+                
+                // 描画
+                applyBookingDataToMonth(bookings);
+            }); 
+        }
+
+        function applyBookingDataToMonth(bookings) {
+            document.querySelectorAll('.event-dots').forEach(el=>el.innerHTML=""); 
+            document.querySelectorAll('.day-cell.unavailable').forEach(el=>{ el.classList.remove('unavailable'); const st = el.querySelector('.status-label'); if(st) st.innerHTML = ""; }); 
+            
+            bookings.forEach(bk=>{ 
+                const d = new Date(bk.startTime);
+                const cell = document.getElementById(`day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); 
+                if(bk.type==='event' && cell){ 
+                    cell.classList.add('unavailable'); 
+                    const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可"; 
+                } else if(cell) { 
+                    const c=document.getElementById(`dots-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`); 
+                    if(c&&c.children.length<3){const dot=document.createElement('div'); dot.className='dot'; c.appendChild(dot);} 
+                } 
+            }); 
+        }
+
         function renderDayView(){ const banner=document.getElementById('bookingModeBanner'), mode=currentSystemSettings.bookingMode||'first_come'; if(mode==='lottery'){banner.style.backgroundColor='#fff3e0'; banner.style.color='#e65100'; banner.style.border='1px solid #ffe0b2'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">casino</span> 抽選受付中</div><div style="font-size:11px;">希望を提出してください。</div>`;} else {banner.style.backgroundColor='#e8f0fe'; banner.style.color='#1967d2'; banner.style.border='1px solid #d2e3fc'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">即時確定します。</div>`;} const container=document.getElementById('timeline'); container.innerHTML=""; for(let h=9;h<20;h++){ const slot=document.createElement('div'); slot.className='time-slot'; slot.innerHTML=`<div class="time-label">${h}:00</div>`; const content=document.createElement('div'); content.className='time-content'; content.dataset.hour=h; content.addEventListener('touchstart',handleTouchStart,{passive:false}); content.addEventListener('touchmove',handleTouchMove,{passive:false}); content.addEventListener('touchend',handleTouchEnd); content.addEventListener('mousedown',handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove',handleMouseMove); container.addEventListener('mouseup',handleMouseUp); loadDayBookings(); }
         
         function handleTouchStart(e){ if(e.target.classList.contains('event-block'))return; const h=parseInt(e.target.dataset.hour); if(isNaN(h))return; selectionTimer=setTimeout(()=>{isSelecting=true; selectionStartHour=h; selectionEndHour=h; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate)navigator.vibrate(50);},500); }
