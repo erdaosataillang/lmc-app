@@ -213,7 +213,8 @@
         // --- 高速化のための初期描画処理 (IIFE) ---
         (function renderFromCache() {
             try {
-                // 1. ユーザー情報（アイコン・管理タブ権限）
+                // 1. ユーザー情報（アイコン・管理タブ権限）を最優先で処理
+                // これにより、カレンダー計算の前にヘッダーとタブが表示されます
                 const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUserStr) {
                     const u = JSON.parse(cachedUserStr);
@@ -221,14 +222,17 @@
                     renderHeaderIcons(u); // アイコンと管理タブを即座に表示
                 }
 
-                // 2. バンド一覧
-                const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
-                if (cachedBandsStr) {
-                    myBandsAll = JSON.parse(cachedBandsStr);
-                }
-
-                // 3. カレンダー描画（今月）
-                renderCalendar(true); 
+                // 2. カレンダーなどの重い描画処理は、一度ブラウザに描画タイミングを譲ってから実行
+                // requestAnimationFrame を使うことで、アイコン表示 -> カレンダー表示 の順序を視覚的に作ります
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
+                        if (cachedBandsStr) {
+                            myBandsAll = JSON.parse(cachedBandsStr);
+                        }
+                        renderCalendar(true); 
+                    }, 0);
+                });
             } catch (e) {
                 console.warn("Cache render error:", e);
             }
