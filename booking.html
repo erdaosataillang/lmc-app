@@ -169,7 +169,11 @@
                     currentProfile=profile; 
                     
                     const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
-                    if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} 
+                    if(!userSnap.exists()){
+                        // 即リダイレクト
+                        window.location.href=MY_PAGE_URL; 
+                        return;
+                    } 
                     
                     await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
                     currentUserData=userSnap.data(); 
@@ -179,12 +183,13 @@
                     renderHeaderIcons(currentUserData);
                 } catch (e) {
                     console.error("LIFF Init Error:", e);
-                    // 400エラー等でも画面が真っ白にならないように、アラートを出すが処理は続行させる（Authが通っていればデータは見れる可能性があるため）
-                    // ただし、currentUserがないとFirestoreのセキュリティルールで弾かれる可能性が高い
-                    if (!currentUser && auth.currentUser) {
-                        // Firebase Authで匿名ログインできていれば、一応IDはある
-                        currentUser = auth.currentUser.uid;
+                    // 初期化失敗時はログインを求める
+                    try {
+                        liff.login();
+                    } catch (loginError) {
+                        window.location.href = MY_PAGE_URL;
                     }
+                    return; // 処理中断
                 }
                 
                 await loadSystemConfig(); 
