@@ -136,29 +136,33 @@
         
         async function loadSystemConfig(){ try{ const snap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=snap.data(); }catch(e){} }
         
-        async function main(){ 
-            try{ 
-                // [高速化 1] ユーザー情報のキャッシュ表示
+        // --- 高速化のための初期描画処理 (IIFE) ---
+        (function renderFromCache() {
+            try {
+                // 1. ユーザー情報（アイコン）
                 const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUserStr) {
-                    try {
-                        const u = JSON.parse(cachedUserStr);
-                        currentUserData = u;
-                        renderHeaderIcons(u);
-                    } catch (e) { console.error("User cache error", e); }
+                    const u = JSON.parse(cachedUserStr);
+                    currentUserData = u; // グローバル変数にセット
+                    renderHeaderIcons(u);
                 }
 
-                // [高速化 2] バンド一覧のキャッシュ表示（予約モーダル用）
+                // 2. バンド一覧
                 const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
                 if (cachedBandsStr) {
-                    try { myBandsAll = JSON.parse(cachedBandsStr); } catch (e) { console.error("Bands cache error", e); }
+                    myBandsAll = JSON.parse(cachedBandsStr);
                 }
 
-                // [高速化 3] カレンダーのキャッシュ表示
-                // デフォルトは今月表示
-                renderCalendar(true); // useCache = true
+                // 3. カレンダー描画（今月）
+                renderCalendar(true); 
+            } catch (e) {
+                console.warn("Cache render error:", e);
+            }
+        })();
 
-                // 認証開始
+        async function main(){ 
+            try{ 
+                // 認証開始 (UIをブロックしない)
                 try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
                 
                 try {
@@ -170,7 +174,7 @@
                     
                     const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
                     if(!userSnap.exists()){
-                        // 即リダイレクト
+                        // ユーザー登録がない場合は静かにリダイレクト
                         window.location.href=MY_PAGE_URL; 
                         return;
                     } 
@@ -182,19 +186,15 @@
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                     renderHeaderIcons(currentUserData);
                 } catch (e) {
-                    console.error("LIFF Init Error:", e);
-                    // 初期化失敗時はログインを求める
-                    try {
-                        liff.login();
-                    } catch (loginError) {
-                        window.location.href = MY_PAGE_URL;
-                    }
-                    return; // 処理中断
+                    console.error("LIFF/Auth Error:", e);
+                    // エラー時はログインを試みる（アラートは出さない）
+                    try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; }
+                    return;
                 }
                 
                 await loadSystemConfig(); 
                 loadMyBands(); 
-                switchCalendarView('month'); // 最新データを取得
+                switchCalendarView('month'); // 最新データを取得して更新
             }catch(e){console.error(e)} 
         }
 
