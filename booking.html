@@ -76,8 +76,10 @@
         .sync-indicator { margin-right: 12px; animation: spin 1.5s linear infinite; display: flex; }
         
         /* 現在時刻表示用のスタイル */
-        .current-time-line { position: absolute; left: 0; width: 100%; border-top: 2px solid #ea4335; z-index: 50; pointer-events: none; display: none; }
-        .current-time-dot { width: 12px; height: 12px; background-color: #ea4335; border-radius: 50%; position: absolute; left: 44px; top: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .current-time-line { position: absolute; left: 50px; width: calc(100% - 50px); border-top: 2px solid #ea4335; z-index: 50; pointer-events: none; display: none; }
+        .current-time-badge { position: absolute; left: -50px; width: 50px; top: -10px; text-align: center; display: flex; justify-content: center; align-items: center; }
+        .current-time-text { background-color: #ea4335; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; height: 16px; line-height: 16px; }
+        .current-time-dot { width: 8px; height: 8px; background-color: #ea4335; border-radius: 50%; position: absolute; left: -4px; top: -5px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -490,7 +492,8 @@
                 const line = document.createElement('div');
                 line.id = 'currentTimeLine';
                 line.className = 'current-time-line';
-                line.innerHTML = '<div class="current-time-dot"></div>';
+                // バッジ（時刻テキスト）とドットを追加
+                line.innerHTML = '<div class="current-time-badge"><span id="currentTimeText" class="current-time-text"></span></div><div class="current-time-dot"></div>';
                 container.appendChild(line);
                 updateCurrentTimeLine(); // 位置計算
             }
@@ -522,6 +525,12 @@
                 // .timeline-containerにはpadding: 10px 0があるため、+10pxする
                 const top = ((h - 9) * 60) + m + 10;
                 line.style.top = `${top}px`;
+                
+                // 時刻テキスト更新
+                const textEl = document.getElementById('currentTimeText');
+                if(textEl) {
+                    textEl.innerText = `${h}:${String(m).padStart(2, '0')}`;
+                }
             }
         }
         
