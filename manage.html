@@ -485,11 +485,36 @@
             await wait(50);
             step2.classList.add('show');
             
-            await wait(1000); // Simulation
+            await wait(800); // Simulation
 
             let result = tryAllocate(bands, 60, locked);
 
-            if (result.failedBands.length > 0) {
+            if (result.failedBands.length === 0) {
+                // Success 60min -> Try 90min
+                updateFlowStep(step2, "60分枠: 成功", "全員確保できました！枠拡大(90分)を試みます...", "check_circle", "success-color");
+                connectStep(step2);
+
+                // --- Step 2.5: 90min Extension Challenge ---
+                const stepExt = createFlowStep("90分枠へ拡張", "空き時間があれば1.5時間に延長します", "more_time", "spinner");
+                container.appendChild(stepExt);
+                await wait(50);
+                stepExt.classList.add('show');
+
+                await wait(800); // Simulation
+                const result90 = tryAllocate(bands, 90, locked);
+
+                if (result90.failedBands.length === 0) {
+                    // Success 90min
+                    updateFlowStep(stepExt, "90分枠: 成功", "全員90分枠で確保できました！", "sentiment_very_satisfied", "success-color");
+                    result = result90;
+                } else {
+                    // Failed 90min -> Revert to 60min
+                    updateFlowStep(stepExt, "拡張不可", "90分枠は入りきりませんでした。60分枠を採用します。", "info", "warn-color");
+                    // result remains 60min version
+                }
+                connectStep(stepExt);
+
+            } else {
                 // Failed 60min
                 updateFlowStep(step2, "60分枠: 確保不可", `${result.failedBands.length}組があふれました`, "warning", "warn-color");
                 connectStep(step2);
@@ -500,7 +525,7 @@
                 await wait(50);
                 step3.classList.add('show');
 
-                await wait(1000); // Simulation
+                await wait(800); // Simulation
                 result = tryAllocate(bands, 30, locked);
 
                 if (result.failedBands.length > 0) {
@@ -509,10 +534,6 @@
                     updateFlowStep(step3, "30分枠: 成功", "全員確保できました", "check_circle", "success-color");
                 }
                 connectStep(step3);
-            } else {
-                // Success 60min
-                updateFlowStep(step2, "60分枠: 成功", "全員確保できました", "check_circle", "success-color");
-                connectStep(step2);
             }
 
             // --- Final Result Display ---
