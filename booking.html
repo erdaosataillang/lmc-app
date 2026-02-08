@@ -10,6 +10,13 @@
         .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; } .hidden { display: none !important; }
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
         .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        
+        /* ヘッダー右側のアクショングループ */
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .header-icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; color: #1f1f1f; transition: background 0.2s; }
+        .header-icon-btn:active { background-color: #e0e0e0; }
+        .header-icon-btn .material-icons { font-size: 26px; }
+
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); } .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
@@ -109,7 +116,14 @@
     <div class="container">
         <div class="app-header">
             <div class="header-title">合わせ予約</div>
-            <div style="display: flex; align-items: center;">
+            <!-- ヘッダー右側のアクションボタン群 -->
+            <div class="header-actions">
+                <div id="btnSearch" class="header-icon-btn" onclick="openSearchModal()">
+                    <span class="material-icons">search</span>
+                </div>
+                <div id="btnAdd" class="header-icon-btn" onclick="handleNewBooking()">
+                    <span class="material-icons">add</span>
+                </div>
                 <div id="syncIndicator" class="sync-indicator hidden">
                     <span class="material-icons" style="font-size: 20px; color: #5f6368;">sync</span>
                 </div>
@@ -129,8 +143,6 @@
             <div id="calDayView" class="hidden">
                 <!-- 週間ストリップを追加 -->
                 <div id="weekStrip" class="week-strip"></div>
-                <!-- 古い日付ラベルは削除 -->
-                <!-- <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div> -->
                 
                 <div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div>
                 <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
@@ -148,6 +160,22 @@
     </div>
 
     <div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')"><div class="modal-content"><h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3><input type="hidden" id="editingBookingId"><div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div></div><div class="form-group"><label class="checkbox-label"><input type="checkbox" id="checkAllDay" onchange="toggleAllDay()"> 終日 (9:00 - 20:00)</label></div><div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;"><div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span>〜</span><div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div></div><div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;"><label class="form-label">登録種別</label><div class="radio-group"><label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label><label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label></div></div><div id="groupBandSelect" class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div><div id="groupEventTitle" class="form-group hidden"><label class="form-label">イベント名 / 理由</label><input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会"></div><button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button><button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button><button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button><button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button></div></div>
+    
+    <!-- 検索モーダル -->
+    <div id="modal-search" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-search')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">予約検索</h3>
+            <div class="form-group">
+                <input type="text" id="searchInput" class="form-input" placeholder="キーワードを入力..." onkeyup="filterSearchResults()">
+            </div>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:10px;">直近の読み込み済み予約から検索します。</p>
+            <div id="searchResultContainer" style="max-height: 400px; overflow-y: auto;">
+                <!-- 検索結果がここに挿入されます -->
+            </div>
+            <button class="btn-secondary" onclick="closeModal('modal-search')">閉じる</button>
+        </div>
+    </div>
+
     <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')"><div class="modal-content"><h3 style="margin-top:0;">予約一覧</h3><p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p><div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div><button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button></div></div>
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')"><div class="modal-content"><h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368;">マイステータス</h3><div class="user-status-card"><img id="modalUserIcon" src="" class="user-status-icon"><div id="modalUserName" class="user-status-name"></div><div style="background:#f9f9f9; padding:15px; border-radius:12px;"><div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">2025年度 部費</div><div class="fee-status-row"><div id="statusFeeTerm1" class="fee-status-badge">前期: -</div><div id="statusFeeTerm2" class="fee-status-badge">後期: -</div></div></div><div style="margin-top:20px;"><div style="font-size:12px; color:#999; margin-bottom:5px;">会員QRコード</div><div id="myQRCodeArea" style="width:150px; height:150px; background:#eee; margin:0 auto; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:48px; color:#ccc;">qr_code_2</span></div></div></div><button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button></div></div>
 
@@ -245,6 +273,8 @@
         let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
         let currentSystemSettings={ bookingMode:'first_come', lotteryConfig:{ mode:'auto', daysBefore:2, time:0 } };
         let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
+        // 検索用（読み込み済みの予約を保持）
+        let loadedBookingsCache = [];
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
@@ -416,6 +446,7 @@
             if(cached) {
                 try {
                     const data = JSON.parse(cached);
+                    loadedBookingsCache = data; // 検索用にキャッシュ
                     applyBookingDataToMonth(data);
                 } catch(e) {}
             }
@@ -430,12 +461,14 @@
                     const d = docSnap.data();
                     bookings.push({
                         ...d,
+                        id: docSnap.id, // IDも含める
                         startTime: d.startTime.toDate().toISOString(), 
                         endTime: d.endTime.toDate().toISOString(),      
                         type: d.type
                     });
                 });
                 
+                loadedBookingsCache = bookings; // 検索用にキャッシュ
                 localStorage.setItem(cacheKey, JSON.stringify(bookings));
                 applyBookingDataToMonth(bookings);
                 hideSyncIndicator();
@@ -662,10 +695,86 @@
         window.toggleAllDay=()=>{ const isA=document.getElementById('checkAllDay').checked, area=document.getElementById('timeSelectArea'); if(isA){area.style.opacity="0.5"; area.style.pointerEvents="none"; document.getElementById('selectStartTime').value="9:00"; document.getElementById('selectEndTime').value="20:00";} else {area.style.opacity="1"; area.style.pointerEvents="auto";} };
         window.toggleBookingInputs=()=>{ const t=document.querySelector('input[name="bookingType"]:checked')?.value||'normal'; if(t==='event'){document.getElementById('groupBandSelect').classList.add('hidden'); document.getElementById('groupEventTitle').classList.remove('hidden');} else {document.getElementById('groupBandSelect').classList.remove('hidden'); document.getElementById('groupEventTitle').classList.add('hidden');} };
         function openBookingModalRange(){ document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); const s=Math.min(selectionStartHour,selectionEndHour), e=Math.max(selectionStartHour,selectionEndHour); document.getElementById('bookingModalTitle').innerText="新規予約"; document.getElementById('btnSaveBooking').innerText="確定する"; document.getElementById('btnDeleteBooking').classList.add('hidden'); document.getElementById('btnAddToGCal').classList.add('hidden'); document.getElementById('editingBookingId').value=""; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); if(isAdmin)document.querySelector('input[name="bookingType"][value="normal"]').checked=true; toggleBookingInputs(); document.getElementById('bookingDateDisplay').innerText=`${displayDate.getMonth()+1}月 ${displayDate.getDate()}日`; setupTimeSelects(`${s}:00`,`${e+1}:00`); document.getElementById('checkAllDay').checked=false; toggleAllDay(); updateBandSelect(); openModal('modal-booking'); }
-        function openEditBookingModal(id,data){ if(data.creatorId!==currentUser){ if(data.type==='event')showCustomAlert(`【${data.title}】\n既に予定が入っています。`, "予約不可"); else showCustomAlert("他のユーザーが作成した予約は編集できません。", "編集不可"); return; } document.getElementById('bookingModalTitle').innerText="予約の編集"; document.getElementById('btnSaveBooking').innerText="変更保存"; document.getElementById('btnDeleteBooking').classList.remove('hidden'); document.getElementById('btnAddToGCal').classList.remove('hidden'); document.getElementById('editingBookingId').value=id; editingBookingData=data; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); if(isAdmin)document.querySelector(`input[name="bookingType"][value="${data.type||'normal'}"]`).checked=true; toggleBookingInputs(); const s=data.startTime.toDate(), e=data.endTime.toDate(), sStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`, eStr=`${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; document.getElementById('bookingDateDisplay').innerText=`${s.getMonth()+1}月 ${s.getDate()}日`; document.getElementById('checkAllDay').checked=(sStr==="9:00"&&eStr==="20:00"); setupTimeSelects(sStr,eStr); toggleAllDay(); if(data.type==='event')document.getElementById('inputEventTitle').value=data.title||""; else updateBandSelect(data.bandId); openModal('modal-booking'); }
+        function openEditBookingModal(id,data){ if(data.creatorId!==currentUser){ if(data.type==='event')showCustomAlert(`【${data.title}】\n既に予定が入っています。`, "予約不可"); else showCustomAlert("他のユーザーが作成した予約は編集できません。", "編集不可"); return; } document.getElementById('bookingModalTitle').innerText="予約の編集"; document.getElementById('btnSaveBooking').innerText="変更保存"; document.getElementById('btnDeleteBooking').classList.remove('hidden'); document.getElementById('btnAddToGCal').classList.remove('hidden'); document.getElementById('editingBookingId').value=id; editingBookingData=data; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); if(isAdmin)document.querySelector(`input[name="bookingType"][value="${data.type||'normal'}"]`).checked=true; toggleBookingInputs(); const s=new Date(data.startTime); const e=new Date(data.endTime); const sStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`, eStr=`${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; document.getElementById('bookingDateDisplay').innerText=`${s.getMonth()+1}月 ${s.getDate()}日`; document.getElementById('checkAllDay').checked=(sStr==="9:00"&&eStr==="20:00"); setupTimeSelects(sStr,eStr); toggleAllDay(); if(data.type==='event')document.getElementById('inputEventTitle').value=data.title||""; else updateBandSelect(data.bandId); openModal('modal-booking'); }
         function setupTimeSelects(ds,de){ const sSel=document.getElementById('selectStartTime'), eSel=document.getElementById('selectEndTime'), opts=[]; for(let h=9;h<=20;h++){ opts.push(`${h}:00`); if(h<20)opts.push(`${h}:30`); } sSel.innerHTML=""; eSel.innerHTML=""; opts.forEach(t=>{sSel.appendChild(new Option(t,t)); eSel.appendChild(new Option(t,t));}); if(ds)sSel.value=ds; if(de)eSel.value=de; }
         function updateBandSelect(bid=""){ const s=document.getElementById('selectBookingBand'); s.innerHTML=""; const active=myBandsAll.filter(b=>!b.isArchived); if(active.length===0)s.appendChild(new Option("なし","")); else active.forEach(b=>{const op=new Option(b.name,b.id); if(b.id===bid)op.selected=true; s.appendChild(op);}); }
-        window.openEventListModal=(evs)=>{ const c=document.getElementById('eventListContainer'); c.innerHTML=""; evs.sort((a,b)=>a.startTime.toDate()-b.startTime.toDate()).forEach(d=>{ const div=document.createElement('div'); div.className="card"; div.style.cursor="pointer"; const s=d.startTime.toDate(), e=d.endTime.toDate(), tStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; div.innerHTML=`<div style="font-weight:bold; color:#0b57d0;">${tStr}</div><div>${d.type==='event'?d.title:d.bandName}</div>`+(d.status==='pending'?'<div style="font-size:10px; color:#b06000;">●承認待ち</div>':''); div.onclick=()=>{closeModal('modal-event-list'); openEditBookingModal(d.id,d);}; c.appendChild(div); }); openModal('modal-event-list'); };
+        window.openEventListModal=(evs)=>{ const c=document.getElementById('eventListContainer'); c.innerHTML=""; evs.sort((a,b)=>new Date(a.startTime)-new Date(b.startTime)).forEach(d=>{ const div=document.createElement('div'); div.className="card"; div.style.cursor="pointer"; const s=new Date(d.startTime), e=new Date(d.endTime), tStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; div.innerHTML=`<div style="font-weight:bold; color:#0b57d0;">${tStr}</div><div>${d.type==='event'?d.title:d.bandName}</div>`+(d.status==='pending'?'<div style="font-size:10px; color:#b06000;">●承認待ち</div>':''); div.onclick=()=>{closeModal('modal-event-list'); openEditBookingModal(d.id,d);}; c.appendChild(div); }); openModal('modal-event-list'); };
+        
+        // ＋ボタン用の新規予約ハンドラ
+        window.handleNewBooking = () => {
+            isSelecting = false;
+            // 現在時刻から次の枠を計算（例：現在10:15 -> 11:00開始、現在10:45 -> 11:00開始）
+            // シンプルに、現在選択中の日付の9:00または現在時刻に近い時間を設定
+            const now = new Date();
+            let startH = 10;
+            
+            // もし表示中の日付が今日なら、現在時刻を考慮
+            if (displayDate.toDateString() === now.toDateString()) {
+                startH = now.getHours() + 1;
+                if (startH < 9) startH = 9;
+            }
+            if (startH >= 20) startH = 19;
+
+            selectionStartHour = startH;
+            selectionEndHour = startH + 1;
+            openBookingModalRange();
+        };
+
+        // 検索モーダルを開く
+        window.openSearchModal = () => {
+            document.getElementById('searchInput').value = "";
+            document.getElementById('searchResultContainer').innerHTML = "";
+            // 初期表示として全件（または直近）を表示
+            window.filterSearchResults();
+            openModal('modal-search');
+        };
+
+        // 検索フィルタリング
+        window.filterSearchResults = () => {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('searchResultContainer');
+            container.innerHTML = "";
+            
+            // キャッシュされている予約データからフィルタリング
+            const filtered = loadedBookingsCache.filter(b => {
+                const text = (b.bandName || "") + (b.title || "") + (b.userName || "");
+                return text.toLowerCase().includes(keyword);
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>該当する予約はありません</div>";
+                return;
+            }
+
+            filtered.sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+
+            filtered.forEach(d => {
+                const div = document.createElement('div');
+                div.className = "card";
+                div.style.cursor = "pointer";
+                const s = new Date(d.startTime);
+                const dateStr = `${s.getMonth()+1}/${s.getDate()}`;
+                const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
+                
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="font-weight:bold;">${dateStr} ${timeStr}</div>
+                        <div style="font-size:12px; color:#666;">${d.type==='event'?'イベント':'練習'}</div>
+                    </div>
+                    <div style="font-weight:bold; color:#0b57d0;">${d.type==='event'?d.title:d.bandName}</div>
+                    <div style="font-size:12px;">${d.userName||''}</div>
+                `;
+                div.onclick = () => {
+                    closeModal('modal-search');
+                    // 日付を移動して編集モーダルを開く
+                    displayDate.setTime(s.getTime());
+                    renderCalendar(); // カレンダー移動
+                    setTimeout(() => openEditBookingModal(d.id, d), 300);
+                };
+                container.appendChild(div);
+            });
+        };
+
         function loadDayBookings(){ const sD=new Date(displayDate), eD=new Date(displayDate); sD.setHours(0,0,0,0); eD.setHours(23,59,59,999); onSnapshot(query(collection(db,"bookings"),where("startTime",">=",sD),where("startTime","<=",eD)),(qs)=>{ document.querySelectorAll('.event-block').forEach(el=>el.remove()); const evs=[]; qs.forEach(snap=>{const d=snap.data(); d.id=snap.id; evs.push(d);}); if(evs.length===0)return; evs.sort((a,b)=>a.startTime.toDate()-a.startTime.toDate()); const clusters=[]; let curC=[], curE=0; evs.forEach(ev=>{const sT=ev.startTime.toDate().getTime(), eT=ev.endTime.toDate().getTime(); if(curC.length===0||sT<curE){curC.push(ev); if(eT>curE)curE=eT;} else {clusters.push(curC); curC=[ev]; curE=eT;} }); if(curC.length>0)clusters.push(curC); clusters.forEach(cl=>{ let pts=[]; cl.forEach(e=>{pts.push({t:e.startTime.toDate().getTime(),type:1}); pts.push({t:e.endTime.toDate().getTime(),type:-1});}); pts.sort((a,b)=>a.t-b.t||a.type-b.type); let maxC=0, curCon=0; pts.forEach(p=>{curCon+=p.type; if(curCon>maxC)maxC=curCon;}); if(maxC>3)renderSummaryBlock(cl,new Date(Math.min(...cl.map(e=>e.startTime.toDate().getTime()))),new Date(Math.max(...cl.map(e=>e.endTime.toDate().getTime())))); else { const cols=[]; cl.forEach(e=>{ let ok=false; const s=e.startTime.toDate().getTime(), end=e.endTime.toDate().getTime(); for(let i=0; i<cols.length;i++){if(cols[i]<=s){e.colIndex=i; cols[i]=end; ok=true; break;}} if(!ok){e.colIndex=cols.length; cols.push(end);} }); const wP=85/cols.length; cl.forEach(e=>renderEventBlock(e,e.colIndex*wP,wP)); } }); }); }
         function renderEventBlock(d,l,w){ const s=d.startTime.toDate(), e=d.endTime.toDate(), sM=(s.getHours()-9)*60+s.getMinutes(), eM=(e.getHours()-9)*60+e.getMinutes(), slots=document.querySelectorAll('.time-slot'); if(slots[s.getHours()-9]){ const cA=slots[s.getHours()-9].querySelector('.time-content'), div=document.createElement('div'); div.className='event-block'; div.style.top=(s.getMinutes()+1)+"px"; div.style.height=(eM-sM-2)+"px"; div.style.left=l+"%"; div.style.width=w+"%"; if(d.type==='event'){div.classList.add('special-event'); div.innerHTML=`<div class="event-title">${d.title}</div>`;} else { div.innerHTML=`<div class="event-title">${d.bandName}</div><div style="font-size:10px; opacity:0.8;">${d.userName||''}</div>`; if(d.status==='pending')div.classList.add('pending'); const myB=myBandsAll.map(b=>b.id); if(myB.includes(d.bandId)){if(d.status!=='pending'){div.style.backgroundColor="#e6f4ea"; div.style.borderLeftColor="#34A853"; div.style.color="#0d652d";}} else if(d.status!=='pending'){div.style.backgroundColor="#f1f3f4"; div.style.borderLeftColor="#9aa0a6"; div.style.color="#5f6368";} if(d.source==='lottery'){div.classList.add('lottery-confirmed'); div.style.backgroundColor="#f3e5f5"; div.style.borderLeftColor="#ab47bc"; div.style.color="#4a148c";} } div.onclick=(ev)=>{ev.stopPropagation(); openEditBookingModal(d.id,d);}; cA.appendChild(div); } }
         function renderSummaryBlock(evs,sT,eT){ const sM=(sT.getHours()-9)*60+sT.getMinutes(), eM=(eT.getHours()-9)*60+eT.getMinutes(), slots=document.querySelectorAll('.time-slot'); if(slots[sT.getHours()-9]){ const cA=slots[sT.getHours()-9].querySelector('.time-content'), div=document.createElement('div'); div.className='event-block cluster'; div.style.top=(sT.getMinutes()+1)+"px"; div.style.height=(eM-sM-2)+"px"; div.style.width="85%"; div.innerHTML=`<div class="event-title">予約 ${evs.length}件</div>`; div.onclick=(e)=>{e.stopPropagation(); openEventListModal(evs);}; cA.appendChild(div); } }
