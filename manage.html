@@ -122,22 +122,33 @@
     <div id="page-admin-basics" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-basics')"><span class="material-icons">arrow_back</span></button><div class="page-title">基本の設定</div></div>
         <div class="content-area" style="padding-top:20px;">
-            <div class="card">
-                <h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">システム全般</h3>
-                <div class="form-group">
-                    <label class="form-label">現在の年度</label>
-                    <input type="number" id="basic-setting-year" class="form-input" placeholder="例: 2025">
-                    <div style="font-size:11px; color:#666; margin-top:4px;">部費やアーカイブの基準となります。</div>
+            <!-- 年度設定 (New Design) -->
+            <div class="card" style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 24px 20px; text-align: center; border: none; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);">
+                <div style="font-size: 13px; opacity: 0.9; margin-bottom: 4px; font-weight: 500;">現在のシステム年度</div>
+                <div style="display: flex; justify-content: center; align-items: center; gap: 24px; margin: 12px 0;">
+                    <button onclick="adjustYear(-1)" style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s;"><span class="material-icons">remove</span></button>
+                    <div style="font-size: 42px; font-weight: 700; letter-spacing: 2px;" id="display-year-text">2025</div>
+                    <button onclick="adjustYear(1)" style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s;"><span class="material-icons">add</span></button>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">実施中のイベント</label>
-                    <select id="basic-setting-event" class="form-input">
+                <div style="font-size: 11px; opacity: 0.8; margin-bottom: 0;">部費やアーカイブの基準となります</div>
+                <input type="hidden" id="basic-setting-year">
+            </div>
+
+            <!-- 実施中のイベント設定 -->
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 16px; color:#1f1f1f; font-weight:bold;">実施中のイベント</h3>
+                <div class="form-group" style="margin-bottom:8px;">
+                    <select id="basic-setting-event" class="form-input" style="background:#f8f9fa;">
                         <option value="">(選択なし)</option>
                     </select>
-                    <div style="font-size:11px; color:#666; margin-top:4px;">トップ画面等に表示されるイベントです。</div>
+                    <div style="font-size:11px; color:#666; margin-top:8px; line-height:1.4;">
+                        <span class="material-icons" style="font-size:12px; vertical-align:middle; margin-right:2px;">info</span>
+                        トップ画面等に表示されるメインイベントを設定します。
+                    </div>
                 </div>
-                <button class="btn-primary" onclick="saveBasicConfig()">設定を保存</button>
             </div>
+
+            <button class="btn-primary" onclick="saveBasicConfig()" style="margin-top: 12px; box-shadow: 0 4px 12px rgba(11, 87, 208, 0.2);">設定を保存</button>
 
             <div class="card" style="margin-top:20px;">
                 <h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">幹部の設定</h3>
@@ -393,7 +404,9 @@
                 // if (docSnap.exists()) currentBasicConfig = docSnap.data();
                 
                 // UIへの反映
-                document.getElementById('basic-setting-year').value = currentBasicConfig.currentYear;
+                const y = currentBasicConfig.currentYear || new Date().getFullYear();
+                document.getElementById('basic-setting-year').value = y;
+                document.getElementById('display-year-text').innerText = y;
                 
                 // イベントリストの取得と設定
                 const eventSelect = document.getElementById('basic-setting-event');
@@ -412,6 +425,16 @@
 
             } catch(e) { console.error("Load basic config error", e); }
         }
+
+        // Adjust Year Logic
+        window.adjustYear = (diff) => {
+            const input = document.getElementById('basic-setting-year');
+            const display = document.getElementById('display-year-text');
+            let val = parseInt(input.value) || new Date().getFullYear();
+            val += diff;
+            input.value = val;
+            display.innerText = val;
+        };
 
         // 3. Save Config
         window.saveBasicConfig = async () => {
