@@ -275,6 +275,10 @@
         let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
         // 検索用（読み込み済みの予約を保持）
         let loadedBookingsCache = [];
+        
+        // スワイプ処理用の変数
+        let touchStartX = 0;
+        let touchEndX = 0;
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
@@ -381,8 +385,37 @@
 
                 // 現在時刻線の更新タイマー
                 setInterval(updateCurrentTimeLine, 60000);
+                
+                // 週間カレンダーのスワイプイベント設定
+                setupWeekSwipe();
 
             }catch(e){console.error(e)} 
+        }
+
+        function setupWeekSwipe() {
+            const weekStrip = document.getElementById('weekStrip');
+            if (weekStrip) {
+                weekStrip.addEventListener('touchstart', e => {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, {passive: true});
+                
+                weekStrip.addEventListener('touchend', e => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleWeekSwipe();
+                }, {passive: true});
+            }
+        }
+
+        function handleWeekSwipe() {
+            const threshold = 50; // スワイプ判定の閾値
+            if (touchEndX < touchStartX - threshold) {
+                // 左スワイプ（指を左へ） -> 次の週へ
+                changeDate(7);
+            }
+            if (touchEndX > touchStartX + threshold) {
+                // 右スワイプ（指を右へ） -> 前の週へ
+                changeDate(-7);
+            }
         }
 
         window.openUserStatusModal=async()=>{ if(!currentUserData)return; if(!currentFeeSettings.year){ try{ const snap=await getDoc(doc(db,"system","fees")); if(snap.exists())currentFeeSettings=snap.data(); }catch(e){console.error(e)} } const year=currentFeeSettings.year||new Date().getFullYear(); const status=currentUserData.feeStatus||{}; document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; document.getElementById('modalUserName').innerText=currentUserData.name+" さん"; const isPaid1=!!status[`${year}_1`], isPaid2=!!status[`${year}_2`], t1Text=isPaid1?'済':'未納', t2Text=isPaid2?'済':'未納', t1El=document.getElementById('statusFeeTerm1'), t2El=document.getElementById('statusFeeTerm2'); t1El.innerText=`前期: ${t1Text}`; t1El.className=`fee-status-badge ${isPaid1?'fee-paid':'fee-unpaid'}`; t2El.innerText=`後期: ${t2Text}`; t2El.className=`fee-status-badge ${isPaid2?'fee-paid':'fee-unpaid'}`; document.getElementById('statusFeeYear').innerText=`${year}年度 部費状況`; if(currentUser){ const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}`; document.getElementById('myQRCodeArea').innerHTML=`<img src="${qrUrl}" style="width:100%;height:100%;">`; } openModal('modal-user-status'); };
