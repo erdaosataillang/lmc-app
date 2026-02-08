@@ -74,6 +74,10 @@
         .btn-dialog-cancel { background: #f1f3f4; color: #1f1f1f; }
         .btn-dialog-ok { background: #0b57d0; color: white; }
         .sync-indicator { margin-right: 12px; animation: spin 1.5s linear infinite; display: flex; }
+        
+        /* 現在時刻表示用のスタイル */
+        .current-time-line { position: absolute; left: 0; width: 100%; border-top: 2px solid #ea4335; z-index: 50; pointer-events: none; display: none; }
+        .current-time-dot { width: 12px; height: 12px; background-color: #ea4335; border-radius: 50%; position: absolute; left: 44px; top: -7px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -214,7 +218,6 @@
         (function renderFromCache() {
             try {
                 // 1. ユーザー情報（アイコン・管理タブ権限）を最優先で処理
-                // これにより、カレンダー計算の前にヘッダーとタブが表示されます
                 const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUserStr) {
                     const u = JSON.parse(cachedUserStr);
@@ -223,7 +226,6 @@
                 }
 
                 // 2. カレンダーなどの重い描画処理は、一度ブラウザに描画タイミングを譲ってから実行
-                // requestAnimationFrame を使うことで、アイコン表示 -> カレンダー表示 の順序を視覚的に作ります
                 requestAnimationFrame(() => {
                     setTimeout(() => {
                         const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
@@ -279,6 +281,10 @@
                 
                 // データ更新（同期）開始
                 switchCalendarView('month'); 
+
+                // 現在時刻線の更新タイマー
+                setInterval(updateCurrentTimeLine, 60000);
+
             }catch(e){console.error(e)} 
         }
 
@@ -357,7 +363,7 @@
                     bookings.push({
                         ...d,
                         startTime: d.startTime.toDate().toISOString(), 
-                        endTime: d.endTime.toDate().toISOString(),     
+                        endTime: d.endTime.toDate().toISOString(),      
                         type: d.type
                     });
                 });
@@ -441,7 +447,83 @@
             });
         }
 
-        function renderDayView(){ const banner=document.getElementById('bookingModeBanner'), mode=currentSystemSettings.bookingMode||'first_come'; if(mode==='lottery'){banner.style.backgroundColor='#fff3e0'; banner.style.color='#e65100'; banner.style.border='1px solid #ffe0b2'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">casino</span> 抽選受付中</div><div style="font-size:11px;">希望を提出してください。</div>`;} else {banner.style.backgroundColor='#e8f0fe'; banner.style.color='#1967d2'; banner.style.border='1px solid #d2e3fc'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">即時確定します。</div>`;} const container=document.getElementById('timeline'); container.innerHTML=""; for(let h=9;h<20;h++){ const slot=document.createElement('div'); slot.className='time-slot'; slot.innerHTML=`<div class="time-label">${h}:00</div>`; const content=document.createElement('div'); content.className='time-content'; content.dataset.hour=h; content.addEventListener('touchstart',handleTouchStart,{passive:false}); content.addEventListener('touchmove',handleTouchMove,{passive:false}); content.addEventListener('touchend',handleTouchEnd); content.addEventListener('mousedown',handleMouseDown); slot.appendChild(content); container.appendChild(slot); } container.addEventListener('mousemove',handleMouseMove); container.addEventListener('mouseup',handleMouseUp); loadDayBookings(); }
+        function renderDayView(){ 
+            const banner=document.getElementById('bookingModeBanner'), mode=currentSystemSettings.bookingMode||'first_come'; 
+            if(mode==='lottery'){banner.style.backgroundColor='#fff3e0'; banner.style.color='#e65100'; banner.style.border='1px solid #ffe0b2'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">casino</span> 抽選受付中</div><div style="font-size:11px;">希望を提出してください。</div>`;} 
+            else {banner.style.backgroundColor='#e8f0fe'; banner.style.color='#1967d2'; banner.style.border='1px solid #d2e3fc'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">即時確定します。</div>`;} 
+            
+            const container=document.getElementById('timeline'); 
+            container.innerHTML=""; 
+
+            // タイムスロットの描画
+            for(let h=9;h<20;h++){ 
+                const slot=document.createElement('div'); 
+                slot.className='time-slot'; 
+                slot.innerHTML=`<div class="time-label">${h}:00</div>`; 
+                const content=document.createElement('div'); 
+                content.className='time-content'; 
+                content.dataset.hour=h; 
+                content.addEventListener('touchstart',handleTouchStart,{passive:false}); 
+                content.addEventListener('touchmove',handleTouchMove,{passive:false}); 
+                content.addEventListener('touchend',handleTouchEnd); 
+                content.addEventListener('mousedown',handleMouseDown); 
+                slot.appendChild(content); 
+                container.appendChild(slot); 
+            } 
+            container.addEventListener('mousemove',handleMouseMove); 
+            container.addEventListener('mouseup',handleMouseUp); 
+
+            // 現在時刻線の描画（今日の場合のみ）
+            createCurrentTimeLine(container);
+
+            loadDayBookings(); 
+        }
+
+        // 現在時刻線の要素作成と初期位置設定
+        function createCurrentTimeLine(container) {
+            const now = new Date();
+            // 表示中の日付が今日と同じかチェック
+            if (displayDate.getFullYear() === now.getFullYear() &&
+                displayDate.getMonth() === now.getMonth() &&
+                displayDate.getDate() === now.getDate()) {
+                
+                const line = document.createElement('div');
+                line.id = 'currentTimeLine';
+                line.className = 'current-time-line';
+                line.innerHTML = '<div class="current-time-dot"></div>';
+                container.appendChild(line);
+                updateCurrentTimeLine(); // 位置計算
+            }
+        }
+
+        // 現在時刻線の位置更新処理
+        function updateCurrentTimeLine() {
+            const line = document.getElementById('currentTimeLine');
+            if (!line) return;
+
+            // 再度日付チェック（日付が変わった瞬間などのため）
+            const now = new Date();
+            const isToday = displayDate.getFullYear() === now.getFullYear() &&
+                            displayDate.getMonth() === now.getMonth() &&
+                            displayDate.getDate() === now.getDate();
+            
+            if (!isToday) {
+                line.style.display = 'none';
+                return;
+            }
+
+            const h = now.getHours();
+            if (h < 9 || h >= 20) {
+                line.style.display = 'none'; // 営業時間外
+            } else {
+                line.style.display = 'block';
+                const m = now.getMinutes();
+                // 9:00を基準(0px)とし、1分=1pxで計算。
+                // .timeline-containerにはpadding: 10px 0があるため、+10pxする
+                const top = ((h - 9) * 60) + m + 10;
+                line.style.top = `${top}px`;
+            }
+        }
         
         function handleTouchStart(e){ if(e.target.classList.contains('event-block'))return; const h=parseInt(e.target.dataset.hour); if(isNaN(h))return; selectionTimer=setTimeout(()=>{isSelecting=true; selectionStartHour=h; selectionEndHour=h; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate)navigator.vibrate(50);},500); }
         function handleTouchMove(e){ if(!isSelecting){clearTimeout(selectionTimer);return;} e.preventDefault(); const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY); if(t&&t.classList.contains('time-content')){selectionEndHour=parseInt(t.dataset.hour); updateSelectionUI();} }
