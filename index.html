@@ -9,7 +9,7 @@
         body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; padding-bottom: 88px; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
         .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; } .hidden { display: none !important; }
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
-        .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); } .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
@@ -76,7 +76,14 @@
     </div>
 
     <div class="container">
-        <div class="app-header"><div class="header-title">マイバンド <span style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">2025年度</span></div><div class="header-avatar" id="headerIconBands"></div></div>
+        <div class="app-header">
+            <div class="header-title">
+                マイバンド
+                <span id="displayYear" style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">--年度</span>
+                <span id="displayActiveEvent" style="display:none; font-size:11px; font-weight:bold; background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:12px; margin-left:4px;"></span>
+            </div>
+            <div class="header-avatar" id="headerIconBands"></div>
+        </div>
         <div class="band-tabs"><div class="band-tab active" onclick="switchBandTab('active')">活動中</div><div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div></div>
         <div class="scroll-content"><div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div></div>
         <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
@@ -90,6 +97,7 @@
         <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
+    <!-- Modals -->
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')"><div class="modal-content"><h3 style="margin-top:0;">バンド結成</h3><p style="font-size:12px; color:#5f6368; margin-bottom:20px;">リストから選ぶか、後から招待リンクを送ってください。</p><div class="image-picker-area"><div class="image-picker" onclick="document.getElementById('bandIconInput').click()"><i class="material-icons">add_a_photo</i><span>写真</span><img id="previewBandIcon" class="hidden" src=""></div><input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')"></div><div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム"></div><div class="form-group"><label class="form-label">メンバーを検索</label><input type="text" id="bandMemberSearchInput" class="form-input" placeholder="氏名またはかなで検索..."></div><div class="form-group"><label class="form-label">メンバー選択 (登録済みユーザー)</label><div class="member-select-list" id="userSelectList"></div></div><button class="btn-primary" onclick="saveBand()">作成する</button><button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button></div></div>
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
@@ -175,6 +183,46 @@
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); }
         
+        function getFiscalYear() {
+            const now = new Date();
+            return now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+        }
+
+        async function loadSystemSettings() {
+            try {
+                const snap = await getDoc(doc(db, "system", "settings"));
+                let year = getFiscalYear();
+                let eventName = "";
+
+                if (snap.exists()) {
+                    const d = snap.data();
+                    if (d.currentYear) year = d.currentYear;
+                    if (d.activeEventId) {
+                        try {
+                            const evSnap = await getDoc(doc(db, "events", d.activeEventId));
+                            if (evSnap.exists()) {
+                                eventName = evSnap.data().event || evSnap.data().name;
+                            }
+                        } catch (e) { console.error(e); }
+                    }
+                }
+                
+                const yEl = document.getElementById('displayYear');
+                if (yEl) yEl.innerText = `${year}年度`;
+                
+                const eEl = document.getElementById('displayActiveEvent');
+                if (eEl && eventName) {
+                    eEl.innerText = eventName;
+                    eEl.style.display = "inline-block";
+                } else if (eEl) {
+                    eEl.style.display = "none";
+                }
+
+            } catch (e) {
+                console.error("Settings load error", e);
+            }
+        }
+
         async function main(){ 
             try{ 
                 // [高速化 1] ユーザー情報のキャッシュ表示
@@ -218,6 +266,9 @@
                 
                 await refreshAllUsersCache(); 
                 
+                // System Settings Load
+                loadSystemSettings();
+
                 const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'); 
                 if(act==='invite'&&iBid){await handleInvite(iBid); window.history.replaceState(null,null,window.location.pathname);} 
                 
