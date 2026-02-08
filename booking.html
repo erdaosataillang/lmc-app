@@ -155,14 +155,17 @@
         // 外部ライブラリ読み込み待ちの間にカレンダー枠を表示する即時実行スクリプト
         (function(){
             document.addEventListener('DOMContentLoaded', function() {
+                const d = new Date();
+                const y = d.getFullYear();
+                const m = d.getMonth();
+
+                // 1. ヘッダー日付の初期表示
+                const header = document.getElementById('calHeaderDate');
+                if(header && header.innerText === "") header.innerText = y + "年 " + (m+1) + "月";
+
+                // 2. 月カレンダーの先行描画
                 const grid = document.getElementById('monthGrid');
                 if(grid && grid.innerHTML.trim() === "") {
-                    const d = new Date();
-                    const y = d.getFullYear();
-                    const m = d.getMonth();
-                    const header = document.getElementById('calHeaderDate');
-                    if(header) header.innerText = y + "年 " + (m+1) + "月";
-                    
                     const wds = ['日','月','火','水','木','金','土'];
                     let html = "";
                     wds.forEach((wd, i) => {
@@ -181,6 +184,45 @@
                         html += '<div class="'+cls+'" id="day-'+y+'-'+(m+1)+'-'+i+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots" id="dots-'+y+'-'+(m+1)+'-'+i+'"></div></div>';
                     }
                     grid.innerHTML = html;
+                }
+
+                // 3. 週間ストリップ（日表示用）の先行描画
+                const strip = document.getElementById('weekStrip');
+                if(strip && strip.innerHTML.trim() === "") {
+                    const current = new Date(); 
+                    const dayOfWeek = current.getDay();
+                    const startOfWeek = new Date(current);
+                    startOfWeek.setDate(current.getDate() - dayOfWeek);
+                    
+                    const wds = ['日','月','火','水','木','金','土'];
+                    let html = "";
+                    
+                    for (let i = 0; i < 7; i++) {
+                        const targetD = new Date(startOfWeek);
+                        targetD.setDate(startOfWeek.getDate() + i);
+                        
+                        let cls = 'week-day-item';
+                        if (i === 0) cls += ' sun';
+                        if (i === 6) cls += ' sat';
+                        
+                        // 今日＝選択中として描画
+                        if (targetD.getDate() === current.getDate()) {
+                            cls += ' today selected';
+                        }
+                        
+                        html += '<div class="'+cls+'"><div class="week-day-label">'+wds[i]+'</div><div class="week-day-num">'+targetD.getDate()+'</div></div>';
+                    }
+                    strip.innerHTML = html;
+                }
+
+                // 4. タイムラインの枠組み先行描画
+                const timeline = document.getElementById('timeline');
+                if(timeline && timeline.innerHTML.trim() === "") {
+                    let html = "";
+                    for(let h=9; h<20; h++){
+                        html += '<div class="time-slot"><div class="time-label">'+h+':00</div><div class="time-content" data-hour="'+h+'"></div></div>';
+                    }
+                    timeline.innerHTML = html;
                 }
             });
         })();
