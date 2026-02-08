@@ -146,6 +146,32 @@
         </div>
     </div>
 
+    <!-- 先行実行スクリプト: DOM読み込み直後にキャッシュからUI構築 -->
+    <script>
+        (function(){
+            const CACHE_KEY_USER = 'lmc_user_cache';
+            function initUI() {
+                try {
+                    const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
+                    if (cachedUserStr) {
+                        const u = JSON.parse(cachedUserStr);
+                        // ヘッダーアイコン
+                        const h=`<img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
+                        const el=document.getElementById('headerIconAdmin');
+                        if(el) el.innerHTML=h;
+
+                        // 権限チェック
+                        if(!(u.affiliations?.includes('urakata') && u.role)){
+                            document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">lock</span><br>アクセス権限がありません。<br><br><a href="/" style="color:#0b57d0; text-decoration:none;">トップへ戻る</a></div>';
+                        }
+                    }
+                } catch(e) { console.warn("Init UI error:", e); }
+            }
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initUI);
+            else initUI();
+        })();
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
@@ -153,6 +179,9 @@
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const CACHE_KEY_USER = 'lmc_user_cache';
+
         let currentUser=null, currentProfile=null, currentUserData=null, adminEditingUserId=null, allUsersCache=[], allBandsCache=[], tempLotterySchedule=null;
         let currentSystemSettings={ bookingMode:'first_come', lotteryConfig:{ mode:'auto', daysBefore:2, time:0 } };
         let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
@@ -202,7 +231,18 @@
         document.getElementById('btn-save-user-role').addEventListener('click',async()=>{ if(!adminEditingUserId)return; const btn=document.getElementById('btn-save-user-role'); btn.innerText="保存中..."; try{await updateDoc(doc(db,"users",adminEditingUserId),{role:document.getElementById('admin-edit-role').value}); await showCustomAlert("役職設定を保存しました。"); closePage('admin-edit');}catch(e){await showCustomAlert(e.message, "エラー")}finally{btn.innerText="役職を保存"} });
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         window.openAdminBands=async()=>{ openPage('admin-bands'); document.getElementById('adminBandList').innerHTML='<div style="text-align:center; padding:20px;">読み込み中...</div>'; try{ const qs=await getDocs(collection(db,"bands")); allBandsCache=[]; qs.forEach(doc=>allBandsCache.push({id:doc.id,...doc.data()})); allBandsCache.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0)); renderAdminBandList(allBandsCache); }catch(e){document.getElementById('adminBandList').innerHTML=e.message} };
-        function renderAdminBandList(bands){ const container=document.getElementById('adminBandList'); container.innerHTML=""; if(bands.length===0){container.innerHTML='<div style="padding:20px;">なし</div>';return;} bands.forEach(b=>{ const div=document.createElement('div'); div.className='card band-card'; div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`}<div class="band-info"><div class="band-name">${b.name}${b.isArchived?'<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>':''}</div><div class="band-members">${b.memberNames.join(', ')}</div></div></div>`; container.appendChild(div); }); }
+        function renderAdminBandList(bands){ 
+            const container=document.getElementById('adminBandList'); 
+            container.innerHTML=""; 
+            if(bands.length===0){container.innerHTML='<div style="padding:20px;">なし</div>';return;} 
+            bands.forEach(b=>{ 
+                const div=document.createElement('div'); 
+                div.className='card band-card'; 
+                const memberNames = (b.memberNames && Array.isArray(b.memberNames)) ? b.memberNames.join(', ') : 'メンバー情報なし';
+                div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`}<div class="band-info"><div class="band-name">${b.name}${b.isArchived?'<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>':''}</div><div class="band-members">${memberNames}</div></div></div>`; 
+                container.appendChild(div); 
+            }); 
+        }
         document.getElementById('adminBandSearchInput')?.addEventListener('input',(e)=>{ const t=e.target.value.trim(); renderAdminBandList(t?allBandsCache.filter(b=>b.name.includes(t)):allBandsCache); });
 
         window.openAdminEvents = async () => { openPage('admin-events'); await loadAdminEvents(); };
@@ -212,9 +252,36 @@
         window.saveAdminEvent = async () => { const type = document.getElementById('inputEventType').value; const name = document.getElementById('inputEventName').value.trim(); const date = document.getElementById('inputEventDate').value; const desc = document.getElementById('inputEventDesc').value.trim(); if (!type || !name || !date) { return await showCustomAlert("種別、名前、日付を入力してください。", "入力エラー"); } try { const idDatePart = date.replace(/-/g, ''); const docId = `e${idDatePart}`; await setDoc(doc(db, 'events', docId), { event: name, startDate: date, endDate: date, type, desc, createdAt: serverTimestamp(), createdBy: currentUser }, { merge: true }); await showCustomAlert("イベントを作成しました。"); closeModal('modal-event-admin'); await loadAdminEvents(); } catch (e) { await showCustomAlert("保存エラー: " + e.message, "エラー"); } };
         window.deleteAdminEvent = async (id, name) => { if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) { try { await deleteDoc(doc(db, 'events', id)); await showCustomAlert("削除しました。"); await loadAdminEvents(); } catch (e) { await showCustomAlert(e.message, "エラー"); } } };
 
-        async function main(){ try{ try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} await liff.init({liffId:MY_LIFF_ID}); if(!liff.isLoggedIn()){liff.login();return;} const profile=await liff.getProfile(); currentUser=profile.userId; currentProfile=profile; const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); if(!userSnap.exists()){await showCustomAlert("権限がありません。"); return;} currentUserData=userSnap.data(); document.getElementById('headerIconAdmin').innerHTML=`<img src="${currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
-        if(!(currentUserData.affiliations?.includes('urakata') && currentUserData.role)){ await showCustomAlert("管理権限がありません。"); document.body.innerHTML='<div style="padding:20px; text-align:center;">アクセス権限がありません</div>'; }
-        }catch(e){console.error(e)} }
+        async function main(){ 
+            try {
+                // キャッシュからの読み込み（高速化）
+                const cachedUser = localStorage.getItem('lmc_user_cache');
+                if (cachedUser) {
+                    try {
+                        const data = JSON.parse(cachedUser);
+                        if(data.icon) {
+                            document.getElementById('headerIconAdmin').innerHTML=`<img src="${data.icon}">`;
+                        }
+                    } catch(e) { console.error("Cache parse error", e); }
+                }
+
+                try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
+                await liff.init({liffId:MY_LIFF_ID}); 
+                if(!liff.isLoggedIn()){liff.login();return;} 
+                const profile=await liff.getProfile(); 
+                currentUser=profile.userId; 
+                currentProfile=profile; 
+                const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
+                if(!userSnap.exists()){await showCustomAlert("権限がありません。"); return;} 
+                currentUserData=userSnap.data(); 
+                
+                // データの更新とキャッシュの保存
+                localStorage.setItem('lmc_user_cache', JSON.stringify(currentUserData));
+                document.getElementById('headerIconAdmin').innerHTML=`<img src="${currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
+                
+                if(!(currentUserData.affiliations?.includes('urakata') && currentUserData.role)){ await showCustomAlert("管理権限がありません。"); document.body.innerHTML='<div style="padding:20px; text-align:center;">アクセス権限がありません</div>'; }
+            }catch(e){console.error(e)} 
+        }
         main();
     </script>
 </body>
