@@ -20,7 +20,7 @@
         .menu-icon-wrapper { width: 48px; height: 48px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; } .menu-icon-wrapper .material-icons { font-size: 24px; }
         .menu-content { flex-grow: 1; } .menu-title { font-size: 16px; font-weight: 500; color: #1f1f1f; display: block; margin-bottom: 4px; } .menu-subtitle { font-size: 12px; color: #444746; display: block; line-height: 1.4; }
         .menu-arrow { color: #c4c7c5; font-size: 24px; }
-        .icon-admin-cal { background-color: #fce4ec; color: #c2185b; } .icon-admin-user { background-color: #e8eaf6; color: #283593; } .icon-admin-doc { background-color: #e0f2f1; color: #00695c; } .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; } .icon-admin-fee { background-color: #fff8e1; color: #f57f17; }
+        .icon-admin-cal { background-color: #fce4ec; color: #c2185b; } .icon-admin-user { background-color: #e8eaf6; color: #283593; } .icon-admin-doc { background-color: #e0f2f1; color: #00695c; } .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; } .icon-admin-fee { background-color: #fff8e1; color: #f57f17; } .icon-admin-basic { background-color: #e3f2fd; color: #1565c0; }
         .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; } .page-container.open { transform: translateX(0); }
         .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
         .back-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1f1f1f; margin-right: 8px; margin-left: -8px; }
@@ -75,6 +75,10 @@
         .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #3b82f6; }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Officer List Item */
+        .officer-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0f0f0; }
+        .officer-item:last-child { border-bottom:none; }
     </style>
 </head>
 <body>
@@ -93,6 +97,9 @@
         <div class="app-header"><div class="header-title">データの管理</div><div class="header-avatar" id="headerIconAdmin"></div></div>
         <div class="scroll-content">
             <div class="menu-list">
+                <!-- NEW: Basic Settings Button -->
+                <button class="menu-btn" onclick="openAdminBasics()"><div class="menu-icon-wrapper icon-admin-basic"><span class="material-icons">settings</span></div><div class="menu-content"><span class="menu-title">基本の設定</span><span class="menu-subtitle">年度、幹部権限、実施中のイベント</span></div><span class="material-icons menu-arrow">chevron_right</span></button>
+
                 <button class="menu-btn" onclick="openAdminFeesMenu()"><div class="menu-icon-wrapper icon-admin-fee"><span class="material-icons">attach_money</span></div><div class="menu-content"><span class="menu-title">部費の管理</span><span class="menu-subtitle">金額設定、徴収状況の管理</span></div><span class="material-icons menu-arrow">chevron_right</span></button>
                 <button class="menu-btn" onclick="openAdminSettings()"><div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div><div class="menu-content"><span class="menu-title">予約システム管理</span><span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span></div><span class="material-icons menu-arrow">chevron_right</span></button>
                 <button class="menu-btn" onclick="openAdminUsers()"><div class="menu-icon-wrapper icon-admin-user"><span class="material-icons">manage_accounts</span></div><div class="menu-content"><span class="menu-title">個人の管理</span><span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span></div><span class="material-icons menu-arrow">chevron_right</span></button>
@@ -109,6 +116,38 @@
         <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
         <div class="nav-item active" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
         <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
+    </div>
+
+    <!-- NEW: Basic Settings Page -->
+    <div id="page-admin-basics" class="page-container">
+        <div class="page-header"><button class="back-btn" onclick="closePage('admin-basics')"><span class="material-icons">arrow_back</span></button><div class="page-title">基本の設定</div></div>
+        <div class="content-area" style="padding-top:20px;">
+            <div class="card">
+                <h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">システム全般</h3>
+                <div class="form-group">
+                    <label class="form-label">現在の年度</label>
+                    <input type="number" id="basic-setting-year" class="form-input" placeholder="例: 2025">
+                    <div style="font-size:11px; color:#666; margin-top:4px;">部費やアーカイブの基準となります。</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">実施中のイベント</label>
+                    <select id="basic-setting-event" class="form-input">
+                        <option value="">(選択なし)</option>
+                    </select>
+                    <div style="font-size:11px; color:#666; margin-top:4px;">トップ画面等に表示されるイベントです。</div>
+                </div>
+                <button class="btn-primary" onclick="saveBasicConfig()">設定を保存</button>
+            </div>
+
+            <div class="card" style="margin-top:20px;">
+                <h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">幹部の設定</h3>
+                <div style="margin-bottom:16px; font-size:12px; color:#666;">ここに表示されているユーザーは管理画面へのアクセス権限（裏方権限）を持ちます。</div>
+                <div id="admin-officer-list">
+                    <!-- List populated by JS -->
+                </div>
+                <button class="btn-secondary" style="margin-top:12px;" onclick="openUserPicker('officer')"><span class="material-icons" style="font-size:16px; vertical-align:text-bottom;">person_add</span> 幹部を追加</button>
+            </div>
+        </div>
     </div>
 
     <div id="page-admin-fees-menu" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-menu')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の管理</div></div><div class="content-area"><div class="menu-list"><button class="menu-btn" onclick="openAdminFeeSettings()"><div class="menu-icon-wrapper" style="background:#f3e5f5; color:#7b1fa2;"><span class="material-icons">settings</span></div><div class="menu-content"><span class="menu-title">部費の設定</span><span class="menu-subtitle">前期・後期の金額設定</span></div><span class="material-icons menu-arrow">chevron_right</span></button><button class="menu-btn" onclick="openAdminFeeList()"><div class="menu-icon-wrapper" style="background:#e8eaf6; color:#283593;"><span class="material-icons">list_alt</span></div><div class="menu-content"><span class="menu-title">部費の徴収リスト</span><span class="menu-subtitle">徴収状況の確認・更新</span></div><span class="material-icons menu-arrow">chevron_right</span></button><button class="menu-btn" onclick="openAdminFeeHistory()"><div class="menu-icon-wrapper" style="background:#e0f2f1; color:#00695c;"><span class="material-icons">qr_code_scanner</span></div><div class="menu-content"><span class="menu-title">QRで徴収する</span><span class="menu-subtitle">QRスキャンで徴収記録をつける</span></div><span class="material-icons menu-arrow">chevron_right</span></button></div></div></div>
@@ -178,6 +217,16 @@
         </div>
     </div>
 
+    <!-- NEW: User Picker Modal -->
+    <div id="modal-user-picker" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-picker')">
+        <div class="modal-content" style="max-height:80vh; display:flex; flex-direction:column;">
+            <h3 style="margin-top:0;">ユーザーを選択</h3>
+            <div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="pickerSearchInput" placeholder="名前で検索..."></div>
+            <div id="pickerUserList" style="flex-grow:1; overflow-y:auto; min-height:200px;"></div>
+            <button class="btn-secondary" onclick="closeModal('modal-user-picker')">閉じる</button>
+        </div>
+    </div>
+
     <!-- 先行実行スクリプト: DOM読み込み直後にキャッシュからUI構築 -->
     <script>
         (function(){
@@ -217,6 +266,8 @@
         let currentUser=null, currentProfile=null, currentUserData=null, adminEditingUserId=null, allUsersCache=[], allBandsCache=[], tempLotterySchedule=null;
         let currentSystemSettings={ bookingMode:'first_come', lotteryConfig:{ mode:'auto', daysBefore:2, time:0 } };
         let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
+        // NEW: Basic Config State
+        let currentBasicConfig = { currentYear: new Date().getFullYear(), activeEventId: null };
         let bandSortOrder = 'created_desc'; // Default Sort
         let showArchivedBands = false;
 
@@ -323,6 +374,174 @@
         document.querySelectorAll('.event-type-chip').forEach(chip => { chip.addEventListener('click', () => { document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected')); chip.classList.add('selected'); document.getElementById('inputEventType').value = chip.dataset.type; const nameInput = document.getElementById('inputEventName'); if (!nameInput.value) { nameInput.value = chip.innerText; } }); });
         window.saveAdminEvent = async () => { const type = document.getElementById('inputEventType').value; const name = document.getElementById('inputEventName').value.trim(); const date = document.getElementById('inputEventDate').value; const desc = document.getElementById('inputEventDesc').value.trim(); if (!type || !name || !date) { return await showCustomAlert("種別、名前、日付を入力してください。", "入力エラー"); } try { const idDatePart = date.replace(/-/g, ''); const docId = `e${idDatePart}`; await setDoc(doc(db, 'events', docId), { event: name, startDate: date, endDate: date, type, desc, createdAt: serverTimestamp(), createdBy: currentUser }, { merge: true }); await showCustomAlert("イベントを作成しました。"); closeModal('modal-event-admin'); await loadAdminEvents(); } catch (e) { await showCustomAlert("保存エラー: " + e.message, "エラー"); } };
         window.deleteAdminEvent = async (id, name) => { if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) { try { await deleteDoc(doc(db, 'events', id)); await showCustomAlert("削除しました。"); await loadAdminEvents(); } catch (e) { await showCustomAlert(e.message, "エラー"); } } };
+
+        /* ----------------------------------------------------
+           NEW: Basic Settings Logic
+           ---------------------------------------------------- */
+        
+        // 1. Open Basic Settings Page
+        window.openAdminBasics = async () => {
+            openPage('admin-basics');
+            await loadBasicConfig();
+            renderOfficerList();
+        };
+
+        // 2. Load Config (Simulating a fetch from 'system/basic')
+        async function loadBasicConfig() {
+            try {
+                // In real implementation: const docSnap = await getDoc(doc(db, "system", "basic"));
+                // if (docSnap.exists()) currentBasicConfig = docSnap.data();
+                
+                // UIへの反映
+                document.getElementById('basic-setting-year').value = currentBasicConfig.currentYear;
+                
+                // イベントリストの取得と設定
+                const eventSelect = document.getElementById('basic-setting-event');
+                eventSelect.innerHTML = '<option value="">(選択なし)</option>';
+                
+                const q = query(collection(db, 'events'), orderBy("startDate", "desc"));
+                const qs = await getDocs(q);
+                qs.forEach(doc => {
+                    const e = doc.data();
+                    const opt = document.createElement('option');
+                    opt.value = doc.id;
+                    opt.text = `${e.event} (${e.startDate})`;
+                    if (currentBasicConfig.activeEventId === doc.id) opt.selected = true;
+                    eventSelect.appendChild(opt);
+                });
+
+            } catch(e) { console.error("Load basic config error", e); }
+        }
+
+        // 3. Save Config
+        window.saveBasicConfig = async () => {
+            const y = parseInt(document.getElementById('basic-setting-year').value);
+            const eId = document.getElementById('basic-setting-event').value;
+            
+            if (!y) return await showCustomAlert("年度を入力してください", "入力エラー");
+            
+            try {
+                // In real implementation:
+                // await setDoc(doc(db, "system", "basic"), { currentYear: y, activeEventId: eId }, { merge: true });
+                
+                currentBasicConfig.currentYear = y;
+                currentBasicConfig.activeEventId = eId;
+                
+                await showCustomAlert("基本設定を保存しました。");
+            } catch(e) {
+                await showCustomAlert("保存エラー: " + e.message, "エラー");
+            }
+        };
+
+        // 4. Render Officers
+        function renderOfficerList() {
+            const container = document.getElementById('admin-officer-list');
+            if (allUsersCache.length === 0) refreshAllUsersCache();
+            
+            const officers = allUsersCache.filter(u => u.affiliations && u.affiliations.includes('urakata'));
+            container.innerHTML = "";
+            
+            if (officers.length === 0) {
+                container.innerHTML = '<div style="font-size:12px; color:#999; text-align:center; padding:10px;">幹部はいません</div>';
+                return;
+            }
+
+            officers.forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'officer-item';
+                div.innerHTML = `
+                    <div style="display:flex; align-items:center;">
+                        <img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" style="width:32px; height:32px; border-radius:50%; margin-right:8px; object-fit:cover;">
+                        <div>
+                            <div style="font-size:14px; font-weight:bold;">${u.name}</div>
+                            <div style="font-size:10px; color:#666;">${u.role || '役職なし'}</div>
+                        </div>
+                    </div>
+                    <button class="btn-remove-member" onclick="removeOfficer('${u.id}', '${u.name}')">解除</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // 5. Open User Picker
+        window.openUserPicker = async (mode) => {
+            openModal('modal-user-picker');
+            const list = document.getElementById('pickerUserList');
+            list.innerHTML = "読み込み中...";
+            
+            if (allUsersCache.length === 0) await refreshAllUsersCache();
+            
+            renderUserPicker(allUsersCache, mode);
+            
+            document.getElementById('pickerSearchInput').oninput = (e) => {
+                const t = e.target.value.trim();
+                const filtered = t ? allUsersCache.filter(u => u.name.includes(t) || (u.kana && u.kana.includes(t))) : allUsersCache;
+                renderUserPicker(filtered, mode);
+            };
+        };
+
+        function renderUserPicker(users, mode) {
+            const list = document.getElementById('pickerUserList');
+            list.innerHTML = "";
+            users.forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'user-list-item';
+                // 既に幹部なら選択できないようにする等の制御も可能
+                const isOfficer = u.affiliations && u.affiliations.includes('urakata');
+                
+                div.innerHTML = `
+                    <img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon">
+                    <div class="user-info-main">
+                        <div class="user-name">${u.name}</div>
+                        <div class="user-sub">${u.year}年 ${isOfficer ? '<span style="color:red;">●幹部</span>' : ''}</div>
+                    </div>
+                    <button class="btn-outline" onclick="selectUserForOfficer('${u.id}', '${u.name}')">選択</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // 6. Add/Remove Officer Logic
+        window.selectUserForOfficer = async (uid, name) => {
+            if (await showCustomConfirm(`${name} さんに幹部権限（裏方）を付与しますか？`, "権限付与")) {
+                try {
+                    // In real implementation:
+                    // await updateDoc(doc(db, "users", uid), { affiliations: arrayUnion('urakata') });
+                    
+                    // Local Cache Update for UI
+                    const u = allUsersCache.find(x => x.id === uid);
+                    if (u) {
+                        if (!u.affiliations) u.affiliations = [];
+                        if (!u.affiliations.includes('urakata')) u.affiliations.push('urakata');
+                    }
+                    
+                    await showCustomAlert(`${name} さんを幹部に追加しました。`);
+                    closeModal('modal-user-picker');
+                    renderOfficerList();
+                } catch(e) {
+                    await showCustomAlert("エラー: " + e.message);
+                }
+            }
+        };
+
+        window.removeOfficer = async (uid, name) => {
+            if (await showCustomConfirm(`${name} さんの幹部権限を解除しますか？`, "権限解除")) {
+                try {
+                    // In real implementation:
+                    // await updateDoc(doc(db, "users", uid), { affiliations: arrayRemove('urakata') });
+                    
+                    const u = allUsersCache.find(x => x.id === uid);
+                    if (u && u.affiliations) {
+                        u.affiliations = u.affiliations.filter(a => a !== 'urakata');
+                    }
+                    
+                    renderOfficerList();
+                } catch(e) {
+                    await showCustomAlert("エラー: " + e.message);
+                }
+            }
+        };
+
 
         async function main(){ 
             try {
