@@ -89,12 +89,18 @@
         .current-time-dot { width: 8px; height: 8px; background-color: #ea4335; border-radius: 50%; position: absolute; left: -4px; top: -5px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
 
         /* 週間日付ストリップ用のスタイル */
-        .week-strip { display: flex; justify-content: space-around; padding: 10px 0; background: white; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; user-select: none; }
+        /* コンテナは内容を隠す設定 */
+        .week-strip { position: relative; overflow: hidden; height: 60px; background: white; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; user-select: none; }
+        /* アニメーション用のラッパー */
+        .week-strip-wrapper { display: flex; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        /* 各ページ（1週間分）のスタイル */
+        .week-strip-page { width: 100%; flex-shrink: 0; display: flex; justify-content: space-around; padding: 10px 0; box-sizing: border-box; }
+        
         .week-day-item { display: flex; flex-direction: column; align-items: center; width: 40px; cursor: pointer; }
         .week-day-label { font-size: 10px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
         .week-day-num { width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; font-size: 14px; font-weight: bold; color: #1f1f1f; transition: background-color 0.2s; }
         .week-day-item.selected .week-day-num { background-color: #0b57d0; color: white; }
-        .week-day-item.today .week-day-num { border: 1px solid #0b57d0; box-sizing: border-box; } /* 今日の枠線表示 */
+        .week-day-item.today .week-day-num { border: 1px solid #0b57d0; box-sizing: border-box; } 
         .week-day-item.today.selected .week-day-num { background-color: #0b57d0; border: none; }
         .week-day-item.sun .week-day-label { color: #d93025; }
         .week-day-item.sat .week-day-label { color: #1a73e8; }
@@ -116,7 +122,6 @@
     <div class="container">
         <div class="app-header">
             <div class="header-title">合わせ予約</div>
-            <!-- ヘッダー右側のアクションボタン群 -->
             <div class="header-actions">
                 <div id="btnSearch" class="header-icon-btn" onclick="openSearchModal()">
                     <span class="material-icons">search</span>
@@ -141,7 +146,6 @@
         <div class="scroll-content">
             <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
             <div id="calDayView" class="hidden">
-                <!-- 週間ストリップを追加 -->
                 <div id="weekStrip" class="week-strip"></div>
                 
                 <div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div>
@@ -161,7 +165,6 @@
 
     <div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')"><div class="modal-content"><h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3><input type="hidden" id="editingBookingId"><div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div></div><div class="form-group"><label class="checkbox-label"><input type="checkbox" id="checkAllDay" onchange="toggleAllDay()"> 終日 (9:00 - 20:00)</label></div><div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;"><div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span>〜</span><div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div></div><div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;"><label class="form-label">登録種別</label><div class="radio-group"><label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label><label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label></div></div><div id="groupBandSelect" class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div><div id="groupEventTitle" class="form-group hidden"><label class="form-label">イベント名 / 理由</label><input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会"></div><button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button><button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button><button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button><button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button></div></div>
     
-    <!-- 検索モーダル -->
     <div id="modal-search" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-search')">
         <div class="modal-content">
             <h3 style="margin-top:0;">予約検索</h3>
@@ -169,9 +172,7 @@
                 <input type="text" id="searchInput" class="form-input" placeholder="キーワードを入力..." onkeyup="filterSearchResults()">
             </div>
             <p style="font-size:12px; color:#5f6368; margin-bottom:10px;">直近の読み込み済み予約から検索します。</p>
-            <div id="searchResultContainer" style="max-height: 400px; overflow-y: auto;">
-                <!-- 検索結果がここに挿入されます -->
-            </div>
+            <div id="searchResultContainer" style="max-height: 400px; overflow-y: auto;"></div>
             <button class="btn-secondary" onclick="closeModal('modal-search')">閉じる</button>
         </div>
     </div>
@@ -180,76 +181,46 @@
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')"><div class="modal-content"><h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368;">マイステータス</h3><div class="user-status-card"><img id="modalUserIcon" src="" class="user-status-icon"><div id="modalUserName" class="user-status-name"></div><div style="background:#f9f9f9; padding:15px; border-radius:12px;"><div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">2025年度 部費</div><div class="fee-status-row"><div id="statusFeeTerm1" class="fee-status-badge">前期: -</div><div id="statusFeeTerm2" class="fee-status-badge">後期: -</div></div></div><div style="margin-top:20px;"><div style="font-size:12px; color:#999; margin-bottom:5px;">会員QRコード</div><div id="myQRCodeArea" style="width:150px; height:150px; background:#eee; margin:0 auto; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:48px; color:#ccc;">qr_code_2</span></div></div></div><button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button></div></div>
 
     <script>
-        // 外部ライブラリ読み込み待ちの間にカレンダー枠を表示する即時実行スクリプト
         (function(){
             document.addEventListener('DOMContentLoaded', function() {
                 const d = new Date();
                 const y = d.getFullYear();
                 const m = d.getMonth();
-
-                // 1. ヘッダー日付の初期表示
                 const header = document.getElementById('calHeaderDate');
                 if(header && header.innerText === "") header.innerText = y + "年 " + (m+1) + "月";
-
-                // 2. 月カレンダーの先行描画
                 const grid = document.getElementById('monthGrid');
                 if(grid && grid.innerHTML.trim() === "") {
                     const wds = ['日','月','火','水','木','金','土'];
                     let html = "";
-                    wds.forEach((wd, i) => {
-                        let cls = 'weekday-label';
-                        if(i===0) cls+=' sun';
-                        if(i===6) cls+=' sat';
-                        html += '<div class="'+cls+'">'+wd+'</div>';
-                    });
-
+                    wds.forEach((wd, i) => { let cls = 'weekday-label'; if(i===0) cls+=' sun'; if(i===6) cls+=' sat'; html += '<div class="'+cls+'">'+wd+'</div>'; });
                     const firstD = new Date(y, m, 1);
                     const lastD = new Date(y, m+1, 0);
                     for(let i=0; i<firstD.getDay(); i++) html += '<div></div>';
-                    for(let i=1; i<=lastD.getDate(); i++){
-                        let cls = 'day-cell';
-                        if(i === d.getDate()) cls += ' today';
-                        html += '<div class="'+cls+'" id="day-'+y+'-'+(m+1)+'-'+i+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots" id="dots-'+y+'-'+(m+1)+'-'+i+'"></div></div>';
-                    }
+                    for(let i=1; i<=lastD.getDate(); i++){ let cls = 'day-cell'; if(i === d.getDate()) cls += ' today'; html += '<div class="'+cls+'" id="day-'+y+'-'+(m+1)+'-'+i+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots" id="dots-'+y+'-'+(m+1)+'-'+i+'"></div></div>'; }
                     grid.innerHTML = html;
                 }
-
-                // 3. 週間ストリップ（日表示用）の先行描画
                 const strip = document.getElementById('weekStrip');
                 if(strip && strip.innerHTML.trim() === "") {
+                    // 初期表示用の週間カレンダー生成（アニメーションなし）
                     const current = new Date(); 
                     const dayOfWeek = current.getDay();
                     const startOfWeek = new Date(current);
                     startOfWeek.setDate(current.getDate() - dayOfWeek);
-                    
                     const wds = ['日','月','火','水','木','金','土'];
                     let html = "";
-                    
                     for (let i = 0; i < 7; i++) {
                         const targetD = new Date(startOfWeek);
                         targetD.setDate(startOfWeek.getDate() + i);
-                        
                         let cls = 'week-day-item';
-                        if (i === 0) cls += ' sun';
-                        if (i === 6) cls += ' sat';
-                        
-                        // 今日＝選択中として描画
-                        if (targetD.getDate() === current.getDate()) {
-                            cls += ' today selected';
-                        }
-                        
+                        if (i === 0) cls += ' sun'; if (i === 6) cls += ' sat';
+                        if (targetD.getDate() === current.getDate()) cls += ' today selected';
                         html += '<div class="'+cls+'"><div class="week-day-label">'+wds[i]+'</div><div class="week-day-num">'+targetD.getDate()+'</div></div>';
                     }
-                    strip.innerHTML = html;
+                    strip.innerHTML = '<div class="week-strip-page">' + html + '</div>';
                 }
-
-                // 4. タイムラインの枠組み先行描画
                 const timeline = document.getElementById('timeline');
                 if(timeline && timeline.innerHTML.trim() === "") {
-                    let html = "";
-                    for(let h=9; h<20; h++){
-                        html += '<div class="time-slot"><div class="time-label">'+h+':00</div><div class="time-content" data-hour="'+h+'"></div></div>';
-                    }
+                    let html = ""; for(let h=9; h<20; h++){ html += '<div class="time-slot"><div class="time-label">'+h+':00</div><div class="time-content" data-hour="'+h+'"></div></div>'; }
                     timeline.innerHTML = html;
                 }
             });
@@ -264,7 +235,6 @@
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         
-        // Cache Keys
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
         const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
@@ -273,10 +243,7 @@
         let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
         let currentSystemSettings={ bookingMode:'first_come', lotteryConfig:{ mode:'auto', daysBefore:2, time:0 } };
         let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
-        // 検索用（読み込み済みの予約を保持）
         let loadedBookingsCache = [];
-        
-        // スワイプ処理用の変数
         let touchStartX = 0;
         let touchEndX = 0;
 
@@ -287,58 +254,23 @@
         window.goToMyPage=()=>window.location.href=MY_PAGE_URL;
         
         async function loadSystemConfig(){ try{ const snap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=snap.data(); }catch(e){} }
-        
-        // ヘッダーアイコンと管理タブの表示制御（初期表示・更新時共通）
-        function renderHeaderIcons(d){ 
-            let r=""; 
-            const aff=d.affiliations||[];
-            const isU=aff.includes("urakata"); 
-            
-            if(d.birthday){
-                const t=new Date(), b=new Date(d.birthday); 
-                if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate()) r="ring-birthday";
-            } 
-            if(!r&&isU) r=d.job?`ring-${d.job}`:"ring-rainbow"; 
-            
-            const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; 
-            const el=document.getElementById('headerIconCal'); 
-            if(el){
-                el.innerHTML=h; 
-                el.className="header-avatar "+r; 
-                el.onclick=openUserStatusModal;
-            } 
-            
-            // 権限チェック：roleがあれば管理タブを表示
-            if(d.role && d.role.length > 0) {
-                const navAdmin = document.getElementById('nav-admin');
-                if(navAdmin) navAdmin.classList.remove('hidden'); 
-            }
-        }
+        function renderHeaderIcons(d){ let r=""; const aff=d.affiliations||[]; const isU=aff.includes("urakata"); if(d.birthday){ const t=new Date(), b=new Date(d.birthday); if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate()) r="ring-birthday"; } if(!r&&isU) r=d.job?`ring-${d.job}`:"ring-rainbow"; const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; const el=document.getElementById('headerIconCal'); if(el){ el.innerHTML=h; el.className="header-avatar "+r; el.onclick=openUserStatusModal; } if(d.role && d.role.length > 0) { const navAdmin = document.getElementById('nav-admin'); if(navAdmin) navAdmin.classList.remove('hidden'); } }
 
-        // --- 高速化のための初期描画処理 (IIFE) ---
         (function renderFromCache() {
             try {
-                // 1. ユーザー情報（アイコン・管理タブ権限）を最優先で処理
                 const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUserStr) {
                     const u = JSON.parse(cachedUserStr);
-                    currentUserData = u; // グローバル変数にセット
-                    renderHeaderIcons(u); // アイコンと管理タブを即座に表示
+                    currentUserData = u; renderHeaderIcons(u);
                 }
-
-                // 2. カレンダーなどの重い描画処理は、一度ブラウザに描画タイミングを譲ってから実行
                 requestAnimationFrame(() => {
                     setTimeout(() => {
                         const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
-                        if (cachedBandsStr) {
-                            myBandsAll = JSON.parse(cachedBandsStr);
-                        }
+                        if (cachedBandsStr) myBandsAll = JSON.parse(cachedBandsStr);
                         renderCalendar(true); 
                     }, 0);
                 });
-            } catch (e) {
-                console.warn("Cache render error:", e);
-            }
+            } catch (e) { console.warn("Cache render error:", e); }
         })();
 
         const showSyncIndicator = () => document.getElementById('syncIndicator').classList.remove('hidden');
@@ -347,94 +279,55 @@
         async function main(){ 
             try{ 
                 showSyncIndicator();
-
-                // 認証開始 (UIをブロックしない)
                 try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
-                
                 try {
                     await liff.init({liffId:MY_LIFF_ID}); 
                     if(!liff.isLoggedIn()){liff.login();return;} 
                     const profile=await liff.getProfile(); 
-                    currentUser=profile.userId; 
-                    currentProfile=profile; 
-                    
+                    currentUser=profile.userId; currentProfile=profile; 
                     const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
-                    if(!userSnap.exists()){
-                        // ユーザー登録がない場合は静かにリダイレクト
-                        window.location.href=MY_PAGE_URL; 
-                        return;
-                    } 
-                    
+                    if(!userSnap.exists()){ window.location.href=MY_PAGE_URL; return; } 
                     await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
                     currentUserData=userSnap.data(); 
-                    
-                    // キャッシュ更新と再描画
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                     renderHeaderIcons(currentUserData);
-                } catch (e) {
-                    console.error("LIFF/Auth Error:", e);
-                    try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; }
-                    return;
-                }
-                
-                await loadSystemConfig(); 
-                loadMyBands(); 
-                
-                // データ更新（同期）開始
+                } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
+                await loadSystemConfig(); loadMyBands(); 
                 switchCalendarView('month'); 
-
-                // 現在時刻線の更新タイマー
                 setInterval(updateCurrentTimeLine, 60000);
-                
-                // 週間カレンダーのスワイプイベント設定
                 setupWeekSwipe();
-
             }catch(e){console.error(e)} 
         }
 
         function setupWeekSwipe() {
             const weekStrip = document.getElementById('weekStrip');
             if (weekStrip) {
-                weekStrip.addEventListener('touchstart', e => {
-                    touchStartX = e.changedTouches[0].screenX;
-                }, {passive: true});
-                
-                weekStrip.addEventListener('touchend', e => {
-                    touchEndX = e.changedTouches[0].screenX;
-                    handleWeekSwipe();
-                }, {passive: true});
+                weekStrip.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+                weekStrip.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleWeekSwipe(); }, {passive: true});
             }
         }
-
         function handleWeekSwipe() {
-            const threshold = 50; // スワイプ判定の閾値
-            if (touchEndX < touchStartX - threshold) {
-                // 左スワイプ（指を左へ） -> 次の週へ
-                changeDate(7);
-            }
-            if (touchEndX > touchStartX + threshold) {
-                // 右スワイプ（指を右へ） -> 前の週へ
-                changeDate(-7);
-            }
+            const threshold = 50; 
+            if (touchEndX < touchStartX - threshold) changeDate(7);
+            if (touchEndX > touchStartX + threshold) changeDate(-7);
         }
 
         window.openUserStatusModal=async()=>{ if(!currentUserData)return; if(!currentFeeSettings.year){ try{ const snap=await getDoc(doc(db,"system","fees")); if(snap.exists())currentFeeSettings=snap.data(); }catch(e){console.error(e)} } const year=currentFeeSettings.year||new Date().getFullYear(); const status=currentUserData.feeStatus||{}; document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; document.getElementById('modalUserName').innerText=currentUserData.name+" さん"; const isPaid1=!!status[`${year}_1`], isPaid2=!!status[`${year}_2`], t1Text=isPaid1?'済':'未納', t2Text=isPaid2?'済':'未納', t1El=document.getElementById('statusFeeTerm1'), t2El=document.getElementById('statusFeeTerm2'); t1El.innerText=`前期: ${t1Text}`; t1El.className=`fee-status-badge ${isPaid1?'fee-paid':'fee-unpaid'}`; t2El.innerText=`後期: ${t2Text}`; t2El.className=`fee-status-badge ${isPaid2?'fee-paid':'fee-unpaid'}`; document.getElementById('statusFeeYear').innerText=`${year}年度 部費状況`; if(currentUser){ const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}`; document.getElementById('myQRCodeArea').innerHTML=`<img src="${qrUrl}" style="width:100%;height:100%;">`; } openModal('modal-user-status'); };
-
-        function loadMyBands(){ 
-            const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); 
-            onSnapshot(q,(snapshot)=>{ 
-                myBandsAll=[]; 
-                snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); 
-                localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
-            }); 
-        }
+        function loadMyBands(){ const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); onSnapshot(q,(snapshot)=>{ myBandsAll=[]; snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll)); }); }
         
         window.switchCalendarView=(m, keepDate = false)=>{ calendarMode=m; if(m==='day'){ if(!keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } } } updateViewMenuUI(); renderCalendar(); };
         function updateViewMenuUI(){ const isMonth = (calendarMode === 'month'); document.getElementById('calMonthView').classList.toggle('hidden', !isMonth); document.getElementById('calDayView').classList.toggle('hidden', isMonth); const switcher = document.getElementById('viewSwitcher'); switcher.classList.toggle('day-mode', !isMonth); document.querySelectorAll('.switcher-item').forEach(el => { el.classList.toggle('active', el.dataset.mode === calendarMode); }); }
-        window.changeDate=(d)=>{ if(calendarMode==='month')displayDate.setMonth(displayDate.getMonth()+d); else displayDate.setDate(displayDate.getDate()+d); renderCalendar(); };
         
-        // useCache: trueの場合、キャッシュがあればそれを表示してリターン。通信はしない。
-        function renderCalendar(useCache = false){ 
+        // 日付変更時、方向(d>0: 未来へ, d<0: 過去へ)をrenderCalendarへ渡す
+        window.changeDate=(d)=>{ 
+            if(calendarMode==='month') displayDate.setMonth(displayDate.getMonth()+d); 
+            else displayDate.setDate(displayDate.getDate()+d); 
+            const dir = d > 0 ? 1 : -1;
+            renderCalendar(false, dir); 
+        };
+        
+        // renderCalendarにアニメーション方向引数を追加
+        function renderCalendar(useCache = false, animationDirection = 0){ 
             const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; 
             if(calendarMode==='month'){
                 document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; 
@@ -442,21 +335,14 @@
             } else {
                 const d=displayDate.getDate(), w=['日','月','火','水','木','金','土'][displayDate.getDay()]; 
                 document.getElementById('calHeaderDate').innerText=`${m}月`; 
-                // 古い日付ラベルへの設定は削除し、代わりにrenderDayViewで週間ストリップを更新
-                // document.getElementById('dayViewDateLabel').innerText=`${m}/${d} (${w})`; 
-                renderDayView();
+                renderDayView(animationDirection);
             } 
         }
 
         function renderMonthView(y, m, useCache){ 
             const grid=document.getElementById('monthGrid'); 
             if(!grid) return;
-            // 既に描画済み（先行描画）で、キャッシュ利用モードなら何もしない（チラつき防止）
-            if(useCache && grid.innerHTML.trim() !== "") {
-                loadMonthBookings(y, m, true); // キャッシュデータの適用だけ行う
-                return;
-            }
-
+            if(useCache && grid.innerHTML.trim() !== "") { loadMonthBookings(y, m, true); return; }
             grid.innerHTML=""; 
             ['日','月','火','水','木','金','土'].forEach(wd=>{const div=document.createElement('div'); div.className='weekday-label'; div.innerText=wd; if(wd==='日')div.classList.add('sun'); if(wd==='土')div.classList.add('sat'); grid.appendChild(div);}); 
             const firstD=new Date(y,m,1), lastD=new Date(y,m+1,0), today=new Date(); 
@@ -473,115 +359,39 @@
 
         function loadMonthBookings(y,m, useCache){ 
             const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${m}`;
-            
-            // 1. キャッシュがあれば即適用
             const cached = localStorage.getItem(cacheKey);
-            if(cached) {
-                try {
-                    const data = JSON.parse(cached);
-                    loadedBookingsCache = data; // 検索用にキャッシュ
-                    applyBookingDataToMonth(data);
-                } catch(e) {}
-            }
-
-            // 2. 初期表示モード(useCache=true)なら、ここで終了。通信しない。
+            if(cached) { try { const data = JSON.parse(cached); loadedBookingsCache = data; applyBookingDataToMonth(data); } catch(e) {} }
             if (useCache) return;
-
-            // 3. 通常モードなら最新データを監視
             onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{ 
                 const bookings = [];
-                qs.forEach(docSnap => {
-                    const d = docSnap.data();
-                    bookings.push({
-                        ...d,
-                        id: docSnap.id, // IDも含める
-                        startTime: d.startTime.toDate().toISOString(), 
-                        endTime: d.endTime.toDate().toISOString(),      
-                        type: d.type
-                    });
-                });
-                
-                loadedBookingsCache = bookings; // 検索用にキャッシュ
-                localStorage.setItem(cacheKey, JSON.stringify(bookings));
-                applyBookingDataToMonth(bookings);
-                hideSyncIndicator();
+                qs.forEach(docSnap => { const d = docSnap.data(); bookings.push({ ...d, id: docSnap.id, startTime: d.startTime.toDate().toISOString(), endTime: d.endTime.toDate().toISOString(), type: d.type }); });
+                loadedBookingsCache = bookings; localStorage.setItem(cacheKey, JSON.stringify(bookings)); applyBookingDataToMonth(bookings); hideSyncIndicator();
             }); 
         }
 
         function applyBookingDataToMonth(bookings) {
             document.querySelectorAll('.event-dots').forEach(el=>el.innerHTML=""); 
-            document.querySelectorAll('.day-cell.unavailable, .day-cell.partial-event').forEach(el=>{ 
-                el.classList.remove('unavailable', 'partial-event'); 
-                const st = el.querySelector('.status-label'); if(st) st.innerText = ""; 
-            }); 
-
-            // 日付ごとの集計
+            document.querySelectorAll('.day-cell.unavailable, .day-cell.partial-event').forEach(el=>{ el.classList.remove('unavailable', 'partial-event'); const st = el.querySelector('.status-label'); if(st) st.innerText = ""; }); 
             const stats = {};
             bookings.forEach(bk => {
-                const d = new Date(bk.startTime);
-                // ID形式: day-yyyy-m-d
-                const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-                
+                const d = new Date(bk.startTime); const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
                 if (!stats[key]) stats[key] = { count: 0, eventType: null };
-
                 if (bk.type === 'event') {
-                    const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime);
-                    const sH = d.getHours();
-                    const eH = e.getHours();
-                    const isAllDay = (sH <= 9 && eH >= 20);
-                    // 優先度: 終日(unavailable) > 部分(partial) > なし
-                    if (isAllDay) {
-                        stats[key].eventType = 'unavailable';
-                    } else if (stats[key].eventType !== 'unavailable') {
-                        stats[key].eventType = 'partial';
-                    }
-                } else {
-                    stats[key].count++;
-                }
+                    const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); const sH = d.getHours(); const eH = e.getHours(); const isAllDay = (sH <= 9 && eH >= 20);
+                    if (isAllDay) { stats[key].eventType = 'unavailable'; } else if (stats[key].eventType !== 'unavailable') { stats[key].eventType = 'partial'; }
+                } else { stats[key].count++; }
             });
-
-            // 描画
             Object.keys(stats).forEach(key => {
-                const data = stats[key];
-                const cell = document.getElementById(key);
-                if (!cell) return;
-
-                // イベント表示
-                if (data.eventType === 'unavailable') {
-                    cell.classList.add('unavailable');
-                    const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可";
-                } else if (data.eventType === 'partial') {
-                    cell.classList.add('partial-event');
-                }
-
-                // ドット表示
+                const data = stats[key]; const cell = document.getElementById(key); if (!cell) return;
+                if (data.eventType === 'unavailable') { cell.classList.add('unavailable'); const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可"; } else if (data.eventType === 'partial') { cell.classList.add('partial-event'); }
                 if (data.count > 0) {
-                    // ID形式: dots-yyyy-m-d
                     const dotsContainer = document.getElementById(key.replace('day-', 'dots-'));
-                    if (dotsContainer) {
-                        if (data.count <= 3) {
-                            for(let i=0; i<data.count; i++) {
-                                const dot = document.createElement('div');
-                                dot.className = 'dot';
-                                dotsContainer.appendChild(dot);
-                            }
-                        } else {
-                            // 4件以上: 1個の点 + 残り件数
-                            const dot = document.createElement('div');
-                            dot.className = 'dot';
-                            dotsContainer.appendChild(dot);
-
-                            const plus = document.createElement('div');
-                            plus.className = 'dot-plus';
-                            plus.innerText = `+${data.count - 1}`;
-                            dotsContainer.appendChild(plus);
-                        }
-                    }
+                    if (dotsContainer) { if (data.count <= 3) { for(let i=0; i<data.count; i++) { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); } } else { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); const plus = document.createElement('div'); plus.className = 'dot-plus'; plus.innerText = `+${data.count - 1}`; dotsContainer.appendChild(plus); } }
                 }
             });
         }
 
-        function renderDayView(){ 
+        function renderDayView(animationDirection = 0){ 
             const banner=document.getElementById('bookingModeBanner'), mode=currentSystemSettings.bookingMode||'first_come'; 
             if(mode==='lottery'){banner.style.backgroundColor='#fff3e0'; banner.style.color='#e65100'; banner.style.border='1px solid #ffe0b2'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">casino</span> 抽選受付中</div><div style="font-size:11px;">希望を提出してください。</div>`;} 
             else {banner.style.backgroundColor='#e8f0fe'; banner.style.color='#1967d2'; banner.style.border='1px solid #d2e3fc'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">即時確定します。</div>`;} 
@@ -589,8 +399,8 @@
             const container=document.getElementById('timeline'); 
             container.innerHTML=""; 
             
-            // 週間ストリップの描画
-            renderWeekStrip();
+            // 週間ストリップの描画 (アニメーション対応)
+            renderWeekStrip(animationDirection);
 
             // タイムスロットの描画
             for(let h=9;h<20;h++){ 
@@ -610,111 +420,132 @@
             container.addEventListener('mousemove',handleMouseMove); 
             container.addEventListener('mouseup',handleMouseUp); 
 
-            // 現在時刻線の描画（今日の場合のみ）
             createCurrentTimeLine(container);
-
             loadDayBookings(); 
         }
 
-        // 週間ストリップ（日付一覧）を描画する関数
-        function renderWeekStrip() {
-            const strip = document.getElementById('weekStrip');
-            strip.innerHTML = "";
+        // HTML文字列生成用ヘルパー
+        function generateWeekHTML() {
             const today = new Date();
             const current = new Date(displayDate);
-            const dayOfWeek = current.getDay(); // 0 (Sun) - 6 (Sat)
-            
-            // 今週の日曜日（開始日）を計算
+            const dayOfWeek = current.getDay();
             const startOfWeek = new Date(current);
             startOfWeek.setDate(current.getDate() - dayOfWeek);
-
             const wds = ['日','月','火','水','木','金','土'];
-
+            let html = "";
             for (let i = 0; i < 7; i++) {
                 const d = new Date(startOfWeek);
                 d.setDate(startOfWeek.getDate() + i);
+                let cls = 'week-day-item';
+                if (i === 0) cls += ' sun';
+                if (i === 6) cls += ' sat';
+                if (d.getDate() === current.getDate() && d.getMonth() === current.getMonth()) cls += ' selected';
+                if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) cls += ' today';
                 
-                const div = document.createElement('div');
-                div.className = 'week-day-item';
-                if (i === 0) div.classList.add('sun');
-                if (i === 6) div.classList.add('sat');
-                
-                // 選択中の日付
-                if (d.getDate() === current.getDate() && d.getMonth() === current.getMonth() && d.getFullYear() === current.getFullYear()) {
-                    div.classList.add('selected');
-                }
-                // 今日
-                if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) {
-                    div.classList.add('today');
-                }
-
-                div.onclick = () => {
-                    displayDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
-                    renderCalendar(); // 再描画
-                };
-
-                div.innerHTML = `
-                    <div class="week-day-label">${wds[i]}</div>
-                    <div class="week-day-num">${d.getDate()}</div>
-                `;
-                strip.appendChild(div);
+                // クリックイベントは後でattachする方式だと文字列生成で扱いにくいので、
+                // 親のweek-stripでイベント委譲するか、onclick属性を使う。ここではonclick属性を使用。
+                // 実際にはJSで要素生成時にonclickをつけるのがベストだが、HTML文字列で扱うため属性で。
+                // ただし、displayDate等の変数がスコープ外になるため、data属性に日付を持たせてdelegateする方が良い。
+                const dateStr = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+                html += `<div class="${cls}" data-date="${dateStr}"><div class="week-day-label">${wds[i]}</div><div class="week-day-num">${d.getDate()}</div></div>`;
             }
-            
-            // ヘッダーの日付表示も更新（年月の表示を維持）
-            // 週またぎの可能性があるため、選択中の日付の年月を表示
             document.getElementById('calHeaderDate').innerText = `${current.getFullYear()}年 ${current.getMonth() + 1}月`;
+            return html;
         }
 
-        // 現在時刻線の要素作成と初期位置設定
-        function createCurrentTimeLine(container) {
-            const now = new Date();
-            // 表示中の日付が今日と同じかチェック
-            if (displayDate.getFullYear() === now.getFullYear() &&
-                displayDate.getMonth() === now.getMonth() &&
-                displayDate.getDate() === now.getDate()) {
-                
-                const line = document.createElement('div');
-                line.id = 'currentTimeLine';
-                line.className = 'current-time-line';
-                // バッジ（時刻テキスト）とドットを追加
-                line.innerHTML = '<div class="current-time-badge"><span id="currentTimeText" class="current-time-text"></span></div><div class="current-time-dot"></div>';
-                container.appendChild(line);
-                updateCurrentTimeLine(); // 位置計算
+        // 週間ストリップの描画とアニメーション
+        function renderWeekStrip(animationDirection) {
+            const strip = document.getElementById('weekStrip');
+            if (!strip) return;
+
+            // コンテナへのクリックイベント委譲（一回だけ設定）
+            if (!strip.hasAttribute('data-click-bound')) {
+                strip.setAttribute('data-click-bound', 'true');
+                strip.addEventListener('click', (e) => {
+                    const item = e.target.closest('.week-day-item');
+                    if (item && item.dataset.date) {
+                        const parts = item.dataset.date.split('-').map(Number);
+                        displayDate.setFullYear(parts[0], parts[1]-1, parts[2]);
+                        renderCalendar(); 
+                    }
+                });
             }
-        }
 
-        // 現在時刻線の位置更新処理
-        function updateCurrentTimeLine() {
-            const line = document.getElementById('currentTimeLine');
-            if (!line) return;
-
-            // 再度日付チェック（日付が変わった瞬間などのため）
-            const now = new Date();
-            const isToday = displayDate.getFullYear() === now.getFullYear() &&
-                            displayDate.getMonth() === now.getMonth() &&
-                            displayDate.getDate() === now.getDate();
+            const newInnerHtml = generateWeekHTML();
             
-            if (!isToday) {
-                line.style.display = 'none';
+            // 初回描画またはアニメーションなしの場合
+            if (animationDirection === 0 || strip.innerHTML.trim() === "") {
+                strip.innerHTML = `<div class="week-strip-page">${newInnerHtml}</div>`;
                 return;
             }
 
-            const h = now.getHours();
-            if (h < 9 || h >= 20) {
-                line.style.display = 'none'; // 営業時間外
-            } else {
-                line.style.display = 'block';
-                const m = now.getMinutes();
-                // 9:00を基準(0px)とし、1分=1pxで計算。
-                // .timeline-containerにはpadding: 10px 0があるため、+10pxする
-                const top = ((h - 9) * 60) + m + 10;
-                line.style.top = `${top}px`;
+            // アニメーション処理
+            // 現在の表示内容を取得
+            const oldPage = strip.querySelector('.week-strip-page');
+            const oldContent = oldPage ? oldPage.innerHTML : "";
+
+            // ラッパーを作成
+            const wrapper = document.createElement('div');
+            wrapper.className = 'week-strip-wrapper';
+            wrapper.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+
+            const oldDiv = document.createElement('div');
+            oldDiv.className = 'week-strip-page';
+            oldDiv.innerHTML = oldContent;
+
+            const newDiv = document.createElement('div');
+            newDiv.className = 'week-strip-page';
+            newDiv.innerHTML = newInnerHtml;
+
+            // stripをクリアしてラッパーを入れる
+            strip.innerHTML = '';
+            strip.appendChild(wrapper);
+
+            if (animationDirection > 0) {
+                // 未来へ (右から左へ移動): [Old][New] -> move left
+                wrapper.appendChild(oldDiv);
+                wrapper.appendChild(newDiv);
+                wrapper.style.transform = 'translateX(0)';
                 
-                // 時刻テキスト更新
-                const textEl = document.getElementById('currentTimeText');
-                if(textEl) {
-                    textEl.innerText = `${h}:${String(m).padStart(2, '0')}`;
-                }
+                // Force reflow
+                wrapper.offsetHeight; 
+                
+                wrapper.style.transform = 'translateX(-100%)';
+            } else {
+                // 過去へ (左から右へ移動): [New][Old] -> move right
+                wrapper.appendChild(newDiv);
+                wrapper.appendChild(oldDiv);
+                wrapper.style.transform = 'translateX(-100%)';
+                
+                // Force reflow
+                wrapper.offsetHeight;
+                
+                wrapper.style.transform = 'translateX(0)';
+            }
+
+            wrapper.addEventListener('transitionend', () => {
+                strip.innerHTML = `<div class="week-strip-page">${newInnerHtml}</div>`;
+            }, { once: true });
+        }
+
+        function createCurrentTimeLine(container) {
+            const now = new Date();
+            if (displayDate.getFullYear() === now.getFullYear() && displayDate.getMonth() === now.getMonth() && displayDate.getDate() === now.getDate()) {
+                const line = document.createElement('div'); line.id = 'currentTimeLine'; line.className = 'current-time-line';
+                line.innerHTML = '<div class="current-time-badge"><span id="currentTimeText" class="current-time-text"></span></div><div class="current-time-dot"></div>';
+                container.appendChild(line); updateCurrentTimeLine(); 
+            }
+        }
+        function updateCurrentTimeLine() {
+            const line = document.getElementById('currentTimeLine'); if (!line) return;
+            const now = new Date();
+            const isToday = displayDate.getFullYear() === now.getFullYear() && displayDate.getMonth() === now.getMonth() && displayDate.getDate() === now.getDate();
+            if (!isToday) { line.style.display = 'none'; return; }
+            const h = now.getHours();
+            if (h < 9 || h >= 20) { line.style.display = 'none'; } else {
+                line.style.display = 'block';
+                const m = now.getMinutes(); const top = ((h - 9) * 60) + m + 10; line.style.top = `${top}px`;
+                const textEl = document.getElementById('currentTimeText'); if(textEl) { textEl.innerText = `${h}:${String(m).padStart(2, '0')}`; }
             }
         }
         
@@ -733,77 +564,18 @@
         function updateBandSelect(bid=""){ const s=document.getElementById('selectBookingBand'); s.innerHTML=""; const active=myBandsAll.filter(b=>!b.isArchived); if(active.length===0)s.appendChild(new Option("なし","")); else active.forEach(b=>{const op=new Option(b.name,b.id); if(b.id===bid)op.selected=true; s.appendChild(op);}); }
         window.openEventListModal=(evs)=>{ const c=document.getElementById('eventListContainer'); c.innerHTML=""; evs.sort((a,b)=>new Date(a.startTime)-new Date(b.startTime)).forEach(d=>{ const div=document.createElement('div'); div.className="card"; div.style.cursor="pointer"; const s=new Date(d.startTime), e=new Date(d.endTime), tStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; div.innerHTML=`<div style="font-weight:bold; color:#0b57d0;">${tStr}</div><div>${d.type==='event'?d.title:d.bandName}</div>`+(d.status==='pending'?'<div style="font-size:10px; color:#b06000;">●承認待ち</div>':''); div.onclick=()=>{closeModal('modal-event-list'); openEditBookingModal(d.id,d);}; c.appendChild(div); }); openModal('modal-event-list'); };
         
-        // ＋ボタン用の新規予約ハンドラ
-        window.handleNewBooking = () => {
-            isSelecting = false;
-            // 現在時刻から次の枠を計算（例：現在10:15 -> 11:00開始、現在10:45 -> 11:00開始）
-            // シンプルに、現在選択中の日付の9:00または現在時刻に近い時間を設定
-            const now = new Date();
-            let startH = 10;
-            
-            // もし表示中の日付が今日なら、現在時刻を考慮
-            if (displayDate.toDateString() === now.toDateString()) {
-                startH = now.getHours() + 1;
-                if (startH < 9) startH = 9;
-            }
-            if (startH >= 20) startH = 19;
-
-            selectionStartHour = startH;
-            selectionEndHour = startH + 1;
-            openBookingModalRange();
-        };
-
-        // 検索モーダルを開く
-        window.openSearchModal = () => {
-            document.getElementById('searchInput').value = "";
-            document.getElementById('searchResultContainer').innerHTML = "";
-            // 初期表示として全件（または直近）を表示
-            window.filterSearchResults();
-            openModal('modal-search');
-        };
-
-        // 検索フィルタリング
+        window.handleNewBooking = () => { isSelecting = false; const now = new Date(); let startH = 10; if (displayDate.toDateString() === now.toDateString()) { startH = now.getHours() + 1; if (startH < 9) startH = 9; } if (startH >= 20) startH = 19; selectionStartHour = startH; selectionEndHour = startH + 1; openBookingModalRange(); };
+        window.openSearchModal = () => { document.getElementById('searchInput').value = ""; document.getElementById('searchResultContainer').innerHTML = ""; window.filterSearchResults(); openModal('modal-search'); };
         window.filterSearchResults = () => {
-            const keyword = document.getElementById('searchInput').value.toLowerCase();
-            const container = document.getElementById('searchResultContainer');
-            container.innerHTML = "";
-            
-            // キャッシュされている予約データからフィルタリング
-            const filtered = loadedBookingsCache.filter(b => {
-                const text = (b.bandName || "") + (b.title || "") + (b.userName || "");
-                return text.toLowerCase().includes(keyword);
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>該当する予約はありません</div>";
-                return;
-            }
-
+            const keyword = document.getElementById('searchInput').value.toLowerCase(); const container = document.getElementById('searchResultContainer'); container.innerHTML = "";
+            const filtered = loadedBookingsCache.filter(b => { const text = (b.bandName || "") + (b.title || "") + (b.userName || ""); return text.toLowerCase().includes(keyword); });
+            if (filtered.length === 0) { container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>該当する予約はありません</div>"; return; }
             filtered.sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
-
             filtered.forEach(d => {
-                const div = document.createElement('div');
-                div.className = "card";
-                div.style.cursor = "pointer";
-                const s = new Date(d.startTime);
-                const dateStr = `${s.getMonth()+1}/${s.getDate()}`;
-                const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
-                
-                div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between;">
-                        <div style="font-weight:bold;">${dateStr} ${timeStr}</div>
-                        <div style="font-size:12px; color:#666;">${d.type==='event'?'イベント':'練習'}</div>
-                    </div>
-                    <div style="font-weight:bold; color:#0b57d0;">${d.type==='event'?d.title:d.bandName}</div>
-                    <div style="font-size:12px;">${d.userName||''}</div>
-                `;
-                div.onclick = () => {
-                    closeModal('modal-search');
-                    // 日付を移動して編集モーダルを開く
-                    displayDate.setTime(s.getTime());
-                    renderCalendar(); // カレンダー移動
-                    setTimeout(() => openEditBookingModal(d.id, d), 300);
-                };
+                const div = document.createElement('div'); div.className = "card"; div.style.cursor = "pointer";
+                const s = new Date(d.startTime); const dateStr = `${s.getMonth()+1}/${s.getDate()}`; const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
+                div.innerHTML = `<div style="display:flex; justify-content:space-between;"><div style="font-weight:bold;">${dateStr} ${timeStr}</div><div style="font-size:12px; color:#666;">${d.type==='event'?'イベント':'練習'}</div></div><div style="font-weight:bold; color:#0b57d0;">${d.type==='event'?d.title:d.bandName}</div><div style="font-size:12px;">${d.userName||''}</div>`;
+                div.onclick = () => { closeModal('modal-search'); displayDate.setTime(s.getTime()); renderCalendar(); setTimeout(() => openEditBookingModal(d.id, d), 300); };
                 container.appendChild(div);
             });
         };
