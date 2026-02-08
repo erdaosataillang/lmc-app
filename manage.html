@@ -276,9 +276,17 @@
 
         let currentUser=null, currentProfile=null, currentUserData=null, adminEditingUserId=null, allUsersCache=[], allBandsCache=[], tempLotterySchedule=null;
         let currentSystemSettings={ bookingMode:'first_come', lotteryConfig:{ mode:'auto', daysBefore:2, time:0 } };
-        let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
+        
+        // Helper to get Fiscal Year (Apr 1 - Mar 31)
+        function getFiscalYear() {
+            const now = new Date();
+            // If current month is Jan(0), Feb(1), or Mar(2), subtract 1 from year
+            return now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+        }
+
+        let currentFeeSettings={ year: getFiscalYear(), term1_amount:0, term2_amount:0 };
         // NEW: Basic Config State
-        let currentBasicConfig = { currentYear: new Date().getFullYear(), activeEventId: null };
+        let currentBasicConfig = { currentYear: getFiscalYear(), activeEventId: null };
         let bandSortOrder = 'created_desc'; // Default Sort
         let showArchivedBands = false;
 
@@ -293,13 +301,19 @@
         async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); }
 
         window.openAdminFeesMenu=()=>openPage('admin-fees-menu');
-        window.openAdminFeeHistory=async()=>{ openPage('admin-fees-history'); const yearSelect=document.getElementById('scanFeeYear'); yearSelect.innerHTML=""; const currentYear=new Date().getFullYear(); [currentYear-1,currentYear,currentYear+1].forEach(y=>{ const op=document.createElement('option'); op.value=y; op.text=`${y}年度`; if(y===currentYear)op.selected=true; yearSelect.appendChild(op); }); await refreshAllUsersCache(); };
-        window.openAdminFeeSettings=async()=>{ openPage('admin-fees-settings'); try{ const docSnap=await getDoc(doc(db,"system","fees")); if(docSnap.exists())currentFeeSettings=docSnap.data(); else currentFeeSettings={year:new Date().getFullYear(),term1_amount:0,term2_amount:0}; document.getElementById('feeSettingYear').value=currentFeeSettings.year; document.getElementById('feeSettingTerm1').value=currentFeeSettings.term1_amount; document.getElementById('feeSettingTerm2').value=currentFeeSettings.term2_amount; loadFeeSummary(); }catch(e){console.error(e)} };
-        async function loadFeeSummary(){ if(allUsersCache.length===0)await refreshAllUsersCache(); const year=currentFeeSettings.year||new Date().getFullYear(); const yearLabel=document.getElementById('feeSummaryYearLabel'); if(yearLabel)yearLabel.innerText=year; const t1=parseInt(currentFeeSettings.term1_amount)||0, t2=parseInt(currentFeeSettings.term2_amount)||0, k1=`${year}_1`, k2=`${year}_2`; let count1=0, count2=0, totalUsers=allUsersCache.length; allUsersCache.forEach(u=>{ if(u.feeStatus){ if(u.feeStatus[k1])count1++; if(u.feeStatus[k2])count2++; } }); const sum1=count1*t1, sum2=count2*t2, total=sum1+sum2; let maxTotal=0; if(t1>0)maxTotal+=totalUsers*t1; if(t2>0)maxTotal+=totalUsers*t2; let percent=(maxTotal>0)?Math.round((total/maxTotal)*100):0; document.getElementById('feeTotalAmount').innerText=total.toLocaleString(); document.getElementById('feeTotalTerm1').innerText='¥'+sum1.toLocaleString(); document.getElementById('feeCountTerm1').innerText=`(${count1}/${totalUsers}人)`; document.getElementById('feeTotalTerm2').innerText='¥'+sum2.toLocaleString(); document.getElementById('feeCountTerm2').innerText=`(${count2}/${totalUsers}人)`; document.getElementById('feeProgressPercent').innerText=`${percent}%`; document.getElementById('feeProgressChart').style.background=`conic-gradient(rgba(255,255,255,0.9) 0% ${percent}%, rgba(255,255,255,0.2) ${percent}% 100%)`; }
+        window.openAdminFeeHistory=async()=>{ 
+            openPage('admin-fees-history'); 
+            const yearSelect=document.getElementById('scanFeeYear'); 
+            yearSelect.innerHTML=""; 
+            const currentYear=getFiscalYear();
+            [currentYear-1,currentYear,currentYear+1].forEach(y=>{ const op=document.createElement('option'); op.value=y; op.text=`${y}年度`; if(y===currentYear)op.selected=true; yearSelect.appendChild(op); }); await refreshAllUsersCache(); 
+        };
+        window.openAdminFeeSettings=async()=>{ openPage('admin-fees-settings'); try{ const docSnap=await getDoc(doc(db,"system","fees")); if(docSnap.exists())currentFeeSettings=docSnap.data(); else currentFeeSettings={year:getFiscalYear(),term1_amount:0,term2_amount:0}; document.getElementById('feeSettingYear').value=currentFeeSettings.year; document.getElementById('feeSettingTerm1').value=currentFeeSettings.term1_amount; document.getElementById('feeSettingTerm2').value=currentFeeSettings.term2_amount; loadFeeSummary(); }catch(e){console.error(e)} };
+        async function loadFeeSummary(){ if(allUsersCache.length===0)await refreshAllUsersCache(); const year=currentFeeSettings.year||getFiscalYear(); const yearLabel=document.getElementById('feeSummaryYearLabel'); if(yearLabel)yearLabel.innerText=year; const t1=parseInt(currentFeeSettings.term1_amount)||0, t2=parseInt(currentFeeSettings.term2_amount)||0, k1=`${year}_1`, k2=`${year}_2`; let count1=0, count2=0, totalUsers=allUsersCache.length; allUsersCache.forEach(u=>{ if(u.feeStatus){ if(u.feeStatus[k1])count1++; if(u.feeStatus[k2])count2++; } }); const sum1=count1*t1, sum2=count2*t2, total=sum1+sum2; let maxTotal=0; if(t1>0)maxTotal+=totalUsers*t1; if(t2>0)maxTotal+=totalUsers*t2; let percent=(maxTotal>0)?Math.round((total/maxTotal)*100):0; document.getElementById('feeTotalAmount').innerText=total.toLocaleString(); document.getElementById('feeTotalTerm1').innerText='¥'+sum1.toLocaleString(); document.getElementById('feeCountTerm1').innerText=`(${count1}/${totalUsers}人)`; document.getElementById('feeTotalTerm2').innerText='¥'+sum2.toLocaleString(); document.getElementById('feeCountTerm2').innerText=`(${count2}/${totalUsers}人)`; document.getElementById('feeProgressPercent').innerText=`${percent}%`; document.getElementById('feeProgressChart').style.background=`conic-gradient(rgba(255,255,255,0.9) 0% ${percent}%, rgba(255,255,255,0.2) ${percent}% 100%)`; }
         window.saveFeeSettings=async()=>{ const year=parseInt(document.getElementById('feeSettingYear').value), t1=parseInt(document.getElementById('feeSettingTerm1').value), t2=parseInt(document.getElementById('feeSettingTerm2').value); if(!year)return await showCustomAlert("年度を入力してください", "入力エラー"); try{ await setDoc(doc(db,"system","fees"),{year:year,term1_amount:t1||0,term2_amount:t2||0,updatedAt:serverTimestamp()},{merge:true}); currentFeeSettings={year,term1_amount:t1,term2_amount:t2}; await showCustomAlert("部費設定を保存しました。"); loadFeeSummary(); }catch(e){await showCustomAlert("保存エラー: " + e.message, "エラー")} };
-        window.openAdminFeeList=async()=>{ openPage('admin-fees-list'); document.getElementById('feeUserList').innerHTML="読み込み中..."; await getDoc(doc(db,"system","fees")).then(snap=>{if(snap.exists())currentFeeSettings=snap.data()}); document.getElementById('feeListYearLabel').innerText=currentFeeSettings.year||new Date().getFullYear(); loadFeeUserList(); };
+        window.openAdminFeeList=async()=>{ openPage('admin-fees-list'); document.getElementById('feeUserList').innerHTML="読み込み中..."; await getDoc(doc(db,"system","fees")).then(snap=>{if(snap.exists())currentFeeSettings=snap.data()}); document.getElementById('feeListYearLabel').innerText=currentFeeSettings.year||getFiscalYear(); loadFeeUserList(); };
         async function loadFeeUserList(){ const container=document.getElementById('feeUserList'); container.innerHTML="ユーザー取得中..."; try{ const q=query(collection(db,"users"),orderBy("studentId","asc")); const qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); renderFeeUserList(allUsersCache); }catch(e){container.innerHTML="エラー: "+e.message} }
-        function renderFeeUserList(users){ const container=document.getElementById('feeUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:20px; text-align:center;">ユーザーがいません</div>'; return;} const targetYear=currentFeeSettings.year||new Date().getFullYear(), k1=`${targetYear}_1`, k2=`${targetYear}_2`; users.forEach(u=>{ const status=u.feeStatus||{}, div=document.createElement('div'); div.className='fee-user-item'; div.innerHTML=`<div><div style="font-weight:bold;">${u.name}</div><div style="font-size:11px; color:#888;">${u.studentId||'-'} ${u.part?'('+getPartLabel(u.part)+')':''}</div></div><div class="fee-check-group"><div class="fee-checkbox ${status[k1]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k1}',this)"><div class="fee-label">前期</div><div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term1_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div><div class="fee-checkbox ${status[k2]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k2}',this)"><div class="fee-label">後期</div><div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term2_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div></div>`; container.appendChild(div); }); }
+        function renderFeeUserList(users){ const container=document.getElementById('feeUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:20px; text-align:center;">ユーザーがいません</div>'; return;} const targetYear=currentFeeSettings.year||getFiscalYear(), k1=`${targetYear}_1`, k2=`${targetYear}_2`; users.forEach(u=>{ const status=u.feeStatus||{}, div=document.createElement('div'); div.className='fee-user-item'; div.innerHTML=`<div><div style="font-weight:bold;">${u.name}</div><div style="font-size:11px; color:#888;">${u.studentId||'-'} ${u.part?'('+getPartLabel(u.part)+')':''}</div></div><div class="fee-check-group"><div class="fee-checkbox ${status[k1]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k1}',this)"><div class="fee-label">前期</div><div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term1_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div><div class="fee-checkbox ${status[k2]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k2}',this)"><div class="fee-label">後期</div><div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term2_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div></div>`; container.appendChild(div); }); }
         document.getElementById('feeListSearchInput')?.addEventListener('input',(e)=>{ const term=e.target.value.trim(); renderFeeUserList(term?allUsersCache.filter(u=>u.name.includes(term)||(u.kana&&u.kana.includes(term))):allUsersCache); });
         window.toggleFeeStatus=async(uid,key,element)=>{ const isChecked=element.classList.contains('checked'); if(isChecked)element.classList.remove('checked'); else element.classList.add('checked'); const newVal=!isChecked; try{ const updateData={}; updateData[`feeStatus.${key}`]=newVal; await updateDoc(doc(db,"users",uid),updateData); const user=allUsersCache.find(u=>u.id===uid); if(user){ if(!user.feeStatus)user.feeStatus={}; user.feeStatus[key]=newVal; } }catch(e){console.error(e); await showCustomAlert("更新失敗: " + e.message, "エラー"); if(isChecked)element.classList.add('checked'); else element.classList.remove('checked'); } };
         
@@ -404,7 +418,7 @@
                 // if (docSnap.exists()) currentBasicConfig = docSnap.data();
                 
                 // UIへの反映
-                const y = currentBasicConfig.currentYear || new Date().getFullYear();
+                const y = currentBasicConfig.currentYear || getFiscalYear();
                 document.getElementById('basic-setting-year').value = y;
                 document.getElementById('display-year-text').innerText = y;
                 
@@ -430,7 +444,7 @@
         window.adjustYear = (diff) => {
             const input = document.getElementById('basic-setting-year');
             const display = document.getElementById('display-year-text');
-            let val = parseInt(input.value) || new Date().getFullYear();
+            let val = parseInt(input.value) || getFiscalYear();
             val += diff;
             input.value = val;
             display.innerText = val;
