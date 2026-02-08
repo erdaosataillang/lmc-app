@@ -74,6 +74,23 @@
             padding: 16px;
             box-sizing: border-box;
         }
+
+        /* --- Notification Styles --- */
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; transition: background 0.2s; }
+        .notification-btn:active { background: #f1f3f4; }
+        .notification-icon { font-size: 24px; color: #5f6368; }
+        .notification-badge { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background: #d93025; border-radius: 50%; border: 2px solid white; display: none; }
+        .notification-badge.show { display: block; }
+        
+        .notification-list { list-style: none; padding: 0; margin: 0; }
+        .notification-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; }
+        .notification-item:last-child { border-bottom: none; }
+        .notification-item.unread { background: #f0f8ff; }
+        .notif-icon-box { width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
+        .notif-content { flex-grow: 1; }
+        .notif-text { font-size: 13px; color: #1f1f1f; line-height: 1.5; margin-bottom: 4px; }
+        .notif-date { font-size: 11px; color: #5f6368; }
     </style>
 </head>
 <body>
@@ -95,7 +112,13 @@
                 <span id="displayYear" style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">--年度</span>
                 <span id="displayActiveEvent" style="display:none; font-size:11px; font-weight:bold; background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:12px; margin-left:4px;"></span>
             </div>
-            <div class="header-avatar" id="headerIconBands"></div>
+            <div class="header-right">
+                <div class="notification-btn" onclick="openNotificationModal()">
+                    <span class="material-icons notification-icon">notifications</span>
+                    <span class="notification-badge" id="headerNotifBadge"></span>
+                </div>
+                <div class="header-avatar" id="headerIconBands"></div>
+            </div>
         </div>
         <div class="band-tabs"><div class="band-tab active" onclick="switchBandTab('active')">活動中</div><div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div></div>
         
@@ -184,6 +207,19 @@
     </div>
     <div id="modal-add-member" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-add-member')"><div class="modal-content"><h3 style="margin-top:0;">メンバーを追加</h3><p style="font-size:12px; color:#5f6368; margin-bottom:20px;">追加したいメンバーを選択してください。</p><div class="form-group"><div class="member-select-list" id="addMemberSelectList"></div></div><button class="btn-primary" onclick="saveAddedMembers()">追加する</button><button class="btn-secondary" onclick="closeModal('modal-add-member')">キャンセル</button></div></div>
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')"><div class="modal-content"><h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368;">マイステータス</h3><div class="user-status-card"><img id="modalUserIcon" src="" class="user-status-icon"><div id="modalUserName" class="user-status-name"></div><div style="background:#f9f9f9; padding:15px; border-radius:12px;"><div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">2025年度 部費</div><div class="fee-status-row"><div id="statusFeeTerm1" class="fee-status-badge">前期: -</div><div id="statusFeeTerm2" class="fee-status-badge">後期: -</div></div></div><div style="margin-top:20px;"><div style="font-size:12px; color:#999; margin-bottom:5px;">会員QRコード</div><div id="myQRCodeArea" style="width:150px; height:150px; background:#eee; margin:0 auto; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:48px; color:#ccc;">qr_code_2</span></div></div></div><button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button></div></div>
+
+    <!-- Notification Modal -->
+    <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
+        <div class="modal-content">
+            <h3 style="margin-top:0; margin-bottom:10px; font-size:18px;">通知</h3>
+            <div class="scroll-content" style="padding:0; max-height:60vh; overflow-y:auto;">
+                <div id="notificationList" class="notification-list">
+                    <!-- JS populated -->
+                </div>
+            </div>
+            <button class="btn-secondary" onclick="closeModal('modal-notification')">閉じる</button>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
@@ -293,6 +329,9 @@
                 // System Settings Load
                 loadSystemSettings();
 
+                // Mock Notification Logic Trigger
+                checkNotifications();
+
                 const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'); 
                 if(act==='invite'&&iBid){await handleInvite(iBid); window.history.replaceState(null,null,window.location.pathname);} 
                 
@@ -302,6 +341,49 @@
 
         function renderHeaderIcons(d){ let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata"); if(d.birthday){const t=new Date(), b=new Date(d.birthday); if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate())r="ring-birthday";} if(!r&&isU)r=d.job?`ring-${d.job}`:"ring-rainbow"; const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; const el=document.getElementById('headerIconBands'); if(el){el.innerHTML=h; el.className="header-avatar "+r; el.onclick=openUserStatusModal;} if(isU&&d.role)document.getElementById('nav-admin').classList.remove('hidden'); }
         window.openUserStatusModal=async()=>{ if(!currentUserData)return; if(!currentFeeSettings.year){ try{ const snap=await getDoc(doc(db,"system","fees")); if(snap.exists())currentFeeSettings=snap.data(); }catch(e){console.error(e)} } const year=currentFeeSettings.year||new Date().getFullYear(); const status=currentUserData.feeStatus||{}; document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; document.getElementById('modalUserName').innerText=currentUserData.name+" さん"; const isPaid1=!!status[`${year}_1`], isPaid2=!!status[`${year}_2`], t1Text=isPaid1?'済':'未納', t2Text=isPaid2?'済':'未納', t1El=document.getElementById('statusFeeTerm1'), t2El=document.getElementById('statusFeeTerm2'); t1El.innerText=`前期: ${t1Text}`; t1El.className=`fee-status-badge ${isPaid1?'fee-paid':'fee-unpaid'}`; t2El.innerText=`後期: ${t2Text}`; t2El.className=`fee-status-badge ${isPaid2?'fee-paid':'fee-unpaid'}`; document.getElementById('statusFeeYear').innerText=`${year}年度 部費状況`; if(currentUser){ const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}`; document.getElementById('myQRCodeArea').innerHTML=`<img src="${qrUrl}" style="width:100%;height:100%;">`; } openModal('modal-user-status'); };
+
+        // Notification Functions
+        window.openNotificationModal = () => {
+            const list = document.getElementById('notificationList');
+            list.innerHTML = "";
+            
+            // Mock Data (Frontend implementation)
+            const notifications = [
+                { id: 1, type: 'info', text: '新入生歓迎ライブの応募が開始されました！', date: '2025/04/01 10:00', read: false },
+                { id: 2, type: 'check', text: '「放課後ティータイム」の合わせ予約が承認されました。', date: '2025/03/28 15:30', read: true },
+                { id: 3, type: 'warning', text: '部費（後期）の支払いが未完了です。確認してください。', date: '2025/03/25 09:00', read: true }
+            ];
+
+            if(notifications.length === 0) {
+                list.innerHTML = '<div style="padding:20px; text-align:center; color:#999; font-size:12px;">通知はありません</div>';
+            } else {
+                notifications.forEach(n => {
+                    const div = document.createElement('div');
+                    div.className = `notification-item ${n.read ? '' : 'unread'}`;
+                    let icon = 'notifications';
+                    if(n.type === 'check') icon = 'check_circle';
+                    if(n.type === 'warning') icon = 'error';
+                    
+                    div.innerHTML = `
+                        <div class="notif-icon-box"><span class="material-icons" style="font-size:18px;">${icon}</span></div>
+                        <div class="notif-content">
+                            <div class="notif-text">${n.text}</div>
+                            <div class="notif-date">${n.date}</div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+            
+            // Mark as read (Mock)
+            document.getElementById('headerNotifBadge').classList.remove('show');
+            openModal('modal-notification');
+        };
+
+        function checkNotifications() {
+            // Mock: Always show badge for demo
+            document.getElementById('headerNotifBadge').classList.add('show');
+        }
 
         function loadMyBands(){ 
             const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); 
