@@ -17,12 +17,13 @@
         .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
         .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
         @keyframes spin { 100% { transform: rotate(360deg); } } @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
+        /* Modified scroll-content for slider */
+        .scroll-content { flex-grow: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 100px; -webkit-overflow-scrolling: touch; position: relative; }
         .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; } .card.band-card:active { background-color: #f5f5f5; }
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } .band-item:last-child { border: none; margin: 0; padding: 0; }
         .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; } .band-icon img { width: 100%; height: 100%; object-fit: cover; }
         .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 16px; } .band-members { font-size: 12px; color: #5f6368; }
-        .band-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin: 0 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; } .band-tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #5f6368; } .band-tab.active { background: #e8f0fe; color: #0b57d0; }
+        .band-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin: 0 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: relative; } .band-tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; } .band-tab.active { background: #e8f0fe; color: #0b57d0; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e0e3e7; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 2000; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
         .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } .nav-item.active span { color: #1f1f1f; font-weight: bold; }
@@ -61,6 +62,18 @@
         .dialog-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-dialog-cancel { background: #f1f3f4; color: #1f1f1f; }
         .btn-dialog-ok { background: #0b57d0; color: white; }
+
+        /* --- Slider Styles --- */
+        .band-slider {
+            display: flex;
+            width: 200%;
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .band-slide {
+            width: 50%;
+            padding: 16px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
@@ -85,7 +98,18 @@
             <div class="header-avatar" id="headerIconBands"></div>
         </div>
         <div class="band-tabs"><div class="band-tab active" onclick="switchBandTab('active')">活動中</div><div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div></div>
-        <div class="scroll-content"><div id="bandListContainer"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div></div>
+        
+        <div class="scroll-content">
+            <div id="bandSlider" class="band-slider">
+                <div id="activeBandList" class="band-slide">
+                    <div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>
+                </div>
+                <div id="archivedBandList" class="band-slide">
+                    <div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>
+                </div>
+            </div>
+        </div>
+        
         <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
     </div>
 
@@ -290,8 +314,52 @@
             }); 
         }
         
-        window.switchBandTab=(tab)=>{ currentBandTab=tab; document.querySelectorAll('.band-tab').forEach(el=>el.classList.remove('active')); const idx=(tab==='active')?0:1; document.querySelectorAll('.band-tab')[idx].classList.add('active'); renderBandList(); };
-        function renderBandList(){ const container=document.getElementById('bandListContainer'); container.innerHTML=""; const target=myBandsAll.filter(b=>(currentBandTab==='active')?!b.isArchived:b.isArchived); if(target.length===0){container.innerHTML=`<div style="text-align:center; padding:40px; color:#999;">なし</div>`;return;} target.forEach(b=>{ const div=document.createElement('div'); div.className='card band-card'; div.onclick=()=>openBandDetail(b.id,b); let iconH=b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`; div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${iconH}<div class="band-info"><div class="band-name">${b.name}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`; container.appendChild(div); }); }
+        // --- Modified Switch Band Tab with Animation ---
+        window.switchBandTab=(tab)=>{ 
+            currentBandTab=tab; 
+            document.querySelectorAll('.band-tab').forEach(el=>el.classList.remove('active')); 
+            const idx=(tab==='active')?0:1; 
+            document.querySelectorAll('.band-tab')[idx].classList.add('active'); 
+            
+            const slider = document.getElementById('bandSlider');
+            if (tab === 'active') {
+                slider.style.transform = 'translateX(0)';
+            } else {
+                slider.style.transform = 'translateX(-50%)';
+            }
+        };
+
+        function renderBandList(){ 
+            const activeList = document.getElementById('activeBandList');
+            const archivedList = document.getElementById('archivedBandList');
+            
+            activeList.innerHTML = "";
+            archivedList.innerHTML = "";
+            
+            const activeBands = myBandsAll.filter(b => !b.isArchived);
+            const archivedBands = myBandsAll.filter(b => b.isArchived);
+            
+            const createBandItem = (b) => {
+                const div=document.createElement('div'); 
+                div.className='card band-card'; 
+                div.onclick=()=>openBandDetail(b.id,b); 
+                let iconH=b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${b.name.charAt(0)}</div>`; 
+                div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${iconH}<div class="band-info"><div class="band-name">${b.name}</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span></div>`; 
+                return div;
+            };
+
+            if(activeBands.length === 0) {
+                activeList.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">なし</div>`;
+            } else {
+                activeBands.forEach(b => activeList.appendChild(createBandItem(b)));
+            }
+
+            if(archivedBands.length === 0) {
+                archivedList.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">なし</div>`;
+            } else {
+                archivedBands.forEach(b => archivedList.appendChild(createBandItem(b)));
+            }
+        }
         
         window.openBandModal=()=>{ document.getElementById('inputBandName').value=""; document.getElementById('bandMemberSearchInput').value=""; document.getElementById('userSelectList').innerHTML="読み込み中..."; tempBandIconBlob=null; document.getElementById('previewBandIcon').classList.add('hidden'); loadUserList('userSelectList'); openModal('modal-band'); };
         async function loadUserList(tid='userSelectList',ex=[]){ const list=document.getElementById(tid), qs=await getDocs(collection(db,"users")); list.innerHTML=""; let c=0; qs.forEach(doc=>{ const u=doc.data(); if(doc.id===currentUser||ex.includes(doc.id))return; const div=document.createElement('div'); div.className='member-option'; div.dataset.uid=doc.id; div.dataset.uname=u.name; div.dataset.ukana=u.kana||""; div.onclick=()=>{div.classList.toggle('selected'); div.querySelector('.material-icons').innerText=div.classList.contains('selected')?'check_box':'check_box_outline_blank';}; div.innerHTML=`<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part?`(${getPartLabel(u.part)})`:''}</span></div>`; list.appendChild(div); c++; }); if(c===0)list.innerHTML='<div style="padding:10px; color:#999;">なし</div>'; }
