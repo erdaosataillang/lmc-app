@@ -80,6 +80,17 @@
         .current-time-badge { position: absolute; left: -50px; width: 50px; top: -10px; text-align: center; display: flex; justify-content: center; align-items: center; }
         .current-time-text { background-color: #ea4335; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; height: 16px; line-height: 16px; }
         .current-time-dot { width: 8px; height: 8px; background-color: #ea4335; border-radius: 50%; position: absolute; left: -4px; top: -5px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+        /* 週間日付ストリップ用のスタイル */
+        .week-strip { display: flex; justify-content: space-around; padding: 10px 0; background: white; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; user-select: none; }
+        .week-day-item { display: flex; flex-direction: column; align-items: center; width: 40px; cursor: pointer; }
+        .week-day-label { font-size: 10px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
+        .week-day-num { width: 32px; height: 32px; line-height: 32px; text-align: center; border-radius: 50%; font-size: 14px; font-weight: bold; color: #1f1f1f; transition: background-color 0.2s; }
+        .week-day-item.selected .week-day-num { background-color: #0b57d0; color: white; }
+        .week-day-item.today .week-day-num { border: 1px solid #0b57d0; box-sizing: border-box; } /* 今日の枠線表示 */
+        .week-day-item.today.selected .week-day-num { background-color: #0b57d0; border: none; }
+        .week-day-item.sun .week-day-label { color: #d93025; }
+        .week-day-item.sat .week-day-label { color: #1a73e8; }
     </style>
 </head>
 <body>
@@ -113,7 +124,19 @@
             </div>
             <div style="display:flex; align-items:center;"><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span><div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px;"></div><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span></div>
         </div>
-        <div class="scroll-content"><div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div><div id="calDayView" class="hidden"><div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div><div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div><div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div><div class="timeline-container" id="timeline"></div></div></div>
+        <div class="scroll-content">
+            <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
+            <div id="calDayView" class="hidden">
+                <!-- 週間ストリップを追加 -->
+                <div id="weekStrip" class="week-strip"></div>
+                <!-- 古い日付ラベルは削除 -->
+                <!-- <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:#0b57d0;" id="dayViewDateLabel"></div> -->
+                
+                <div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div>
+                <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
+                <div class="timeline-container" id="timeline"></div>
+            </div>
+        </div>
     </div>
 
     <div class="bottom-nav">
@@ -314,7 +337,8 @@
             } else {
                 const d=displayDate.getDate(), w=['日','月','火','水','木','金','土'][displayDate.getDay()]; 
                 document.getElementById('calHeaderDate').innerText=`${m}月`; 
-                document.getElementById('dayViewDateLabel').innerText=`${m}/${d} (${w})`; 
+                // 古い日付ラベルへの設定は削除し、代わりにrenderDayViewで週間ストリップを更新
+                // document.getElementById('dayViewDateLabel').innerText=`${m}/${d} (${w})`; 
                 renderDayView();
             } 
         }
@@ -456,6 +480,9 @@
             
             const container=document.getElementById('timeline'); 
             container.innerHTML=""; 
+            
+            // 週間ストリップの描画
+            renderWeekStrip();
 
             // タイムスロットの描画
             for(let h=9;h<20;h++){ 
@@ -479,6 +506,55 @@
             createCurrentTimeLine(container);
 
             loadDayBookings(); 
+        }
+
+        // 週間ストリップ（日付一覧）を描画する関数
+        function renderWeekStrip() {
+            const strip = document.getElementById('weekStrip');
+            strip.innerHTML = "";
+            const today = new Date();
+            const current = new Date(displayDate);
+            const dayOfWeek = current.getDay(); // 0 (Sun) - 6 (Sat)
+            
+            // 今週の日曜日（開始日）を計算
+            const startOfWeek = new Date(current);
+            startOfWeek.setDate(current.getDate() - dayOfWeek);
+
+            const wds = ['日','月','火','水','木','金','土'];
+
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                
+                const div = document.createElement('div');
+                div.className = 'week-day-item';
+                if (i === 0) div.classList.add('sun');
+                if (i === 6) div.classList.add('sat');
+                
+                // 選択中の日付
+                if (d.getDate() === current.getDate() && d.getMonth() === current.getMonth() && d.getFullYear() === current.getFullYear()) {
+                    div.classList.add('selected');
+                }
+                // 今日
+                if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) {
+                    div.classList.add('today');
+                }
+
+                div.onclick = () => {
+                    displayDate.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
+                    renderCalendar(); // 再描画
+                };
+
+                div.innerHTML = `
+                    <div class="week-day-label">${wds[i]}</div>
+                    <div class="week-day-num">${d.getDate()}</div>
+                `;
+                strip.appendChild(div);
+            }
+            
+            // ヘッダーの日付表示も更新（年月の表示を維持）
+            // 週またぎの可能性があるため、選択中の日付の年月を表示
+            document.getElementById('calHeaderDate').innerText = `${current.getFullYear()}年 ${current.getMonth() + 1}月`;
         }
 
         // 現在時刻線の要素作成と初期位置設定
