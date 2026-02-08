@@ -109,7 +109,6 @@
         <div class="app-header">
             <div class="header-title">
                 マイバンド
-                <span id="displayYear" style="font-size:12px; font-weight:normal; background:#e8f0fe; color:#0b57d0; padding:4px 8px; border-radius:12px;">--年度</span>
                 <span id="displayActiveEvent" style="display:none; font-size:11px; font-weight:bold; background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:12px; margin-left:4px;"></span>
             </div>
             <div class="header-right">
@@ -267,8 +266,7 @@
                     }
                 }
                 
-                const yEl = document.getElementById('displayYear');
-                if (yEl) yEl.innerText = `${year}年度`;
+                // Remove displayYear logic
                 
                 const eEl = document.getElementById('displayActiveEvent');
                 if (eEl && eventName) {
