@@ -31,7 +31,6 @@
         .user-info-main { flex-grow: 1; } .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } .user-sub { font-size: 12px; color: #5f6368; }
         .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; } .info-row .label { color: #5f6368; font-size: 13px; } .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
         .btn-admin-save { background: #c2185b; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
-        .lottery-log-box { background: #2b2b2b; color: #fff; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 11px; max-height: 200px; overflow-y: auto; margin-top: 10px; } .log-line { margin-bottom: 4px; border-bottom: 1px solid #444; padding-bottom: 2px; } .log-success { color: #8bc34a; } .log-warn { color: #ffeb3b; } .log-error { color: #f44336; }
         .fee-user-item { background: white; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.05); } .fee-check-group { display: flex; gap: 8px; } .fee-checkbox { display: flex; flex-direction: column; align-items: center; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; padding: 8px; width: 60px; transition: all 0.2s; } .fee-checkbox.checked { background-color: #e8f5e9; border-color: #4caf50; color: #2e7d32; } .fee-checkbox input { display: none; } .fee-label { font-size: 10px; font-weight: bold; margin-bottom: 4px; } .fee-status-icon { font-size: 20px; color: #ddd; } .fee-checkbox.checked .fee-status-icon { color: #4caf50; }
         #video-container { width: 100%; border-radius: 12px; overflow: hidden; background: #000; position: relative; display: none; aspect-ratio: 1 / 1; } #camera-video { width: 100%; height: 100%; object-fit: cover; } #qr-canvas { display: none; }
         #scan-result-area { margin-top: 10px; padding: 10px; background: white; border-radius: 12px; display: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } .scan-success-msg { color: #2e7d32; font-weight: bold; text-align: center; } .overlay-guide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 40px solid rgba(0,0,0,0.5); box-sizing: border-box; pointer-events: none; }
@@ -79,6 +78,33 @@
         /* Officer List Item */
         .officer-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0f0f0; }
         .officer-item:last-child { border-bottom:none; }
+
+        /* --- Flowchart Animation Styles --- */
+        .flow-container { display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
+        .flow-step { background: white; border-radius: 16px; padding: 16px; width: 90%; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 0; position: relative; opacity: 0; transform: translateY(10px); transition: all 0.5s cubic-bezier(0.2, 0, 0, 1); z-index: 2; text-align: center; border: 1px solid #f0f0f0; }
+        .flow-step.show { opacity: 1; transform: translateY(0); margin-bottom: 40px; }
+        .flow-step:last-child.show { margin-bottom: 0; }
+        
+        .flow-line { width: 3px; height: 0; background: #e0e0e0; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); transition: height 0.5s ease; z-index: 1; border-radius: 2px; }
+        .flow-step.connected .flow-line { height: 40px; }
+        
+        .flow-icon { font-size: 32px; margin-bottom: 8px; display: inline-block; color: #5f6368; }
+        .flow-title { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #1f1f1f; }
+        .flow-desc { font-size: 12px; color: #666; line-height: 1.4; }
+        
+        .spinner { animation: spin 1s linear infinite; color: #0b57d0; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .result-list { width: 100%; text-align: left; margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; font-size: 13px; max-height: 200px; overflow-y: auto; background: #fafafa; border-radius: 8px; padding: 10px; box-sizing: border-box; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #eee; }
+        .result-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        
+        .success-color { color: #1e8e3e; }
+        .warn-color { color: #f9ab00; }
+        .error-color { color: #d93025; }
+        .bg-success-light { background-color: #e6f4ea; border-color: #ceead6; }
+        .bg-warn-light { background-color: #fef7e0; border-color: #fce8b2; }
+        .bg-error-light { background-color: #fce8e6; border-color: #fad2cf; }
     </style>
 </head>
 <body>
@@ -192,7 +218,7 @@
     </div></div>
     
     <div id="page-admin-events" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-events')"><span class="material-icons">arrow_back</span></button><div class="page-title">イベントの管理</div></div><div class="content-area" style="padding-top:16px;"><button class="btn-primary" style="margin-bottom:20px;" onclick="openCreateEventModal()"><span class="material-icons" style="vertical-align:middle; margin-right:4px;">add</span>新規イベント作成</button><div id="adminEventList">読み込み中...</div></div></div>
-    <div id="page-admin-calendar-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div><div class="content-area" style="padding-top: 20px;"><div class="card"><h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center;"><span class="material-icons" style="margin-right:8px;">tune</span>現在の予約モード</h3><div class="form-group"><div class="radio-group" style="flex-direction: column; gap: 16px;"><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">早い者勝ち (即時確定)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div></div></label><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">抽選式 (希望提出)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div></div></label></div></div><div id="lotterySettingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">抽選実行設定</h3><div class="form-group"><label class="form-label">実行タイミング</label><div class="radio-group" style="flex-direction: column; gap: 10px;"><label class="radio-label"><input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()">自動 (指定日時に実行)</label><div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 10px;"><select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="1">1日前</option><option value="2" selected>2日前</option><option value="3">3日前</option><option value="7">7日前</option></select> の <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="0">0:00</option><option value="9">9:00</option><option value="12">12:00</option><option value="18">18:00</option><option value="21">21:00</option></select> に確定</div><label class="radio-label"><input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()">手動 (管理者がボタンで実行)</label><div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:10px; border-radius:8px;"><div style="font-size:12px; margin-bottom:8px;">対象日を選んで実行します</div><input type="date" id="manualLotteryDate" class="form-input"><button class="btn-primary" style="margin-top:8px; background:#e65100;" onclick="runManualLottery()">今すぐ抽選を実行</button><div id="lotteryLog" class="lottery-log-box hidden"></div><button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:8px;" onclick="applyLotteryResults()">この結果で確定する</button></div></div></div></div><button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button></div><div style="margin-top:20px; font-size:12px; color:#5f6368; padding:0 10px;">※ 設定を変更すると部員全員のアプリの挙動が切り替わります。</div></div></div>
+    <div id="page-admin-calendar-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div><div class="content-area" style="padding-top: 20px;"><div class="card"><h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center;"><span class="material-icons" style="margin-right:8px;">tune</span>現在の予約モード</h3><div class="form-group"><div class="radio-group" style="flex-direction: column; gap: 16px;"><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">早い者勝ち (即時確定)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div></div></label><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">抽選式 (希望提出)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div></div></label></div></div><div id="lotterySettingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">抽選実行設定</h3><div class="form-group"><label class="form-label">実行タイミング</label><div class="radio-group" style="flex-direction: column; gap: 10px;"><label class="radio-label"><input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()">自動 (指定日時に実行)</label><div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 10px;"><select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="1">1日前</option><option value="2" selected>2日前</option><option value="3">3日前</option><option value="7">7日前</option></select> の <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="0">0:00</option><option value="9">9:00</option><option value="12">12:00</option><option value="18">18:00</option><option value="21">21:00</option></select> に確定</div><label class="radio-label"><input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()">手動 (管理者がボタンで実行)</label><div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:10px; border-radius:8px;"><div style="font-size:12px; margin-bottom:8px;">対象日を選んで実行します</div><input type="date" id="manualLotteryDate" class="form-input"><button class="btn-primary" style="margin-top:8px; background:#e65100;" onclick="runManualLottery()">今すぐ抽選を実行</button><div id="lotteryLog" style="margin-top:16px;" class="hidden"></div><button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:20px;" onclick="applyLotteryResults()">この結果で確定する</button></div></div></div></div><button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button></div><div style="margin-top:20px; font-size:12px; color:#5f6368; padding:0 10px;">※ 設定を変更すると部員全員のアプリの挙動が切り替わります。</div></div></div>
     <div id="page-admin-docs-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div><div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">print</span><br>準備中: 書類PDF出力機能</div></div>
     <div id="page-admin-edit" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button><div class="page-title">ユーザー詳細</div></div><div class="content-area"><div style="text-align:center; margin-bottom:20px;"><img id="admin-user-icon" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; background:#eee;"><div id="admin-user-lineName" style="font-size:12px; color:#999; margin-top:8px;"></div></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">基本情報</h3><div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div><div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div><div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div><div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div><div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div><div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">権限設定</h3><div class="form-group"><label class="form-label">役職</label><input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など"></div><button id="btn-save-user-role" class="btn-admin-save">役職を保存</button></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">所属バンド</h3><div id="admin-user-band-list" style="font-size:14px;">読み込み中...</div></div><div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">USER ID: <span id="admin-edit-docId"></span></div></div></div>
 
@@ -358,7 +384,184 @@
         window.openAdminSettings=async()=>{ openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(docSnap.exists())currentSystemSettings=docSnap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
         window.toggleLotterySettings=()=>{ const isL=document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked, area=document.getElementById('lotterySettingsArea'); if(isL){area.classList.remove('hidden'); toggleLotteryExecUI();} else area.classList.add('hidden'); };
         window.toggleLotteryExecUI=()=>{ const mode=document.querySelector('input[name="lotteryExecMode"]:checked').value, autoC=document.getElementById('lotteryAutoConfig'), manuC=document.getElementById('lotteryManualConfig'); if(mode==='auto'){autoC.classList.remove('hidden'); manuC.classList.add('hidden');} else {autoC.classList.add('hidden'); manuC.classList.remove('hidden');} };
-        window.runManualLottery=async()=>{ const dVal=document.getElementById('manualLotteryDate').value; if(!dVal)return await showCustomAlert("日付を選択してください", "入力不足"); if(!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認"))return; const logB=document.getElementById('lotteryLog'); logB.innerHTML='<div class="log-line">データ取得中...</div>'; logB.classList.remove('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); const targetD=new Date(dVal), startD=new Date(targetD), endD=new Date(targetD); startD.setHours(0,0,0,0); endD.setHours(23,59,59,999); try{ const q=query(collection(db,"bookings"),where("startTime",">=",startD),where("startTime","<=",endD)); const snapshot=await getDocs(q); let candidates=[], locked=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.status==='pending'&&d.type!=='event')candidates.push({id:doc.id,...d}); else if(d.status==='confirmed'||d.type==='event')locked.push({start:d.startTime.toDate(),end:d.endTime.toDate(),title:d.bandName||d.title}); }); if(candidates.length===0){logB.innerHTML+='<div class="log-line log-warn">候補なし</div>'; return;} const bandReqs={}; candidates.forEach(c=>{ if(!bandReqs[c.bandId])bandReqs[c.bandId]={id:c.bandId,name:c.bandName,requests:[],docIds:[]}; bandReqs[c.bandId].requests.push({start:c.startTime.toDate(),end:c.endTime.toDate()}); bandReqs[c.bandId].docIds.push(c.id); }); const bands=Object.values(bandReqs); logB.innerHTML+=`<div class="log-line">候補:${candidates.length} エントリー:${bands.length}</div>`; let result = tryAllocate(bands, 60, locked); if (result.failedBands.length > 0) { logB.innerHTML += `<div class="log-line log-warn">60分枠では全員確保不可(${result.failedBands.length}組落選) -> 30分枠で再抽選します</div>`; result = tryAllocate(bands, 30, locked); } else { logB.innerHTML += `<div class="log-line log-success">全員60分枠で確保可能です</div>`; } logB.innerHTML += '<div class="log-line" style="border-top:1px dashed #666; margin-top:4px; padding-top:4px;">抽選結果</div>'; result.assignments.forEach(a => { const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`; const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`; logB.innerHTML += `<div class="log-line log-success">✔ ${a.bandName}: ${sStr}-${eStr} (${result.duration}分)</div>`; }); result.failedBands.forEach(b => { logB.innerHTML += `<div class="log-line log-error">✖ ${b.name}: 確保不可 (希望枠に空きなし)</div>`; }); tempLotterySchedule = result; document.getElementById('btnApplyLottery').classList.remove('hidden'); }catch(e){console.error(e); logB.innerHTML+='<div class="log-line log-error">エラー</div>';} };
+        
+        // --- Flowchart Animation Helpers ---
+        const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        
+        function createFlowStep(title, desc, iconName, spinClass = "") {
+            const step = document.createElement('div');
+            step.className = 'flow-step';
+            step.innerHTML = `
+                <div class="flow-line"></div>
+                <span class="material-icons flow-icon ${spinClass}">${iconName}</span>
+                <div class="flow-title">${title}</div>
+                <div class="flow-desc">${desc}</div>
+            `;
+            return step;
+        }
+        
+        function updateFlowStep(stepElement, title, desc, iconName, colorClass) {
+            const icon = stepElement.querySelector('.flow-icon');
+            const t = stepElement.querySelector('.flow-title');
+            const d = stepElement.querySelector('.flow-desc');
+            
+            icon.className = `material-icons flow-icon ${colorClass}`;
+            icon.innerText = iconName;
+            t.innerText = title;
+            t.className = `flow-title ${colorClass}`;
+            d.innerText = desc;
+            
+            // Remove border style to indicate done? maybe just color
+            stepElement.classList.add(colorClass.replace('color', 'bg-light')); // Optional background change
+        }
+        
+        function connectStep(stepElement) {
+            stepElement.classList.add('connected');
+        }
+
+        window.runManualLottery = async () => {
+            const dVal = document.getElementById('manualLotteryDate').value;
+            if (!dVal) return await showCustomAlert("日付を選択してください", "入力不足");
+            if (!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認")) return;
+
+            const logArea = document.getElementById('lotteryLog');
+            logArea.innerHTML = '<div class="flow-container" id="flowContainer"></div>';
+            logArea.classList.remove('hidden', 'lottery-log-box'); // Remove old class
+            const container = document.getElementById('flowContainer');
+            const applyBtn = document.getElementById('btnApplyLottery');
+            applyBtn.classList.add('hidden');
+
+            // --- Step 1: Data Fetching ---
+            const step1 = createFlowStep("データ取得中...", "エントリー情報を集めています", "sync", "spinner");
+            container.appendChild(step1);
+            await wait(50);
+            step1.classList.add('show');
+
+            const targetD = new Date(dVal);
+            const startD = new Date(targetD); startD.setHours(0, 0, 0, 0);
+            const endD = new Date(targetD); endD.setHours(23, 59, 59, 999);
+
+            let bands = [];
+            let locked = [];
+
+            try {
+                const q = query(collection(db, "bookings"), where("startTime", ">=", startD), where("startTime", "<=", endD));
+                const snapshot = await getDocs(q);
+                let candidates = [];
+                
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    if (d.status === 'pending' && d.type !== 'event') candidates.push({ id: doc.id, ...d });
+                    else if (d.status === 'confirmed' || d.type === 'event') locked.push({ start: d.startTime.toDate(), end: d.endTime.toDate(), title: d.bandName || d.title });
+                });
+
+                await wait(800); // Simulate processing time
+
+                if (candidates.length === 0) {
+                    updateFlowStep(step1, "候補なし", "エントリーがありませんでした", "info", "warn-color");
+                    return;
+                }
+
+                const bandReqs = {};
+                candidates.forEach(c => {
+                    if (!bandReqs[c.bandId]) bandReqs[c.bandId] = { id: c.bandId, name: c.bandName, requests: [], docIds: [] };
+                    bandReqs[c.bandId].requests.push({ start: c.startTime.toDate(), end: c.endTime.toDate() });
+                    bandReqs[c.bandId].docIds.push(c.id);
+                });
+                bands = Object.values(bandReqs);
+
+                updateFlowStep(step1, "データ取得完了", `エントリー: ${bands.length}組`, "check_circle", "success-color");
+                connectStep(step1);
+
+            } catch (e) {
+                console.error(e);
+                updateFlowStep(step1, "エラー発生", e.message, "error", "error-color");
+                return;
+            }
+
+            // --- Step 2: 60min Allocation ---
+            const step2 = createFlowStep("60分枠で抽選", "全員が60分枠で取れるか試行します", "schedule", "spinner");
+            container.appendChild(step2);
+            await wait(50);
+            step2.classList.add('show');
+            
+            await wait(1000); // Simulation
+
+            let result = tryAllocate(bands, 60, locked);
+
+            if (result.failedBands.length > 0) {
+                // Failed 60min
+                updateFlowStep(step2, "60分枠: 確保不可", `${result.failedBands.length}組があふれました`, "warning", "warn-color");
+                connectStep(step2);
+
+                // --- Step 3: 30min Allocation ---
+                const step3 = createFlowStep("30分枠で再抽選", "条件を緩和して再試行します", "directions_run", "spinner");
+                container.appendChild(step3);
+                await wait(50);
+                step3.classList.add('show');
+
+                await wait(1000); // Simulation
+                result = tryAllocate(bands, 30, locked);
+
+                if (result.failedBands.length > 0) {
+                    updateFlowStep(step3, "抽選完了 (一部不可)", `${result.failedBands.length}組は確保できませんでした`, "error", "error-color");
+                } else {
+                    updateFlowStep(step3, "30分枠: 成功", "全員確保できました", "check_circle", "success-color");
+                }
+                connectStep(step3);
+            } else {
+                // Success 60min
+                updateFlowStep(step2, "60分枠: 成功", "全員確保できました", "check_circle", "success-color");
+                connectStep(step2);
+            }
+
+            // --- Final Result Display ---
+            const stepFinal = createFlowStep("結果の確認", "以下の内容で確定しますか？", "fact_check", "");
+            container.appendChild(stepFinal);
+            await wait(50);
+            stepFinal.classList.add('show');
+
+            const listDiv = document.createElement('div');
+            listDiv.className = 'result-list';
+            
+            if (result.assignments.length === 0) {
+                listDiv.innerHTML = '<div style="text-align:center; color:#999;">確定できる枠がありません</div>';
+            } else {
+                result.assignments.sort((a,b) => a.start - b.start);
+                result.assignments.forEach(a => {
+                    const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`;
+                    const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`;
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.innerHTML = `<span style="font-weight:bold;">${a.bandName}</span><span>${sStr} - ${eStr} (${result.duration}分)</span>`;
+                    listDiv.appendChild(item);
+                });
+            }
+            
+            if(result.failedBands.length > 0) {
+                const failHeader = document.createElement('div');
+                failHeader.innerText = "確保不可（手動調整が必要です）";
+                failHeader.style.color = "#d93025";
+                failHeader.style.fontWeight = "bold";
+                failHeader.style.marginTop = "10px";
+                failHeader.style.fontSize = "11px";
+                listDiv.appendChild(failHeader);
+                
+                result.failedBands.forEach(b => {
+                    const item = document.createElement('div');
+                    item.className = 'result-item';
+                    item.style.color = "#d93025";
+                    item.innerHTML = `<span>${b.name}</span><span>×</span>`;
+                    listDiv.appendChild(item);
+                });
+            }
+
+            stepFinal.appendChild(listDiv);
+            
+            tempLotterySchedule = result;
+            applyBtn.classList.remove('hidden');
+        };
+
         function tryAllocate(bands, duration, lockedItems) { const START_H = 9; const END_H = 20; const TOTAL_M = (END_H - START_H) * 60; const SLOT_UNIT = 30; const SLOTS = TOTAL_M / SLOT_UNIT; const timeline = new Array(SLOTS).fill(null); if (lockedItems) { lockedItems.forEach(l => { const sM = (l.start.getHours() - START_H) * 60 + l.start.getMinutes(); const eM = (l.end.getHours() - START_H) * 60 + l.end.getMinutes(); const startSlot = Math.floor(Math.max(0, sM) / SLOT_UNIT); const endSlot = Math.ceil(Math.min(TOTAL_M, eM) / SLOT_UNIT); for (let i = startSlot; i < endSlot; i++) { if (i >= 0 && i < SLOTS) timeline[i] = "LOCKED"; } }); } const assignments = []; const failedBands = []; const shuffledBands = [...bands].sort(() => Math.random() - 0.5); const neededSlots = Math.ceil(duration / SLOT_UNIT); for (const band of shuffledBands) { let isAssigned = false; const reqs = [...band.requests].sort(() => Math.random() - 0.5); for (const req of reqs) { if (isAssigned) break; const reqStartM = (req.start.getHours() - START_H) * 60 + req.start.getMinutes(); const reqEndM = (req.end.getHours() - START_H) * 60 + req.end.getMinutes(); const reqStartSlot = Math.floor(reqStartM / SLOT_UNIT); const reqEndSlot = Math.floor(reqEndM / SLOT_UNIT); for (let t = reqStartSlot; t <= reqEndSlot - neededSlots; t++) { let isFree = true; for (let k = 0; k < neededSlots; k++) { if (t + k >= SLOTS || timeline[t + k] !== null) { isFree = false; break; } } if (isFree) { for (let k = 0; k < neededSlots; k++) { timeline[t + k] = band.name; } const assignedStart = new Date(req.start); assignedStart.setHours(START_H + Math.floor((t * SLOT_UNIT) / 60)); assignedStart.setMinutes((t * SLOT_UNIT) % 60); assignedStart.setSeconds(0); assignedStart.setMilliseconds(0); const assignedEnd = new Date(assignedStart); assignedEnd.setMinutes(assignedStart.getMinutes() + duration); assignments.push({ bandId: band.id, bandName: band.name, start: assignedStart, end: assignedEnd, originalDocIds: band.docIds }); isAssigned = true; break; } } } if (!isAssigned) { failedBands.push(band); } } return { duration: duration, assignments: assignments, failedBands: failedBands, successCount: assignments.length, totalCount: bands.length }; }
         window.applyLotteryResults=async()=>{ if(!tempLotterySchedule||!await showCustomConfirm("抽選結果をスケジュールに反映しますか？", "反映の確認"))return; const batch=writeBatch(db); tempLotterySchedule.assignments.forEach(a=>{ const ref=doc(collection(db,"bookings")); batch.set(ref,{bandId:a.bandId,bandName:a.bandName,creatorId:currentUser,userName:"抽選確定",startTime:a.start,endTime:a.end,type:'normal',status:'confirmed',source:'lottery',createdAt:new Date()}); a.originalDocIds.forEach(oldId=>batch.delete(doc(db,"bookings",oldId))); }); try{await batch.commit(); await showCustomAlert("抽選結果を反映しました。\n(落選した希望はそのまま残っています)"); closePage('admin-calendar-stub');}catch(e){await showCustomAlert(e.message, "エラー")} };
         window.saveSystemSettings=async()=>{ const mode=document.querySelector('input[name="adminBookingMode"]:checked').value, eMode=document.querySelector('input[name="lotteryExecMode"]:checked').value, days=parseInt(document.getElementById('lotteryAutoDays').value), time=parseInt(document.getElementById('lotteryAutoTime').value); try{ await setDoc(doc(db,"system","settings"),{bookingMode:mode,lotteryConfig:{mode:eMode,daysBefore:days,time:time},updatedAt:serverTimestamp(),updatedBy:currentUser},{merge:true}); await showCustomAlert("システム設定を保存しました。"); closePage('admin-calendar-stub'); }catch(e){await showCustomAlert(e.message, "エラー")} };
