@@ -411,14 +411,21 @@
             renderOfficerList();
         };
 
-        // 2. Load Config (Simulating a fetch from 'system/basic')
+        // 2. Load Config (Updated to use system/settings)
         async function loadBasicConfig() {
             try {
-                // In real implementation: const docSnap = await getDoc(doc(db, "system", "basic"));
-                // if (docSnap.exists()) currentBasicConfig = docSnap.data();
+                // Fetch from system/settings based on user request
+                const docSnap = await getDoc(doc(db, "system", "settings"));
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    currentBasicConfig.currentYear = data.currentYear || getFiscalYear();
+                    currentBasicConfig.activeEventId = data.activeEventId || null;
+                } else {
+                    currentBasicConfig.currentYear = getFiscalYear();
+                }
                 
                 // UIへの反映
-                const y = currentBasicConfig.currentYear || getFiscalYear();
+                const y = currentBasicConfig.currentYear;
                 document.getElementById('basic-setting-year').value = y;
                 document.getElementById('display-year-text').innerText = y;
                 
@@ -450,7 +457,7 @@
             display.innerText = val;
         };
 
-        // 3. Save Config
+        // 3. Save Config (Updated to save to system/settings)
         window.saveBasicConfig = async () => {
             const y = parseInt(document.getElementById('basic-setting-year').value);
             const eId = document.getElementById('basic-setting-event').value;
@@ -458,8 +465,13 @@
             if (!y) return await showCustomAlert("年度を入力してください", "入力エラー");
             
             try {
-                // In real implementation:
-                // await setDoc(doc(db, "system", "basic"), { currentYear: y, activeEventId: eId }, { merge: true });
+                // Save to system/settings
+                await setDoc(doc(db, "system", "settings"), { 
+                    currentYear: y, 
+                    activeEventId: eId,
+                    updatedAt: serverTimestamp(),
+                    updatedBy: currentUser 
+                }, { merge: true });
                 
                 currentBasicConfig.currentYear = y;
                 currentBasicConfig.activeEventId = eId;
