@@ -87,7 +87,10 @@
         .notification-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; }
         .notification-item:last-child { border-bottom: none; }
         .notification-item.unread { background: #f0f8ff; }
+        .notification-item.clickable { cursor: pointer; }
+        .notification-item.clickable:active { background-color: #e8f0fe; }
         .notif-icon-box { width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
+        .notif-icon-box.warning { background: #fce8e6; color: #d93025; }
         .notif-content { flex-grow: 1; }
         .notif-text { font-size: 13px; color: #1f1f1f; line-height: 1.5; margin-bottom: 4px; }
         .notif-date { font-size: 11px; color: #5f6368; }
@@ -220,6 +223,20 @@
         </div>
     </div>
 
+    <!-- Email Register Modal -->
+    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-email-register')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">メールアドレス登録</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">重要なお知らせや連絡のためにメールアドレスの登録をお願いします。</p>
+            <div class="form-group">
+                <label class="form-label">メールアドレス</label>
+                <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
+            </div>
+            <button class="btn-primary" onclick="saveUserEmail()">保存する</button>
+            <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
@@ -327,7 +344,7 @@
                 // System Settings Load
                 loadSystemSettings();
 
-                // Mock Notification Logic Trigger
+                // Check Notifications
                 checkNotifications();
 
                 const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'); 
@@ -345,23 +362,41 @@
             const list = document.getElementById('notificationList');
             list.innerHTML = "";
             
-            // Mock Data (Frontend implementation)
-            const notifications = [
-                { id: 99, type: 'info', text: '初めまして！LMC Mobileへようこそ🎉', date: '2025/04/01 12:00', read: false }
-            ];
+            const notifications = [];
+            
+            // Check for Email Registration
+            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
+            if (!hasEmail) {
+                notifications.push({
+                    id: 'email_req',
+                    type: 'action_required', // custom type
+                    text: '【重要】メールアドレスが未登録です。ここをタップして登録してください。',
+                    date: '---',
+                    read: false,
+                    action: true
+                });
+            }
+
+            // Mock Data
+            notifications.push({ id: 99, type: 'info', text: '初めまして！LMC Mobileへようこそ🎉', date: '2025/04/01 12:00', read: false });
 
             if(notifications.length === 0) {
                 list.innerHTML = '<div style="padding:20px; text-align:center; color:#999; font-size:12px;">通知はありません</div>';
             } else {
                 notifications.forEach(n => {
                     const div = document.createElement('div');
-                    div.className = `notification-item ${n.read ? '' : 'unread'}`;
+                    div.className = `notification-item ${n.read ? '' : 'unread'} ${n.action ? 'clickable' : ''}`;
+                    if(n.action) {
+                        div.onclick = () => openEmailRegisterModal();
+                    }
+                    
                     let icon = 'notifications';
-                    if(n.type === 'check') icon = 'check_circle';
-                    if(n.type === 'warning') icon = 'error';
+                    let iconClass = '';
+                    if(n.type === 'action_required') { icon = 'warning'; iconClass = 'warning'; }
+                    else if(n.type === 'check') icon = 'check_circle';
                     
                     div.innerHTML = `
-                        <div class="notif-icon-box"><span class="material-icons" style="font-size:18px;">${icon}</span></div>
+                        <div class="notif-icon-box ${iconClass}"><span class="material-icons" style="font-size:18px;">${icon}</span></div>
                         <div class="notif-content">
                             <div class="notif-text">${n.text}</div>
                             <div class="notif-date">${n.date}</div>
@@ -371,14 +406,64 @@
                 });
             }
             
-            // Mark as read (Mock)
-            document.getElementById('headerNotifBadge').classList.remove('show');
+            // Mark as read (Mock - but keep email warning)
+            const hasUnread = notifications.some(n => !n.read && n.id !== 'email_req');
+            if(!hasUnread) document.getElementById('headerNotifBadge').classList.remove('show');
+            
             openModal('modal-notification');
         };
 
+        window.openEmailRegisterModal = () => {
+            closeModal('modal-notification');
+            document.getElementById('inputUserEmail').value = "";
+            openModal('modal-email-register');
+        };
+
+        window.saveUserEmail = async () => {
+            const email = document.getElementById('inputUserEmail').value.trim();
+            if (!email) return await showCustomAlert("メールアドレスを入力してください。");
+            if (!email.includes('@')) return await showCustomAlert("正しい形式で入力してください。");
+
+            try {
+                const btn = document.querySelector('#modal-email-register .btn-primary');
+                btn.innerText = "保存中...";
+                btn.disabled = true;
+
+                await updateDoc(doc(db, "users", currentUser), {
+                    Email: email
+                });
+                
+                // Update local cache
+                currentUserData.Email = email;
+                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                
+                await showCustomAlert("メールアドレスを登録しました。");
+                closeModal('modal-email-register');
+                checkNotifications(); 
+            } catch(e) {
+                await showCustomAlert("保存エラー: " + e.message, "エラー");
+            } finally {
+                const btn = document.querySelector('#modal-email-register .btn-primary');
+                btn.innerText = "保存する";
+                btn.disabled = false;
+            }
+        };
+
         function checkNotifications() {
-            // Mock: Always show badge for demo
-            document.getElementById('headerNotifBadge').classList.add('show');
+            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
+            const badge = document.getElementById('headerNotifBadge');
+            
+            // Logic: Show badge if email is missing OR mock notification exists
+            // Since we have a mock notification that is initially unread, we show it.
+            // If email is missing, we DEFINITELY show it.
+            
+            if (!hasEmail) {
+                badge.classList.add('show');
+            } else {
+                // Mock logic for other notifications (simply default to show for demo, or remove)
+                // For now, let's keep it shown for the "Welcome" message until opened
+                badge.classList.add('show');
+            }
         }
 
         function loadMyBands(){ 
