@@ -240,7 +240,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
@@ -282,8 +282,6 @@
                         } catch (e) { console.error(e); }
                     }
                 }
-                
-                // Remove displayYear logic
                 
                 const eEl = document.getElementById('displayActiveEvent');
                 if (eEl && eventName) {
@@ -327,12 +325,29 @@
                 
                 const profile=await liff.getProfile(); 
                 currentUser=profile.userId; 
-                currentProfile=profile; 
+                currentProfile=profile;
+                
+                // Auth Profile Sync
+                if (auth.currentUser) {
+                    try {
+                        await updateProfile(auth.currentUser, {
+                            displayName: profile.displayName,
+                            photoURL: profile.pictureUrl
+                        });
+                    } catch (e) {
+                        console.error("Auth profile update error", e);
+                    }
+                }
                 
                 const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
                 if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} 
                 
-                await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
+                // Update Firestore User with firebaseUid
+                await setDoc(userRef, {
+                    lastLogin: serverTimestamp(),
+                    firebaseUid: auth.currentUser ? auth.currentUser.uid : null
+                }, {merge:true}); 
+                
                 currentUserData=userSnap.data(); 
                 
                 // キャッシュ更新と再描画
@@ -453,15 +468,9 @@
             const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
             const badge = document.getElementById('headerNotifBadge');
             
-            // Logic: Show badge if email is missing OR mock notification exists
-            // Since we have a mock notification that is initially unread, we show it.
-            // If email is missing, we DEFINITELY show it.
-            
             if (!hasEmail) {
                 badge.classList.add('show');
             } else {
-                // Mock logic for other notifications (simply default to show for demo, or remove)
-                // For now, let's keep it shown for the "Welcome" message until opened
                 badge.classList.add('show');
             }
         }
