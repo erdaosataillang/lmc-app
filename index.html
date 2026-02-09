@@ -240,7 +240,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile, updateEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
@@ -282,6 +282,8 @@
                         } catch (e) { console.error(e); }
                     }
                 }
+                
+                // Remove displayYear logic
                 
                 const eEl = document.getElementById('displayActiveEvent');
                 if (eEl && eventName) {
@@ -444,9 +446,15 @@
                 btn.innerText = "保存中...";
                 btn.disabled = true;
 
+                // Firestoreへの保存
                 await updateDoc(doc(db, "users", currentUser), {
                     Email: email
                 });
+
+                // Firebase Authへのメールアドレス登録（追加）
+                if (auth.currentUser) {
+                    await updateEmail(auth.currentUser, email);
+                }
                 
                 // Update local cache
                 currentUserData.Email = email;
@@ -456,6 +464,10 @@
                 closeModal('modal-email-register');
                 checkNotifications(); 
             } catch(e) {
+                // Auth側でエラーが出てもFirestore側は更新されている場合があるが、
+                // 今回は簡易的にエラー表示する。
+                // メールアドレス重複エラーなどが考えられる。
+                console.error(e);
                 await showCustomAlert("保存エラー: " + e.message, "エラー");
             } finally {
                 const btn = document.querySelector('#modal-email-register .btn-primary');
