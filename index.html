@@ -94,6 +94,9 @@
         .notif-content { flex-grow: 1; }
         .notif-text { font-size: 13px; color: #1f1f1f; line-height: 1.5; margin-bottom: 4px; }
         .notif-date { font-size: 11px; color: #5f6368; }
+        
+        /* Auth Code Input Style */
+        .auth-code-input { letter-spacing: 4px; text-align: center; font-size: 24px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -223,17 +226,32 @@
         </div>
     </div>
 
-    <!-- Email Register Modal -->
-    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-email-register')">
+    <!-- Email Register Modal (2 Steps) -->
+    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
         <div class="modal-content">
-            <h3 style="margin-top:0;">メールアドレス登録</h3>
-            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">重要なお知らせや連絡のためにメールアドレスの登録をお願いします。</p>
-            <div class="form-group">
-                <label class="form-label">メールアドレス</label>
-                <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
+            <!-- Step 1: Input Email -->
+            <div id="email-step-1">
+                <h3 style="margin-top:0;">メールアドレス登録</h3>
+                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">重要なお知らせのためにメールアドレスの登録をお願いします。<br>認証コードを送信します。</p>
+                <div class="form-group">
+                    <label class="form-label">メールアドレス</label>
+                    <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
+                </div>
+                <button class="btn-primary" onclick="sendAuthCode()">認証コードを送信</button>
+                <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
             </div>
-            <button class="btn-primary" onclick="saveUserEmail()">保存する</button>
-            <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
+
+            <!-- Step 2: Input Code -->
+            <div id="email-step-2" class="hidden">
+                <h3 style="margin-top:0;">認証コード入力</h3>
+                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">メールに送信された6桁の数字を入力してください。</p>
+                <div class="form-group">
+                    <label class="form-label">認証コード (6桁)</label>
+                    <input type="number" id="inputAuthCode" class="form-input auth-code-input" placeholder="000000" maxlength="6">
+                </div>
+                <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
+                <button class="btn-secondary" onclick="backToEmailInput()">戻る</button>
+            </div>
         </div>
     </div>
 
@@ -250,6 +268,8 @@
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
 
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab='active', currentEditingBandId=null, currentEditingBandMembers=[], tempBandIconBlob=null, allUsersCache=[], currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
+        
+        let tempEmailForAuth = ""; // To store email during verification process
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
@@ -282,8 +302,6 @@
                         } catch (e) { console.error(e); }
                     }
                 }
-                
-                // Remove displayYear logic
                 
                 const eEl = document.getElementById('displayActiveEvent');
                 if (eEl && eventName) {
@@ -433,47 +451,117 @@
         window.openEmailRegisterModal = () => {
             closeModal('modal-notification');
             document.getElementById('inputUserEmail').value = "";
+            document.getElementById('inputAuthCode').value = "";
+            // Reset to Step 1
+            document.getElementById('email-step-1').classList.remove('hidden');
+            document.getElementById('email-step-2').classList.add('hidden');
             openModal('modal-email-register');
         };
 
-        window.saveUserEmail = async () => {
+        window.sendAuthCode = async () => {
             const email = document.getElementById('inputUserEmail').value.trim();
             if (!email) return await showCustomAlert("メールアドレスを入力してください。");
             if (!email.includes('@')) return await showCustomAlert("正しい形式で入力してください。");
+            
+            // Generate 6-digit code
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            tempEmailForAuth = email; // store temporarily
 
             try {
-                const btn = document.querySelector('#modal-email-register .btn-primary');
-                btn.innerText = "保存中...";
+                const btn = document.querySelector('#email-step-1 .btn-primary');
+                btn.innerText = "送信中...";
                 btn.disabled = true;
 
-                // Firestoreへの保存
+                // Save auth code to user doc
                 await updateDoc(doc(db, "users", currentUser), {
-                    Email: email
+                    tempEmail: email,
+                    authCode: code,
+                    authCodeCreatedAt: serverTimestamp()
                 });
 
-                // Firebase Authへのメールアドレス登録（追加）
+                // Add to mail queue (Mock trigger for email sending system)
+                await addDoc(collection(db, "mail_queue"), {
+                    to: email,
+                    subject: "LMC Mobile メールアドレス認証コード",
+                    body: `認証コードは ${code} です。\nこのコードをアプリに入力して認証を完了させてください。\n(有効期限: 10分)`,
+                    userId: currentUser,
+                    createdAt: serverTimestamp()
+                });
+                
+                await showCustomAlert(`認証コードを送信しました。\n${email} を確認してください。`);
+                
+                // Switch to Step 2
+                document.getElementById('email-step-1').classList.add('hidden');
+                document.getElementById('email-step-2').classList.remove('hidden');
+
+            } catch(e) {
+                await showCustomAlert("送信エラー: " + e.message, "エラー");
+            } finally {
+                const btn = document.querySelector('#email-step-1 .btn-primary');
+                btn.innerText = "認証コードを送信";
+                btn.disabled = false;
+            }
+        };
+
+        window.verifyAuthCode = async () => {
+            const inputCode = document.getElementById('inputAuthCode').value.trim();
+            if (!inputCode || inputCode.length !== 6) return await showCustomAlert("6桁のコードを入力してください。");
+
+            try {
+                const btn = document.querySelector('#email-step-2 .btn-primary');
+                btn.innerText = "確認中...";
+                btn.disabled = true;
+
+                // Check code from Firestore
+                const userSnap = await getDoc(doc(db, "users", currentUser));
+                const userData = userSnap.data();
+                
+                if (userData.authCode !== inputCode) {
+                    await showCustomAlert("認証コードが間違っています。");
+                    btn.innerText = "認証する";
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Verify Success!
+                // Update Firestore User (Official Email)
+                await updateDoc(doc(db, "users", currentUser), {
+                    Email: tempEmailForAuth,
+                    // Clean up temp fields
+                    tempEmail: null, // or deleteField() if imported
+                    authCode: null,
+                    authCodeCreatedAt: null
+                });
+
+                // Update Firebase Auth
                 if (auth.currentUser) {
-                    await updateEmail(auth.currentUser, email);
+                    try {
+                        await updateEmail(auth.currentUser, tempEmailForAuth);
+                    } catch (authError) {
+                        console.error("Auth update error (non-fatal for app flow):", authError);
+                    }
                 }
                 
                 // Update local cache
-                currentUserData.Email = email;
+                currentUserData.Email = tempEmailForAuth;
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 
-                await showCustomAlert("メールアドレスを登録しました。");
+                await showCustomAlert("認証に成功しました！\nメールアドレスを登録しました。");
                 closeModal('modal-email-register');
                 checkNotifications(); 
+
             } catch(e) {
-                // Auth側でエラーが出てもFirestore側は更新されている場合があるが、
-                // 今回は簡易的にエラー表示する。
-                // メールアドレス重複エラーなどが考えられる。
                 console.error(e);
-                await showCustomAlert("保存エラー: " + e.message, "エラー");
-            } finally {
-                const btn = document.querySelector('#modal-email-register .btn-primary');
-                btn.innerText = "保存する";
+                await showCustomAlert("認証エラー: " + e.message, "エラー");
+                const btn = document.querySelector('#email-step-2 .btn-primary');
+                btn.innerText = "認証する";
                 btn.disabled = false;
             }
+        };
+
+        window.backToEmailInput = () => {
+             document.getElementById('email-step-1').classList.remove('hidden');
+             document.getElementById('email-step-2').classList.add('hidden');
         };
 
         function checkNotifications() {
