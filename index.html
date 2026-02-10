@@ -199,11 +199,11 @@
                     <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 24px; min-height: 40px;"><div id="adminBandBookingsList" style="max-height: 150px; overflow-y: auto;"></div></div>
                 </div>
                 <div id="bandCreatorActions" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="btn-secondary" onclick="updateBandName()" style="background: #f1f3f4; color: #1f1f1f; border: none;">名前を保存</button>
+                    <button id="btnUpdateName" class="btn-secondary" onclick="updateBandName()" style="background: #f1f3f4; color: #1f1f1f; border: none;">名前を保存</button>
                     <div style="display: flex; gap: 10px;">
                         <button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="flex: 1; background: #fff8e1; color: #f57f17; margin: 0;">アーカイブ</button>
                         <button id="btnRestore" class="btn-secondary hidden" onclick="restoreBand()" style="flex: 1; background: #fff8e1; color: #f57f17; margin: 0;">復元</button>
-                        <button class="btn-danger" onclick="deleteBand()" style="flex: 1; margin: 0;">解散</button>
+                        <button id="btnDelete" class="btn-danger" onclick="deleteBand()" style="flex: 1; margin: 0;">解散</button>
                     </div>
                 </div>
                 <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()" style="width: 100%;">脱退する</button></div>
@@ -257,7 +257,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile, updateEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
@@ -402,14 +402,27 @@
             // Check for Email Registration
             const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
             if (!hasEmail) {
-                notifications.push({
-                    id: 'email_req',
-                    type: 'action_required', // custom type
-                    text: '【重要】メールアドレスが未登録です。ここをタップして登録してください。',
-                    date: '---',
-                    read: false,
-                    action: true
-                });
+                if (currentUserData.tempEmail) {
+                    // Auth started but not verified
+                    notifications.push({
+                        id: 'email_verify_req',
+                        type: 'action_required', 
+                        text: '【重要】認証コードの確認が完了していません。ここをタップしてコードを入力してください。',
+                        date: '---',
+                        read: false,
+                        actionType: 'verify'
+                    });
+                } else {
+                    // Not registered
+                    notifications.push({
+                        id: 'email_req',
+                        type: 'action_required', 
+                        text: '【重要】メールアドレスが未登録です。ここをタップして登録してください。',
+                        date: '---',
+                        read: false,
+                        actionType: 'register'
+                    });
+                }
             }
 
             // Mock Data
@@ -420,9 +433,11 @@
             } else {
                 notifications.forEach(n => {
                     const div = document.createElement('div');
-                    div.className = `notification-item ${n.read ? '' : 'unread'} ${n.action ? 'clickable' : ''}`;
-                    if(n.action) {
+                    div.className = `notification-item ${n.read ? '' : 'unread'} ${n.actionType ? 'clickable' : ''}`;
+                    if(n.actionType === 'register') {
                         div.onclick = () => openEmailRegisterModal();
+                    } else if(n.actionType === 'verify') {
+                        div.onclick = () => openEmailVerifyModal();
                     }
                     
                     let icon = 'notifications';
@@ -442,7 +457,7 @@
             }
             
             // Mark as read (Mock - but keep email warning)
-            const hasUnread = notifications.some(n => !n.read && n.id !== 'email_req');
+            const hasUnread = notifications.some(n => !n.read && n.id !== 'email_req' && n.id !== 'email_verify_req');
             if(!hasUnread) document.getElementById('headerNotifBadge').classList.remove('show');
             
             openModal('modal-notification');
@@ -455,6 +470,18 @@
             // Reset to Step 1
             document.getElementById('email-step-1').classList.remove('hidden');
             document.getElementById('email-step-2').classList.add('hidden');
+            openModal('modal-email-register');
+        };
+
+        window.openEmailVerifyModal = () => {
+            closeModal('modal-notification');
+            // Restore temp email from user data to global var for verification logic
+            if (currentUserData && currentUserData.tempEmail) {
+                tempEmailForAuth = currentUserData.tempEmail;
+            }
+            document.getElementById('inputAuthCode').value = "";
+            document.getElementById('email-step-1').classList.add('hidden');
+            document.getElementById('email-step-2').classList.remove('hidden');
             openModal('modal-email-register');
         };
 
@@ -479,6 +506,10 @@
                     authCodeCreatedAt: serverTimestamp()
                 });
 
+                // Update Local Cache to reflect tempEmail immediately (for notification logic)
+                currentUserData.tempEmail = email;
+                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+
                 // Add to mail queue (Mock trigger for email sending system)
                 await addDoc(collection(db, "mail_queue"), {
                     to: email,
@@ -493,6 +524,7 @@
                 // Switch to Step 2
                 document.getElementById('email-step-1').classList.add('hidden');
                 document.getElementById('email-step-2').classList.remove('hidden');
+                checkNotifications(); // Update badge status
 
             } catch(e) {
                 await showCustomAlert("送信エラー: " + e.message, "エラー");
@@ -527,10 +559,10 @@
                 // Update Firestore User (Official Email)
                 await updateDoc(doc(db, "users", currentUser), {
                     Email: tempEmailForAuth,
-                    // Clean up temp fields
-                    tempEmail: null, // or deleteField() if imported
-                    authCode: null,
-                    authCodeCreatedAt: null
+                    // Clean up temp fields using deleteField
+                    tempEmail: deleteField(),
+                    authCode: deleteField(),
+                    authCodeCreatedAt: deleteField()
                 });
 
                 // Update Firebase Auth
@@ -544,6 +576,7 @@
                 
                 // Update local cache
                 currentUserData.Email = tempEmailForAuth;
+                delete currentUserData.tempEmail; // Remove tempEmail from cache
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 
                 await showCustomAlert("認証に成功しました！\nメールアドレスを登録しました。");
