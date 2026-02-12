@@ -23,7 +23,9 @@
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } .band-item:last-child { border: none; margin: 0; padding: 0; }
         .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; } .band-icon img { width: 100%; height: 100%; object-fit: cover; }
         .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 16px; } .band-members { font-size: 12px; color: #5f6368; }
-        .band-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin: 0 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: relative; } .band-tab { flex: 1; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; } .band-tab.active { background: #e8f0fe; color: #0b57d0; }
+        .band-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin: 0 16px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; } 
+        .band-tab { flex: 1; min-width: 100px; text-align: center; padding: 10px 4px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
+        .band-tab.active { background: #e8f0fe; color: #0b57d0; }
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e0e3e7; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 2000; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
         .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } .nav-item.active span { color: #1f1f1f; font-weight: bold; }
@@ -66,13 +68,14 @@
         /* --- Slider Styles --- */
         .band-slider {
             display: flex;
-            width: 200%;
+            width: 100%; /* Dynamically updated via JS */
             transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
         }
         .band-slide {
-            width: 50%;
+            width: 100%; /* Dynamically updated via JS */
             padding: 16px;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
 
         /* --- Notification Styles --- */
@@ -125,16 +128,14 @@
                 <div class="header-avatar" id="headerIconBands"></div>
             </div>
         </div>
-        <div class="band-tabs"><div class="band-tab active" onclick="switchBandTab('active')">活動中</div><div class="band-tab" onclick="switchBandTab('archived')">アーカイブ</div></div>
+        <div class="band-tabs" id="bandTabs">
+            <!-- Dynamically generated -->
+            <div class="band-tab active">読み込み中...</div>
+        </div>
         
         <div class="scroll-content">
             <div id="bandSlider" class="band-slider">
-                <div id="activeBandList" class="band-slide">
-                    <div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>
-                </div>
-                <div id="archivedBandList" class="band-slide">
-                    <div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>
-                </div>
+                <!-- Dynamically generated -->
             </div>
         </div>
         
@@ -199,11 +200,11 @@
                     <div class="card" style="padding: 0; overflow: hidden; margin-bottom: 24px; min-height: 40px;"><div id="adminBandBookingsList" style="max-height: 150px; overflow-y: auto;"></div></div>
                 </div>
                 <div id="bandCreatorActions" class="hidden" style="display: flex; flex-direction: column; gap: 10px;">
-                    <button id="btnUpdateName" class="btn-secondary" onclick="updateBandName()" style="background: #f1f3f4; color: #1f1f1f; border: none;">名前を保存</button>
+                    <button class="btn-secondary" onclick="updateBandName()" style="background: #f1f3f4; color: #1f1f1f; border: none;">名前を保存</button>
                     <div style="display: flex; gap: 10px;">
                         <button id="btnArchive" class="btn-secondary" onclick="archiveBand()" style="flex: 1; background: #fff8e1; color: #f57f17; margin: 0;">アーカイブ</button>
-                        <button id="btnRestore" class="btn-secondary hidden" onclick="restoreBand()" style="flex: 1; background: #fff8e1; color: #f57f17; margin: 0;">活動中にもどす</button>
-                        <button id="btnDelete" class="btn-danger" onclick="deleteBand()" style="flex: 1; margin: 0;">解散する</button>
+                        <button id="btnRestore" class="btn-secondary hidden" onclick="restoreBand()" style="flex: 1; background: #fff8e1; color: #f57f17; margin: 0;">復元</button>
+                        <button class="btn-danger" onclick="deleteBand()" style="flex: 1; margin: 0;">解散</button>
                     </div>
                 </div>
                 <div id="bandMemberActions" class="hidden"><button class="btn-danger" onclick="leaveBand()" style="width: 100%;">脱退する</button></div>
@@ -257,7 +258,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, limit, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile, updateEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
@@ -267,9 +268,10 @@
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
 
-        let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab='active', currentEditingBandId=null, currentEditingBandMembers=[], tempBandIconBlob=null, allUsersCache=[], currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
+        let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, currentEditingBandId=null, currentEditingBandMembers=[], tempBandIconBlob=null, allUsersCache=[], currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
         
-        let tempEmailForAuth = ""; // To store email during verification process
+        let tempEmailForAuth = ""; 
+        let targetEvents = []; // [{id, name, date}, ...]
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
@@ -287,12 +289,10 @@
         async function loadSystemSettings() {
             try {
                 const snap = await getDoc(doc(db, "system", "settings"));
-                let year = getFiscalYear();
                 let eventName = "";
 
                 if (snap.exists()) {
                     const d = snap.data();
-                    if (d.currentYear) year = d.currentYear;
                     if (d.activeEventId) {
                         try {
                             const evSnap = await getDoc(doc(db, "events", d.activeEventId));
@@ -318,26 +318,18 @@
 
         async function main(){ 
             try{ 
-                // [高速化 1] ユーザー情報のキャッシュ表示
                 const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUserStr) {
                     try {
                         const u = JSON.parse(cachedUserStr);
-                        currentUserData = u; // 一時セット
+                        currentUserData = u; 
                         renderHeaderIcons(u);
                     } catch (e) { console.error("User cache error", e); }
                 }
 
-                // [高速化 2] バンド一覧のキャッシュ表示
-                const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
-                if (cachedBandsStr) {
-                    try {
-                        myBandsAll = JSON.parse(cachedBandsStr);
-                        renderBandList(); 
-                    } catch (e) { console.error("Bands cache error", e); }
-                }
+                // Initial Tab Render (Loading)
+                renderBandTabs();
 
-                // 通常フロー
                 try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
                 
                 await liff.init({liffId:MY_LIFF_ID}); 
@@ -347,40 +339,33 @@
                 currentUser=profile.userId; 
                 currentProfile=profile;
                 
-                // Auth Profile Sync
                 if (auth.currentUser) {
                     try {
                         await updateProfile(auth.currentUser, {
                             displayName: profile.displayName,
                             photoURL: profile.pictureUrl
                         });
-                    } catch (e) {
-                        console.error("Auth profile update error", e);
-                    }
+                    } catch (e) { console.error(e); }
                 }
                 
                 const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
                 if(!userSnap.exists()){await showCustomAlert("ご利用いただくには会員登録が必要です。会員登録画面へ移動します。"); window.location.href=MY_PAGE_URL; return;} 
                 
-                // Update Firestore User with firebaseUid
                 await setDoc(userRef, {
                     lastLogin: serverTimestamp(),
                     firebaseUid: auth.currentUser ? auth.currentUser.uid : null
                 }, {merge:true}); 
                 
                 currentUserData=userSnap.data(); 
-                
-                // キャッシュ更新と再描画
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 renderHeaderIcons(currentUserData); 
                 
                 await refreshAllUsersCache(); 
-                
-                // System Settings Load
                 loadSystemSettings();
-
-                // Check Notifications
                 checkNotifications();
+                
+                // NEW: Load Target Events first
+                await loadTargetEvents();
 
                 const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'); 
                 if(act==='invite'&&iBid){await handleInvite(iBid); window.history.replaceState(null,null,window.location.pathname);} 
@@ -389,6 +374,85 @@
             }catch(e){console.error(e)} 
         }
 
+        // --- Event Tabs Logic ---
+        async function loadTargetEvents() {
+            try {
+                // Get latest 2 events by startDate
+                const qLatest = query(collection(db, "events"), orderBy("startDate", "desc"), limit(2));
+                const snap = await getDocs(qLatest);
+                targetEvents = [];
+                snap.forEach(d => {
+                    targetEvents.push({ id: d.id, name: d.data().event || d.data().name, date: d.data().startDate });
+                });
+                renderBandTabs(); // Re-render tabs with real names
+            } catch(e) {
+                console.error("Load events error", e);
+            }
+        }
+
+        function renderBandTabs() {
+            const tabsContainer = document.getElementById('bandTabs');
+            const sliderContainer = document.getElementById('bandSlider');
+            tabsContainer.innerHTML = "";
+            sliderContainer.innerHTML = "";
+
+            // Create Tabs and Slides
+            // Logic: targetEvents[0] -> Tab 0, targetEvents[1] -> Tab 1, Archive -> Tab Last
+            
+            // 1. Dynamic Events
+            targetEvents.forEach((ev, index) => {
+                const tab = document.createElement('div');
+                tab.className = `band-tab ${index === currentBandTab ? 'active' : ''}`;
+                tab.innerText = ev.name;
+                tab.onclick = () => switchBandTab(index);
+                tabsContainer.appendChild(tab);
+
+                const slide = document.createElement('div');
+                slide.id = `bandList-${ev.id}`;
+                slide.className = 'band-slide';
+                slide.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>';
+                sliderContainer.appendChild(slide);
+            });
+
+            // 2. Archive / Others Tab
+            const archiveIndex = targetEvents.length;
+            const archiveTab = document.createElement('div');
+            archiveTab.className = `band-tab ${archiveIndex === currentBandTab ? 'active' : ''}`;
+            archiveTab.innerText = "アーカイブ";
+            archiveTab.onclick = () => switchBandTab(archiveIndex);
+            tabsContainer.appendChild(archiveTab);
+
+            const archiveSlide = document.createElement('div');
+            archiveSlide.id = 'bandList-archive';
+            archiveSlide.className = 'band-slide';
+            archiveSlide.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>';
+            sliderContainer.appendChild(archiveSlide);
+
+            // CSS Adjustments for slider
+            const totalSlides = targetEvents.length + 1;
+            sliderContainer.style.width = `${totalSlides * 100}%`;
+            Array.from(sliderContainer.children).forEach(child => {
+                child.style.width = `${100 / totalSlides}%`;
+            });
+        }
+
+        window.switchBandTab = (index) => {
+            currentBandTab = index;
+            const tabs = document.querySelectorAll('.band-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            if(tabs[index]) tabs[index].classList.add('active');
+
+            const totalSlides = targetEvents.length + 1;
+            // Translate X percentage = index * (100 / totalSlides) * -1 ??
+            // No, the container width is totalSlides * 100%. 
+            // We want to shift by -100vw * index relative to viewport?
+            // Actually simpler: shift by -(100 / totalSlides * index)% relative to container
+            
+            const slider = document.getElementById('bandSlider');
+            const shift = -(100 / totalSlides) * index;
+            slider.style.transform = `translateX(${shift}%)`;
+        };
+
         function renderHeaderIcons(d){ let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata"); if(d.birthday){const t=new Date(), b=new Date(d.birthday); if(t.getMonth()===b.getMonth()&&t.getDate()===b.getDate())r="ring-birthday";} if(!r&&isU)r=d.job?`ring-${d.job}`:"ring-rainbow"; const h=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; const el=document.getElementById('headerIconBands'); if(el){el.innerHTML=h; el.className="header-avatar "+r; el.onclick=openUserStatusModal;} if(isU&&d.role)document.getElementById('nav-admin').classList.remove('hidden'); }
         window.openUserStatusModal=async()=>{ if(!currentUserData)return; if(!currentFeeSettings.year){ try{ const snap=await getDoc(doc(db,"system","fees")); if(snap.exists())currentFeeSettings=snap.data(); }catch(e){console.error(e)} } const year=currentFeeSettings.year||new Date().getFullYear(); const status=currentUserData.feeStatus||{}; document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'; document.getElementById('modalUserName').innerText=currentUserData.name+" さん"; const isPaid1=!!status[`${year}_1`], isPaid2=!!status[`${year}_2`], t1Text=isPaid1?'済':'未納', t2Text=isPaid2?'済':'未納', t1El=document.getElementById('statusFeeTerm1'), t2El=document.getElementById('statusFeeTerm2'); t1El.innerText=`前期: ${t1Text}`; t1El.className=`fee-status-badge ${isPaid1?'fee-paid':'fee-unpaid'}`; t2El.innerText=`後期: ${t2Text}`; t2El.className=`fee-status-badge ${isPaid2?'fee-paid':'fee-unpaid'}`; document.getElementById('statusFeeYear').innerText=`${year}年度 部費状況`; if(currentUser){ const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}`; document.getElementById('myQRCodeArea').innerHTML=`<img src="${qrUrl}" style="width:100%;height:100%;">`; } openModal('modal-user-status'); };
 
@@ -396,36 +460,15 @@
         window.openNotificationModal = () => {
             const list = document.getElementById('notificationList');
             list.innerHTML = "";
-            
             const notifications = [];
-            
-            // Check for Email Registration
             const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
             if (!hasEmail) {
                 if (currentUserData.tempEmail) {
-                    // Auth started but not verified
-                    notifications.push({
-                        id: 'email_verify_req',
-                        type: 'action_required', 
-                        text: '【重要】認証コードの確認が完了していません。ここをタップしてコードを入力してください。',
-                        date: '---',
-                        read: false,
-                        actionType: 'verify'
-                    });
+                    notifications.push({ id: 'email_verify_req', type: 'action_required', text: '【重要】認証コードの確認が完了していません。', date: '---', read: false, actionType: 'verify' });
                 } else {
-                    // Not registered
-                    notifications.push({
-                        id: 'email_req',
-                        type: 'action_required', 
-                        text: '【重要】メールアドレスが未登録です。ここをタップして登録してください。',
-                        date: '---',
-                        read: false,
-                        actionType: 'register'
-                    });
+                    notifications.push({ id: 'email_req', type: 'action_required', text: '【重要】メールアドレスが未登録です。', date: '---', read: false, actionType: 'register' });
                 }
             }
-
-            // Mock Data
             notifications.push({ id: 99, type: 'info', text: '初めまして！LMC Mobileへようこそ🎉', date: '2025/04/01 12:00', read: false });
 
             if(notifications.length === 0) {
@@ -434,179 +477,25 @@
                 notifications.forEach(n => {
                     const div = document.createElement('div');
                     div.className = `notification-item ${n.read ? '' : 'unread'} ${n.actionType ? 'clickable' : ''}`;
-                    if(n.actionType === 'register') {
-                        div.onclick = () => openEmailRegisterModal();
-                    } else if(n.actionType === 'verify') {
-                        div.onclick = () => openEmailVerifyModal();
-                    }
-                    
-                    let icon = 'notifications';
-                    let iconClass = '';
+                    if(n.actionType === 'register') div.onclick = () => openEmailRegisterModal();
+                    else if(n.actionType === 'verify') div.onclick = () => openEmailVerifyModal();
+                    let icon = 'notifications', iconClass = '';
                     if(n.type === 'action_required') { icon = 'warning'; iconClass = 'warning'; }
-                    else if(n.type === 'check') icon = 'check_circle';
-                    
-                    div.innerHTML = `
-                        <div class="notif-icon-box ${iconClass}"><span class="material-icons" style="font-size:18px;">${icon}</span></div>
-                        <div class="notif-content">
-                            <div class="notif-text">${n.text}</div>
-                            <div class="notif-date">${n.date}</div>
-                        </div>
-                    `;
+                    div.innerHTML = `<div class="notif-icon-box ${iconClass}"><span class="material-icons" style="font-size:18px;">${icon}</span></div><div class="notif-content"><div class="notif-text">${n.text}</div><div class="notif-date">${n.date}</div></div>`;
                     list.appendChild(div);
                 });
             }
-            
-            // Mark as read (Mock - but keep email warning)
             const hasUnread = notifications.some(n => !n.read && n.id !== 'email_req' && n.id !== 'email_verify_req');
             if(!hasUnread) document.getElementById('headerNotifBadge').classList.remove('show');
-            
             openModal('modal-notification');
         };
 
-        window.openEmailRegisterModal = () => {
-            closeModal('modal-notification');
-            document.getElementById('inputUserEmail').value = "";
-            document.getElementById('inputAuthCode').value = "";
-            // Reset to Step 1
-            document.getElementById('email-step-1').classList.remove('hidden');
-            document.getElementById('email-step-2').classList.add('hidden');
-            openModal('modal-email-register');
-        };
-
-        window.openEmailVerifyModal = () => {
-            closeModal('modal-notification');
-            // Restore temp email from user data to global var for verification logic
-            if (currentUserData && currentUserData.tempEmail) {
-                tempEmailForAuth = currentUserData.tempEmail;
-            }
-            document.getElementById('inputAuthCode').value = "";
-            document.getElementById('email-step-1').classList.add('hidden');
-            document.getElementById('email-step-2').classList.remove('hidden');
-            openModal('modal-email-register');
-        };
-
-        window.sendAuthCode = async () => {
-            const email = document.getElementById('inputUserEmail').value.trim();
-            if (!email) return await showCustomAlert("メールアドレスを入力してください。");
-            if (!email.includes('@')) return await showCustomAlert("正しい形式で入力してください。");
-            
-            // Generate 6-digit code
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            tempEmailForAuth = email; // store temporarily
-
-            try {
-                const btn = document.querySelector('#email-step-1 .btn-primary');
-                btn.innerText = "送信中...";
-                btn.disabled = true;
-
-                // Save auth code to user doc
-                await updateDoc(doc(db, "users", currentUser), {
-                    tempEmail: email,
-                    authCode: code,
-                    authCodeCreatedAt: serverTimestamp()
-                });
-
-                // Update Local Cache to reflect tempEmail immediately (for notification logic)
-                currentUserData.tempEmail = email;
-                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
-
-                // Add to mail queue (Mock trigger for email sending system)
-                await addDoc(collection(db, "mail_queue"), {
-                    to: email,
-                    subject: "LMC Mobile メールアドレス認証コード",
-                    body: `認証コードは ${code} です。\nこのコードをアプリに入力して認証を完了させてください。\n(有効期限: 10分)`,
-                    userId: currentUser,
-                    createdAt: serverTimestamp()
-                });
-                
-                await showCustomAlert(`認証コードを送信しました。\n${email} を確認してください。`);
-                
-                // Switch to Step 2
-                document.getElementById('email-step-1').classList.add('hidden');
-                document.getElementById('email-step-2').classList.remove('hidden');
-                checkNotifications(); // Update badge status
-
-            } catch(e) {
-                await showCustomAlert("送信エラー: " + e.message, "エラー");
-            } finally {
-                const btn = document.querySelector('#email-step-1 .btn-primary');
-                btn.innerText = "認証コードを送信";
-                btn.disabled = false;
-            }
-        };
-
-        window.verifyAuthCode = async () => {
-            const inputCode = document.getElementById('inputAuthCode').value.trim();
-            if (!inputCode || inputCode.length !== 6) return await showCustomAlert("6桁のコードを入力してください。");
-
-            try {
-                const btn = document.querySelector('#email-step-2 .btn-primary');
-                btn.innerText = "確認中...";
-                btn.disabled = true;
-
-                // Check code from Firestore
-                const userSnap = await getDoc(doc(db, "users", currentUser));
-                const userData = userSnap.data();
-                
-                if (userData.authCode !== inputCode) {
-                    await showCustomAlert("認証コードが間違っています。");
-                    btn.innerText = "認証する";
-                    btn.disabled = false;
-                    return;
-                }
-
-                // Verify Success!
-                // Update Firestore User (Official Email)
-                await updateDoc(doc(db, "users", currentUser), {
-                    Email: tempEmailForAuth,
-                    // Clean up temp fields using deleteField
-                    tempEmail: deleteField(),
-                    authCode: deleteField(),
-                    authCodeCreatedAt: deleteField()
-                });
-
-                // Update Firebase Auth
-                if (auth.currentUser) {
-                    try {
-                        await updateEmail(auth.currentUser, tempEmailForAuth);
-                    } catch (authError) {
-                        console.error("Auth update error (non-fatal for app flow):", authError);
-                    }
-                }
-                
-                // Update local cache
-                currentUserData.Email = tempEmailForAuth;
-                delete currentUserData.tempEmail; // Remove tempEmail from cache
-                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
-                
-                await showCustomAlert("認証に成功しました！\nメールアドレスを登録しました。");
-                closeModal('modal-email-register');
-                checkNotifications(); 
-
-            } catch(e) {
-                console.error(e);
-                await showCustomAlert("認証エラー: " + e.message, "エラー");
-                const btn = document.querySelector('#email-step-2 .btn-primary');
-                btn.innerText = "認証する";
-                btn.disabled = false;
-            }
-        };
-
-        window.backToEmailInput = () => {
-             document.getElementById('email-step-1').classList.remove('hidden');
-             document.getElementById('email-step-2').classList.add('hidden');
-        };
-
-        function checkNotifications() {
-            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
-            const badge = document.getElementById('headerNotifBadge');
-            
-            if (!hasEmail) {
-                badge.classList.add('show');
-            } else {
-                badge.classList.add('show');
-            }
-        }
+        window.openEmailRegisterModal = () => { closeModal('modal-notification'); document.getElementById('inputUserEmail').value = ""; document.getElementById('inputAuthCode').value = ""; document.getElementById('email-step-1').classList.remove('hidden'); document.getElementById('email-step-2').classList.add('hidden'); openModal('modal-email-register'); };
+        window.openEmailVerifyModal = () => { closeModal('modal-notification'); if (currentUserData && currentUserData.tempEmail) tempEmailForAuth = currentUserData.tempEmail; document.getElementById('inputAuthCode').value = ""; document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden'); openModal('modal-email-register'); };
+        window.sendAuthCode = async () => { const email = document.getElementById('inputUserEmail').value.trim(); if (!email) return await showCustomAlert("メールアドレスを入力してください。"); if (!email.includes('@')) return await showCustomAlert("正しい形式で入力してください。"); const code = Math.floor(100000 + Math.random() * 900000).toString(); tempEmailForAuth = email; try { const btn = document.querySelector('#email-step-1 .btn-primary'); btn.innerText = "送信中..."; btn.disabled = true; await updateDoc(doc(db, "users", currentUser), { tempEmail: email, authCode: code, authCodeCreatedAt: serverTimestamp() }); currentUserData.tempEmail = email; localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData)); await addDoc(collection(db, "mail_queue"), { to: email, subject: "LMC Mobile メールアドレス認証コード", body: `認証コードは ${code} です。`, userId: currentUser, createdAt: serverTimestamp() }); await showCustomAlert(`認証コードを送信しました。`); document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden'); checkNotifications(); } catch(e) { await showCustomAlert("送信エラー: " + e.message, "エラー"); } finally { const btn = document.querySelector('#email-step-1 .btn-primary'); btn.innerText = "認証コードを送信"; btn.disabled = false; } };
+        window.verifyAuthCode = async () => { const inputCode = document.getElementById('inputAuthCode').value.trim(); if (!inputCode || inputCode.length !== 6) return await showCustomAlert("6桁のコードを入力してください。"); try { const btn = document.querySelector('#email-step-2 .btn-primary'); btn.innerText = "確認中..."; btn.disabled = true; const userSnap = await getDoc(doc(db, "users", currentUser)); const userData = userSnap.data(); if (userData.authCode !== inputCode) { await showCustomAlert("認証コードが間違っています。"); btn.innerText = "認証する"; btn.disabled = false; return; } await updateDoc(doc(db, "users", currentUser), { Email: tempEmailForAuth, tempEmail: deleteField(), authCode: deleteField(), authCodeCreatedAt: deleteField() }); if (auth.currentUser) { try { await updateEmail(auth.currentUser, tempEmailForAuth); } catch (ae) { console.error(ae); } } currentUserData.Email = tempEmailForAuth; delete currentUserData.tempEmail; localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData)); await showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); checkNotifications(); } catch(e) { await showCustomAlert("認証エラー: " + e.message, "エラー"); const btn = document.querySelector('#email-step-2 .btn-primary'); btn.innerText = "認証する"; btn.disabled = false; } };
+        window.backToEmailInput = () => { document.getElementById('email-step-1').classList.remove('hidden'); document.getElementById('email-step-2').classList.add('hidden'); };
+        function checkNotifications() { const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email); const badge = document.getElementById('headerNotifBadge'); if (!hasEmail) badge.classList.add('show'); else badge.classList.add('show'); }
 
         function loadMyBands(){ 
             const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); 
@@ -618,32 +507,19 @@
                 renderBandList(); 
             }); 
         }
-        
-        // --- Modified Switch Band Tab with Animation ---
-        window.switchBandTab=(tab)=>{ 
-            currentBandTab=tab; 
-            document.querySelectorAll('.band-tab').forEach(el=>el.classList.remove('active')); 
-            const idx=(tab==='active')?0:1; 
-            document.querySelectorAll('.band-tab')[idx].classList.add('active'); 
-            
-            const slider = document.getElementById('bandSlider');
-            if (tab === 'active') {
-                slider.style.transform = 'translateX(0)';
-            } else {
-                slider.style.transform = 'translateX(-50%)';
-            }
-        };
 
+        // --- Render Band List with Event Filtering ---
         function renderBandList(){ 
-            const activeList = document.getElementById('activeBandList');
-            const archivedList = document.getElementById('archivedBandList');
-            
-            activeList.innerHTML = "";
-            archivedList.innerHTML = "";
-            
-            const activeBands = myBandsAll.filter(b => !b.isArchived);
-            const archivedBands = myBandsAll.filter(b => b.isArchived);
-            
+            // 1. Prepare buckets
+            const bucketEls = [];
+            targetEvents.forEach(ev => {
+                const el = document.getElementById(`bandList-${ev.id}`);
+                if(el) { el.innerHTML = ""; bucketEls.push({ id: ev.id, el: el }); }
+            });
+            const archiveEl = document.getElementById('bandList-archive');
+            if(archiveEl) archiveEl.innerHTML = "";
+
+            // Helper to create card
             const createBandItem = (b) => {
                 const div=document.createElement('div'); 
                 div.className='card band-card'; 
@@ -653,17 +529,38 @@
                 return div;
             };
 
-            if(activeBands.length === 0) {
-                activeList.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">なし</div>`;
-            } else {
-                activeBands.forEach(b => activeList.appendChild(createBandItem(b)));
-            }
+            // 2. Distribute Bands
+            myBandsAll.forEach(b => {
+                if(b.isArchived) {
+                    if(archiveEl) archiveEl.appendChild(createBandItem(b));
+                    return;
+                }
 
-            if(archivedBands.length === 0) {
-                archivedList.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">なし</div>`;
-            } else {
-                archivedBands.forEach(b => archivedList.appendChild(createBandItem(b)));
-            }
+                // Check songs for eventIds
+                let assigned = false;
+                if (b.songs && Array.isArray(b.songs)) {
+                    // Check against target events
+                    bucketEls.forEach(bucket => {
+                        // Does this band have a song for this event?
+                        const hasSong = b.songs.some(s => (typeof s === 'object' && s !== null && s.eventId === bucket.id));
+                        if(hasSong) {
+                            bucket.el.appendChild(createBandItem(b));
+                            assigned = true;
+                        }
+                    });
+                }
+
+                // If not assigned to any target event (or no songs), put in Archive/Other
+                if (!assigned) {
+                    if(archiveEl) archiveEl.appendChild(createBandItem(b));
+                }
+            });
+
+            // 3. Empty States
+            bucketEls.forEach(bucket => {
+                if(bucket.el.children.length === 0) bucket.el.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">なし</div>`;
+            });
+            if(archiveEl && archiveEl.children.length === 0) archiveEl.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">なし</div>`;
         }
         
         window.openBandModal=()=>{ document.getElementById('inputBandName').value=""; document.getElementById('bandMemberSearchInput').value=""; document.getElementById('userSelectList').innerHTML="読み込み中..."; tempBandIconBlob=null; document.getElementById('previewBandIcon').classList.add('hidden'); loadUserList('userSelectList'); openModal('modal-band'); };
@@ -736,7 +633,7 @@
         window.removeSongFromBand = async (songName) => { if(!await showCustomConfirm(`「${songName}」を削除しますか？`, "削除確認")) return; const bid = document.getElementById('detailBandId').value; try { const snap = await getDoc(doc(db, "bands", bid)); if(snap.exists()) { const currentSongs = snap.data().songs || []; const newSongs = currentSongs.filter(s => { const t = (typeof s === 'object' && s !== null && s.title) ? s.title : s; return t !== songName; }); await updateDoc(doc(db, "bands", bid), { songs: newSongs }); openBandDetail(bid, {id: bid, ...snap.data(), songs: newSongs}); } } catch(e) { await showCustomAlert("削除に失敗しました: " + e.message, "エラー"); } };
         window.updateBandName=async()=>{ const bid=document.getElementById('detailBandId').value, nn=document.getElementById('detailBandName').value.trim(); if(!nn)return; try{await updateDoc(doc(db,"bands",bid),{name:nn}); await showCustomAlert("バンド名を変更しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")} };
         window.archiveBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(await showCustomConfirm("このバンドをアーカイブへ移動しますか？", "アーカイブの確認")){try{await updateDoc(doc(db,"bands",bid),{isArchived:true}); await showCustomAlert("アーカイブへ移動しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
-        window.restoreBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(await showCustomConfirm("このバンドを活動中にしますか？", "復元の確認")){try{await updateDoc(doc(db,"bands",bid),{isArchived:false}); await showCustomAlert("活動中に復元しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
+        window.restoreBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(await showCustomConfirm("このバンドを活動中に復元しますか？", "復元の確認")){try{await updateDoc(doc(db,"bands",bid),{isArchived:false}); await showCustomAlert("活動中に復元しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         window.deleteBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(await showCustomConfirm("このバンドを解散（削除）しますか？この操作は取り消せません。", "解散の確認")){try{await deleteDoc(doc(db,"bands",bid)); await showCustomAlert("バンドを解散しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         window.leaveBand=async()=>{ const bid=document.getElementById('detailBandId').value; if(await showCustomConfirm("このバンドから脱退しますか？", "脱退の確認")){try{await updateDoc(doc(db,"bands",bid),{memberIds:arrayRemove(currentUser),memberNames:arrayRemove(currentProfile.displayName)}); await showCustomAlert("バンドから脱退しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         window.removeMember=async(bid,uid,n)=>{ if(await showCustomConfirm(`${n} さんをバンドメンバーから削除しますか？`, "メンバー削除")){try{await updateDoc(doc(db,"bands",bid),{memberIds:arrayRemove(uid),memberNames:arrayRemove(n)}); await showCustomAlert("メンバーを削除しました。"); closeModal('modal-band-detail');}catch(e){await showCustomAlert(e.message, "エラー")}} };
