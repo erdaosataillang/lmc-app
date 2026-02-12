@@ -267,6 +267,7 @@
         // Cache Keys
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
+        const CACHE_KEY_EVENTS = 'lmc_events_cache'; // Added
 
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, currentEditingBandId=null, currentEditingBandMembers=[], tempBandIconBlob=null, allUsersCache=[], currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
         
@@ -318,6 +319,7 @@
 
         async function main(){ 
             try{ 
+                // Cache Load User
                 const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUserStr) {
                     try {
@@ -327,8 +329,26 @@
                     } catch (e) { console.error("User cache error", e); }
                 }
 
-                // Initial Tab Render (Loading)
-                renderBandTabs();
+                // Cache Load Events (NEW)
+                const cachedEventsStr = localStorage.getItem(CACHE_KEY_EVENTS);
+                if (cachedEventsStr) {
+                    try {
+                        targetEvents = JSON.parse(cachedEventsStr);
+                        renderBandTabs(); // Render tabs first
+                    } catch(e) { console.error("Events cache error", e); }
+                }
+
+                // Cache Load Bands
+                const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
+                if (cachedBandsStr) {
+                    try {
+                        myBandsAll = JSON.parse(cachedBandsStr);
+                        renderBandList(); 
+                    } catch (e) { console.error("Bands cache error", e); }
+                }
+
+                // Initial Tab Render (Loading fallback if no cache)
+                if(!targetEvents.length) renderBandTabs();
 
                 try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
                 
@@ -364,7 +384,7 @@
                 loadSystemSettings();
                 checkNotifications();
                 
-                // NEW: Load Target Events first
+                // Load Target Events first
                 await loadTargetEvents();
 
                 const urlParams=new URLSearchParams(window.location.search), act=urlParams.get('action'), iBid=urlParams.get('bandId'); 
@@ -384,6 +404,10 @@
                 snap.forEach(d => {
                     targetEvents.push({ id: d.id, name: d.data().event || d.data().name, date: d.data().startDate });
                 });
+                
+                // Cache Events
+                localStorage.setItem(CACHE_KEY_EVENTS, JSON.stringify(targetEvents));
+
                 renderBandTabs(); // Re-render tabs with real names
             } catch(e) {
                 console.error("Load events error", e);
@@ -393,6 +417,10 @@
         function renderBandTabs() {
             const tabsContainer = document.getElementById('bandTabs');
             const sliderContainer = document.getElementById('bandSlider');
+            
+            // If already rendered and same structure, maybe just update text?
+            // For simplicity, re-render. Note: this might reset scroll position.
+            
             tabsContainer.innerHTML = "";
             sliderContainer.innerHTML = "";
 
@@ -410,7 +438,7 @@
                 const slide = document.createElement('div');
                 slide.id = `bandList-${ev.id}`;
                 slide.className = 'band-slide';
-                slide.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>';
+                if(myBandsAll.length === 0) slide.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>';
                 sliderContainer.appendChild(slide);
             });
 
@@ -425,7 +453,7 @@
             const archiveSlide = document.createElement('div');
             archiveSlide.id = 'bandList-archive';
             archiveSlide.className = 'band-slide';
-            archiveSlide.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>';
+            if(myBandsAll.length === 0) archiveSlide.innerHTML = '<div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div>';
             sliderContainer.appendChild(archiveSlide);
 
             // CSS Adjustments for slider
@@ -443,11 +471,6 @@
             if(tabs[index]) tabs[index].classList.add('active');
 
             const totalSlides = targetEvents.length + 1;
-            // Translate X percentage = index * (100 / totalSlides) * -1 ??
-            // No, the container width is totalSlides * 100%. 
-            // We want to shift by -100vw * index relative to viewport?
-            // Actually simpler: shift by -(100 / totalSlides * index)% relative to container
-            
             const slider = document.getElementById('bandSlider');
             const shift = -(100 / totalSlides) * index;
             slider.style.transform = `translateX(${shift}%)`;
