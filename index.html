@@ -290,10 +290,12 @@
         async function loadSystemSettings() {
             try {
                 const snap = await getDoc(doc(db, "system", "settings"));
+                let year = getFiscalYear();
                 let eventName = "";
 
                 if (snap.exists()) {
                     const d = snap.data();
+                    if (d.currentYear) year = d.currentYear;
                     if (d.activeEventId) {
                         try {
                             const evSnap = await getDoc(doc(db, "events", d.activeEventId));
@@ -559,21 +561,35 @@
                     return;
                 }
 
-                // Check songs for eventIds
-                let assigned = false;
+                // Collect relevant event IDs for this band
+                const relevantEventIds = new Set();
+
+                // 1. Check 'events' field (Array of strings, band document level)
+                if (b.events && Array.isArray(b.events)) {
+                    b.events.forEach(eid => relevantEventIds.add(eid));
+                }
+
+                // 2. Check 'songs' field (Array of objects, song level)
                 if (b.songs && Array.isArray(b.songs)) {
-                    // Check against target events
-                    bucketEls.forEach(bucket => {
-                        // Does this band have a song for this event?
-                        const hasSong = b.songs.some(s => (typeof s === 'object' && s !== null && s.eventId === bucket.id));
-                        if(hasSong) {
-                            bucket.el.appendChild(createBandItem(b));
-                            assigned = true;
+                    b.songs.forEach(s => {
+                        if (typeof s === 'object' && s !== null && s.eventId) {
+                            relevantEventIds.add(s.eventId);
                         }
                     });
                 }
 
-                // If not assigned to any target event (or no songs), put in Archive/Other
+                let assigned = false;
+
+                // Check against target events buckets (Dynamic Tabs)
+                bucketEls.forEach(bucket => {
+                    // Does this band have a relevant eventId matching the bucket?
+                    if(relevantEventIds.has(bucket.id)) {
+                        bucket.el.appendChild(createBandItem(b));
+                        assigned = true;
+                    }
+                });
+
+                // If not assigned to any target event (or no relevant events), put in Archive/Other
                 if (!assigned) {
                     if(archiveEl) archiveEl.appendChild(createBandItem(b));
                 }
