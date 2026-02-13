@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events - LMC Admin</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 共通CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="min-h-screen flex overflow-hidden bg-[#f8fafc] hidden">
+    <!-- サイドバーはJSによって自動的に挿入されます -->
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 ml-[260px] h-screen overflow-y-auto p-8 relative">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-extrabold text-gray-800 uppercase tracking-widest">Events Management</h2>
+                <p class="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">ライブ・イベント日程の管理</p>
+            </div>
+        </header>
+
+        <!-- ツールバー -->
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 p-6 mb-8">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-1 items-center gap-3 bg-gray-50 px-5 py-3 rounded-2xl max-w-md focus-within:ring-2 focus-within:ring-sky-100 transition-all">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                    <input type="text" id="event-search-input" placeholder="イベント名で検索..." class="bg-transparent border-none outline-none text-sm w-full font-bold placeholder:font-medium placeholder:text-gray-300">
+                </div>
+                <button onclick="openAddEventModal()" class="bg-sky-600 hover:bg-sky-700 text-white px-6 py-3 rounded-2xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-sky-100">
+                    <i class="fa-solid fa-plus"></i> イベントを追加
+                </button>
+            </div>
+        </div>
+
+        <!-- イベントリスト (Grid表示) -->
+        <div id="events-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- JSで描画 -->
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. 新規登録モーダル -->
+    <div id="add-event-modal" onclick="closeAddEventModal()" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative animate-in zoom-in duration-200 flex flex-col p-8">
+            <button onclick="closeAddEventModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-black text-gray-800 mb-6">イベントの新規登録</h3>
+            
+            <div class="space-y-6">
+                <div>
+                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">イベント名</label>
+                    <input type="text" id="new-event-name" placeholder="例: 25年5月定演" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-sky-100 transition-all">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">開始日</label>
+                        <input type="date" id="new-event-start-date" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-sky-100 transition-all">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">終了日</label>
+                        <input type="date" id="new-event-end-date" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-sky-100 transition-all">
+                    </div>
+                </div>
+                <button onclick="handleNewEventSubmit()" class="w-full bg-sky-600 text-white py-4 rounded-[22px] font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-sky-700 transition-all shadow-xl shadow-sky-100">イベントを保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 削除確認モーダル -->
+    <div id="confirm-modal" onclick="closeConfirmModal()" class="hidden fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center animate-in zoom-in duration-200">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fa-solid fa-trash-can text-2xl"></i></div>
+            <h3 class="text-lg font-black text-gray-800 mb-2">確認</h3>
+            <p id="confirm-modal-text" class="text-sm text-gray-500 mb-8 font-medium leading-relaxed">このイベントを削除しますか？</p>
+            <div class="flex gap-4">
+                <button onclick="closeConfirmModal()" class="flex-1 py-4 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors">キャンセル</button>
+                <button id="confirm-action-btn" class="flex-1 py-4 bg-red-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all">削除する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script type="module">
+        import { initAdminPage, db } from "/js/admin-common.js";
+        import { collection, onSnapshot, setDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let eventsData = [];
+        let eventSearchQuery = "";
+        let currentConfirmAction = null;
+
+        // 初期化 (ページID: events)
+        initAdminPage('events', (user) => {
+            console.log("Admin Events Module Loaded");
+
+            // イベントデータの監視
+            onSnapshot(collection(db, 'events'), s => {
+                eventsData = s.docs.map(d => ({id:d.id, ...d.data()}));
+                renderEvents();
+            });
+        });
+
+        // ----------------------------------------------------
+        // Render Functions
+        // ----------------------------------------------------
+
+        function renderEvents() {
+            const container = document.getElementById('events-grid-container');
+            const q = eventSearchQuery.toLowerCase();
+            
+            const filtered = eventsData.filter(e => (e.event || "").toLowerCase().includes(q));
+
+            // 日付順（新しい順）にソート
+            filtered.sort((a, b) => {
+                const dateA = a.startDate || a.date || "";
+                const dateB = b.startDate || b.date || "";
+                if (dateA > dateB) return -1;
+                if (dateA < dateB) return 1;
+                return 0;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No Events Found</div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(evt => {
+                const start = evt.startDate || evt.date; 
+                const end = evt.endDate;
+                
+                let dateStr = start ? start.replace(/-/g, '/') : 'Date Unknown';
+                if (end && end !== start) {
+                    dateStr += ` - ${end.replace(/-/g, '/')}`;
+                }
+
+                // 日付から状態を判定（未来/過去）
+                const today = new Date().toISOString().split('T')[0];
+                const isPast = (end || start) < today;
+                const statusBadge = isPast 
+                    ? `<span class="bg-gray-100 text-gray-400 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest">Finished</span>`
+                    : `<span class="bg-sky-100 text-sky-600 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest">Upcoming</span>`;
+
+                return `
+                <div class="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity">
+                        <i class="fa-solid fa-bullhorn text-[100px]"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="w-14 h-14 bg-sky-100 rounded-2xl flex items-center justify-center text-sky-600 shadow-sm">
+                                <i class="fa-solid fa-calendar-star text-2xl"></i>
+                            </div>
+                            ${statusBadge}
+                        </div>
+                        
+                        <h4 class="text-xl font-black text-gray-800 mb-1">${evt.event}</h4>
+                        <p class="text-[11px] text-gray-400 font-extrabold uppercase tracking-widest mb-6">
+                            <i class="fa-regular fa-clock mr-1"></i> ${dateStr}
+                        </p>
+
+                        <div class="flex items-center justify-between border-t border-gray-50 pt-4 mt-auto">
+                            <span class="text-[9px] text-gray-300 font-bold uppercase tracking-widest">ID: ${evt.id}</span>
+                            <button onclick="requestDeleteEvent('${evt.id}')" class="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        document.getElementById('event-search-input').addEventListener('input', (e) => {
+            eventSearchQuery = e.target.value;
+            renderEvents();
+        });
+
+        // ----------------------------------------------------
+        // Add Functions
+        // ----------------------------------------------------
+
+        window.openAddEventModal = () => {
+            document.getElementById('new-event-name').value = "";
+            document.getElementById('new-event-start-date').value = "";
+            document.getElementById('new-event-end-date').value = "";
+            document.getElementById('add-event-modal').classList.add('modal-active');
+        };
+        window.closeAddEventModal = () => document.getElementById('add-event-modal').classList.remove('modal-active');
+
+        window.handleNewEventSubmit = async () => {
+            const name = document.getElementById('new-event-name').value;
+            const startDate = document.getElementById('new-event-start-date').value;
+            const endDate = document.getElementById('new-event-end-date').value;
+            
+            if(!name || !startDate || !endDate) return alert("全ての項目を入力してください");
+            
+            // ID生成: e + 開始日 (YYYYMMDD)
+            const docId = 'e' + startDate.replace(/-/g, '');
+            
+            try {
+                await setDoc(doc(db, 'events', docId), { 
+                    event: name, 
+                    startDate: startDate,
+                    endDate: endDate,
+                    createdAt: serverTimestamp()
+                });
+                closeAddEventModal();
+            } catch (e) {
+                console.error(e);
+                alert("登録に失敗しました");
+            }
+        };
+
+        // ----------------------------------------------------
+        // Delete Function
+        // ----------------------------------------------------
+
+        window.requestDeleteEvent = (id) => {
+            openConfirmModal("このイベントを削除しますか？\n（関連するバンドの演奏情報は残りますが、イベント名は表示されなくなる可能性があります）", async () => {
+                try {
+                    await deleteDoc(doc(db, 'events', id));
+                } catch(e) {
+                    console.error(e);
+                    alert("削除に失敗しました");
+                }
+            });
+        };
+
+        // ----------------------------------------------------
+        // Utility: Confirm Modal
+        // ----------------------------------------------------
+        window.openConfirmModal = (text, action) => {
+            document.getElementById('confirm-modal-text').innerText = text;
+            currentConfirmAction = action;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            document.getElementById('confirm-modal').classList.add('flex');
+        };
+        window.closeConfirmModal = () => {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            document.getElementById('confirm-modal').classList.remove('flex');
+            currentConfirmAction = null;
+        };
+        document.getElementById('confirm-action-btn').onclick = async () => {
+            if(currentConfirmAction) await currentConfirmAction();
+            closeConfirmModal();
+        };
+
+    </script>
+</body>
+</html>
