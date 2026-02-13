@@ -256,7 +256,6 @@
 
             // データがまだ来ていない場合
             if (bandsData.length === 0 && usersData.length === 0) {
-                // まだLoadingのままにしておく（初期状態）
                 return; 
             }
 
@@ -278,7 +277,6 @@
             });
 
             if (filtered.length === 0) {
-                // データ取得完了したが、結果が0件の場合
                 container.innerHTML = `<tr><td colspan="4" class="px-8 py-10 text-center text-gray-300 font-bold text-xs tracking-widest uppercase">No Bands Found</td></tr>`;
                 return;
             }
@@ -342,8 +340,12 @@
             document.getElementById('new-band-name').value = "";
             renderUserCheckboxList('new-band-members-list');
             document.getElementById('add-band-modal').classList.add('modal-active');
+            document.getElementById('add-band-modal').classList.remove('hidden'); // Ensure visible
         };
-        window.closeAddBandModal = () => document.getElementById('add-band-modal').classList.remove('modal-active');
+        window.closeAddBandModal = () => {
+            document.getElementById('add-band-modal').classList.remove('modal-active');
+            setTimeout(() => document.getElementById('add-band-modal').classList.add('hidden'), 200);
+        };
 
         function renderUserCheckboxList(containerId, selectedIds = []) {
             const container = document.getElementById(containerId);
@@ -387,14 +389,32 @@
         // Band Detail Functions
         // ----------------------------------------------------
 
+        // ★修正ポイント: モーダル表示ロジックの強化
         window.showBandDetail = (bandId) => {
-            activeBandId = bandId;
-            renderBandDetailContent(bandId);
-            document.getElementById('band-detail-modal').classList.add('modal-active');
+            console.log("Attempting to show detail for:", bandId);
+            try {
+                activeBandId = bandId;
+                renderBandDetailContent(bandId);
+                const modal = document.getElementById('band-detail-modal');
+                if (modal) {
+                    modal.classList.remove('hidden'); // 明示的にhiddenを削除
+                    modal.classList.add('modal-active');
+                } else {
+                    console.error("Band detail modal element not found!");
+                }
+            } catch (e) {
+                console.error("Error in showBandDetail:", e);
+                alert("詳細の表示中にエラーが発生しました。\n" + e.message);
+            }
         };
+
         window.closeBandDetail = () => {
             activeBandId = null;
-            document.getElementById('band-detail-modal').classList.remove('modal-active');
+            const modal = document.getElementById('band-detail-modal');
+            if (modal) {
+                modal.classList.remove('modal-active');
+                setTimeout(() => modal.classList.add('hidden'), 200); // アニメーション後にhidden
+            }
         };
 
         function renderBandDetailContent(bandId) {
@@ -505,9 +525,13 @@
             if (!band) return;
             document.getElementById('edit-members-band-id').value = bandId;
             renderUserCheckboxList('edit-members-list', band.memberIds || []);
+            document.getElementById('edit-members-modal').classList.remove('hidden');
             document.getElementById('edit-members-modal').classList.add('modal-active');
         };
-        window.closeEditMembersModal = () => document.getElementById('edit-members-modal').classList.remove('modal-active');
+        window.closeEditMembersModal = () => {
+            document.getElementById('edit-members-modal').classList.remove('modal-active');
+            setTimeout(() => document.getElementById('edit-members-modal').classList.add('hidden'), 200);
+        };
 
         window.saveBandMembers = async () => {
             const bandId = document.getElementById('edit-members-band-id').value;
@@ -559,9 +583,13 @@
                 document.getElementById('new-song-duration').value = '';
                 document.getElementById('new-song-event').value = '';
             }
+            document.getElementById('add-song-modal').classList.remove('hidden');
             document.getElementById('add-song-modal').classList.add('modal-active');
         };
-        window.closeAddSongModal = () => document.getElementById('add-song-modal').classList.remove('modal-active');
+        window.closeAddSongModal = () => {
+            document.getElementById('add-song-modal').classList.remove('modal-active');
+            setTimeout(() => document.getElementById('add-song-modal').classList.add('hidden'), 200);
+        };
 
         window.handleSongSubmit = async () => {
             const bandId = document.getElementById('song-band-id').value;
