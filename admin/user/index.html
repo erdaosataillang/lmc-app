@@ -57,16 +57,22 @@
 
         <!-- ユーザーグリッド -->
         <div id="users-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- JSで描画 -->
+            <!-- JSで描画されます -->
+            <div class="col-span-full py-10 text-center text-gray-400 font-bold">
+                <div class="flex flex-col items-center justify-center gap-2">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl text-indigo-500"></i>
+                    <span id="loading-status-text">Connecting to Database...</span>
+                </div>
+            </div>
         </div>
     </main>
 
     <!-- ================= MODALS ================= -->
 
     <!-- 詳細モーダル -->
-    <div id="user-detail-modal" onclick="closeUserDetail()" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="user-detail-modal" onclick="window.closeUserDetail()" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
         <div onclick="event.stopPropagation()" class="bg-white w-full max-w-lg rounded-[40px] shadow-2xl overflow-hidden relative animate-in zoom-in duration-200 flex flex-col max-h-[90vh]">
-            <button onclick="closeUserDetail()" class="absolute top-4 right-4 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-gray-500 transition-colors z-20 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="window.closeUserDetail()" class="absolute top-4 right-4 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-gray-500 transition-colors z-20 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
             <div id="user-modal-content" class="overflow-y-auto flex-1 p-0 text-left">
                 <!-- JSでコンテンツ注入 -->
             </div>
@@ -85,14 +91,31 @@
 
         // 初期化 (ページID: users)
         initAdminPage('users', (user) => {
-            console.log("Admin Users Module Loaded");
+            console.log("Admin Users Module Loaded. User UID:", user.uid);
+            updateLoadingStatus("Fetching members data...");
 
             // ユーザーデータの監視
-            onSnapshot(collection(db, 'users'), s => {
-                usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
-                renderUsers();
-            });
+            onSnapshot(collection(db, 'users'), 
+                (s) => {
+                    usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
+                    console.log(`Users loaded: ${usersData.length} records`);
+                    renderUsers();
+                },
+                (error) => {
+                    console.error("Error fetching users:", error);
+                    updateLoadingStatus(`Error loading users: ${error.message}`, true);
+                }
+            );
         });
+
+        // 読み込み状況表示用
+        function updateLoadingStatus(text, isError = false) {
+            const el = document.getElementById('loading-status-text');
+            if (el) {
+                el.innerText = text;
+                if (isError) el.classList.add('text-red-500');
+            }
+        }
 
         // ----------------------------------------------------
         // Render Functions
@@ -100,6 +123,8 @@
 
         function renderUsers() {
             const container = document.getElementById('users-grid-container');
+            if (!container) return;
+
             const q = userSearchQuery.toLowerCase();
             
             // 1. 検索フィルタ
@@ -109,12 +134,12 @@
                 (u.studentId || "").toLowerCase().includes(q)
             );
             
-            // 2. 現役生フィルタ (誕生日から推測する簡易ロジック: 4年前まで)
+            // 2. 現役生フィルタ
             if (userShowOnlyCurrent) {
                 const cutoff = new Date();
                 cutoff.setFullYear(cutoff.getFullYear() - 4);
                 filtered = filtered.filter(u => {
-                    if (!u.birthday) return true; // 誕生日未設定は表示
+                    if (!u.birthday) return true;
                     const d = u.birthday.toDate ? u.birthday.toDate() : (u.birthday.seconds ? new Date(u.birthday.seconds * 1000) : new Date(u.birthday));
                     return d >= cutoff;
                 });
@@ -125,19 +150,20 @@
                 if (userSortOrder === "name") {
                     return (a.kana || a.name || "").localeCompare(b.kana || b.name || "", "ja");
                 } else {
-                    // 学年順 (誕生日が遅い方が若い＝学年が下、または逆。ここでは誕生日順)
                     const dateA = a.birthday?.seconds || 0;
                     const dateB = b.birthday?.seconds || 0;
-                    return dateB - dateA; // 若い順（降順）
+                    return dateB - dateA;
                 }
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No Members Found</div>`;
+                const message = usersData.length === 0 ? "No Members Data Found" : "No Match Found";
+                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">${message}</div>`;
                 return;
             }
             
             container.innerHTML = filtered.map(user => {
+                // アイコンの画像表示ロジック
                 const iconHtml = user.icon 
                     ? `<img src="${user.icon}" class="w-14 h-14 rounded-full object-cover border border-gray-100 shadow-sm">` 
                     : `<div class="w-14 h-14 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border border-indigo-50 shadow-sm text-xl">${(user.name||"?")[0]}</div>`;
@@ -156,7 +182,7 @@
             }).join('');
         }
 
-        // イベントリスナー設定
+        // イベントリスナー
         document.getElementById('user-search-input').addEventListener('input', (e) => {
             userSearchQuery = e.target.value;
             renderUsers();
@@ -177,61 +203,75 @@
         // ----------------------------------------------------
 
         window.showUserDetail = (userId) => {
-            const user = usersData.find(u => u.id === userId);
-            if (!user) return;
-            
-            const modal = document.getElementById('user-detail-modal');
-            const content = document.getElementById('user-modal-content');
-            
-            // 日付フォーマット
-            let birthStr = '-';
-            if (user.birthday) {
-                const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000);
-                birthStr = d.toLocaleDateString('ja-JP');
+            console.log("Attempting to show user detail for:", userId);
+            try {
+                const user = usersData.find(u => u.id === userId);
+                if (!user) return;
+                
+                const modal = document.getElementById('user-detail-modal');
+                const content = document.getElementById('user-modal-content');
+                
+                let birthStr = '-';
+                if (user.birthday) {
+                    const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000);
+                    birthStr = d.toLocaleDateString('ja-JP');
+                }
+
+                // アイコンの大サイズ画像表示
+                const iconLarge = user.icon 
+                    ? `<img src="${user.icon}" class="w-32 h-32 rounded-[40px] border-[6px] border-white shadow-2xl object-cover bg-white">` 
+                    : `<div class="w-32 h-32 rounded-[40px] bg-white flex items-center justify-center text-5xl font-bold text-indigo-200 border-[6px] border-white shadow-2xl">${(user.name||"?")[0]}</div>`;
+
+                content.innerHTML = `
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 h-40 w-full relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                    </div>
+                    <div class="px-8 pb-10 -mt-16 relative">
+                        <div class="mb-6 flex justify-between items-end">
+                            ${iconLarge}
+                        </div>
+                        
+                        <h3 class="text-3xl font-extrabold text-gray-800 mb-1">${user.name}</h3>
+                        <p class="text-indigo-500 font-bold text-sm mb-6">${user.kana || ''}</p>
+                        
+                        <div class="grid grid-cols-1 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">学籍番号</span>
+                                <span class="font-bold text-gray-800">${user.studentId || '未登録'}</span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">パート / 担当</span>
+                                <span class="font-bold text-gray-800">${user.part || '未設定'}</span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">誕生日</span>
+                                <span class="font-bold text-gray-800">${birthStr}</span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                 <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">システムID</span>
+                                 <span class="font-mono text-xs text-gray-500">${user.id}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('modal-active');
+                }
+            } catch (e) {
+                console.error("Error in showUserDetail:", e);
+                alert("詳細の表示中にエラーが発生しました。\n" + e.message);
             }
-
-            const iconLarge = user.icon 
-                ? `<img src="${user.icon}" class="w-32 h-32 rounded-[40px] border-[6px] border-white shadow-2xl object-cover bg-white">` 
-                : `<div class="w-32 h-32 rounded-[40px] bg-white flex items-center justify-center text-5xl font-bold text-indigo-200 border-[6px] border-white shadow-2xl">${(user.name||"?")[0]}</div>`;
-
-            content.innerHTML = `
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 h-40 w-full relative overflow-hidden">
-                    <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-                </div>
-                <div class="px-8 pb-10 -mt-16 relative">
-                    <div class="mb-6 flex justify-between items-end">
-                        ${iconLarge}
-                        <!-- 編集ボタン等はここに追加可能 -->
-                    </div>
-                    
-                    <h3 class="text-3xl font-extrabold text-gray-800 mb-1">${user.name}</h3>
-                    <p class="text-indigo-500 font-bold text-sm mb-6">${user.kana || ''}</p>
-                    
-                    <div class="grid grid-cols-1 gap-4">
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">学籍番号</span>
-                            <span class="font-bold text-gray-800">${user.studentId || '未登録'}</span>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">パート / 担当</span>
-                            <span class="font-bold text-gray-800">${user.part || '未設定'}</span>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">誕生日</span>
-                            <span class="font-bold text-gray-800">${birthStr}</span>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                             <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">システムID</span>
-                             <span class="font-mono text-xs text-gray-500">${user.id}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            modal.classList.add('modal-active');
         };
 
-        window.closeUserDetail = () => document.getElementById('user-detail-modal').classList.remove('modal-active');
+        window.closeUserDetail = () => {
+            const modal = document.getElementById('user-detail-modal');
+            if (modal) {
+                modal.classList.remove('modal-active');
+                setTimeout(() => modal.classList.add('hidden'), 200);
+            }
+        };
 
     </script>
 </body>
