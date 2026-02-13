@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 共通CSS (ルートパスに変更) -->
+    <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="min-h-screen flex overflow-hidden bg-[#f8fafc] hidden">
@@ -61,10 +61,13 @@
                         </tr>
                     </thead>
                     <tbody id="bands-list-body" class="text-sm">
-                        <!-- JSで描画されます -->
+                        <!-- 初期状態: JSで書き換えられます -->
                         <tr>
                             <td colspan="4" class="px-8 py-10 text-center text-gray-400 font-bold">
-                                <i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading data...
+                                <div class="flex flex-col items-center justify-center gap-2">
+                                    <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-500"></i>
+                                    <span id="loading-status-text">Connecting to Database...</span>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -95,6 +98,7 @@
                     <div class="h-48 overflow-y-auto border border-gray-100 rounded-xl p-2 bg-gray-50 custom-scroll">
                         <div id="new-band-members-list" class="space-y-1">
                             <!-- JSでユーザーリスト生成 -->
+                            <div class="text-center py-4 text-gray-400 text-xs">Loading users...</div>
                         </div>
                     </div>
                 </div>
@@ -182,8 +186,6 @@
 
     <!-- Logic -->
     <script type="module">
-        // ★パスをルート相対パス(/js/...)に変更しました。
-        // これにより「Failed to resolve module specifier」エラーが解消されるはずです。
         import { initAdminPage, db } from "/js/admin-common.js";
         import { collection, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -191,21 +193,24 @@
         let bandSearchQuery = "";
         let showArchivedBands = false;
         let currentConfirmAction = null;
-        let activeBandId = null; // 詳細表示中のバンドID
+        let activeBandId = null; 
 
-        // 初期化
+        // 初期化: ページID 'bands'
         initAdminPage('bands', (user) => {
-            console.log("Admin Bands Module Loaded - User:", user.uid);
+            console.log("Admin Bands Module Loaded. User UID:", user.uid);
+            updateLoadingStatus("Fetching data...");
 
-            // ★エラーハンドリングを追加: データ取得に失敗した場合にログを出します
             // 1. ユーザーデータの監視
             onSnapshot(collection(db, 'users'), 
                 (s) => {
                     usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
-                    console.log(`Users loaded: ${usersData.length}`);
-                    renderBandsList();
+                    console.log(`Users loaded: ${usersData.length} records`);
+                    renderBandsList(); // ユーザー名解決のため再描画
                 },
-                (error) => console.error("Error fetching users:", error)
+                (error) => {
+                    console.error("Error fetching users:", error);
+                    updateLoadingStatus(`Error loading users: ${error.message}`, true);
+                }
             );
 
             // 2. イベントデータの監視
@@ -221,13 +226,25 @@
             onSnapshot(collection(db, 'bands'), 
                 (s) => {
                     bandsData = s.docs.map(d => ({id:d.id, ...d.data()}));
-                    console.log(`Bands loaded: ${bandsData.length}`);
+                    console.log(`Bands loaded: ${bandsData.length} records`);
                     renderBandsList();
                     if (activeBandId) renderBandDetailContent(activeBandId);
                 },
-                (error) => console.error("Error fetching bands:", error)
+                (error) => {
+                    console.error("Error fetching bands:", error);
+                    updateLoadingStatus(`Error loading bands: ${error.message}`, true);
+                }
             );
         });
+
+        // 読み込み状況を表示するヘルパー
+        function updateLoadingStatus(text, isError = false) {
+            const el = document.getElementById('loading-status-text');
+            if (el) {
+                el.innerText = text;
+                if (isError) el.classList.add('text-red-500');
+            }
+        }
 
         // ----------------------------------------------------
         // Render Functions
@@ -236,6 +253,12 @@
         function renderBandsList() {
             const container = document.getElementById('bands-list-body');
             if (!container) return;
+
+            // データがまだ来ていない場合
+            if (bandsData.length === 0 && usersData.length === 0) {
+                // まだLoadingのままにしておく（初期状態）
+                return; 
+            }
 
             const q = bandSearchQuery.toLowerCase();
             
@@ -255,6 +278,7 @@
             });
 
             if (filtered.length === 0) {
+                // データ取得完了したが、結果が0件の場合
                 container.innerHTML = `<tr><td colspan="4" class="px-8 py-10 text-center text-gray-300 font-bold text-xs tracking-widest uppercase">No Bands Found</td></tr>`;
                 return;
             }
