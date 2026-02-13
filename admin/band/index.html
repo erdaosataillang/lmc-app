@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bands Management - LMC Admin</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 共通CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="min-h-screen flex overflow-hidden bg-[#f8fafc] hidden">
+    <!-- サイドバーはJSによって自動的に挿入されます -->
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 ml-[260px] h-screen overflow-y-auto p-8 relative">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-extrabold text-gray-800 uppercase tracking-widest">Bands Management</h2>
+                <p class="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">バンド編成・楽曲・メンバー管理</p>
+            </div>
+        </header>
+
+        <!-- ツールバー: 検索 & 操作 -->
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 p-6 mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <!-- 検索ボックス -->
+                <div class="flex flex-1 items-center gap-3 bg-gray-50 px-5 py-3 rounded-2xl max-w-md focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                    <input type="text" id="band-search-input" placeholder="バンド名・メンバー名・IDで検索..." class="bg-transparent border-none outline-none text-sm w-full font-bold placeholder:font-medium placeholder:text-gray-300">
+                </div>
+
+                <!-- アーカイブ切り替え -->
+                <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
+                    <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">アーカイブを表示</span>
+                    <label class="switch">
+                        <input type="checkbox" id="archive-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- 追加ボタン -->
+                <button onclick="openAddBandModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-blue-100">
+                    <i class="fa-solid fa-plus"></i> バンドを追加
+                </button>
+            </div>
+        </div>
+
+        <!-- バンド一覧テーブル -->
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="text-gray-400 uppercase text-[9px] font-extrabold tracking-widest border-b border-gray-50 bg-gray-50/50">
+                        <tr>
+                            <th class="px-8 py-5">バンド名 / システムID</th>
+                            <th class="px-8 py-5">メンバー構成</th>
+                            <th class="px-8 py-5">Cueシート</th>
+                            <th class="px-8 py-5 text-right">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bands-list-body" class="text-sm">
+                        <!-- JSで描画されます -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 1. 新規バンド作成モーダル -->
+    <div id="add-band-modal" onclick="closeAddBandModal()" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in duration-200 p-8 flex flex-col max-h-[90vh]">
+            <button onclick="closeAddBandModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-black text-gray-800 mb-6">バンドの新規作成</h3>
+            
+            <div class="space-y-6 overflow-y-auto custom-scroll pr-1">
+                <div>
+                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">バンド名</label>
+                    <input type="text" id="new-band-name" placeholder="バンド名を入力" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                </div>
+                <div>
+                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">初期メンバー選択</label>
+                    <div class="mb-2 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs"></i>
+                        <input type="text" oninput="filterMemberList('new-band-members-list', this.value)" placeholder="名前で検索..." class="w-full bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-4 py-2 text-xs font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                    </div>
+                    <div class="h-48 overflow-y-auto border border-gray-100 rounded-xl p-2 bg-gray-50 custom-scroll">
+                        <div id="new-band-members-list" class="space-y-1">
+                            <!-- JSでユーザーリスト生成 -->
+                        </div>
+                    </div>
+                </div>
+                <button onclick="handleNewBandSubmit()" class="w-full bg-blue-600 text-white py-4 rounded-[22px] font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">作成する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. バンド詳細モーダル -->
+    <div id="band-detail-modal" onclick="closeBandDetail()" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden relative animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
+            <button onclick="closeBandDetail()" class="absolute top-4 right-4 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-gray-500 transition-colors z-20 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            <div id="band-modal-content" class="overflow-y-auto flex-1 p-0 custom-scroll">
+                <!-- JSで詳細内容を描画 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. メンバー編集モーダル -->
+    <div id="edit-members-modal" onclick="closeEditMembersModal()" class="hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in duration-200 p-8 flex flex-col max-h-[90vh]">
+            <button onclick="closeEditMembersModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-black text-gray-800 mb-6">メンバー構成の編集</h3>
+            <input type="hidden" id="edit-members-band-id">
+            <div class="space-y-6 overflow-y-auto flex-1 custom-scroll pr-1">
+                <div>
+                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">メンバー選択</label>
+                    <div class="mb-2 relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs"></i>
+                        <input type="text" oninput="filterMemberList('edit-members-list', this.value)" placeholder="名前で検索..." class="w-full bg-gray-50 border border-gray-100 rounded-xl pl-9 pr-4 py-2 text-xs font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-100 transition-all">
+                    </div>
+                    <div class="h-64 overflow-y-auto border border-gray-100 rounded-xl p-2 bg-gray-50 custom-scroll">
+                        <div id="edit-members-list" class="space-y-1">
+                            <!-- JSで生成 -->
+                        </div>
+                    </div>
+                </div>
+                <button onclick="saveBandMembers()" class="w-full bg-blue-600 text-white py-4 rounded-[22px] font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">保存する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. 曲追加・編集モーダル -->
+    <div id="add-song-modal" onclick="closeAddSongModal()" class="hidden fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden animate-in zoom-in duration-200 p-8 flex flex-col">
+            <button onclick="closeAddSongModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            <h3 id="song-modal-title" class="text-xl font-black text-gray-800 mb-6">曲を追加</h3>
+            <div class="space-y-6">
+                <input type="hidden" id="song-band-id">
+                <input type="hidden" id="song-edit-id"> <!-- 編集時はIDが入る -->
+                <div>
+                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">曲名</label>
+                    <input type="text" id="new-song-title" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-100 transition-all" placeholder="曲名を入力">
+                </div>
+                <div>
+                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">長さ (オプション)</label>
+                    <input type="text" id="new-song-duration" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-100 transition-all" placeholder="例: 4:30">
+                </div>
+                <div>
+                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">演奏イベント (オプション)</label>
+                    <div class="relative">
+                        <select id="new-song-event" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-blue-100 transition-all appearance-none">
+                            <!-- JSで生成 -->
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"></i>
+                    </div>
+                </div>
+                <button id="song-modal-submit-btn" onclick="handleSongSubmit()" class="w-full bg-blue-600 text-white py-4 rounded-[22px] font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-blue-700 transition-all shadow-xl shadow-blue-100">追加する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 削除確認モーダル -->
+    <div id="confirm-modal" onclick="closeConfirmModal()" class="hidden fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center animate-in zoom-in duration-200">
+            <div class="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fa-solid fa-triangle-exclamation text-2xl"></i></div>
+            <h3 class="text-lg font-black text-gray-800 mb-2">確認</h3>
+            <p id="confirm-modal-text" class="text-sm text-gray-500 mb-8 font-medium leading-relaxed">この操作は取り消せません。</p>
+            <div class="flex gap-4">
+                <button onclick="closeConfirmModal()" class="flex-1 py-4 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors">キャンセル</button>
+                <button id="confirm-action-btn" class="flex-1 py-4 bg-red-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-red-100 hover:bg-red-700 transition-all">実行する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logic -->
+    <script type="module">
+        import { initAdminPage, db } from "/js/admin-common.js";
+        import { collection, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let bandsData = [], usersData = [], eventsData = [];
+        let bandSearchQuery = "";
+        let showArchivedBands = false;
+        let currentConfirmAction = null;
+        let activeBandId = null; // 詳細表示中のバンドID
+
+        // 初期化
+        initAdminPage('bands', (user) => {
+            console.log("Admin Bands Module Loaded");
+
+            // 1. ユーザーデータの監視
+            onSnapshot(collection(db, 'users'), s => {
+                usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
+                renderBandsList();
+            });
+
+            // 2. イベントデータの監視（曲情報用）
+            onSnapshot(collection(db, 'events'), s => {
+                eventsData = s.docs.map(d => ({id:d.id, ...d.data()}));
+                if (activeBandId) renderBandDetailContent(activeBandId); // 詳細表示中なら更新
+            });
+
+            // 3. バンドデータの監視
+            onSnapshot(collection(db, 'bands'), s => {
+                bandsData = s.docs.map(d => ({id:d.id, ...d.data()}));
+                renderBandsList();
+                if (activeBandId) renderBandDetailContent(activeBandId); // 詳細表示中なら更新
+            });
+        });
+
+        // ----------------------------------------------------
+        // Render Functions
+        // ----------------------------------------------------
+
+        function renderBandsList() {
+            const container = document.getElementById('bands-list-body');
+            const q = bandSearchQuery.toLowerCase();
+            
+            let filtered = bandsData.filter(b => {
+                if (!showArchivedBands && b.isArchived) return false;
+                
+                const members = (b.memberIds || []).map(id => usersData.find(u => u.id === id)?.name || "").join(" ").toLowerCase();
+                const matchName = (b.name||"").toLowerCase().includes(q);
+                const matchId = (b.id||"").toLowerCase().includes(q);
+                return matchName || matchId || members.includes(q);
+            });
+
+            // ソート: アーカイブ済みは後ろ、それ以外は名前順
+            filtered.sort((a, b) => {
+                if (a.isArchived !== b.isArchived) return a.isArchived ? 1 : -1;
+                return (a.name || "").localeCompare(b.name || "", "ja");
+            });
+
+            container.innerHTML = filtered.map(band => {
+                const membersNames = (band.memberIds || []).map(id => usersData.find(u => u.id === id)?.name || "Unknown").join(', ');
+                const rowClass = band.isArchived ? "bg-gray-100 opacity-60 grayscale" : "hover:bg-gray-50";
+                const statusBadge = band.isArchived ? `<span class="bg-gray-200 text-gray-500 px-2 py-0.5 rounded text-[9px] font-bold uppercase ml-2">Archived</span>` : "";
+
+                return `
+                <tr onclick="window.showBandDetail('${band.id}')" class="cursor-pointer border-b border-gray-50 transition-all ${rowClass}">
+                    <td class="px-8 py-5 flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 font-bold flex-shrink-0">${(band.name || "?")[0]}</div>
+                        <div>
+                            <div class="flex items-center">
+                                <span class="font-bold text-gray-800 block">${band.name || 'No Name'}</span>
+                                ${statusBadge}
+                            </div>
+                            <span class="text-[9px] text-gray-400 font-bold uppercase">ID: ${band.id.substring(0,8)}</span>
+                        </div>
+                    </td>
+                    <td class="px-8 py-5 text-xs text-gray-500 font-medium truncate max-w-xs">${membersNames}</td>
+                    <td class="px-8 py-5">
+                        ${band.latestCuesheetUrl ? 
+                            `<a href="${band.latestCuesheetUrl}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold hover:bg-emerald-200 transition gap-1.5"><i class="fa-solid fa-file-pdf"></i> 開く</a>` 
+                            : `<span class="text-gray-300 text-[10px] font-bold">未提出</span>`}
+                    </td>
+                    <td class="px-8 py-5 text-right"><span class="text-blue-600 font-bold text-xs group-hover:underline">詳細</span></td>
+                </tr>`;
+            }).join('');
+        }
+
+        // 検索 & フィルタハンドラ
+        document.getElementById('band-search-input').addEventListener('input', (e) => {
+            bandSearchQuery = e.target.value;
+            renderBandsList();
+        });
+        document.getElementById('archive-toggle').addEventListener('change', (e) => {
+            showArchivedBands = e.target.checked;
+            renderBandsList();
+        });
+
+        // メンバーリストのフィルタリング（モーダル内）
+        window.filterMemberList = (containerId, val) => {
+            const q = val.toLowerCase();
+            const items = document.querySelectorAll(`#${containerId} .member-item`);
+            items.forEach(item => {
+                const searchData = item.getAttribute('data-search');
+                if (searchData.includes(q)) item.classList.remove('hidden');
+                else item.classList.add('hidden');
+            });
+        };
+
+        // ----------------------------------------------------
+        // Add Band Functions
+        // ----------------------------------------------------
+        
+        window.openAddBandModal = () => {
+            document.getElementById('new-band-name').value = "";
+            renderUserCheckboxList('new-band-members-list');
+            document.getElementById('add-band-modal').classList.add('modal-active');
+        };
+        window.closeAddBandModal = () => document.getElementById('add-band-modal').classList.remove('modal-active');
+
+        // ユーザー選択リストの生成（汎用）
+        function renderUserCheckboxList(containerId, selectedIds = []) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = usersData.map(user => {
+                const isChecked = selectedIds.includes(user.id) ? 'checked' : '';
+                return `
+                <label class="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors member-item" data-search="${(user.name||"").toLowerCase()} ${(user.kana||"").toLowerCase()}">
+                    <input type="checkbox" value="${user.id}" ${isChecked} class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300 flex-shrink-0">
+                    <div class="flex items-center gap-2 flex-1 min-w-0">
+                        <div class="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-gray-500 flex-shrink-0">${(user.name||"?")[0]}</div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-bold text-gray-700 leading-none truncate">${user.name}</p>
+                            <p class="text-[9px] text-gray-400 font-bold leading-none mt-0.5 truncate">${user.kana || ''}</p>
+                        </div>
+                        ${user.studentId ? `<span class="text-[10px] text-gray-400 font-mono ml-auto">${user.studentId}</span>` : ''}
+                    </div>
+                </label>`;
+            }).join('');
+        }
+
+        window.handleNewBandSubmit = async () => {
+            const name = document.getElementById('new-band-name').value;
+            const checkedBoxes = document.querySelectorAll('#new-band-members-list input[type="checkbox"]:checked');
+            const memberIds = Array.from(checkedBoxes).map(cb => cb.value);
+            
+            if(!name) return alert('バンド名を入力してください');
+            
+            try {
+                await addDoc(collection(db, 'bands'), {
+                    name: name,
+                    memberIds: memberIds,
+                    songs: [],
+                    isArchived: false,
+                    createdAt: serverTimestamp()
+                });
+                closeAddBandModal();
+            } catch (e) { console.error(e); alert('作成に失敗しました'); }
+        };
+
+        // ----------------------------------------------------
+        // Band Detail Functions
+        // ----------------------------------------------------
+
+        window.showBandDetail = (bandId) => {
+            activeBandId = bandId;
+            renderBandDetailContent(bandId);
+            document.getElementById('band-detail-modal').classList.add('modal-active');
+        };
+        window.closeBandDetail = () => {
+            activeBandId = null;
+            document.getElementById('band-detail-modal').classList.remove('modal-active');
+        };
+
+        function renderBandDetailContent(bandId) {
+            const band = bandsData.find(b => b.id === bandId);
+            if (!band) return;
+            const members = (band.memberIds || []).map(id => usersData.find(u => u.id === id)).filter(u => u);
+            
+            // 曲リストのソート（新しいイベント順）
+            let bandSongs = Array.isArray(band.songs) ? [...band.songs] : [];
+            bandSongs.sort((a, b) => {
+                const eventA = eventsData.find(e => e.id === a.eventId);
+                const eventB = eventsData.find(e => e.id === b.eventId);
+                const dateA = eventA ? (eventA.startDate || eventA.date || "") : "";
+                const dateB = eventB ? (eventB.startDate || eventB.date || "") : "";
+                if (dateA > dateB) return -1;
+                if (dateA < dateB) return 1;
+                return 0;
+            });
+
+            const content = document.getElementById('band-modal-content');
+            
+            content.innerHTML = `
+                <div class="relative w-full">
+                    <!-- Header Image & Icon -->
+                    <div class="h-32 w-full bg-gradient-to-r from-slate-800 to-slate-900 relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+                        <div class="absolute bottom-3 right-4 text-white/20 text-[60px] leading-none"><i class="fa-solid fa-guitar"></i></div>
+                    </div>
+                    <div class="px-6 pb-8 -mt-12 relative">
+                        <div class="flex flex-col items-center text-center mb-6">
+                            <div class="w-24 h-24 rounded-full border-4 border-white shadow-xl bg-white flex items-center justify-center overflow-hidden mb-3">
+                                <div class="text-3xl font-bold text-slate-700">${(band.name||"?")[0]}</div>
+                            </div>
+                            <h3 class="text-2xl font-black text-gray-800 tracking-tight mb-2">${band.name}</h3>
+                            <div class="flex gap-2 mb-4">
+                                ${band.isArchived ? '<span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-[10px] font-bold uppercase tracking-widest">Archived</span>' : '<span class="px-3 py-1 bg-green-100 text-green-600 rounded-full text-[10px] font-bold uppercase tracking-widest">Active</span>'}
+                                <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold uppercase tracking-widest">${members.length} Members</span>
+                            </div>
+                        </div>
+
+                        <!-- Members Section -->
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-4 px-1">
+                                <h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-users mr-2"></i>Members</h4>
+                                <button onclick="openEditBandMembersModal('${band.id}')" class="text-[10px] font-bold text-blue-600 hover:underline">編集</button>
+                            </div>
+                            <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
+                                ${members.length > 0 ? members.map((m) => `
+                                    <div class="p-4 flex items-center gap-4">
+                                        <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 font-bold border border-indigo-100">${m.name[0]}</div>
+                                        <div class="flex-1 min-w-0">
+                                            <span class="font-bold text-gray-800 text-sm truncate block">${m.name}</span>
+                                            <span class="text-[10px] text-gray-400 font-bold">${m.studentId || ''}</span>
+                                        </div>
+                                        <button onclick="removeMemberFromBand('${band.id}', '${m.id}')" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark"></i></button>
+                                    </div>
+                                `).join('') : '<div class="p-6 text-center text-xs text-gray-400 font-bold">メンバーがいません</div>'}
+                                <button onclick="openEditBandMembersModal('${band.id}')" class="w-full py-3 text-center text-[10px] font-bold text-gray-400 hover:bg-gray-50 transition-colors">
+                                    <i class="fa-solid fa-plus mr-1"></i> メンバーを追加・編集
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Songs Section -->
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-4 px-1">
+                                <h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-music mr-2"></i>Songs</h4>
+                                <button onclick="openAddSongModal('${band.id}')" class="text-[10px] font-bold text-blue-600 hover:underline">追加</button>
+                            </div>
+                            <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
+                                ${bandSongs.length > 0 ? bandSongs.map((song, idx) => {
+                                    const evt = eventsData.find(e => e.id === song.eventId);
+                                    return `
+                                    <div class="p-4 flex items-center gap-4 group hover:bg-gray-50/50 transition-colors">
+                                        <div class="w-6 h-6 rounded bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-[10px]">${idx + 1}</div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-bold text-gray-800 text-sm truncate">${song.title || 'タイトルなし'}</p>
+                                            ${evt ? `<p class="text-[9px] text-gray-400 font-bold truncate"><i class="fa-solid fa-calendar-check mr-1 text-gray-300"></i>${evt.event}</p>` : ''}
+                                        </div>
+                                        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onclick="openAddSongModal('${band.id}', '${song.id}')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-colors"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="deleteSong('${band.id}', '${song.id}')" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </div>`;
+                                }).join('') : '<div class="p-6 text-center text-xs text-gray-400 font-bold">曲が登録されていません</div>'}
+                                <button onclick="openAddSongModal('${band.id}')" class="w-full py-3 text-center text-[10px] font-bold text-gray-400 hover:bg-gray-50 transition-colors">
+                                    <i class="fa-solid fa-plus mr-1"></i> 曲を追加
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Footer Actions -->
+                        <div class="grid grid-cols-1">
+                             <button onclick="toggleBandArchive('${band.id}', ${band.isArchived})" class="py-3.5 bg-white border border-gray-200 text-gray-500 rounded-2xl text-xs font-bold hover:bg-gray-50 transition-all shadow-sm">
+                                ${band.isArchived ? '<i class="fa-solid fa-box-open mr-2"></i>アーカイブを解除' : '<i class="fa-solid fa-box-archive mr-2"></i>このバンドをアーカイブ'}
+                             </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ----------------------------------------------------
+        // Edit Members Functions
+        // ----------------------------------------------------
+
+        window.openEditBandMembersModal = (bandId) => {
+            const band = bandsData.find(b => b.id === bandId);
+            if (!band) return;
+            document.getElementById('edit-members-band-id').value = bandId;
+            renderUserCheckboxList('edit-members-list', band.memberIds || []);
+            document.getElementById('edit-members-modal').classList.add('modal-active');
+        };
+        window.closeEditMembersModal = () => document.getElementById('edit-members-modal').classList.remove('modal-active');
+
+        window.saveBandMembers = async () => {
+            const bandId = document.getElementById('edit-members-band-id').value;
+            const checkedBoxes = document.querySelectorAll('#edit-members-list input[type="checkbox"]:checked');
+            const memberIds = Array.from(checkedBoxes).map(cb => cb.value);
+            try {
+                await updateDoc(doc(db, 'bands', bandId), { memberIds: memberIds });
+                closeEditMembersModal();
+                // 変更はリスナー経由で詳細画面に反映される
+            } catch(e) { console.error(e); alert("保存に失敗しました"); }
+        };
+
+        window.removeMemberFromBand = async (bandId, userId) => {
+            window.openConfirmModal("このメンバーをバンドから削除しますか？", async () => {
+                const band = bandsData.find(b => b.id === bandId);
+                const newMembers = (band.memberIds || []).filter(id => id !== userId);
+                await updateDoc(doc(db, 'bands', bandId), { memberIds: newMembers });
+            });
+        };
+
+        // ----------------------------------------------------
+        // Song Functions
+        // ----------------------------------------------------
+
+        const generateRandomId = () => Math.random().toString(36).substring(2, 15);
+
+        window.openAddSongModal = (bandId, songId = null) => {
+            document.getElementById('song-band-id').value = bandId;
+            
+            // イベント選択肢の生成
+            const eventSelect = document.getElementById('new-song-event');
+            eventSelect.innerHTML = '<option value="">イベントを選択（任意）</option>' + 
+                eventsData.map(e => `<option value="${e.id}">${e.event}</option>`).join('');
+
+            if (songId) {
+                // Edit Mode
+                const band = bandsData.find(b => b.id === bandId);
+                const song = band.songs.find(s => s.id === songId);
+                if (!song) return;
+
+                document.getElementById('song-edit-id').value = songId;
+                document.getElementById('song-modal-title').innerText = "曲を編集";
+                document.getElementById('song-modal-submit-btn').innerText = "保存する";
+                document.getElementById('new-song-title').value = song.title || '';
+                document.getElementById('new-song-duration').value = song.duration || '';
+                document.getElementById('new-song-event').value = song.eventId || '';
+            } else {
+                // Add Mode
+                document.getElementById('song-edit-id').value = "";
+                document.getElementById('song-modal-title').innerText = "曲を追加";
+                document.getElementById('song-modal-submit-btn').innerText = "追加する";
+                document.getElementById('new-song-title').value = '';
+                document.getElementById('new-song-duration').value = '';
+                document.getElementById('new-song-event').value = '';
+            }
+            document.getElementById('add-song-modal').classList.add('modal-active');
+        };
+        window.closeAddSongModal = () => document.getElementById('add-song-modal').classList.remove('modal-active');
+
+        window.handleSongSubmit = async () => {
+            const bandId = document.getElementById('song-band-id').value;
+            const songId = document.getElementById('song-edit-id').value;
+            const title = document.getElementById('new-song-title').value;
+            const duration = document.getElementById('new-song-duration').value;
+            const eventId = document.getElementById('new-song-event').value;
+
+            if(!title) return alert("曲名を入力してください");
+
+            try {
+                const band = bandsData.find(b => b.id === bandId);
+                let updatedSongs = [...(band.songs || [])];
+
+                if (songId) {
+                    // Update
+                    updatedSongs = updatedSongs.map(s => s.id === songId ? { ...s, title, duration, eventId } : s);
+                } else {
+                    // Add
+                    updatedSongs.push({ id: generateRandomId(), title, duration, eventId });
+                }
+
+                await updateDoc(doc(db, 'bands', bandId), { songs: updatedSongs });
+                closeAddSongModal();
+            } catch(e) { console.error(e); alert("保存に失敗しました"); }
+        };
+
+        window.deleteSong = async (bandId, songId) => {
+            window.openConfirmModal("本当にこの曲を削除しますか？", async () => {
+                const band = bandsData.find(b => b.id === bandId);
+                const updatedSongs = band.songs.filter(s => s.id !== songId);
+                await updateDoc(doc(db, 'bands', bandId), { songs: updatedSongs });
+            });
+        };
+
+        // ----------------------------------------------------
+        // Archive Function
+        // ----------------------------------------------------
+        window.toggleBandArchive = async (bandId, currentStatus) => {
+            try {
+                await updateDoc(doc(db, 'bands', bandId), { isArchived: !currentStatus });
+                // 詳細画面は開いたままで状態が変わる
+            } catch(e) { console.error(e); }
+        };
+
+        // ----------------------------------------------------
+        // Utility: Confirm Modal
+        // ----------------------------------------------------
+        window.openConfirmModal = (text, action) => {
+            document.getElementById('confirm-modal-text').innerText = text;
+            currentConfirmAction = action;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            document.getElementById('confirm-modal').classList.add('flex');
+        };
+        window.closeConfirmModal = () => {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            document.getElementById('confirm-modal').classList.remove('flex');
+            currentConfirmAction = null;
+        };
+        document.getElementById('confirm-action-btn').onclick = async () => {
+            if(currentConfirmAction) await currentConfirmAction();
+            closeConfirmModal();
+        };
+
+    </script>
+</body>
+</html>
