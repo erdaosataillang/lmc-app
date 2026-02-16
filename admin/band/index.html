@@ -37,7 +37,7 @@
             </div>
         </header>
 
-        <!-- ツールバー: 検索 & フィルタ & 操作 -->
+        <!-- ツールバー -->
         <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 p-6 mb-6">
             <div class="flex flex-wrap items-center gap-4">
                 <!-- 検索ボックス -->
@@ -46,12 +46,11 @@
                     <input type="text" id="band-search-input" placeholder="バンド名・メンバー名で検索..." class="bg-transparent border-none outline-none text-sm w-full font-bold">
                 </div>
 
-                <!-- イベント絞り込み (追加機能) -->
+                <!-- イベント絞り込み -->
                 <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
                     <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">出演イベント</span>
                     <select id="event-filter" class="bg-transparent border-none outline-none text-xs font-bold text-gray-700 cursor-pointer focus:ring-0">
                         <option value="">すべて表示</option>
-                        <!-- JSで動的に追加 -->
                     </select>
                 </div>
 
@@ -80,7 +79,7 @@
                             <th class="px-8 py-5">バンド名 / システムID</th>
                             <th class="px-8 py-5">メンバー構成</th>
                             <th class="px-8 py-5">出演予定イベント</th>
-                            <th class="px-8 py-5 text-right">操作</th>
+                            <th class="px-8 py-5 text-right">Cueシート</th>
                         </tr>
                     </thead>
                     <tbody id="bands-list-body" class="text-sm">
@@ -122,7 +121,7 @@
     <!-- 2. バンド詳細モーダル -->
     <div id="band-detail-modal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
         <div onclick="event.stopPropagation()" class="bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden relative animate-in zoom-in duration-200 max-h-[90vh] flex flex-col">
-            <button onclick="window.closeBandDetail()" class="absolute top-4 right-4 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-gray-500 z-20"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="window.closeBandDetail()" class="absolute top-4 right-4 w-10 h-10 bg-white/80 hover:bg-white rounded-full flex items-center justify-center text-gray-500 z-20 shadow-sm"><i class="fa-solid fa-xmark"></i></button>
             <div id="band-modal-content" class="overflow-y-auto flex-1 p-0 custom-scroll"></div>
         </div>
     </div>
@@ -165,7 +164,6 @@
                 <input type="text" id="new-song-title" class="w-full bg-gray-50 border rounded-xl px-4 py-3 font-bold" placeholder="曲名">
                 <input type="text" id="new-song-duration" class="w-full bg-gray-50 border rounded-xl px-4 py-3 font-bold" placeholder="長さ (4:30)">
                 <select id="new-song-event" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none">
-                    <!-- JSで動的生成 -->
                 </select>
                 <button onclick="window.handleSongSubmit()" class="w-full bg-blue-600 text-white py-4 rounded-[22px] font-bold text-[11px] uppercase tracking-[0.2em]">追加</button>
             </div>
@@ -180,10 +178,10 @@
         let bandsData = [], usersData = [], eventsData = [];
         let bandSearchQuery = "";
         let showArchivedBands = false;
-        let eventFilter = ""; // イベント絞り込み用
+        let eventFilter = ""; 
         let activeBandId = null; 
 
-        // 安全装置: 5秒経っても初期化が終わらなければ強制解除 (Macでの真っ白防止)
+        // 安全装置
         const safetyTimer = setTimeout(() => {
             const loader = document.getElementById('initial-loader');
             if (loader) loader.remove();
@@ -191,31 +189,25 @@
 
         initAdminPage('bands', (user) => {
             clearTimeout(safetyTimer);
-            console.log("Admin Bands Module Loaded.");
-            updateLoadingStatus("Fetching data...");
-
-            // 1. ユーザーデータの取得
             onSnapshot(collection(db, 'users'), (s) => {
                 usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
                 renderBandsList();
-            }, (err) => console.error("User fetch error:", err));
+            });
 
-            // 2. イベントデータの取得
             onSnapshot(collection(db, 'events'), (s) => {
                 eventsData = s.docs.map(d => ({id:d.id, ...d.data()}));
                 updateEventSelects();
                 if (activeBandId) renderBandDetailContent(activeBandId);
-                renderBandsList(); // フィルタ用リストが更新されたため再描画
-            }, (err) => console.error("Event fetch error:", err));
+                renderBandsList();
+            });
 
-            // 3. バンドデータの取得
             onSnapshot(collection(db, 'bands'), (s) => {
                 bandsData = s.docs.map(d => ({id:d.id, ...d.data()}));
                 renderBandsList();
                 if (activeBandId) renderBandDetailContent(activeBandId);
             }, (err) => {
-                console.error("Band fetch error:", err);
-                updateLoadingStatus("Error loading data.", true);
+                console.error(err);
+                document.getElementById('loading-status-text').innerText = "Error loading data.";
             });
         });
 
@@ -227,14 +219,11 @@
             }
         }
 
-        // イベント選択ドロップダウンの更新
         function updateEventSelects() {
             const filterEl = document.getElementById('event-filter');
             const bandSelectEl = document.getElementById('band-event-select-input');
             const songSelectEl = document.getElementById('new-song-event');
-
             const optionsHTML = eventsData.map(e => `<option value="${e.id}">${e.event}</option>`).join('');
-            
             if (filterEl) filterEl.innerHTML = '<option value="">すべて表示</option>' + optionsHTML;
             if (bandSelectEl) bandSelectEl.innerHTML = optionsHTML;
             if (songSelectEl) songSelectEl.innerHTML = '<option value="">イベントを選択（任意）</option>' + optionsHTML;
@@ -246,15 +235,10 @@
 
             const q = bandSearchQuery.toLowerCase();
             let filtered = bandsData.filter(b => {
-                // アーカイブフィルタ
                 if (!showArchivedBands && b.isArchived) return false;
-                
-                // イベントフィルタ (追加機能)
                 if (eventFilter && !(b.events || []).includes(eventFilter)) return false;
-
-                // 検索フィルタ
                 const members = (b.memberIds || []).map(id => usersData.find(u => u.id === id)?.name || "").join(" ").toLowerCase();
-                return (b.name||"").toLowerCase().includes(q) || (b.id||"").toLowerCase().includes(q) || members.includes(q);
+                return (b.name||"").toLowerCase().includes(q) || members.includes(q);
             });
 
             filtered.sort((a, b) => (a.isArchived !== b.isArchived) ? (a.isArchived ? 1 : -1) : (a.name || "").localeCompare(b.name || "", "ja"));
@@ -266,8 +250,6 @@
 
             container.innerHTML = filtered.map(band => {
                 const membersNames = (band.memberIds || []).map(id => usersData.find(u => u.id === id)?.name || "Unknown").join(', ');
-                
-                // 出演イベント名の表示
                 const eventNames = (band.events || []).map(eid => {
                     const e = eventsData.find(evt => evt.id === eid);
                     return e ? `<span class="bg-sky-50 text-sky-600 px-2 py-0.5 rounded text-[9px] font-bold border border-sky-100">${e.event}</span>` : "";
@@ -286,17 +268,18 @@
                     <td class="px-8 py-5 flex flex-wrap gap-1">
                         ${eventNames || '<span class="text-gray-300 text-[10px] font-bold italic">No Events</span>'}
                     </td>
-                    <td class="px-8 py-5 text-right"><span class="text-blue-600 font-bold text-xs">詳細</span></td>
+                    <td class="px-8 py-5 text-right">
+                        ${band.latestCuesheetUrl ? 
+                            `<a href="${band.latestCuesheetUrl}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 shadow-sm">
+                                <i class="fa-solid fa-file-pdf"></i> Cue
+                            </a>` : 
+                            `<span class="text-gray-300 text-[10px] font-bold italic px-4">未提出</span>`
+                        }
+                    </td>
                 </tr>`;
             }).join('');
         }
 
-        // 絞り込み系イベント
-        document.getElementById('band-search-input').addEventListener('input', (e) => { bandSearchQuery = e.target.value; renderBandsList(); });
-        document.getElementById('archive-toggle').addEventListener('change', (e) => { showArchivedBands = e.target.checked; renderBandsList(); });
-        document.getElementById('event-filter').addEventListener('change', (e) => { eventFilter = e.target.value; renderBandsList(); });
-
-        // モーダル表示
         window.showBandDetail = (bandId) => {
             activeBandId = bandId;
             renderBandDetailContent(bandId);
@@ -317,7 +300,6 @@
             if (!band) return;
             const members = (band.memberIds || []).map(id => usersData.find(u => u.id === id)).filter(u => u);
             const participatingEvents = (band.events || []).map(eid => eventsData.find(e => e.id === eid)).filter(e => e);
-
             const content = document.getElementById('band-modal-content');
             content.innerHTML = `
                 <div class="relative w-full">
@@ -335,24 +317,16 @@
                                 <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold">${members.length} Members</span>
                             </div>
                         </div>
-
                         <div class="mb-8">
-                            <div class="flex items-center justify-between mb-4 px-1">
-                                <h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-calendar-star mr-2"></i>Participating Events</h4>
-                                <button onclick="window.openAddBandEventModal()" class="text-[10px] font-bold text-sky-600 hover:underline">イベント登録</button>
-                            </div>
+                            <div class="flex items-center justify-between mb-4 px-1"><h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-calendar-star mr-2"></i>Participating Events</h4><button onclick="window.openAddBandEventModal()" class="text-[10px] font-bold text-sky-600 hover:underline">イベント登録</button></div>
                             <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
                                 ${participatingEvents.length > 0 ? participatingEvents.map(evt => `
                                     <div class="p-4 flex items-center justify-between group hover:bg-sky-50/30 transition-colors">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-8 h-8 bg-sky-100 text-sky-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-star"></i></div>
-                                            <div><p class="font-bold text-gray-800 text-sm">${evt.event}</p><p class="text-[9px] text-gray-400 font-bold">${evt.startDate || evt.date || ''}</p></div>
-                                        </div>
+                                        <div class="flex items-center gap-3"><div class="w-8 h-8 bg-sky-100 text-sky-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-star"></i></div><div><p class="font-bold text-gray-800 text-sm">${evt.event}</p><p class="text-[9px] text-gray-400 font-bold">${evt.startDate || evt.date || ''}</p></div></div>
                                         <button onclick="window.removeEventFromBand('${band.id}', '${evt.id}')" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash-can"></i></button>
                                     </div>`).join('') : '<div class="p-6 text-center text-xs text-gray-400 font-bold">出演イベントはありません</div>'}
                             </div>
                         </div>
-
                         <div class="mb-8">
                             <div class="flex items-center justify-between mb-4 px-1"><h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-users mr-2"></i>Members</h4><button onclick="window.openEditBandMembersModal('${band.id}')" class="text-[10px] font-bold text-blue-600 hover:underline">編集</button></div>
                             <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
@@ -363,7 +337,6 @@
                                     </div>`).join('')}
                             </div>
                         </div>
-
                         <div class="mb-8">
                             <div class="flex items-center justify-between mb-4 px-1"><h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-music mr-2"></i>Songs</h4></div>
                             <div class="bg-white rounded-[24px] border shadow-sm overflow-hidden divide-y divide-gray-50">
@@ -379,7 +352,6 @@
                                 <button onclick="window.openAddSongModal('${band.id}')" class="w-full py-3 text-center text-[10px] font-bold text-gray-400 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-plus mr-1"></i> 曲を追加</button>
                             </div>
                         </div>
-
                         <button onclick="window.toggleBandArchive('${band.id}', ${band.isArchived})" class="w-full py-3.5 bg-white border border-gray-200 text-gray-500 rounded-2xl text-xs font-bold hover:bg-gray-50 shadow-sm">
                             <i class="fa-solid fa-box-archive mr-2"></i>${band.isArchived ? 'アーカイブ解除' : 'アーカイブする'}
                         </button>
@@ -387,80 +359,24 @@
                 </div>`;
         }
 
-        // --- イベント追加・削除 ---
-        window.openAddBandEventModal = () => {
-            const modal = document.getElementById('add-event-select-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('modal-active');
-        };
-        window.closeAddBandEventModal = () => {
-            const modal = document.getElementById('add-event-select-modal');
-            modal.classList.remove('modal-active');
-            setTimeout(() => modal.classList.add('hidden'), 200);
-        };
-        window.handleAddEventToBand = async () => {
-            if (!activeBandId) return;
-            const eid = document.getElementById('band-event-select-input').value;
-            if (!eid) return;
-            try { await updateDoc(doc(db, 'bands', activeBandId), { events: arrayUnion(eid) }); window.closeAddBandEventModal(); } catch (e) { console.error(e); }
-        };
-        window.removeEventFromBand = async (bid, eid) => {
-            if (confirm("出演イベントを削除しますか？")) { await updateDoc(doc(db, 'bands', bid), { events: arrayRemove(eid) }); }
-        };
-
-        // --- メンバー・曲・アーカイブ・追加共通 ---
-        window.openAddBandModal = () => {
-            const container = document.getElementById('new-band-members-list');
-            container.innerHTML = usersData.map(u => `<label class="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer text-xs font-bold"><input type="checkbox" value="${u.id}"> ${u.name}</label>`).join('');
-            document.getElementById('add-band-modal').classList.remove('hidden');
-            document.getElementById('add-band-modal').classList.add('modal-active');
-        };
-        window.closeAddBandModal = () => {
-            document.getElementById('add-band-modal').classList.remove('modal-active');
-            setTimeout(() => document.getElementById('add-band-modal').classList.add('hidden'), 200);
-        };
-        window.handleNewBandSubmit = async () => {
-            const name = document.getElementById('new-band-name').value;
-            const ids = Array.from(document.querySelectorAll('#new-band-members-list input:checked')).map(c => c.value);
-            if(!name) return alert('バンド名を入力');
-            try { await addDoc(collection(db, 'bands'), { name, memberIds: ids, events: [], songs: [], isArchived: false, createdAt: serverTimestamp() }); window.closeAddBandModal(); } catch (e) { console.error(e); }
-        };
-        window.openEditBandMembersModal = (bandId) => {
-            const band = bandsData.find(b => b.id === bandId);
-            document.getElementById('edit-members-band-id').value = bandId;
-            const container = document.getElementById('edit-members-list');
-            container.innerHTML = usersData.map(u => `<label class="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer text-xs font-bold"><input type="checkbox" value="${u.id}" ${band.memberIds.includes(u.id)?'checked':''}> ${u.name}</label>`).join('');
-            document.getElementById('edit-members-modal').classList.remove('hidden');
-            document.getElementById('edit-members-modal').classList.add('modal-active');
-        };
+        window.openAddBandEventModal = () => { const modal = document.getElementById('add-event-select-modal'); modal.classList.remove('hidden'); modal.classList.add('modal-active'); };
+        window.closeAddBandEventModal = () => { const modal = document.getElementById('add-event-select-modal'); modal.classList.remove('modal-active'); setTimeout(() => modal.classList.add('hidden'), 200); };
+        window.handleAddEventToBand = async () => { if (!activeBandId) return; const eid = document.getElementById('band-event-select-input').value; if (!eid) return; try { await updateDoc(doc(db, 'bands', activeBandId), { events: arrayUnion(eid) }); window.closeAddBandEventModal(); } catch (e) { console.error(e); } };
+        window.removeEventFromBand = async (bid, eid) => { if (confirm("出演イベントを削除しますか？")) { await updateDoc(doc(db, 'bands', bid), { events: arrayRemove(eid) }); } };
+        window.openAddBandModal = () => { const container = document.getElementById('new-band-members-list'); container.innerHTML = usersData.map(u => `<label class="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer text-xs font-bold"><input type="checkbox" value="${u.id}"> ${u.name}</label>`).join(''); document.getElementById('add-band-modal').classList.remove('hidden'); document.getElementById('add-band-modal').classList.add('modal-active'); };
+        window.closeAddBandModal = () => { document.getElementById('add-band-modal').classList.remove('modal-active'); setTimeout(() => document.getElementById('add-band-modal').classList.add('hidden'), 200); };
+        window.handleNewBandSubmit = async () => { const name = document.getElementById('new-band-name').value; const ids = Array.from(document.querySelectorAll('#new-band-members-list input:checked')).map(c => c.value); if(!name) return alert('バンド名を入力'); try { await addDoc(collection(db, 'bands'), { name, memberIds: ids, events: [], songs: [], isArchived: false, createdAt: serverTimestamp() }); window.closeAddBandModal(); } catch (e) { console.error(e); } };
+        window.openEditBandMembersModal = (bandId) => { const band = bandsData.find(b => b.id === bandId); document.getElementById('edit-members-band-id').value = bandId; const container = document.getElementById('edit-members-list'); container.innerHTML = usersData.map(u => `<label class="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer text-xs font-bold"><input type="checkbox" value="${u.id}" ${band.memberIds.includes(u.id)?'checked':''}> ${u.name}</label>`).join(''); document.getElementById('edit-members-modal').classList.remove('hidden'); document.getElementById('edit-members-modal').classList.add('modal-active'); };
         window.closeEditMembersModal = () => { document.getElementById('edit-members-modal').classList.remove('modal-active'); setTimeout(() => document.getElementById('edit-members-modal').classList.add('hidden'), 200); };
-        window.saveBandMembers = async () => {
-            const bid = document.getElementById('edit-members-band-id').value;
-            const ids = Array.from(document.querySelectorAll('#edit-members-list input:checked')).map(c => c.value);
-            try { await updateDoc(doc(db, 'bands', bid), { memberIds: ids }); window.closeEditMembersModal(); } catch(e) { console.error(e); }
-        };
-        window.openAddSongModal = (bid, sid = null) => {
-            document.getElementById('song-band-id').value = bid;
-            document.getElementById('song-edit-id').value = sid || "";
-            if(sid) { const b = bandsData.find(x=>x.id===bid); const s = b.songs.find(x=>x.id===sid); document.getElementById('new-song-title').value = s.title; document.getElementById('new-song-duration').value = s.duration || ""; document.getElementById('new-song-event').value = s.eventId || ""; }
-            else { document.getElementById('new-song-title').value = ""; document.getElementById('new-song-duration').value = ""; document.getElementById('new-song-event').value = ""; }
-            document.getElementById('add-song-modal').classList.remove('hidden');
-            document.getElementById('add-song-modal').classList.add('modal-active');
-        };
+        window.saveBandMembers = async () => { const bid = document.getElementById('edit-members-band-id').value; const ids = Array.from(document.querySelectorAll('#edit-members-list input:checked')).map(c => c.value); try { await updateDoc(doc(db, 'bands', bid), { memberIds: ids }); window.closeEditMembersModal(); } catch(e) { console.error(e); } };
+        window.openAddSongModal = (bid, sid = null) => { document.getElementById('song-band-id').value = bid; document.getElementById('song-edit-id').value = sid || ""; if(sid) { const b = bandsData.find(x=>x.id===bid); const s = b.songs.find(x=>x.id===sid); document.getElementById('new-song-title').value = s.title; document.getElementById('new-song-duration').value = s.duration || ""; document.getElementById('new-song-event').value = s.eventId || ""; } else { document.getElementById('new-song-title').value = ""; document.getElementById('new-song-duration').value = ""; document.getElementById('new-song-event').value = ""; } document.getElementById('add-song-modal').classList.remove('hidden'); document.getElementById('add-song-modal').classList.add('modal-active'); };
         window.closeAddSongModal = () => { document.getElementById('add-song-modal').classList.remove('modal-active'); setTimeout(() => document.getElementById('add-song-modal').classList.add('hidden'), 200); };
-        window.handleSongSubmit = async () => {
-            const bid = document.getElementById('song-band-id').value;
-            const sid = document.getElementById('song-edit-id').value;
-            const title = document.getElementById('new-song-title').value;
-            if(!title) return;
-            const b = bandsData.find(x=>x.id===bid);
-            let songs = b.songs || [];
-            if(sid) songs = songs.map(s => s.id === sid ? {...s, title, duration: document.getElementById('new-song-duration').value, eventId: document.getElementById('new-song-event').value} : s);
-            else songs.push({id: Math.random().toString(36).substr(2,9), title, duration: document.getElementById('new-song-duration').value, eventId: document.getElementById('new-song-event').value});
-            await updateDoc(doc(db, 'bands', bid), {songs}); window.closeAddSongModal();
-        };
+        window.handleSongSubmit = async () => { const bid = document.getElementById('song-band-id').value; const sid = document.getElementById('song-edit-id').value; const title = document.getElementById('new-song-title').value; if(!title) return; const b = bandsData.find(x=>x.id===bid); let songs = b.songs || []; if(sid) songs = songs.map(s => s.id === sid ? {...s, title, duration: document.getElementById('new-song-duration').value, eventId: document.getElementById('new-song-event').value} : s); else songs.push({id: Math.random().toString(36).substr(2,9), title, duration: document.getElementById('new-song-duration').value, eventId: document.getElementById('new-song-event').value}); await updateDoc(doc(db, 'bands', bid), {songs}); window.closeAddSongModal(); };
         window.deleteSong = async (bid, sid) => { if(confirm('曲を削除しますか？')) { const b = bandsData.find(x=>x.id===bid); await updateDoc(doc(db, 'bands', bid), {songs: b.songs.filter(s=>s.id!==sid)}); } };
         window.toggleBandArchive = async (bid, st) => { await updateDoc(doc(db, 'bands', bid), {isArchived: !st}); };
+        document.getElementById('band-search-input').addEventListener('input', (e) => { bandSearchQuery = e.target.value; renderBandsList(); });
+        document.getElementById('archive-toggle').addEventListener('change', (e) => { showArchivedBands = e.target.checked; renderBandsList(); });
+        document.getElementById('event-filter').addEventListener('change', (e) => { eventFilter = e.target.value; renderBandsList(); });
     </script>
 </body>
 </html>
