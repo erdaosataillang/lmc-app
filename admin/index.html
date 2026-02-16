@@ -4,26 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - LMC Admin</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* 万が一の真っ白防止用 */
+        body.loading-failed { display: block !important; }
+    </style>
 </head>
-<body class="min-h-screen flex overflow-hidden bg-[#f8fafc] hidden">
-    <main class="flex-1 ml-[260px] h-screen overflow-y-auto relative text-left p-8">
-        
+<body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
+    <!-- ローディング画面 (真っ白防止) -->
+    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <p class="text-xs font-bold text-gray-400 tracking-widest uppercase">Initializing System...</p>
+    </div>
+
+    <!-- サイドバーコンテナ (共通JSで中身が挿入されます) -->
+    <div id="sidebar-container"></div>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 ml-[260px] h-screen overflow-y-auto p-8 relative">
+        <!-- ヘッダー -->
         <header class="flex justify-between items-center mb-8">
             <div>
                 <h2 class="text-xl font-extrabold text-gray-800 uppercase tracking-widest">Dashboard</h2>
                 <p class="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">システムの概要と統計</p>
             </div>
-            <div id="db-status" class="flex items-center gap-3 text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">
+            <div id="db-status" class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest flex items-center gap-2">
                 <i class="fa-solid fa-circle text-[8px] text-gray-300"></i> Connecting...
             </div>
         </header>
 
+        <!-- 統計カードグリッド -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             
-            <a href="/admin/band/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer overflow-hidden block">
+            <!-- バンド -->
+            <a href="/admin/band/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-users-rectangle text-[150px]"></i>
                 </div>
@@ -34,13 +53,14 @@
                     <h3 class="text-2xl font-extrabold text-gray-800 tracking-tight">バンド</h3>
                     <div class="mt-2">
                         <span class="bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
-                            <span id="stat-band-count">Loading...</span> Bands
+                            <span id="stat-band-count">...</span> Bands
                         </span>
                     </div>
                 </div>
             </a>
 
-            <a href="/admin/event/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer overflow-hidden block">
+            <!-- イベント -->
+            <a href="/admin/event/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-bullhorn text-[150px]"></i>
                 </div>
@@ -51,13 +71,14 @@
                     <h3 class="text-2xl font-extrabold text-gray-800 tracking-tight">イベント</h3>
                     <div class="mt-2">
                         <span class="bg-sky-50 text-sky-600 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
-                            <span id="stat-event-count">Loading...</span> Active
+                            <span id="stat-event-count">...</span> Active
                         </span>
                     </div>
                 </div>
             </a>
 
-            <a href="/admin/cue/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer overflow-hidden block">
+            <!-- Cueシート -->
+            <a href="/admin/cue/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-file-invoice text-[150px]"></i>
                 </div>
@@ -68,13 +89,14 @@
                     <h3 class="text-2xl font-extrabold text-gray-800 tracking-tight">Cueシート</h3>
                     <div class="mt-2">
                         <span class="bg-emerald-50 text-emerald-600 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
-                            <span id="stat-cue-count">Loading...</span> Files
+                            <span id="stat-cue-count">...</span> Files
                         </span>
                     </div>
                 </div>
             </a>
 
-            <a href="/admin/user/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer overflow-hidden block">
+            <!-- 部員 -->
+            <a href="/admin/user/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-user-gear text-[150px]"></i>
                 </div>
@@ -85,70 +107,75 @@
                     <h3 class="text-2xl font-extrabold text-gray-800 tracking-tight">部員</h3>
                     <div class="mt-2">
                         <span class="bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
-                            <span id="stat-user-count">Loading...</span> Members
+                            <span id="stat-user-count">...</span> Members
                         </span>
                     </div>
                 </div>
             </a>
-
         </div>
 
+        <!-- サブセクション -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <a href="/admin/booking/" class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center gap-4 transition-all group">
-                <div class="w-12 h-12 bg-red-50 text-red-500 rounded-xl flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors">
+                <div class="w-12 h-12 bg-red-50 text-red-500 rounded-xl flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors shadow-sm">
                     <i class="fa-solid fa-calendar-check text-xl"></i>
                 </div>
                 <div>
                     <h4 class="font-bold text-gray-800">予約システム設定</h4>
-                    <p class="text-xs text-gray-400">スタジオ予約の抽選設定や確認</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Studio Booking Config</p>
                 </div>
+                <i class="fa-solid fa-chevron-right ml-auto text-gray-200 group-hover:text-red-500 transition-colors"></i>
             </a>
+
             <a href="/admin/expenses/" class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center gap-4 transition-all group">
-                <div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                <div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors shadow-sm">
                     <i class="fa-solid fa-coins text-xl"></i>
                 </div>
                 <div>
-                    <h4 class="font-bold text-gray-800">部費の管理</h4>
-                    <p class="text-xs text-gray-400">徴収状況の確認（開発中）</p>
+                    <h4 class="font-bold text-gray-800">部費の管理 (仮)</h4>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Accounting - Beta</p>
                 </div>
+                <i class="fa-solid fa-chevron-right ml-auto text-gray-200 group-hover:text-orange-500 transition-colors"></i>
             </a>
         </div>
     </main>
 
+    <!-- Logic -->
     <script type="module">
-        // ルートディレクトリのJSを読み込み
         import { initAdminPage, db } from "/js/admin-common.js";
         import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ページID 'dashboard' で初期化
+        // 安全装置: 5秒経っても初期化が終わらなければ強制解除
+        const safetyTimer = setTimeout(() => {
+            const loader = document.getElementById('initial-loader');
+            if (loader) loader.remove();
+        }, 5000);
+
         initAdminPage('dashboard', (user) => {
-            console.log("Dashboard initialized by:", user.email);
+            clearTimeout(safetyTimer);
+            console.log("Admin Dashboard Loaded.");
 
-            // 1. バンド数の監視
+            // 各統計データのリアルタイム監視
+            // 1. バンド数
             onSnapshot(collection(db, 'bands'), (snapshot) => {
-                // アーカイブされていないバンドのみカウント
                 const count = snapshot.docs.filter(doc => !doc.data().isArchived).length;
-                const el = document.getElementById('stat-band-count');
-                if(el) el.innerText = count;
-            });
+                document.getElementById('stat-band-count').innerText = count;
+            }, (err) => console.error("Band stat error:", err));
 
-            // 2. イベント数の監視
+            // 2. イベント数
             onSnapshot(collection(db, 'events'), (snapshot) => {
-                const el = document.getElementById('stat-event-count');
-                if(el) el.innerText = snapshot.size;
-            });
+                document.getElementById('stat-event-count').innerText = snapshot.size;
+            }, (err) => console.error("Event stat error:", err));
 
-            // 3. Cueシート数の監視
+            // 3. Cueシート数
             onSnapshot(collection(db, 'cuesheets'), (snapshot) => {
-                const el = document.getElementById('stat-cue-count');
-                if(el) el.innerText = snapshot.size;
-            });
+                document.getElementById('stat-cue-count').innerText = snapshot.size;
+            }, (err) => console.error("Cue stat error:", err));
 
-            // 4. 部員数の監視
+            // 4. 部員数
             onSnapshot(collection(db, 'users'), (snapshot) => {
-                const el = document.getElementById('stat-user-count');
-                if(el) el.innerText = snapshot.size;
-            });
+                document.getElementById('stat-user-count').innerText = snapshot.size;
+            }, (err) => console.error("User stat error:", err));
         });
     </script>
 </body>
