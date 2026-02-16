@@ -67,11 +67,20 @@
         import { auth, LIFF_ID } from "/js/admin-common.js";
         import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
+        // URLパラメータからリダイレクト先を取得
+        const getRedirectUrl = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectPath = urlParams.get('redirect');
+            // パラメータがない、または不正な場合はデフォルトでダッシュボードへ
+            return redirectPath || "/admin/";
+        };
+
         // すでにログインしている場合は自動リダイレクト
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                console.log("Authenticated, redirecting to dashboard...");
-                window.location.href = "/admin/";
+                const target = getRedirectUrl();
+                console.log(`Authenticated, redirecting to ${target}...`);
+                window.location.href = target;
             }
         });
 
@@ -91,7 +100,6 @@
                     liff.login();
                 } else {
                     // LINEログイン済みの場合はFirebase認証へ連携
-                    // ※デモ・開発用に匿名認証を呼び出していますが、本番ではCustom Token等を利用
                     await signInAnonymously(auth);
                 }
             } catch (error) {
