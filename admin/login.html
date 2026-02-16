@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - LMC Admin</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 共通CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-[#f8fafc] p-6">
+
+    <div class="w-full max-w-md animate-in fade-in zoom-in duration-500">
+        <!-- ロゴエリア -->
+        <div class="text-center mb-10">
+            <div class="w-20 h-20 bg-blue-600 rounded-[28px] flex items-center justify-center text-white shadow-2xl shadow-blue-200 mx-auto mb-6">
+                <i class="fa-solid fa-guitar text-4xl"></i>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-tighter text-gray-900">
+                LMC <span class="text-blue-600">Admin</span>
+            </h1>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">
+                Light Music Club Management System
+            </p>
+        </div>
+
+        <!-- ログインカード -->
+        <div class="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 text-center">
+            <h2 class="text-xl font-black text-gray-800 mb-2">管理者ログイン</h2>
+            <p class="text-sm text-gray-500 font-medium mb-10">
+                管理パネルにアクセスするには<br>LINEアカウントで認証してください。
+            </p>
+
+            <div class="space-y-4">
+                <!-- LINEログインボタン -->
+                <button id="btn-login" onclick="window.handleLineLogin()" class="w-full bg-[#06C755] hover:bg-[#05b34d] text-white py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg shadow-green-100">
+                    <i class="fa-brands fa-line text-2xl"></i>
+                    LINEでログイン
+                </button>
+
+                <div id="loading-spinner" class="hidden py-4">
+                    <i class="fa-solid fa-spinner fa-spin text-blue-500 text-2xl"></i>
+                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-2">Authenticating...</p>
+                </div>
+            </div>
+
+            <div class="mt-10 pt-8 border-t border-gray-50">
+                <p class="text-[9px] text-gray-300 font-bold uppercase tracking-widest">
+                    Authorized Personnel Only
+                </p>
+            </div>
+        </div>
+
+        <!-- フッター -->
+        <p class="text-center mt-8 text-gray-400 text-[10px] font-medium">
+            &copy; 2026 LMC Management Team. All rights reserved.
+        </p>
+    </div>
+
+    <!-- Logic -->
+    <script type="module">
+        import { auth, LIFF_ID } from "/js/admin-common.js";
+        import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+
+        // すでにログインしている場合は自動リダイレクト
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                console.log("Authenticated, redirecting to dashboard...");
+                window.location.href = "/admin/";
+            }
+        });
+
+        window.handleLineLogin = async () => {
+            const btn = document.getElementById('btn-login');
+            const spinner = document.getElementById('loading-spinner');
+
+            try {
+                btn.classList.add('hidden');
+                spinner.classList.remove('hidden');
+
+                // LIFF初期化
+                await liff.init({ liffId: LIFF_ID });
+
+                if (!liff.isLoggedIn()) {
+                    // LINEログイン画面へ遷移
+                    liff.login();
+                } else {
+                    // LINEログイン済みの場合はFirebase認証へ連携
+                    // ※デモ・開発用に匿名認証を呼び出していますが、本番ではCustom Token等を利用
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Login failed:", error);
+                alert("ログインに失敗しました。もう一度お試しください。");
+                btn.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        };
+
+        // 自動チェック (既にLINEログイン済みの場合の処理)
+        window.addEventListener('load', async () => {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (liff.isLoggedIn()) {
+                    window.handleLineLogin();
+                }
+            } catch (e) {
+                console.log("LIFF Init background check skipped.");
+            }
+        });
+    </script>
+</body>
+</html>
