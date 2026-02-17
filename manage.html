@@ -78,6 +78,33 @@
         /* Officer List Item */
         .officer-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0f0f0; }
         .officer-item:last-child { border-bottom:none; }
+
+        /* --- Flowchart Animation Styles --- */
+        .flow-container { display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
+        .flow-step { background: white; border-radius: 16px; padding: 16px; width: 90%; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 0; position: relative; opacity: 0; transform: translateY(10px); transition: all 0.5s cubic-bezier(0.2, 0, 0, 1); z-index: 2; text-align: center; border: 1px solid #f0f0f0; }
+        .flow-step.show { opacity: 1; transform: translateY(0); margin-bottom: 40px; }
+        .flow-step:last-child.show { margin-bottom: 0; }
+        
+        .flow-line { width: 3px; height: 0; background: #e0e0e0; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); transition: height 0.5s ease; z-index: 1; border-radius: 2px; }
+        .flow-step.connected .flow-line { height: 40px; }
+        
+        .flow-icon { font-size: 32px; margin-bottom: 8px; display: inline-block; color: #5f6368; }
+        .flow-title { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #1f1f1f; }
+        .flow-desc { font-size: 12px; color: #666; line-height: 1.4; }
+        
+        .spinner { animation: spin 1s linear infinite; color: #0b57d0; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        .result-list { width: 100%; text-align: left; margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; font-size: 13px; max-height: 200px; overflow-y: auto; background: #fafafa; border-radius: 8px; padding: 10px; box-sizing: border-box; }
+        .result-item { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #eee; }
+        .result-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        
+        .success-color { color: #1e8e3e; }
+        .warn-color { color: #f9ab00; }
+        .error-color { color: #d93025; }
+        .bg-success-light { background-color: #e6f4ea; border-color: #ceead6; }
+        .bg-warn-light { background-color: #fef7e0; border-color: #fce8b2; }
+        .bg-error-light { background-color: #fce8e6; border-color: #fad2cf; }
     </style>
 </head>
 <body>
@@ -201,6 +228,22 @@
                 <div id="admin-bd-icon" style="width:80px; height:80px; background:#e0e3e7; border-radius:12px; display:inline-flex; justify-content:center; align-items:center; font-size:30px; color:#5f6368; font-weight:bold; overflow:hidden;"></div>
                 <h3 id="admin-bd-name" style="margin:10px 0 5px;"></h3>
                 <div id="admin-bd-id" style="font-size:10px; color:#999;"></div>
+            </div>
+
+            <!-- NEW: Cue Sheet Section -->
+            <div class="card" style="padding:16px;">
+                <h4 style="margin-top:0; font-size:14px; color:#5f6368;">Cueシート</h4>
+                <div style="margin-bottom:12px;">
+                    <a id="admin-bd-cuesheet-link" href="#" target="_blank" style="font-size:14px; color:#0b57d0; text-decoration:none; display:flex; align-items:center;">
+                        <span class="material-icons" style="font-size:18px; margin-right:4px;">description</span>
+                        <span id="admin-bd-cuesheet-text">未登録</span>
+                    </a>
+                </div>
+                <div class="form-group" style="margin-bottom:8px;">
+                    <label class="form-label">URLを編集</label>
+                    <input type="text" id="admin-bd-cuesheet-input" class="form-input" placeholder="https://...">
+                </div>
+                <button class="btn-primary" onclick="saveAdminBandCuesheet()" style="font-size:12px; padding:8px;">URLを保存</button>
             </div>
             
             <div class="card" style="padding:16px;">
@@ -458,6 +501,27 @@
             }
             document.getElementById('admin-bd-name').innerText = band.name;
             document.getElementById('admin-bd-id').innerText = `ID: ${band.id}`;
+
+            // Cue Sheet Logic (NEW)
+            const cueInput = document.getElementById('admin-bd-cuesheet-input');
+            const cueLink = document.getElementById('admin-bd-cuesheet-link');
+            const cueText = document.getElementById('admin-bd-cuesheet-text');
+            
+            const url = band.latestCuesheetUrl || "";
+            cueInput.value = url;
+            
+            if (url) {
+                cueLink.href = url;
+                cueLink.style.display = 'flex';
+                cueLink.style.color = '#0b57d0';
+                cueLink.style.pointerEvents = 'auto';
+                cueText.innerText = "Cueシートを開く";
+            } else {
+                cueLink.href = "#";
+                cueLink.style.color = '#999';
+                cueLink.style.pointerEvents = 'none';
+                cueText.innerText = "未登録";
+            }
             
             // Archive Switch
             document.getElementById('admin-bd-archive-switch').checked = !!band.isArchived;
@@ -480,6 +544,29 @@
                     row.innerHTML = `<span>${u.name}</span><span style="font-size:10px; color:#ccc;">${uid.substring(0,6)}...</span>`;
                     memContainer.appendChild(row);
                 });
+            }
+        };
+
+        // NEW: Save Cue Sheet URL
+        window.saveAdminBandCuesheet = async () => {
+            if (!currentAdminBandId) return;
+            const newUrl = document.getElementById('admin-bd-cuesheet-input').value.trim();
+            
+            try {
+                await updateDoc(doc(db, "bands", currentAdminBandId), { latestCuesheetUrl: newUrl });
+                
+                // Update local cache
+                const bIndex = allBandsCache.findIndex(b => b.id === currentAdminBandId);
+                if (bIndex > -1) allBandsCache[bIndex].latestCuesheetUrl = newUrl;
+                
+                await showCustomAlert("CueシートのURLを保存しました。");
+                
+                // Refresh UI
+                const band = allBandsCache.find(b => b.id === currentAdminBandId);
+                if(band) openAdminBandDetail(band); // Re-render logic to update link state
+                
+            } catch(e) {
+                await showCustomAlert("保存エラー: " + e.message, "エラー");
             }
         };
 
