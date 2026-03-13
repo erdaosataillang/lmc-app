@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Urakata Tournament v1.0</title>
+    <title>Urakata Tournament Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
@@ -12,43 +12,42 @@
             --bg-dark: #020617;
             --accent-blue: #3b82f6;
             --accent-green: #10b981;
+            --accent-red: #ef4444;
         }
 
         body { 
             background-color: var(--bg-dark); 
             color: #f8fafc; 
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            overflow-x: hidden;
         }
 
         .cyber-font { font-family: 'Orbitron', sans-serif; }
 
-        /* カードデザイン */
+        /* トーナメントカード */
         .match-card { 
             background: linear-gradient(145deg, #0f172a, #1e293b); 
             border: 1px solid #334155; 
             position: relative; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
         .match-card::before {
             content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: var(--accent-blue);
         }
-
-        .winner-card { border-color: var(--accent-green); box-shadow: 0 0 20px rgba(16, 185, 129, 0.15); }
+        .winner-card { border-color: var(--accent-green); box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); }
         .winner-card::before { background: var(--accent-green); }
 
-        /* アニメーション */
-        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* 拡大表示モード用 */
+        .focus-mode .match-card {
+            transform: scale(1.1);
+            max-width: 600px;
+            margin: 0 auto;
         }
 
-        /* カスタムスクロールバー */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -57,60 +56,49 @@
         <header class="flex justify-between items-end mb-10 border-b border-blue-900/50 pb-6">
             <div>
                 <h1 class="text-4xl font-black cyber-font tracking-tighter text-blue-500">
-                    URAKATA <span class="text-white">TOURNAMENT</span>
+                    URAKATA <span class="text-white text-2xl">SYSTEM</span>
                 </h1>
-                <p class="text-gray-500 text-xs mt-1 tracking-widest uppercase">Real-time Event Management System</p>
+                <p id="viewStatus" class="text-gray-500 text-[10px] mt-1 tracking-[0.3em] uppercase">Loading System...</p>
             </div>
-            <div id="modeIndicator" class="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border transition-colors">
+            <div id="modeIndicator" class="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-blue-500 text-blue-500">
                 Display Mode
             </div>
         </header>
 
-        <section id="adminSection" class="hidden mb-12 bg-slate-900/80 backdrop-blur-md p-8 rounded-3xl border border-slate-700 shadow-2xl fade-in">
-            <h2 class="text-sm font-black mb-8 flex items-center gap-3 cyber-font text-blue-400 tracking-widest">
-                <span class="w-2 h-2 bg-red-600 rounded-full animate-ping"></span> MATCH REGISTRATION
-            </h2>
-            
-            <div class="flex flex-col lg:flex-row items-stretch gap-6">
-                <div class="flex-1 space-y-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Player 01</label>
-                    <select id="userSelect1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500 transition-all text-sm">
-                        <option value="">既存ユーザーを選択...</option>
-                    </select>
-                    <input type="text" id="guestName1" placeholder="または名前を手入力" class="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none focus:border-green-600 transition-all">
+        <section id="adminSection" class="hidden mb-12 space-y-6 fade-in">
+            <div class="bg-slate-900 border border-slate-700 p-6 rounded-3xl flex flex-wrap gap-6 items-center justify-between shadow-2xl">
+                <div class="flex items-center gap-4">
+                    <span class="text-xs font-bold text-slate-400 cyber-font">VIEW MODE:</span>
+                    <div class="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
+                        <button onclick="updateViewMode('all')" id="btn-view-all" class="px-4 py-1 rounded-md text-[10px] font-bold uppercase transition-all">Overall</button>
+                        <button onclick="updateViewMode('focus')" id="btn-view-focus" class="px-4 py-1 rounded-md text-[10px] font-bold uppercase transition-all">Current Match</button>
+                    </div>
                 </div>
-
-                <div class="flex items-center justify-center">
-                    <span class="cyber-font text-2xl font-black italic text-slate-700">VS</span>
-                </div>
-
-                <div class="flex-1 space-y-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                    <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Player 02</label>
-                    <select id="userSelect2" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500 transition-all text-sm">
-                        <option value="">既存ユーザーを選択...</option>
-                    </select>
-                    <input type="text" id="guestName2" placeholder="または名前を手入力" class="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none focus:border-green-600 transition-all">
-                </div>
-
-                <div class="flex items-end">
-                    <button id="createMatchBtn" class="w-full lg:w-auto bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-xl font-black transition-all shadow-lg hover:shadow-blue-500/20 active:scale-95 cyber-font text-sm">
-                        CREATE
-                    </button>
-                </div>
+                <button id="resetBtn" class="text-red-500 hover:text-white hover:bg-red-600 border border-red-900/50 px-4 py-2 rounded-lg text-[10px] font-bold transition-all uppercase">
+                    Reset Tournament
+                </button>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-slate-800 flex justify-between items-center">
-                <p class="text-[10px] text-slate-500 cyber-font">System Status: <span class="text-green-500">Online</span></p>
-                <button id="resetBtn" class="text-red-900 hover:text-red-500 text-[10px] font-bold tracking-tighter transition-colors uppercase">
-                    [ Emergency Reset All Matches ]
-                </button>
+            <div class="bg-slate-900/80 backdrop-blur-md p-8 rounded-3xl border border-slate-700 shadow-2xl">
+                <div class="flex flex-col lg:flex-row items-stretch gap-6">
+                    <div class="flex-1 space-y-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                        <select id="userSelect1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500"></select>
+                        <input type="text" id="guestName1" placeholder="名前を手入力" class="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none">
+                    </div>
+                    <div class="flex items-center justify-center cyber-font text-2xl font-black italic text-slate-700">VS</div>
+                    <div class="flex-1 space-y-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                        <select id="userSelect2" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500"></select>
+                        <input type="text" id="guestName2" placeholder="名前を手入力" class="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none">
+                    </div>
+                    <button id="createMatchBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-xl font-black cyber-font text-sm transition-all shadow-lg active:scale-95">CREATE</button>
+                </div>
             </div>
         </section>
 
-        <main id="bracketDisplay" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <main id="bracketDisplay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             </main>
 
-        <footer class="mt-20 text-center opacity-20 hover:opacity-100 transition-opacity">
+        <footer class="mt-20 text-center opacity-30">
             <p class="text-[10px] cyber-font">&copy; 2026 裏方部 By Sorairo Studio</p>
         </footer>
     </div>
@@ -119,7 +107,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // --- Firebase Config ---
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -132,136 +119,143 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- 定数 & 状態管理 ---
         const isAdmin = new URLSearchParams(window.location.search).get('mode') === 'admin';
-        const DEFAULT_ICON_BASE = "https://ui-avatars.com/api/?background=1e293b&color=3b82f6&bold=true&name=";
+        const DEFAULT_ICON = "https://ui-avatars.com/api/?background=1e293b&color=3b82f6&bold=true&name=";
+        let currentViewMode = "all";
 
-        // --- 初期化処理 ---
         if (isAdmin) {
             document.getElementById('adminSection').classList.remove('hidden');
             const indicator = document.getElementById('modeIndicator');
-            indicator.innerText = "Admin Control Enabled";
-            indicator.classList.add('border-red-500', 'text-red-500');
+            indicator.innerText = "Admin Console";
+            indicator.classList.replace('border-blue-500', 'border-red-500');
+            indicator.classList.replace('text-blue-500', 'text-red-500');
             loadUsers();
         }
 
-        // --- 1. ユーザー取得 (lineDisplayName, kana, icon を考慮) ---
-        async function loadUsers() {
-            const selects = [document.getElementById('userSelect1'), document.getElementById('userSelect2')];
-            try {
-                const snap = await getDocs(collection(db, "users"));
-                selects.forEach(select => {
-                    select.innerHTML = '<option value="">既存ユーザーを選択...</option>';
-                    snap.forEach(doc => {
-                        const u = doc.data();
-                        const displayName = u.lineDisplayName || u.kana || "No Name";
-                        const opt = document.createElement('option');
-                        opt.value = doc.id;
-                        opt.text = displayName;
-                        opt.dataset.icon = u.icon || "";
-                        select.appendChild(opt);
-                    });
-                });
-            } catch (e) {
-                console.error("User Load Error:", e);
+        // --- 1. 設定同期 (View Mode) ---
+        onSnapshot(doc(db, "tournaments", "settings"), (doc) => {
+            const data = doc.data() || { viewMode: 'all' };
+            currentViewMode = data.viewMode;
+            document.getElementById('viewStatus').innerText = `Current View: ${currentViewMode.toUpperCase()}`;
+            
+            if (isAdmin) {
+                const isAll = currentViewMode === 'all';
+                document.getElementById('btn-view-all').className = isAll ? 'px-4 py-1 rounded-md text-[10px] font-bold uppercase bg-blue-600 text-white' : 'px-4 py-1 rounded-md text-[10px] font-bold uppercase text-slate-400 hover:text-white';
+                document.getElementById('btn-view-focus').className = !isAll ? 'px-4 py-1 rounded-md text-[10px] font-bold uppercase bg-blue-600 text-white' : 'px-4 py-1 rounded-md text-[10px] font-bold uppercase text-slate-400 hover:text-white';
             }
-        }
-
-        // --- 2. 試合作成ロジック ---
-        document.getElementById('createMatchBtn').onclick = async () => {
-            const getPlayerData = (num) => {
-                const sel = document.getElementById(`userSelect${num}`);
-                const guest = document.getElementById(`guestName${num}`).value;
-                const name = guest || (sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].text : "");
-                const icon = guest ? "" : (sel.selectedIndex > 0 ? sel.options[sel.selectedIndex].dataset.icon : "");
-                return { name, icon };
-            };
-
-            const p1 = getPlayerData(1);
-            const p2 = getPlayerData(2);
-
-            if (!p1.name || !p2.name) return alert("両方のプレイヤー名を入力してください");
-
-            const matchId = "match_" + Date.now();
-            await setDoc(doc(db, "tournaments", "current", "matches", matchId), {
-                p1: p1.name,
-                p1Icon: p1.icon || (DEFAULT_ICON_BASE + encodeURIComponent(p1.name)),
-                p2: p2.name,
-                p2Icon: p2.icon || (DEFAULT_ICON_BASE + encodeURIComponent(p2.name)),
-                winner: null,
-                createdAt: Date.now()
-            });
-
-            // フォームクリア
-            document.getElementById('guestName1').value = "";
-            document.getElementById('guestName2').value = "";
-            document.getElementById('userSelect1').selectedIndex = 0;
-            document.getElementById('userSelect2').selectedIndex = 0;
-        };
-
-        // --- 3. リアルタイム・リスナー ---
-        const matchesQuery = query(collection(db, "tournaments", "current", "matches"), orderBy("createdAt", "asc"));
-        onSnapshot(matchesQuery, (snapshot) => {
-            const matches = [];
-            snapshot.forEach(d => matches.push({ id: d.id, ...d.data() }));
-            renderMatches(matches);
         });
 
-        // --- 4. 試合カードのレンダリング ---
-        function renderMatches(matches) {
+        window.updateViewMode = async (mode) => {
+            await setDoc(doc(db, "tournaments", "settings"), { viewMode: mode }, { merge: true });
+        };
+
+        // --- 2. ユーザー取得 ---
+        async function loadUsers() {
+            const selects = [document.getElementById('userSelect1'), document.getElementById('userSelect2')];
+            const snap = await getDocs(collection(db, "users"));
+            selects.forEach(s => {
+                s.innerHTML = '<option value="">既存ユーザーを選択...</option>';
+                snap.forEach(d => {
+                    const u = d.data();
+                    const opt = document.createElement('option');
+                    opt.value = d.id;
+                    opt.text = u.lineDisplayName || u.kana || "No Name";
+                    opt.dataset.icon = u.icon || "";
+                    s.appendChild(opt);
+                });
+            });
+        }
+
+        // --- 3. 試合の操作 (作成・削除・勝敗) ---
+        document.getElementById('createMatchBtn').onclick = async () => {
+            const getP = (n) => {
+                const s = document.getElementById(`userSelect${n}`);
+                const g = document.getElementById(`guestName${n}`).value;
+                return { 
+                    name: g || (s.selectedIndex > 0 ? s.options[s.selectedIndex].text : ""),
+                    icon: g ? "" : (s.selectedIndex > 0 ? s.options[s.selectedIndex].dataset.icon : "")
+                };
+            };
+            const p1 = getP(1), p2 = getP(2);
+            if (!p1.name || !p2.name) return alert("名前を入力してください");
+
+            const id = "m_" + Date.now();
+            await setDoc(doc(db, "tournaments", "current", "matches", id), {
+                p1: p1.name, p1Icon: p1.icon || (DEFAULT_ICON + encodeURIComponent(p1.name)),
+                p2: p2.name, p2Icon: p2.icon || (DEFAULT_ICON + encodeURIComponent(p2.name)),
+                winner: null, createdAt: Date.now()
+            });
+            document.getElementById('guestName1').value = ""; document.getElementById('guestName2').value = "";
+        };
+
+        window.deleteMatch = async (id) => {
+            if (confirm("この試合を削除しますか？")) await deleteDoc(doc(db, "tournaments", "current", "matches", id));
+        };
+
+        window.setWinner = async (id, key) => {
+            await updateDoc(doc(db, "tournaments", "current", "matches", id), { winner: key });
+        };
+
+        // --- 4. リアルタイム表示 ---
+        onSnapshot(query(collection(db, "tournaments", "current", "matches"), orderBy("createdAt", "asc")), (snap) => {
+            const matches = [];
+            snap.forEach(d => matches.push({ id: d.id, ...d.data() }));
+            render(matches);
+        });
+
+        function render(matches) {
             const container = document.getElementById('bracketDisplay');
-            if (matches.length === 0) {
-                container.innerHTML = `<p class="col-span-full text-center text-slate-600 py-20 italic">No matches registered yet.</p>`;
-                return;
+            container.className = currentViewMode === 'focus' ? "flex flex-col items-center justify-center min-h-[50vh] focus-mode" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8";
+
+            // Focusモードの場合は、未完了の最新の試合のみを表示。なければ全体を表示。
+            let displayMatches = matches;
+            if (currentViewMode === 'focus') {
+                const active = matches.find(m => !m.winner);
+                if (active) displayMatches = [active];
             }
 
-            container.innerHTML = matches.map(m => `
-                <div class="match-card p-6 rounded-2xl shadow-xl fade-in ${m.winner ? 'winner-card' : ''}">
+            container.innerHTML = displayMatches.map(m => `
+                <div class="match-card p-6 rounded-2xl fade-in ${m.winner ? 'winner-card' : ''} w-full">
                     <div class="flex flex-col gap-6">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-4">
-                                <div class="relative">
-                                    <img src="${m.p1Icon}" class="w-12 h-12 rounded-full border-2 border-slate-800 object-cover bg-slate-900 shadow-lg">
-                                    ${m.winner === 'p1' ? '<span class="absolute -top-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-slate-900"></span>' : ''}
-                                </div>
-                                <span class="text-lg font-bold tracking-tight ${m.winner === 'p1' ? 'text-green-400' : 'text-slate-200'}">${m.p1}</span>
+                                <img src="${m.p1Icon}" class="w-12 h-12 rounded-full border-2 border-slate-800 object-cover bg-slate-900">
+                                <span class="text-xl font-bold ${m.winner === 'p1' ? 'text-green-400' : ''}">${m.p1}</span>
                             </div>
-                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p1')" class="text-[9px] font-black border border-blue-500/30 text-blue-500 px-3 py-1 rounded-md hover:bg-blue-600 hover:text-white transition-all uppercase tracking-tighter">Win</button>` : ''}
+                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p1')" class="bg-blue-600/20 text-blue-400 border border-blue-600/50 px-3 py-1 rounded text-[9px] font-black uppercase tracking-tighter hover:bg-blue-600 hover:text-white transition-all">Set Win</button>` : ''}
                         </div>
 
-                        <div class="flex items-center gap-4">
-                            <div class="h-[1px] flex-1 bg-slate-800"></div>
-                            <span class="cyber-font text-[9px] text-slate-600 font-black italic">VS</span>
-                            <div class="h-[1px] flex-1 bg-slate-800"></div>
+                        <div class="flex items-center gap-4 opacity-30">
+                            <div class="h-[1px] flex-1 bg-slate-600"></div>
+                            <span class="cyber-font text-[9px] font-black italic">VS</span>
+                            <div class="h-[1px] flex-1 bg-slate-600"></div>
                         </div>
 
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-4">
-                                <div class="relative">
-                                    <img src="${m.p2Icon}" class="w-12 h-12 rounded-full border-2 border-slate-800 object-cover bg-slate-900 shadow-lg">
-                                    ${m.winner === 'p2' ? '<span class="absolute -top-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-slate-900"></span>' : ''}
-                                </div>
-                                <span class="text-lg font-bold tracking-tight ${m.winner === 'p2' ? 'text-green-400' : 'text-slate-200'}">${m.p2}</span>
+                                <img src="${m.p2Icon}" class="w-12 h-12 rounded-full border-2 border-slate-800 object-cover bg-slate-900">
+                                <span class="text-xl font-bold ${m.winner === 'p2' ? 'text-green-400' : ''}">${m.p2}</span>
                             </div>
-                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p2')" class="text-[9px] font-black border border-blue-500/30 text-blue-500 px-3 py-1 rounded-md hover:bg-blue-600 hover:text-white transition-all uppercase tracking-tighter">Win</button>` : ''}
+                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p2')" class="bg-blue-600/20 text-blue-400 border border-blue-600/50 px-3 py-1 rounded text-[9px] font-black uppercase tracking-tighter hover:bg-blue-600 hover:text-white transition-all">Set Win</button>` : ''}
                         </div>
                     </div>
-                    ${m.winner ? `<div class="absolute top-2 right-2 px-2 py-0.5 bg-green-500 text-slate-950 text-[8px] font-black rounded uppercase tracking-widest">Completed</div>` : ''}
+
+                    ${isAdmin ? `
+                        <button onclick="deleteMatch('${m.id}')" class="absolute -top-2 -left-2 bg-slate-800 text-red-500 w-6 h-6 rounded-full border border-slate-700 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all text-xs">×</button>
+                    ` : ''}
+
+                    ${m.winner ? `
+                        <div class="absolute top-2 right-2 px-3 py-1 bg-green-500 text-slate-950 text-[10px] font-black rounded uppercase tracking-widest shadow-lg">Victory</div>
+                    ` : ''}
                 </div>
             `).join('');
         }
 
-        // --- 5. グローバル・アクション ---
-        window.setWinner = async (matchId, winnerKey) => {
-            await updateDoc(doc(db, "tournaments", "current", "matches", matchId), {
-                winner: winnerKey
-            });
-        };
-
         document.getElementById('resetBtn').onclick = async () => {
-            if (!confirm("【警告】すべての試合データを削除しますか？")) return;
-            const q = await getDocs(collection(db, "tournaments", "current", "matches"));
-            q.forEach(async (d) => await deleteDoc(d.ref));
+            if (confirm("全試合データを削除しますか？")) {
+                const q = await getDocs(collection(db, "tournaments", "current", "matches"));
+                q.forEach(async (d) => await deleteDoc(d.ref));
+            }
         };
     </script>
 </body>
