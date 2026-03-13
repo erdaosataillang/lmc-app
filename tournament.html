@@ -2,57 +2,34 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tournament Manager - 裏方部</title>
+    <title>Tournament Real-time System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .bracket-node { border: 1px solid #ccc; padding: 10px; margin: 10px; border-radius: 5px; background: white; }
+        .match-card { background: #1e293b; border-left: 4px solid #3b82f6; transition: all 0.3s; }
+        .winner { border-left-color: #10b981; background: #064e3b; }
+        body { background-color: #0f172a; color: white; }
     </style>
 </head>
-<body class="bg-gray-100 p-8">
+<body class="p-4 md:p-8">
 
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-8 text-center text-blue-800">トーナメント管理システム</h1>
-
-        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
-            <h2 class="text-xl font-bold mb-4">参加者エントリー</h2>
-            
-            <div class="flex gap-4 mb-4">
-                <div class="flex-1">
-                    <label class="block text-sm font-medium mb-1">既存ユーザーから追加</label>
-                    <select id="userSelect" class="w-full border p-2 rounded">
-                        <option value="">読み込み中...</option>
-                    </select>
-                </div>
-                <div class="flex-1">
-                    <label class="block text-sm font-medium mb-1">飛び入り（手入力）</label>
-                    <input type="text" id="guestName" placeholder="名前を入力" class="w-full border p-2 rounded">
-                </div>
-                <div class="flex items-end">
-                    <button id="addBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">追加</button>
-                </div>
+    <div id="app" class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h1 class="text-2xl font-bold">裏方部 Tournament <span id="modeBadge" class="text-xs bg-blue-600 px-2 py-1 rounded ml-2">Display Mode</span></h1>
+            <div id="adminControls" class="hidden flex gap-2">
+                <input type="text" id="guestName" placeholder="飛び入り名" class="bg-gray-800 border border-gray-600 px-2 py-1 rounded text-sm">
+                <button id="addGuestBtn" class="bg-green-600 text-sm px-3 py-1 rounded">追加</button>
+                <button id="resetBtn" class="bg-red-600 text-sm px-3 py-1 rounded">リセット</button>
             </div>
-
-            <div class="mt-4">
-                <h3 class="font-bold mb-2">現在の参加者 (<span id="count">0</span>名)</h3>
-                <ul id="participantList" class="flex flex-wrap gap-2"></ul>
-            </div>
-
-            <button id="generateBtn" class="mt-6 w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">
-                トーナメント表を作成
-            </button>
         </div>
 
-        <div id="bracketArea" class="overflow-x-auto bg-white p-8 rounded-xl shadow-md min-h-[400px]">
-            <p class="text-gray-400 text-center">参加者を追加して「作成」を押してください</p>
-        </div>
+        <div id="bracket" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 先ほどのConfig
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -64,101 +41,78 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        let participants = [];
-
-        // 1. 既存ユーザーの取得
-        async function loadUsers() {
-            const userSelect = document.getElementById('userSelect');
-            try {
-                const querySnapshot = await getDocs(collection(db, "users"));
-                userSelect.innerHTML = '<option value="">選択してください</option>';
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const option = document.createElement('option');
-                    option.value = doc.id;
-                    option.text = data.name || "名称未設定";
-                    userSelect.appendChild(option);
-                });
-            } catch (e) {
-                console.error("Error loading users: ", e);
-                userSelect.innerHTML = '<option>エラーが発生しました</option>';
-            }
+        
+        // URLのパラメータでモード判定 (?mode=admin で管理モード)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isAdmin = urlParams.get('mode') === 'admin';
+        
+        if(isAdmin) {
+            document.getElementById('adminControls').classList.remove('hidden');
+            document.getElementById('modeBadge').innerText = "Admin Mode";
+            document.getElementById('modeBadge').classList.replace('bg-blue-600', 'bg-red-600');
         }
 
-        // 2. リストへの追加処理
-        document.getElementById('addBtn').addEventListener('click', () => {
-            const select = document.getElementById('userSelect');
-            const guest = document.getElementById('guestName');
-            
-            let name = "";
-            let id = "";
-
-            if (guest.value) {
-                name = guest.value;
-                id = "guest_" + Date.now();
-                guest.value = "";
-            } else if (select.value) {
-                name = select.options[select.selectedIndex].text;
-                id = select.value;
-            }
-
-            if (name && !participants.find(p => p.id === id)) {
-                participants.push({ id, name });
-                updateList();
-            }
+        // --- 1. リアルタイムリスナー ---
+        // 'tournaments/main/matches' コレクションを監視
+        onSnapshot(collection(db, "tournaments", "current", "matches"), (snapshot) => {
+            const matches = [];
+            snapshot.forEach(doc => matches.push({id: doc.id, ...doc.data()}));
+            renderBracket(matches.sort((a,b) => a.order - b.order));
         });
 
-        function updateList() {
-            const list = document.getElementById('participantList');
-            document.getElementById('count').innerText = participants.length;
-            list.innerHTML = participants.map(p => 
-                `<li class="bg-gray-200 px-3 py-1 rounded-full text-sm">${p.name}</li>`
-            ).join('');
-        }
+        // --- 2. 描画ロジック ---
+        function renderBracket(matches) {
+            const container = document.getElementById('bracket');
+            if (matches.length === 0) {
+                container.innerHTML = `<p class="col-span-full text-center text-gray-500">試合が組まれていません。管理画面から参加者を追加してください。</p>`;
+                return;
+            }
 
-        // 3. トーナメント生成ロジック
-        document.getElementById('generateBtn').addEventListener('click', async () => {
-            if (participants.length < 2) return alert("2名以上追加してください");
-
-            // シャッフル
-            const shuffled = [...participants].sort(() => Math.random() - 0.5);
-            
-            // Firebaseに保存（保存例）
-            try {
-                const docRef = await addDoc(collection(db, "tournaments"), {
-                    title: "新規トーナメント",
-                    members: shuffled,
-                    createdAt: serverTimestamp()
-                });
-                console.log("Saved with ID: ", docRef.id);
-            } catch (e) { console.error(e); }
-
-            renderBracket(shuffled);
-        });
-
-        function renderBracket(members) {
-            const area = document.getElementById('bracketArea');
-            area.innerHTML = `<h3 class="text-center font-bold mb-4">1回戦の組み合わせ</h3>`;
-            
-            const listDiv = document.createElement('div');
-            listDiv.className = "flex flex-col items-center";
-
-            for (let i = 0; i < members.length; i += 2) {
-                const p1 = members[i].name;
-                const p2 = members[i+1] ? members[i+1].name : "--- (シード) ---";
-                
-                listDiv.innerHTML += `
-                    <div class="bracket-node w-64 shadow-sm border-l-4 border-l-blue-500">
-                        <div class="pb-1 border-b text-sm font-semibold">${p1}</div>
-                        <div class="pt-1 text-sm text-gray-600">${p2}</div>
+            container.innerHTML = matches.map(match => `
+                <div class="match-card p-4 rounded shadow-lg ${match.winner ? 'winner' : ''}">
+                    <div class="text-xs text-gray-400 mb-2 uppercase tracking-widest">Match ${match.order}</div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold ${match.winner === 'p1' ? 'text-green-400' : ''}">${match.p1 || 'TBD'}</span>
+                        ${isAdmin && !match.winner ? `<button onclick="setWinner('${match.id}', 'p1')" class="text-xs bg-blue-500 px-2 py-1 rounded">WIN</button>` : ''}
                     </div>
-                `;
-            }
-            area.appendChild(listDiv);
+                    <div class="text-center text-gray-600 my-1 text-xs font-bold italic">VS</div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold ${match.winner === 'p2' ? 'text-green-400' : ''}">${match.p2 || 'TBD'}</span>
+                        ${isAdmin && !match.winner ? `<button onclick="setWinner('${match.id}', 'p2')" class="text-xs bg-blue-500 px-2 py-1 rounded">WIN</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
         }
 
-        loadUsers();
+        // --- 3. 管理用アクション（グローバル関数化） ---
+        window.setWinner = async (matchId, playerKey) => {
+            await updateDoc(doc(db, "tournaments", "current", "matches", matchId), {
+                winner: playerKey
+            });
+            // ここに「次の試合への自動進出ロジック」を後で追加可能
+        };
+
+        // 飛び入り追加（簡易的なマッチ生成）
+        document.getElementById('addGuestBtn').onclick = async () => {
+            const name = document.getElementById('guestName').value;
+            if(!name) return;
+            const id = Date.now().toString();
+            await setDoc(doc(db, "tournaments", "current", "matches", id), {
+                p1: name,
+                p2: "（募集中）",
+                order: Date.now(),
+                winner: null
+            });
+            document.getElementById('guestName').value = "";
+        };
+
+        // リセット
+        document.getElementById('resetBtn').onclick = async () => {
+            if(!confirm("全試合を削除しますか？")) return;
+            const q = await getDocs(collection(db, "tournaments", "current", "matches"));
+            q.forEach(async (d) => await deleteDoc(d.ref));
+        };
+
     </script>
 </body>
 </html>
