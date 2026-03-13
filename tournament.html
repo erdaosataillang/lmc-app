@@ -2,34 +2,74 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Tournament Real-time System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Urakata Tournament System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .match-card { background: #1e293b; border-left: 4px solid #3b82f6; transition: all 0.3s; }
-        .winner { border-left-color: #10b981; background: #064e3b; }
-        body { background-color: #0f172a; color: white; }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        body { background-color: #020617; color: #f8fafc; font-family: 'sans-serif'; }
+        .cyber-font { font-family: 'Orbitron', sans-serif; }
+        .match-card { background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid #334155; position: relative; overflow: hidden; }
+        .match-card::before { content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: #3b82f6; }
+        .winner-card { border-color: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+        .winner-card::before { background: #10b981; }
+        .line-connector { border-left: 2px solid #334155; border-bottom: 2px solid #334155; }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <div id="app" class="max-w-6xl mx-auto">
-        <div class="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-            <h1 class="text-2xl font-bold">裏方部 Tournament <span id="modeBadge" class="text-xs bg-blue-600 px-2 py-1 rounded ml-2">Display Mode</span></h1>
-            <div id="adminControls" class="hidden flex gap-2">
-                <input type="text" id="guestName" placeholder="飛び入り名" class="bg-gray-800 border border-gray-600 px-2 py-1 rounded text-sm">
-                <button id="addGuestBtn" class="bg-green-600 text-sm px-3 py-1 rounded">追加</button>
-                <button id="resetBtn" class="bg-red-600 text-sm px-3 py-1 rounded">リセット</button>
+    <div id="app" class="max-w-7xl mx-auto">
+        <header class="flex justify-between items-end mb-10 border-b border-blue-900 pb-6">
+            <div>
+                <h1 class="text-4xl font-black cyber-font tracking-tighter text-blue-500">TOURNAMENT <span class="text-white">v1.0</span></h1>
+                <p class="text-gray-400 text-sm mt-1">Urakata-bu Event Management System</p>
             </div>
-        </div>
+            <div id="modeIndicator" class="px-3 py-1 rounded text-xs font-bold uppercase tracking-widest border">
+                Display Mode
+            </div>
+        </header>
 
-        <div id="bracket" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <section id="adminSection" class="hidden mb-12 bg-slate-900 p-6 rounded-2xl border border-slate-700 shadow-2xl">
+            <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                <span class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span> CONTROL PANEL
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="space-y-4">
+                    <label class="block text-sm font-medium text-gray-400">REGISTERED MEMBERS</label>
+                    <div class="flex gap-2">
+                        <select id="userSelect" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Loading users...</option>
+                        </select>
+                        <button id="addMemberBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-bold transition">ADD</button>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <label class="block text-sm font-medium text-gray-400">GUEST / FLY-IN</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="guestName" placeholder="Enter Name" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white outline-none focus:ring-2 focus:ring-green-500">
+                        <button id="addGuestBtn" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded-lg font-bold transition">JOIN</button>
+                    </div>
+                </div>
             </div>
+
+            <div class="mt-8 pt-6 border-t border-slate-800 flex justify-end">
+                <button id="resetBtn" class="text-red-400 hover:text-red-300 text-sm font-bold flex items-center gap-1">
+                    [ RESET ALL MATCHES ]
+                </button>
+            </div>
+        </section>
+
+        <main id="bracketDisplay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, updateDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // --- Firebase 設定 ---
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -41,74 +81,113 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        
-        // URLのパラメータでモード判定 (?mode=admin で管理モード)
-        const urlParams = new URLSearchParams(window.location.search);
-        const isAdmin = urlParams.get('mode') === 'admin';
-        
-        if(isAdmin) {
-            document.getElementById('adminControls').classList.remove('hidden');
-            document.getElementById('modeBadge').innerText = "Admin Mode";
-            document.getElementById('modeBadge').classList.replace('bg-blue-600', 'bg-red-600');
+
+        // --- モード判定 ---
+        const isAdmin = new URLSearchParams(window.location.search).get('mode') === 'admin';
+        const DEFAULT_ICON = "https://ui-avatars.com/api/?background=334155&color=fff&name=";
+
+        if (isAdmin) {
+            document.getElementById('adminSection').classList.remove('hidden');
+            const indicator = document.getElementById('modeIndicator');
+            indicator.innerText = "Admin Mode";
+            indicator.classList.add('border-red-500', 'text-red-500');
+            loadExistingUsers();
+        } else {
+            document.getElementById('modeIndicator').classList.add('border-blue-500', 'text-blue-500');
         }
 
-        // --- 1. リアルタイムリスナー ---
-        // 'tournaments/main/matches' コレクションを監視
+        // --- 1. 既存ユーザーの読み込み ---
+        async function loadExistingUsers() {
+            const select = document.getElementById('userSelect');
+            const snap = await getDocs(collection(db, "users"));
+            select.innerHTML = '<option value="">選択してください</option>';
+            snap.forEach(doc => {
+                const u = doc.data();
+                const name = u.lineDisplayName || u.kana || "No Name";
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.text = name;
+                opt.dataset.icon = u.icon || "";
+                select.appendChild(opt);
+            });
+        }
+
+        // --- 2. 参加者追加ロジック ---
+        const addMatch = async (name, icon) => {
+            const id = "m_" + Date.now();
+            await setDoc(doc(db, "tournaments", "current", "matches", id), {
+                p1: name,
+                p1Icon: icon || (DEFAULT_ICON + name),
+                p2: "WAITING...",
+                p2Icon: DEFAULT_ICON + "?",
+                winner: null,
+                timestamp: Date.now()
+            });
+        };
+
+        document.getElementById('addMemberBtn').onclick = () => {
+            const sel = document.getElementById('userSelect');
+            const opt = sel.options[sel.selectedIndex];
+            if (!opt.value) return;
+            addMatch(opt.text, opt.dataset.icon);
+        };
+
+        document.getElementById('addGuestBtn').onclick = () => {
+            const input = document.getElementById('guestName');
+            if (!input.value) return;
+            addMatch(input.value, "");
+            input.value = "";
+        };
+
+        // --- 3. リアルタイムリスナー ---
         onSnapshot(collection(db, "tournaments", "current", "matches"), (snapshot) => {
             const matches = [];
-            snapshot.forEach(doc => matches.push({id: doc.id, ...doc.data()}));
-            renderBracket(matches.sort((a,b) => a.order - b.order));
+            snapshot.forEach(d => matches.push({id: d.id, ...d.data()}));
+            render(matches.sort((a,b) => a.timestamp - b.timestamp));
         });
 
-        // --- 2. 描画ロジック ---
-        function renderBracket(matches) {
-            const container = document.getElementById('bracket');
-            if (matches.length === 0) {
-                container.innerHTML = `<p class="col-span-full text-center text-gray-500">試合が組まれていません。管理画面から参加者を追加してください。</p>`;
-                return;
-            }
+        // --- 4. 描画 ---
+        function render(matches) {
+            const container = document.getElementById('bracketDisplay');
+            container.innerHTML = matches.map(m => `
+                <div class="match-card p-5 rounded-xl transition-all ${m.winner ? 'winner-card shadow-lg' : ''}">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img src="${m.p1Icon}" class="w-10 h-10 rounded-full border-2 border-slate-700 object-cover shadow-inner bg-slate-800">
+                                <span class="font-bold text-lg ${m.winner === 'p1' ? 'text-green-400' : ''}">${m.p1}</span>
+                            </div>
+                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p1')" class="text-[10px] bg-blue-600/20 text-blue-400 border border-blue-600/50 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition">SET WINNER</button>` : ''}
+                        </div>
 
-            container.innerHTML = matches.map(match => `
-                <div class="match-card p-4 rounded shadow-lg ${match.winner ? 'winner' : ''}">
-                    <div class="text-xs text-gray-400 mb-2 uppercase tracking-widest">Match ${match.order}</div>
-                    <div class="flex justify-between items-center mb-3">
-                        <span class="font-bold ${match.winner === 'p1' ? 'text-green-400' : ''}">${match.p1 || 'TBD'}</span>
-                        ${isAdmin && !match.winner ? `<button onclick="setWinner('${match.id}', 'p1')" class="text-xs bg-blue-500 px-2 py-1 rounded">WIN</button>` : ''}
+                        <div class="flex items-center gap-4 px-2">
+                            <div class="h-[1px] flex-1 bg-slate-700"></div>
+                            <span class="cyber-font text-[10px] text-slate-500 italic font-bold">VS</span>
+                            <div class="h-[1px] flex-1 bg-slate-700"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <img src="${m.p2Icon}" class="w-10 h-10 rounded-full border-2 border-slate-700 object-cover shadow-inner bg-slate-800">
+                                <span class="font-bold text-lg ${m.winner === 'p2' ? 'text-green-400' : ''}">${m.p2}</span>
+                            </div>
+                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p2')" class="text-[10px] bg-blue-600/20 text-blue-400 border border-blue-600/50 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition">SET WINNER</button>` : ''}
+                        </div>
                     </div>
-                    <div class="text-center text-gray-600 my-1 text-xs font-bold italic">VS</div>
-                    <div class="flex justify-between items-center">
-                        <span class="font-bold ${match.winner === 'p2' ? 'text-green-400' : ''}">${match.p2 || 'TBD'}</span>
-                        ${isAdmin && !match.winner ? `<button onclick="setWinner('${match.id}', 'p2')" class="text-xs bg-blue-500 px-2 py-1 rounded">WIN</button>` : ''}
-                    </div>
+                    ${m.winner ? `<div class="absolute -right-2 -top-2 bg-green-500 text-black text-[10px] font-black px-4 py-1 rotate-12 shadow-lg">WINNER</div>` : ''}
                 </div>
             `).join('');
         }
 
-        // --- 3. 管理用アクション（グローバル関数化） ---
-        window.setWinner = async (matchId, playerKey) => {
+        // --- 5. アクション ---
+        window.setWinner = async (matchId, winnerKey) => {
             await updateDoc(doc(db, "tournaments", "current", "matches", matchId), {
-                winner: playerKey
+                winner: winnerKey
             });
-            // ここに「次の試合への自動進出ロジック」を後で追加可能
         };
 
-        // 飛び入り追加（簡易的なマッチ生成）
-        document.getElementById('addGuestBtn').onclick = async () => {
-            const name = document.getElementById('guestName').value;
-            if(!name) return;
-            const id = Date.now().toString();
-            await setDoc(doc(db, "tournaments", "current", "matches", id), {
-                p1: name,
-                p2: "（募集中）",
-                order: Date.now(),
-                winner: null
-            });
-            document.getElementById('guestName').value = "";
-        };
-
-        // リセット
         document.getElementById('resetBtn').onclick = async () => {
-            if(!confirm("全試合を削除しますか？")) return;
+            if(!confirm("トーナメントをリセットしますか？")) return;
             const q = await getDocs(collection(db, "tournaments", "current", "matches"));
             q.forEach(async (d) => await deleteDoc(d.ref));
         };
