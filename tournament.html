@@ -3,104 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Urakata Tournament Pro</title>
+    <title>Tournament Board</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap');
         
         :root {
-            --bg-dark: #020617;
-            --accent-blue: #3b82f6;
+            --bg-dark: #000000;
+            --card-bg: #111111;
+            --accent-blue: #2563eb;
             --accent-green: #10b981;
-            --accent-red: #ef4444;
         }
 
         body { 
             background-color: var(--bg-dark); 
-            color: #f8fafc; 
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: #ffffff; 
+            font-family: 'Noto Sans JP', sans-serif;
+            overflow-x: hidden;
         }
 
         .cyber-font { font-family: 'Orbitron', sans-serif; }
 
-        /* トーナメントカード */
+        /* 対戦カード：表示側はよりシンプルで高級感のあるデザインに */
         .match-card { 
-            background: linear-gradient(145deg, #0f172a, #1e293b); 
-            border: 1px solid #334155; 
+            background: var(--card-bg); 
+            border: 1px solid #222; 
             position: relative; 
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .match-card::before {
-            content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background: var(--accent-blue);
-        }
-        .winner-card { border-color: var(--accent-green); box-shadow: 0 0 30px rgba(16, 185, 129, 0.2); }
-        .winner-card::before { background: var(--accent-green); }
 
-        /* 拡大表示モード用 */
+        .winner-card { 
+            border-color: var(--accent-green); 
+            box-shadow: 0 0 40px rgba(16, 185, 129, 0.1); 
+        }
+
+        /* 集中モード：試合を画面いっぱいに表示 */
         .focus-mode .match-card {
-            transform: scale(1.1);
-            max-width: 600px;
-            margin: 0 auto;
+            transform: scale(1.2);
+            max-width: 800px;
+            margin: 10vh auto;
+            border-width: 2px;
         }
 
-        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        .fade-in { animation: fadeIn 0.8s ease-out forwards; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* 管理者用：表示を区別 */
+        .admin-only { display: none; }
+        .is-admin .admin-only { display: block; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-6 md:p-12">
 
     <div id="app" class="max-w-7xl mx-auto">
-        <header class="flex justify-between items-end mb-10 border-b border-blue-900/50 pb-6">
+        <header class="flex justify-between items-center mb-16 border-b border-white/10 pb-8">
             <div>
-                <h1 class="text-4xl font-black cyber-font tracking-tighter text-blue-500">
-                    URAKATA <span class="text-white text-2xl">SYSTEM</span>
-                </h1>
-                <p id="viewStatus" class="text-gray-500 text-[10px] mt-1 tracking-[0.3em] uppercase">Loading System...</p>
+                <h1 id="mainTitle" class="text-5xl font-black tracking-tighter cyber-font">MATCH <span class="text-blue-600">BOARD</span></h1>
+                <p id="adminStatus" class="admin-only text-red-500 text-[10px] mt-2 font-bold tracking-widest uppercase">Admin Control Mode</p>
             </div>
-            <div id="modeIndicator" class="px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-blue-500 text-blue-500">
-                Display Mode
-            </div>
+            <div id="viewStatus" class="admin-only text-[10px] font-bold px-3 py-1 bg-white/5 rounded border border-white/10"></div>
         </header>
 
-        <section id="adminSection" class="hidden mb-12 space-y-6 fade-in">
-            <div class="bg-slate-900 border border-slate-700 p-6 rounded-3xl flex flex-wrap gap-6 items-center justify-between shadow-2xl">
-                <div class="flex items-center gap-4">
-                    <span class="text-xs font-bold text-slate-400 cyber-font">VIEW MODE:</span>
-                    <div class="flex bg-slate-800 rounded-lg p-1 border border-slate-700">
-                        <button onclick="updateViewMode('all')" id="btn-view-all" class="px-4 py-1 rounded-md text-[10px] font-bold uppercase transition-all">Overall</button>
-                        <button onclick="updateViewMode('focus')" id="btn-view-focus" class="px-4 py-1 rounded-md text-[10px] font-bold uppercase transition-all">Current Match</button>
+        <section id="adminSection" class="admin-only mb-16 space-y-6 fade-in">
+            <div class="bg-blue-900/20 border border-blue-500/30 p-8 rounded-3xl shadow-2xl">
+                <h2 class="text-sm font-black mb-6 cyber-font text-blue-400 tracking-widest">REGISTRATION / CONTROL</h2>
+                
+                <div class="flex flex-col lg:flex-row items-stretch gap-6 mb-8">
+                    <div class="flex-1 space-y-3 bg-black/40 p-4 rounded-xl border border-white/5">
+                        <select id="userSelect1" class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500"></select>
+                        <input type="text" id="guestName1" placeholder="名前を手入力" class="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none">
                     </div>
-                </div>
-                <button id="resetBtn" class="text-red-500 hover:text-white hover:bg-red-600 border border-red-900/50 px-4 py-2 rounded-lg text-[10px] font-bold transition-all uppercase">
-                    Reset Tournament
-                </button>
-            </div>
-
-            <div class="bg-slate-900/80 backdrop-blur-md p-8 rounded-3xl border border-slate-700 shadow-2xl">
-                <div class="flex flex-col lg:flex-row items-stretch gap-6">
-                    <div class="flex-1 space-y-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                        <select id="userSelect1" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500"></select>
-                        <input type="text" id="guestName1" placeholder="名前を手入力" class="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none">
-                    </div>
-                    <div class="flex items-center justify-center cyber-font text-2xl font-black italic text-slate-700">VS</div>
-                    <div class="flex-1 space-y-3 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                        <select id="userSelect2" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500"></select>
-                        <input type="text" id="guestName2" placeholder="名前を手入力" class="w-full bg-slate-900/50 border border-slate-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none">
+                    <div class="flex items-center justify-center cyber-font text-2xl font-black italic text-neutral-700">VS</div>
+                    <div class="flex-1 space-y-3 bg-black/40 p-4 rounded-xl border border-white/5">
+                        <select id="userSelect2" class="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500"></select>
+                        <input type="text" id="guestName2" placeholder="名前を手入力" class="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-3 py-2 text-sm text-gray-400 outline-none">
                     </div>
                     <button id="createMatchBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-10 py-4 rounded-xl font-black cyber-font text-sm transition-all shadow-lg active:scale-95">CREATE</button>
+                </div>
+
+                <div class="flex flex-wrap gap-4 pt-6 border-t border-white/5 items-center justify-between">
+                    <div class="flex gap-2">
+                        <button onclick="updateViewMode('all')" class="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded text-[10px] font-bold uppercase">View Overall</button>
+                        <button onclick="updateViewMode('focus')" class="bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded text-[10px] font-bold uppercase">Focus Match</button>
+                    </div>
+                    <button id="resetBtn" class="text-red-600 hover:text-red-400 text-[10px] font-bold uppercase">[ Danger: Reset All ]</button>
                 </div>
             </div>
         </section>
 
-        <main id="bracketDisplay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <main id="bracketDisplay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             </main>
-
-        <footer class="mt-20 text-center opacity-30">
-            <p class="text-[10px] cyber-font">&copy; 2026 裏方部 By Sorairo Studio</p>
-        </footer>
     </div>
 
     <script type="module">
@@ -120,36 +115,26 @@
         const db = getFirestore(app);
 
         const isAdmin = new URLSearchParams(window.location.search).get('mode') === 'admin';
-        const DEFAULT_ICON = "https://ui-avatars.com/api/?background=1e293b&color=3b82f6&bold=true&name=";
+        const DEFAULT_ICON = "https://ui-avatars.com/api/?background=222&color=fff&bold=true&name=";
         let currentViewMode = "all";
 
         if (isAdmin) {
-            document.getElementById('adminSection').classList.remove('hidden');
-            const indicator = document.getElementById('modeIndicator');
-            indicator.innerText = "Admin Console";
-            indicator.classList.replace('border-blue-500', 'border-red-500');
-            indicator.classList.replace('text-blue-500', 'text-red-500');
+            document.body.classList.add('is-admin');
             loadUsers();
         }
 
-        // --- 1. 設定同期 (View Mode) ---
+        // --- 設定同期 ---
         onSnapshot(doc(db, "tournaments", "settings"), (doc) => {
             const data = doc.data() || { viewMode: 'all' };
             currentViewMode = data.viewMode;
-            document.getElementById('viewStatus').innerText = `Current View: ${currentViewMode.toUpperCase()}`;
-            
-            if (isAdmin) {
-                const isAll = currentViewMode === 'all';
-                document.getElementById('btn-view-all').className = isAll ? 'px-4 py-1 rounded-md text-[10px] font-bold uppercase bg-blue-600 text-white' : 'px-4 py-1 rounded-md text-[10px] font-bold uppercase text-slate-400 hover:text-white';
-                document.getElementById('btn-view-focus').className = !isAll ? 'px-4 py-1 rounded-md text-[10px] font-bold uppercase bg-blue-600 text-white' : 'px-4 py-1 rounded-md text-[10px] font-bold uppercase text-slate-400 hover:text-white';
-            }
+            document.getElementById('viewStatus').innerText = `MODE: ${currentViewMode.toUpperCase()}`;
         });
 
         window.updateViewMode = async (mode) => {
             await setDoc(doc(db, "tournaments", "settings"), { viewMode: mode }, { merge: true });
         };
 
-        // --- 2. ユーザー取得 ---
+        // --- ユーザー取得 ---
         async function loadUsers() {
             const selects = [document.getElementById('userSelect1'), document.getElementById('userSelect2')];
             const snap = await getDocs(collection(db, "users"));
@@ -166,7 +151,7 @@
             });
         }
 
-        // --- 3. 試合の操作 (作成・削除・勝敗) ---
+        // --- 試合操作 ---
         document.getElementById('createMatchBtn').onclick = async () => {
             const getP = (n) => {
                 const s = document.getElementById(`userSelect${n}`);
@@ -177,7 +162,7 @@
                 };
             };
             const p1 = getP(1), p2 = getP(2);
-            if (!p1.name || !p2.name) return alert("名前を入力してください");
+            if (!p1.name || !p2.name) return;
 
             const id = "m_" + Date.now();
             await setDoc(doc(db, "tournaments", "current", "matches", id), {
@@ -189,14 +174,14 @@
         };
 
         window.deleteMatch = async (id) => {
-            if (confirm("この試合を削除しますか？")) await deleteDoc(doc(db, "tournaments", "current", "matches", id));
+            if (confirm("試合を削除しますか？")) await deleteDoc(doc(db, "tournaments", "current", "matches", id));
         };
 
         window.setWinner = async (id, key) => {
             await updateDoc(doc(db, "tournaments", "current", "matches", id), { winner: key });
         };
 
-        // --- 4. リアルタイム表示 ---
+        // --- 描画 ---
         onSnapshot(query(collection(db, "tournaments", "current", "matches"), orderBy("createdAt", "asc")), (snap) => {
             const matches = [];
             snap.forEach(d => matches.push({ id: d.id, ...d.data() }));
@@ -205,54 +190,57 @@
 
         function render(matches) {
             const container = document.getElementById('bracketDisplay');
-            container.className = currentViewMode === 'focus' ? "flex flex-col items-center justify-center min-h-[50vh] focus-mode" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8";
+            container.className = currentViewMode === 'focus' ? "flex flex-col items-center justify-center min-h-[60vh] focus-mode" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10";
 
-            // Focusモードの場合は、未完了の最新の試合のみを表示。なければ全体を表示。
             let displayMatches = matches;
             if (currentViewMode === 'focus') {
                 const active = matches.find(m => !m.winner);
-                if (active) displayMatches = [active];
+                displayMatches = active ? [active] : matches;
             }
 
             container.innerHTML = displayMatches.map(m => `
-                <div class="match-card p-6 rounded-2xl fade-in ${m.winner ? 'winner-card' : ''} w-full">
-                    <div class="flex flex-col gap-6">
+                <div class="match-card p-8 rounded-3xl fade-in ${m.winner ? 'winner-card' : ''} w-full">
+                    <div class="flex flex-col gap-8">
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <img src="${m.p1Icon}" class="w-12 h-12 rounded-full border-2 border-slate-800 object-cover bg-slate-900">
-                                <span class="text-xl font-bold ${m.winner === 'p1' ? 'text-green-400' : ''}">${m.p1}</span>
+                            <div class="flex items-center gap-5">
+                                <img src="${m.p1Icon}" class="w-16 h-16 rounded-full border-2 border-white/10 object-cover bg-neutral-900">
+                                <span class="text-2xl font-black ${m.winner === 'p1' ? 'text-green-400' : ''}">${m.p1}</span>
                             </div>
-                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p1')" class="bg-blue-600/20 text-blue-400 border border-blue-600/50 px-3 py-1 rounded text-[9px] font-black uppercase tracking-tighter hover:bg-blue-600 hover:text-white transition-all">Set Win</button>` : ''}
+                            <div class="admin-only">
+                                ${!m.winner ? `<button onclick="setWinner('${m.id}', 'p1')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-bold">WIN</button>` : ''}
+                            </div>
                         </div>
 
-                        <div class="flex items-center gap-4 opacity-30">
-                            <div class="h-[1px] flex-1 bg-slate-600"></div>
-                            <span class="cyber-font text-[9px] font-black italic">VS</span>
-                            <div class="h-[1px] flex-1 bg-slate-600"></div>
+                        <div class="flex items-center gap-4 opacity-20">
+                            <div class="h-[1px] flex-1 bg-white"></div>
+                            <span class="cyber-font text-[10px] font-black italic">VS</span>
+                            <div class="h-[1px] flex-1 bg-white"></div>
                         </div>
 
                         <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <img src="${m.p2Icon}" class="w-12 h-12 rounded-full border-2 border-slate-800 object-cover bg-slate-900">
-                                <span class="text-xl font-bold ${m.winner === 'p2' ? 'text-green-400' : ''}">${m.p2}</span>
+                            <div class="flex items-center gap-5">
+                                <img src="${m.p2Icon}" class="w-16 h-16 rounded-full border-2 border-white/10 object-cover bg-neutral-900">
+                                <span class="text-2xl font-black ${m.winner === 'p2' ? 'text-green-400' : ''}">${m.p2}</span>
                             </div>
-                            ${isAdmin && !m.winner ? `<button onclick="setWinner('${m.id}', 'p2')" class="bg-blue-600/20 text-blue-400 border border-blue-600/50 px-3 py-1 rounded text-[9px] font-black uppercase tracking-tighter hover:bg-blue-600 hover:text-white transition-all">Set Win</button>` : ''}
+                            <div class="admin-only">
+                                ${!m.winner ? `<button onclick="setWinner('${m.id}', 'p2')" class="bg-blue-600 px-3 py-1 rounded text-[10px] font-bold">WIN</button>` : ''}
+                            </div>
                         </div>
                     </div>
 
-                    ${isAdmin ? `
-                        <button onclick="deleteMatch('${m.id}')" class="absolute -top-2 -left-2 bg-slate-800 text-red-500 w-6 h-6 rounded-full border border-slate-700 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all text-xs">×</button>
-                    ` : ''}
+                    <div class="admin-only absolute -top-3 -left-3">
+                        <button onclick="deleteMatch('${m.id}')" class="bg-red-600 text-white w-8 h-8 rounded-full border border-white/20 flex items-center justify-center font-bold shadow-lg">×</button>
+                    </div>
 
                     ${m.winner ? `
-                        <div class="absolute top-2 right-2 px-3 py-1 bg-green-500 text-slate-950 text-[10px] font-black rounded uppercase tracking-widest shadow-lg">Victory</div>
+                        <div class="absolute -top-3 -right-3 px-5 py-2 bg-green-500 text-black text-xs font-black rounded-full shadow-2xl animate-bounce">VICTORY</div>
                     ` : ''}
                 </div>
             `).join('');
         }
 
         document.getElementById('resetBtn').onclick = async () => {
-            if (confirm("全試合データを削除しますか？")) {
+            if (confirm("全データをリセットしますか？")) {
                 const q = await getDocs(collection(db, "tournaments", "current", "matches"));
                 q.forEach(async (d) => await deleteDoc(d.ref));
             }
