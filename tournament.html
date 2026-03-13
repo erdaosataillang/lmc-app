@@ -1,1 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Manager - 裏方部</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bracket-node { border: 1px solid #ccc; padding: 10px; margin: 10px; border-radius: 5px; background: white; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
 
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center text-blue-800">トーナメント管理システム</h1>
+
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <h2 class="text-xl font-bold mb-4">参加者エントリー</h2>
+            
+            <div class="flex gap-4 mb-4">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium mb-1">既存ユーザーから追加</label>
+                    <select id="userSelect" class="w-full border p-2 rounded">
+                        <option value="">読み込み中...</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium mb-1">飛び入り（手入力）</label>
+                    <input type="text" id="guestName" placeholder="名前を入力" class="w-full border p-2 rounded">
+                </div>
+                <div class="flex items-end">
+                    <button id="addBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">追加</button>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h3 class="font-bold mb-2">現在の参加者 (<span id="count">0</span>名)</h3>
+                <ul id="participantList" class="flex flex-wrap gap-2"></ul>
+            </div>
+
+            <button id="generateBtn" class="mt-6 w-full bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">
+                トーナメント表を作成
+            </button>
+        </div>
+
+        <div id="bracketArea" class="overflow-x-auto bg-white p-8 rounded-xl shadow-md min-h-[400px]">
+            <p class="text-gray-400 text-center">参加者を追加して「作成」を押してください</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 先ほどのConfig
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+            authDomain: "urakata-app.firebaseapp.com",
+            projectId: "urakata-app",
+            storageBucket: "urakata-app.firebasestorage.app",
+            messagingSenderId: "407777765696",
+            appId: "1:407777765696:web:045c2d94729022b4eab2a5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let participants = [];
+
+        // 1. 既存ユーザーの取得
+        async function loadUsers() {
+            const userSelect = document.getElementById('userSelect');
+            try {
+                const querySnapshot = await getDocs(collection(db, "users"));
+                userSelect.innerHTML = '<option value="">選択してください</option>';
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const option = document.createElement('option');
+                    option.value = doc.id;
+                    option.text = data.name || "名称未設定";
+                    userSelect.appendChild(option);
+                });
+            } catch (e) {
+                console.error("Error loading users: ", e);
+                userSelect.innerHTML = '<option>エラーが発生しました</option>';
+            }
+        }
+
+        // 2. リストへの追加処理
+        document.getElementById('addBtn').addEventListener('click', () => {
+            const select = document.getElementById('userSelect');
+            const guest = document.getElementById('guestName');
+            
+            let name = "";
+            let id = "";
+
+            if (guest.value) {
+                name = guest.value;
+                id = "guest_" + Date.now();
+                guest.value = "";
+            } else if (select.value) {
+                name = select.options[select.selectedIndex].text;
+                id = select.value;
+            }
+
+            if (name && !participants.find(p => p.id === id)) {
+                participants.push({ id, name });
+                updateList();
+            }
+        });
+
+        function updateList() {
+            const list = document.getElementById('participantList');
+            document.getElementById('count').innerText = participants.length;
+            list.innerHTML = participants.map(p => 
+                `<li class="bg-gray-200 px-3 py-1 rounded-full text-sm">${p.name}</li>`
+            ).join('');
+        }
+
+        // 3. トーナメント生成ロジック
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            if (participants.length < 2) return alert("2名以上追加してください");
+
+            // シャッフル
+            const shuffled = [...participants].sort(() => Math.random() - 0.5);
+            
+            // Firebaseに保存（保存例）
+            try {
+                const docRef = await addDoc(collection(db, "tournaments"), {
+                    title: "新規トーナメント",
+                    members: shuffled,
+                    createdAt: serverTimestamp()
+                });
+                console.log("Saved with ID: ", docRef.id);
+            } catch (e) { console.error(e); }
+
+            renderBracket(shuffled);
+        });
+
+        function renderBracket(members) {
+            const area = document.getElementById('bracketArea');
+            area.innerHTML = `<h3 class="text-center font-bold mb-4">1回戦の組み合わせ</h3>`;
+            
+            const listDiv = document.createElement('div');
+            listDiv.className = "flex flex-col items-center";
+
+            for (let i = 0; i < members.length; i += 2) {
+                const p1 = members[i].name;
+                const p2 = members[i+1] ? members[i+1].name : "--- (シード) ---";
+                
+                listDiv.innerHTML += `
+                    <div class="bracket-node w-64 shadow-sm border-l-4 border-l-blue-500">
+                        <div class="pb-1 border-b text-sm font-semibold">${p1}</div>
+                        <div class="pt-1 text-sm text-gray-600">${p2}</div>
+                    </div>
+                `;
+            }
+            area.appendChild(listDiv);
+        }
+
+        loadUsers();
+    </script>
+</body>
+</html>
