@@ -396,11 +396,23 @@
                 if (!currentFeeSettings.year) currentFeeSettings.year = getFiscalYear();
 
                 document.getElementById('feeSettingYear').value=currentFeeSettings.year; 
+                document.getElementById('display-fee-year').innerText = currentFeeSettings.year;
                 
                 document.getElementById('feeSettingTerm1').value=currentFeeSettings.term1_amount; 
                 document.getElementById('feeSettingTerm2').value=currentFeeSettings.term2_amount; 
                 loadFeeSummary(); 
             }catch(e){console.error(e)} 
+        };
+
+        window.adjustFeeYear = (diff) => {
+            const input = document.getElementById('feeSettingYear');
+            const display = document.getElementById('display-fee-year');
+            let val = parseInt(input.value) || getFiscalYear();
+            val += diff;
+            input.value = val;
+            display.innerText = val;
+            currentFeeSettings.year = val;
+            loadFeeSummary();
         };
 
         async function loadFeeSummary(){ if(allUsersCache.length===0)await refreshAllUsersCache(); const year=parseInt(document.getElementById('feeSettingYear').value)||getFiscalYear(); const yearLabel=document.getElementById('feeSummaryYearLabel'); if(yearLabel)yearLabel.innerText=year; const t1=parseInt(currentFeeSettings.term1_amount)||0, t2=parseInt(currentFeeSettings.term2_amount)||0, k1=`${year}_1`, k2=`${year}_2`; let count1=0, count2=0, totalUsers=allUsersCache.length; allUsersCache.forEach(u=>{ if(u.feeStatus){ if(u.feeStatus[k1])count1++; if(u.feeStatus[k2])count2++; } }); const sum1=count1*t1, sum2=count2*t2, total=sum1+sum2; let maxTotal=0; if(t1>0)maxTotal+=totalUsers*t1; if(t2>0)maxTotal+=totalUsers*t2; let percent=(maxTotal>0)?Math.round((total/maxTotal)*100):0; document.getElementById('feeTotalAmount').innerText=total.toLocaleString(); document.getElementById('feeTotalTerm1').innerText='¥'+sum1.toLocaleString(); document.getElementById('feeCountTerm1').innerText=`(${count1}/${totalUsers}人)`; document.getElementById('feeTotalTerm2').innerText='¥'+sum2.toLocaleString(); document.getElementById('feeCountTerm2').innerText=`(${count2}/${totalUsers}人)`; document.getElementById('feeProgressPercent').innerText=`${percent}%`; document.getElementById('feeProgressChart').style.background=`conic-gradient(rgba(255,255,255,0.9) 0% ${percent}%, rgba(255,255,255,0.2) ${percent}% 100%)`; }
