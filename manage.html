@@ -640,7 +640,7 @@
                     const e = doc.data();
                     const opt = document.createElement('option');
                     opt.value = doc.id;
-                    opt.text = `${e.event} (${e.startDate})`;
+                    opt.text = `${e.event || e.name || '名称未設定'} (${e.startDate || '日付未定'})`;
                     if (currentBasicConfig.activeEventId === doc.id) opt.selected = true;
                     eventSelect.appendChild(opt);
                 });
@@ -666,8 +666,13 @@
             if (!y) return await showCustomAlert("年度を入力してください", "入力エラー");
             
             try {
-                // In real implementation:
-                // await setDoc(doc(db, "system", "basic"), { currentYear: y, activeEventId: eId }, { merge: true });
+                // Save to system/settings
+                await setDoc(doc(db, "system", "settings"), { 
+                    currentYear: y, 
+                    activeEventId: eId || null,
+                    updatedAt: serverTimestamp(),
+                    updatedBy: currentUser 
+                }, { merge: true });
                 
                 currentBasicConfig.currentYear = y;
                 currentBasicConfig.activeEventId = eId;
