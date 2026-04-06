@@ -34,6 +34,9 @@
         .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
         .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
         .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+        .btn-menu-item { background: #f8f9fa; color: #1f1f1f; border: 1px solid #dadce0; padding: 16px; border-radius: 12px; width: 100%; margin-bottom: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: flex-start; gap: 12px; font-size: 15px; transition: background-color 0.2s; }
+        .btn-menu-item:active { background-color: #e8eaed; }
+        .btn-menu-item .material-icons { color: #0b57d0; }
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 80px; height: 80px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; } .image-picker i { font-size: 24px; z-index: 1; } .image-picker span { font-size: 10px; z-index: 1; margin-top: 4px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
@@ -139,7 +142,7 @@
             </div>
         </div>
         
-        <div class="fab" onclick="openBandModal()"><span class="material-icons">add</span></div>
+        <div class="fab" onclick="openFabMenu()"><span class="material-icons">add</span></div>
     </div>
 
     <div class="bottom-nav">
@@ -151,6 +154,41 @@
     </div>
 
     <!-- Modals -->
+    <!-- FAB Menu Modal -->
+    <div id="modal-fab-menu" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-fab-menu')">
+        <div class="modal-content" style="padding-bottom: 40px;">
+            <h3 style="margin-top:0; margin-bottom: 20px;">バンドの追加</h3>
+            <button class="btn-menu-item" onclick="openEventRegisterModal()">
+                <span class="material-icons">event_available</span> 既存のバンドをイベントに出演登録
+            </button>
+            <button class="btn-menu-item" onclick="closeModal('modal-fab-menu'); openBandModal();">
+                <span class="material-icons">group_add</span> 新しいバンドを結成する
+            </button>
+            <button class="btn-secondary" style="margin-top: 10px;" onclick="closeModal('modal-fab-menu')">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- Event Register Modal -->
+    <div id="modal-event-register" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-register')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">イベントに出演登録</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">すでに結成済みのバンドを、実施中のイベントに紐付けます。</p>
+            
+            <div class="form-group">
+                <label class="form-label">出演するイベント</label>
+                <select id="selectRegisterEvent" class="form-input"></select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">登録するバンド</label>
+                <select id="selectRegisterBand" class="form-input"></select>
+            </div>
+
+            <button class="btn-primary" onclick="saveEventRegistration()">登録する</button>
+            <button class="btn-secondary" onclick="closeModal('modal-event-register')">キャンセル</button>
+        </div>
+    </div>
+
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')"><div class="modal-content"><h3 style="margin-top:0;">バンド結成</h3><p style="font-size:12px; color:#5f6368; margin-bottom:20px;">リストから選ぶか、後から招待リンクを送ってください。</p><div class="image-picker-area"><div class="image-picker" onclick="document.getElementById('bandIconInput').click()"><i class="material-icons">add_a_photo</i><span>写真</span><img id="previewBandIcon" class="hidden" src=""></div><input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')"></div><div class="form-group"><label class="form-label">バンド名</label><input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム"></div><div class="form-group"><label class="form-label">メンバーを検索</label><input type="text" id="bandMemberSearchInput" class="form-input" placeholder="氏名またはかなで検索..."></div><div class="form-group"><label class="form-label">メンバー選択 (登録済みユーザー)</label><div class="member-select-list" id="userSelectList"></div></div><button class="btn-primary" onclick="saveBand()">作成する</button><button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button></div></div>
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
@@ -601,6 +639,85 @@
             });
             if(archiveEl && archiveEl.children.length === 0) archiveEl.innerHTML = `<div style="text-align:center; padding:40px; color:#999;">なし</div>`;
         }
+
+        // --- FAB Menu Logic ---
+        window.openFabMenu = () => {
+            openModal('modal-fab-menu');
+        };
+
+        window.openEventRegisterModal = () => {
+            closeModal('modal-fab-menu');
+            
+            const eventSelect = document.getElementById('selectRegisterEvent');
+            eventSelect.innerHTML = "";
+            if (targetEvents.length === 0) {
+                eventSelect.innerHTML = '<option value="">実施中のイベントがありません</option>';
+                eventSelect.disabled = true;
+            } else {
+                eventSelect.disabled = false;
+                targetEvents.forEach(ev => {
+                    const opt = document.createElement('option');
+                    opt.value = ev.id;
+                    opt.innerText = ev.name;
+                    eventSelect.appendChild(opt);
+                });
+            }
+
+            const bandSelect = document.getElementById('selectRegisterBand');
+            bandSelect.innerHTML = "";
+            const activeBands = myBandsAll.filter(b => !b.isArchived);
+            if (activeBands.length === 0) {
+                bandSelect.innerHTML = '<option value="">活動中のバンドがありません</option>';
+                bandSelect.disabled = true;
+            } else {
+                bandSelect.disabled = false;
+                activeBands.forEach(b => {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.innerText = b.name;
+                    bandSelect.appendChild(opt);
+                });
+            }
+
+            openModal('modal-event-register');
+        };
+
+        window.saveEventRegistration = async () => {
+            const eventId = document.getElementById('selectRegisterEvent').value;
+            const bandId = document.getElementById('selectRegisterBand').value;
+
+            if (!eventId || !bandId) return await showCustomAlert("イベントとバンドを選択してください。");
+
+            const selectedBand = myBandsAll.find(b => b.id === bandId);
+            if (selectedBand && selectedBand.events && selectedBand.events.includes(eventId)) {
+                return await showCustomAlert("このバンドは既に選択したイベントに登録されています。");
+            }
+
+            try {
+                const btn = document.querySelector('#modal-event-register .btn-primary');
+                btn.innerText = "登録中...";
+                btn.disabled = true;
+
+                await updateDoc(doc(db, "bands", bandId), {
+                    events: arrayUnion(eventId)
+                });
+
+                await showCustomAlert("イベントに出演登録しました！");
+                closeModal('modal-event-register');
+                
+                const eventIndex = targetEvents.findIndex(ev => ev.id === eventId);
+                if(eventIndex !== -1) {
+                    switchBandTab(eventIndex);
+                }
+
+            } catch(e) {
+                await showCustomAlert("登録エラー: " + e.message, "エラー");
+            } finally {
+                const btn = document.querySelector('#modal-event-register .btn-primary');
+                btn.innerText = "登録する";
+                btn.disabled = false;
+            }
+        };
         
         window.openBandModal=()=>{ document.getElementById('inputBandName').value=""; document.getElementById('bandMemberSearchInput').value=""; document.getElementById('userSelectList').innerHTML="読み込み中..."; tempBandIconBlob=null; document.getElementById('previewBandIcon').classList.add('hidden'); loadUserList('userSelectList'); openModal('modal-band'); };
         async function loadUserList(tid='userSelectList',ex=[]){ const list=document.getElementById(tid), qs=await getDocs(collection(db,"users")); list.innerHTML=""; let c=0; qs.forEach(doc=>{ const u=doc.data(); if(doc.id===currentUser||ex.includes(doc.id))return; const div=document.createElement('div'); div.className='member-option'; div.dataset.uid=doc.id; div.dataset.uname=u.name; div.dataset.ukana=u.kana||""; div.onclick=()=>{div.classList.toggle('selected'); div.querySelector('.material-icons').innerText=div.classList.contains('selected')?'check_box':'check_box_outline_blank';}; div.innerHTML=`<span class="material-icons member-check">check_box_outline_blank</span><img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" style="width:32px; height:32px; border-radius:50%; margin-right:10px; object-fit:cover;"><div>${u.name} <span style="font-size:10px; color:#999;">${u.part?`(${getPartLabel(u.part)})`:''}</span></div>`; list.appendChild(div); c++; }); if(c===0)list.innerHTML='<div style="padding:10px; color:#999;">なし</div>'; }
