@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (Excel出力用) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
     <style>
@@ -70,12 +72,17 @@
                 </div>
 
                 <!-- 表示切替 & フィルタ -->
-                <div class="flex flex-wrap items-center gap-6">
-                    <!-- CSVダウンロードボタン -->
-                    <button id="csv-download-btn" class="hidden px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border border-indigo-100">
-                        <i class="fa-solid fa-file-csv"></i> 
-                        <span>CSVダウンロード (<span id="selected-count">0</span>)</span>
-                    </button>
+                <div class="flex flex-wrap items-center gap-4">
+                    <!-- アクションボタン -->
+                    <div id="selection-actions" class="hidden flex items-center gap-2">
+                        <button id="excel-download-btn" class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border border-emerald-100">
+                            <i class="fa-solid fa-file-excel"></i> Excel出力 (提出用)
+                        </button>
+                        <button id="csv-download-btn" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border border-indigo-100">
+                            <i class="fa-solid fa-file-csv"></i> CSV
+                        </button>
+                        <span class="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-2 rounded-lg"><span id="selected-count">0</span> Selected</span>
+                    </div>
 
                     <!-- View Switcher -->
                     <div class="flex bg-gray-100 p-1 rounded-xl">
@@ -187,30 +194,27 @@
             return partMap[normalizedPart] || p;
         };
 
-        // 安全装置: 5秒経っても終わらなければローダーを消す
+        // 安全装置
         const safetyTimer = setTimeout(() => {
             const loader = document.getElementById('initial-loader');
             if (loader) loader.style.opacity = '0';
             setTimeout(() => loader?.remove(), 300);
         }, 5000);
 
-        // 初期化 (Firebaseパスを 'users' に戻し、安全な要素アクセスを行います)
+        // 初期化
         initAdminPage('users', (user) => {
             clearTimeout(safetyTimer);
 
-            // ステータス表示の更新（nullチェック付き）
             const statusIcon = document.getElementById('status-icon');
             const statusText = document.getElementById('status-text');
             if (statusIcon) statusIcon.classList.replace('text-gray-300', 'text-emerald-400');
             if (statusText) statusText.innerText = "System Live";
             
-            // 元のパス 'users' での監視
             onSnapshot(collection(db, 'users'), 
                 (s) => {
                     usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
                     renderUsers();
                     
-                    // データの読み込みが完了したらローダーを消す
                     const loader = document.getElementById('initial-loader');
                     if (loader) {
                         loader.style.opacity = '0';
@@ -386,12 +390,12 @@
 
         function updateSelectionUI() {
             const countLabel = document.getElementById('selected-count');
-            const downloadBtn = document.getElementById('csv-download-btn');
+            const actionsContainer = document.getElementById('selection-actions');
             const count = selectedUserIds.size;
             if (countLabel) countLabel.innerText = count;
-            if (downloadBtn) {
-                if (count > 0) downloadBtn.classList.remove('hidden');
-                else downloadBtn.classList.add('hidden');
+            if (actionsContainer) {
+                if (count > 0) actionsContainer.classList.remove('hidden');
+                else actionsContainer.classList.add('hidden');
             }
         }
 
@@ -566,7 +570,6 @@
             }
 
             try {
-                // 元のパス 'users' で更新
                 const userRef = doc(db, 'users', userId);
                 await updateDoc(userRef, {
                     name, kana, year, faculty, studentId, part, birthday
@@ -592,6 +595,83 @@
             const modal = document.getElementById('user-detail-modal');
             if (modal) modal.classList.add('hidden');
         };
+
+        // ----------------------------------------------------
+        // Excel Export Logic (University Template Style)
+        // ----------------------------------------------------
+
+        function downloadExcel() {
+            if (selectedUserIds.size === 0) return;
+            
+            // 選択されたユーザーを取得 & 学年順にソート
+            const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
+            selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
+
+            // エクセルワークブックの作成
+            const wb = XLSX.utils.book_new();
+            const ws_data = [
+                ["2026年度　部 員 名 簿", "", "", "", "", "", "", "", "", "", "", "クラブ名：LMC"],
+                ["", "学年", "", "役職", "学籍番号", "氏　名", "", "", "", "連絡先", "", ""],
+            ];
+
+            // 1. 上部の詳細テーブル (1〜10名)
+            for (let i = 1; i <= 10; i++) {
+                const user = selectedUsers[i - 1];
+                ws_data.push([
+                    i + ".0",
+                    user ? user.year : "",
+                    "",
+                    "", // 役職 (データがないので空)
+                    user ? user.studentId : "",
+                    user ? user.name : "",
+                    "", "", "", "", "", ""
+                ]);
+            }
+
+            ws_data.push([]); // 空行
+            ws_data.push(["", "学年", "学籍番号", "", "氏　名", "", "学年", "学籍番号", "", "氏　名", "", ""]);
+
+            // 2. 下部の2列リスト (11名〜)
+            const remainingUsers = selectedUsers.slice(10);
+            const leftList = remainingUsers.slice(0, 15);
+            const rightList = remainingUsers.slice(15, 30); // 暫定的に16-30まで
+
+            for (let i = 0; i < 15; i++) {
+                const uLeft = leftList[i];
+                const uRight = rightList[i];
+                const leftIdx = i + 1;
+                const rightIdx = i + 16;
+                
+                ws_data.push([
+                    leftIdx + ".0",
+                    uLeft ? uLeft.year : "",
+                    uLeft ? uLeft.studentId : "",
+                    "",
+                    uLeft ? uLeft.name : "",
+                    "",
+                    rightIdx + ".0",
+                    uRight ? uRight.year : "",
+                    uRight ? uRight.studentId : "",
+                    "",
+                    uRight ? uRight.name : "",
+                    ""
+                ]);
+            }
+
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+            // セルの結合設定 (テンプレートに近づける)
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // タイトル
+                { s: { r: 1, c: 5 }, e: { r: 1, c: 8 } }, // 詳細見出し：氏名
+                { s: { r: 1, c: 9 }, e: { r: 1, c: 11 } }, // 詳細見出し：連絡先
+            ];
+
+            XLSX.utils.book_append_sheet(wb, ws, "部員名簿");
+            
+            // ファイルの書き出し
+            XLSX.writeFile(wb, `部員名簿_提出用_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
 
         // ----------------------------------------------------
         // Event Listeners
@@ -642,6 +722,10 @@
             renderUsers();
         });
 
+        // エクセルダウンロード
+        document.getElementById('excel-download-btn')?.addEventListener('click', downloadExcel);
+
+        // CSVダウンロード
         document.getElementById('csv-download-btn')?.addEventListener('click', () => {
             if (selectedUserIds.size === 0) return;
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
