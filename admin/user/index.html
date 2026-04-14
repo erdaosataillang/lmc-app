@@ -8,8 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS (Excel出力用) -->
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
     <style>
@@ -75,13 +73,10 @@
                 <div class="flex flex-wrap items-center gap-4">
                     <!-- アクションボタン -->
                     <div id="selection-actions" class="hidden flex items-center gap-2">
-                        <button id="excel-download-btn" class="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border border-emerald-100">
-                            <i class="fa-solid fa-file-excel"></i> Excel出力 (提出用)
-                        </button>
                         <button id="csv-download-btn" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border border-indigo-100">
-                            <i class="fa-solid fa-file-csv"></i> CSV
+                            <i class="fa-solid fa-file-csv"></i> CSVダウンロード
                         </button>
-                        <span class="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-2 rounded-lg"><span id="selected-count">0</span> Selected</span>
+                        <span class="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-2 rounded-lg"><span id="selected-count">0</span> 選択中</span>
                     </div>
 
                     <!-- View Switcher -->
@@ -201,7 +196,7 @@
             setTimeout(() => loader?.remove(), 300);
         }, 5000);
 
-        // 初期化 (Firebaseパスを 'users' に戻し、安全な要素アクセスを行います)
+        // 初期化 (Firebaseパスを 'users' に固定)
         initAdminPage('users', (user) => {
             clearTimeout(safetyTimer);
 
@@ -211,7 +206,7 @@
             if (statusIcon) statusIcon.classList.replace('text-gray-300', 'text-emerald-400');
             if (statusText) statusText.innerText = "System Live";
             
-            // 元のパス 'users' での監視
+            // パス 'users' での監視
             onSnapshot(collection(db, 'users'), 
                 (s) => {
                     usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
@@ -601,101 +596,6 @@
         };
 
         // ----------------------------------------------------
-        // Excel Export Logic (Strictly following the provided layout)
-        // ----------------------------------------------------
-
-        function downloadExcel() {
-            if (selectedUserIds.size === 0) return;
-            
-            // 選択されたユーザーを取得 & 学年順にソート
-            const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
-            selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
-
-            const wb = XLSX.utils.book_new();
-            const ws_data = [];
-
-            // 1行目: タイトルとクラブ名
-            ws_data[0] = ["2026年度　部 員 名 簿　　　クラブ名：LMC", "", "", "", "", "", "", "", "", "", "", ""];
-            
-            // 2行目: 役職セクションのヘッダー
-            ws_data[1] = ["", "学年", "", "役職", "学籍番号", "氏　名", "", "", "", "連絡先", "", "＊継続願提出時に、入部が確定している部員のみ入力してください。"];
-            
-            // 3〜12行目: 役職セクション (空欄として保持)
-            for (let i = 2; i <= 11; i++) {
-                const note = (i === 2) ? "＊提出時以降の部員の増減は「部員変更届」で届け出てください。" : 
-                             (i === 3) ? "＊完成したExcelを「学生課」チャットに送信するか、ＵＳＢで学生課３番窓口に提出してください。" : "";
-                ws_data[i] = [(i - 1) + ".0", "", "", "", "", "", "", "", "", "", "", note];
-            }
-
-            // 13行目: 空白
-            ws_data[12] = [];
-
-            // 14行目: リストセクションのヘッダー
-            ws_data[13] = ["", "学年", "学籍番号", "", "氏　名", "", "学年", "学籍番号", "", "氏　名", "", ""];
-
-            // 15行目以降: 部員リスト (2列構成で流し込み)
-            const MAX_ROWS_PER_PAGE = 25; // 1ブロック25人x2列=50人想定
-            const totalMembers = selectedUsers.length;
-            
-            // 必要な行数を計算
-            const neededRows = Math.ceil(totalMembers / 2);
-            const blocks = Math.ceil(neededRows / MAX_ROWS_PER_PAGE);
-
-            let userIdx = 0;
-            for (let b = 0; b < blocks; b++) {
-                const startRow = 14 + (b * (MAX_ROWS_PER_PAGE + 1));
-                
-                // ブロックごとのヘッダー (最初のブロック以外)
-                if (b > 0) {
-                    ws_data[startRow - 1] = ["", "学年", "学籍番号", "", "氏　名", "", "学年", "学籍番号", "", "氏　名", "", ""];
-                }
-
-                for (let r = 0; r < MAX_ROWS_PER_PAGE; r++) {
-                    const currentRow = startRow + r;
-                    const leftIdx = (b * MAX_ROWS_PER_PAGE * 2) + r + 1;
-                    const rightIdx = leftIdx + MAX_ROWS_PER_PAGE;
-                    
-                    const uLeft = selectedUsers[leftIdx - 1];
-                    const uRight = selectedUsers[rightIdx - 1];
-
-                    ws_data[currentRow] = [
-                        leftIdx + ".0",
-                        uLeft ? uLeft.year : "",
-                        uLeft ? uLeft.studentId : "",
-                        "",
-                        uLeft ? uLeft.name : "",
-                        "",
-                        rightIdx + ".0",
-                        uRight ? uRight.year : "",
-                        uRight ? uRight.studentId : "",
-                        "",
-                        uRight ? uRight.name : "",
-                        ""
-                    ];
-                }
-                userIdx += (MAX_ROWS_PER_PAGE * 2);
-            }
-
-            const ws = XLSX.utils.aoa_to_sheet(ws_data);
-
-            // セルの結合設定 (テンプレート再現)
-            ws['!merges'] = [
-                { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // タイトル
-                { s: { r: 1, c: 5 }, e: { r: 1, c: 8 } }, // 氏名見出し
-                { s: { r: 1, c: 9 }, e: { r: 1, c: 11 } } // 連絡先見出し
-            ];
-
-            // 列幅の設定
-            ws['!cols'] = [
-                { wch: 4 }, { wch: 5 }, { wch: 12 }, { wch: 2 }, { wch: 15 }, 
-                { wch: 2 }, { wch: 4 }, { wch: 5 }, { wch: 12 }, { wch: 2 }, { wch: 15 }
-            ];
-
-            XLSX.utils.book_append_sheet(wb, ws, "部員名簿");
-            XLSX.writeFile(wb, `部員名簿_提出用_${new Date().toISOString().split('T')[0]}.xlsx`);
-        }
-
-        // ----------------------------------------------------
         // Event Listeners
         // ----------------------------------------------------
 
@@ -743,9 +643,6 @@
             else filteredData.forEach(u => selectedUserIds.delete(u.id));
             renderUsers();
         });
-
-        // エクセルダウンロード
-        document.getElementById('excel-download-btn')?.addEventListener('click', downloadExcel);
 
         // CSVダウンロード
         document.getElementById('csv-download-btn')?.addEventListener('click', () => {
