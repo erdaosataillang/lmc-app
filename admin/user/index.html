@@ -56,7 +56,7 @@
                 <p class="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">部員名簿・検索・管理</p>
             </div>
             <div id="db-status" class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                <i class="fa-solid fa-circle text-[8px] text-emerald-400"></i> System Live
+                <i id="status-icon" class="fa-solid fa-circle text-[8px] text-gray-300"></i> <span id="status-text">Connecting...</span>
             </div>
         </header>
 
@@ -163,8 +163,7 @@
         import { collection, onSnapshot, doc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const usersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-
+        
         let usersData = [];
         let filteredData = [];
         let userSearchQuery = "";
@@ -174,7 +173,7 @@
         let selectedUserIds = new Set();
         let isEditing = false;
 
-        // 担当楽器の日本語マップ
+        // 担当楽器の日本語マップ (すべて小文字のキーに対応)
         const partMap = {
             'drum': 'ドラム',
             'guitar': 'ギター',
@@ -196,10 +195,17 @@
             setTimeout(() => loader?.remove(), 300);
         }, 3000);
 
-        // 初期化
+        // 初期化 (認証後に実行)
         initAdminPage('users', (user) => {
-            clearTimeout(safetyTimer);
+            if (!user) return; // 認証エラー時は何もしない
             
+            clearTimeout(safetyTimer);
+            document.getElementById('status-icon').classList.replace('text-gray-300', 'text-emerald-400');
+            document.getElementById('status-text').innerText = "System Live";
+            
+            // パスルールに従ったコレクション参照
+            const usersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+
             // リアルタイム監視
             onSnapshot(usersCollectionRef, 
                 (s) => {
@@ -214,7 +220,8 @@
                 },
                 (error) => {
                     console.error("Error fetching users:", error);
-                    document.getElementById('loading-status-text').innerText = "データの取得に失敗しました。";
+                    const statusText = document.getElementById('loading-status-text');
+                    if (statusText) statusText.innerText = "データの取得権限がありません。";
                 }
             );
         });
@@ -272,8 +279,12 @@
 
         function renderGrid(data) {
             const container = document.getElementById('users-grid-container');
-            if (data.length === 0 && usersData.length > 0) {
-                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members match your search</div>`;
+            if (data.length === 0) {
+                if (usersData.length === 0) {
+                    container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members registered</div>`;
+                } else {
+                    container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No match found</div>`;
+                }
                 return;
             }
             
@@ -506,11 +517,11 @@
                                     <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1 ml-1">担当パート</label>
                                     <select id="edit-part" class="edit-input">
                                         <option value="">選択してください</option>
-                                        <option value="vocal" ${user.part == 'vocal' ? 'selected' : ''}>ボーカル</option>
-                                        <option value="guitar" ${user.part == 'guitar' ? 'selected' : ''}>ギター</option>
-                                        <option value="bass" ${user.part == 'bass' ? 'selected' : ''}>ベース</option>
-                                        <option value="drum" ${user.part == 'drum' ? 'selected' : ''}>ドラム</option>
-                                        <option value="keyboard" ${user.part == 'keyboard' ? 'selected' : ''}>キーボード</option>
+                                        <option value="vocal" ${user.part?.toLowerCase() == 'vocal' ? 'selected' : ''}>ボーカル</option>
+                                        <option value="guitar" ${user.part?.toLowerCase() == 'guitar' ? 'selected' : ''}>ギター</option>
+                                        <option value="bass" ${user.part?.toLowerCase() == 'bass' ? 'selected' : ''}>ベース</option>
+                                        <option value="drum" ${user.part?.toLowerCase() == 'drum' ? 'selected' : ''}>ドラム</option>
+                                        <option value="keyboard" ${user.part?.toLowerCase() == 'keyboard' ? 'selected' : ''}>キーボード</option>
                                     </select>
                                 </div>
                             </div>
@@ -560,9 +571,10 @@
                 
                 isEditing = false;
                 const updatedUser = usersData.find(u => u.id === userId);
-                // リアルタイム反映されるが、即時UIを更新するために再描画
-                Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, birthday });
-                renderModalContent(updatedUser);
+                if (updatedUser) {
+                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, birthday });
+                    renderModalContent(updatedUser);
+                }
             } catch (err) {
                 console.error("Error updating user:", err);
                 alert("保存に失敗しました。権限を確認してください。");
