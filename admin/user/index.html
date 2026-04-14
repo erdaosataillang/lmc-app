@@ -165,6 +165,17 @@
         let viewMode = "grid"; // "grid" or "table"
         let selectedUserIds = new Set();
 
+        // 担当楽器の日本語マップ
+        const partMap = {
+            'drum': 'ドラム',
+            'guitar': 'ギター',
+            'Vocal': 'ボーカル',
+            'Keyboard': 'キーボード',
+            'bass': 'ベース'
+        };
+
+        const getPartName = (p) => partMap[p] || p || '未設定';
+
         // 安全装置: 初期化解除
         const safetyTimer = setTimeout(() => {
             const loader = document.getElementById('initial-loader');
@@ -241,7 +252,7 @@
             const filteredIds = new Set(filteredData.map(u => u.id));
             selectedUserIds.forEach(id => {
                 if (!filteredIds.has(id)) {
-                    // 検索やフィルタで消えたものは選択解除しない（保持しておくがUI上は見えない）
+                    // 検索やフィルタで消えたものは選択解除しない
                 }
             });
             updateSelectionUI();
@@ -343,7 +354,7 @@
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-bold text-gray-600">${user.year ? user.year + '年' : '-'}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-gray-500 uppercase">${user.faculty || '-'}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-400">${user.studentId || '-'}</span></td>
-                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-indigo-500">${user.part || '-'}</span></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-indigo-500">${getPartName(user.part)}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs text-gray-500">${birthStr}</span></td>
                     <td class="pr-8 text-center">
                         <button onclick="window.showUserDetail('${user.id}')" class="w-8 h-8 rounded-full hover:bg-indigo-50 text-gray-300 hover:text-indigo-500 transition-colors">
@@ -385,7 +396,15 @@
         function downloadCSV() {
             if (selectedUserIds.size === 0) return;
 
+            // 選択されたユーザーを取得
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
+            
+            // 学年順にソート (1年が上)
+            selectedUsers.sort((a, b) => {
+                const yearA = parseInt(a.year) || 99;
+                const yearB = parseInt(b.year) || 99;
+                return yearA - yearB;
+            });
             
             // CSV ヘッダー
             const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '誕生日', 'システムID'];
@@ -403,7 +422,7 @@
                     u.year ? u.year + '年' : '',
                     u.faculty || '',
                     u.studentId || '',
-                    u.part || '',
+                    getPartName(u.part), // CSV内も日本語表記
                     birthStr,
                     u.id
                 ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
@@ -466,7 +485,7 @@
                         </div>
                         <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-colors hover:bg-white hover:border-indigo-100">
                             <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">担当パート</span>
-                            <span class="font-bold text-gray-800">${user.part || '未設定'}</span>
+                            <span class="font-bold text-gray-800">${getPartName(user.part)}</span>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-colors hover:bg-white hover:border-indigo-100">
                             <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">誕生日</span>
