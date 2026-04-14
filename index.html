@@ -6,8 +6,11 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
-        .container { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; } 
+        /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
+        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        
+        /* ボトムナビ(88px)の分だけpaddingをあけてかぶらないようにする */
+        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; padding-bottom: 88px; box-sizing: border-box; } 
         .hidden { display: none !important; }
         
         /* ヘッダー */
@@ -25,10 +28,10 @@
         .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
         @keyframes spin { 100% { transform: rotate(360deg); } } @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
 
-        /* スライダー領域 */
+        /* スライダー・リスト領域 */
         .scroll-content { flex-grow: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .band-slider { display: flex; width: 100%; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); height: 100%; }
-        .band-slide { width: 100%; height: 100%; padding: 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 80px; }
+        .band-slide { width: 100%; height: 100%; padding: 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 20px; }
 
         /* カードデザイン */
         .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; } 
@@ -53,7 +56,7 @@
         .nav-item.active span { color: #1f1f1f; font-weight: bold; }
 
         /* FAB (タブがあるため少し上に配置) */
-        .fab { position: fixed; bottom: 160px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900; }
+        .fab { position: absolute; bottom: 80px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900; }
 
         /* ボタン・フォーム系 */
         .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -352,7 +355,8 @@
                 const cachedUser = localStorage.getItem('lmc_user_cache');
                 if (cachedUser) { currentUserData = JSON.parse(cachedUser); renderHeaderIcons(currentUserData); }
                 const cachedEvents = localStorage.getItem('lmc_events_cache');
-                if (cachedEvents) { targetEvents = JSON.parse(cachedEvents); renderBandTabs(); }
+                if (cachedEvents) { targetEvents = JSON.parse(cachedEvents); }
+                renderBandTabs(); // 初期描画フォールバック
                 
                 await liff.init({liffId: MY_LIFF_ID}); 
                 if(!liff.isLoggedIn()){liff.login(); return;} 
@@ -378,6 +382,7 @@
 
         // --- ヘッダー・アイコン制御 ---
         function renderHeaderIcons(d){
+            if(!d) return;
             let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
             if(d.birthday){
                 const t=new Date(), b=new Date(d.birthday);
@@ -419,6 +424,13 @@
         function renderBandTabs() {
             const tabs = document.getElementById('bandTabs');
             const slider = document.getElementById('bandSlider');
+            
+            if (targetEvents.length === 0) {
+                tabs.innerHTML = '<div class="band-tab active">読み込み中...</div>';
+                slider.innerHTML = '<div class="band-slide"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>';
+                return;
+            }
+
             tabs.innerHTML = ""; slider.innerHTML = "";
 
             targetEvents.forEach((ev, i) => {
@@ -445,6 +457,9 @@
             const total = targetEvents.length + 1;
             slider.style.width = `${total * 100}%`;
             Array.from(slider.children).forEach(child => { child.style.width = `${100 / total}%`; });
+            
+            // Ensure proper items are rendered if bands loaded first
+            if(myBandsAll.length > 0) renderBandList();
         }
 
         window.switchBandTab = (index) => {
@@ -463,6 +478,8 @@
         }
 
         function renderBandList(){
+            if(targetEvents.length === 0) return; // Wait for tabs to render
+            
             targetEvents.forEach(ev => { const el = document.getElementById(`bandList-${ev.id}`); if(el) el.innerHTML = ""; });
             const arcEl = document.getElementById('bandList-archive'); if(arcEl) arcEl.innerHTML = "";
 
@@ -695,7 +712,7 @@
             }
         }
         async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); }
-        function checkNotifications() { if(!(currentUserData.Email || currentUserData.email)) document.getElementById('headerNotifBadge').classList.add('show'); }
+        function checkNotifications() { if(!(currentUserData?.Email || currentUserData?.email)) document.getElementById('headerNotifBadge').classList.add('show'); }
         window.openFabMenu = () => openModal('modal-fab-menu');
         window.openBandModal = () => { loadUserList('userSelectList'); openModal('modal-band'); };
         window.openEventRegisterModal = () => {
