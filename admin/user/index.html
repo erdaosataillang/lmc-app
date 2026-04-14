@@ -194,27 +194,30 @@
             return partMap[normalizedPart] || p;
         };
 
-        // 安全装置
+        // 安全装置: 5秒経っても終わらなければローダーを消す
         const safetyTimer = setTimeout(() => {
             const loader = document.getElementById('initial-loader');
             if (loader) loader.style.opacity = '0';
             setTimeout(() => loader?.remove(), 300);
         }, 5000);
 
-        // 初期化
+        // 初期化 (Firebaseパスを 'users' に戻し、安全な要素アクセスを行います)
         initAdminPage('users', (user) => {
             clearTimeout(safetyTimer);
 
+            // ステータス表示の更新（nullチェック付き）
             const statusIcon = document.getElementById('status-icon');
             const statusText = document.getElementById('status-text');
             if (statusIcon) statusIcon.classList.replace('text-gray-300', 'text-emerald-400');
             if (statusText) statusText.innerText = "System Live";
             
+            // 元のパス 'users' での監視
             onSnapshot(collection(db, 'users'), 
                 (s) => {
                     usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
                     renderUsers();
                     
+                    // データの読み込みが完了したらローダーを消す
                     const loader = document.getElementById('initial-loader');
                     if (loader) {
                         loader.style.opacity = '0';
@@ -570,6 +573,7 @@
             }
 
             try {
+                // 元のパス 'users' で更新
                 const userRef = doc(db, 'users', userId);
                 await updateDoc(userRef, {
                     name, kana, year, faculty, studentId, part, birthday
@@ -597,7 +601,7 @@
         };
 
         // ----------------------------------------------------
-        // Excel Export Logic (University Template Style)
+        // Excel Export Logic (Strictly following the provided layout)
         // ----------------------------------------------------
 
         function downloadExcel() {
@@ -607,69 +611,87 @@
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
             selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
 
-            // エクセルワークブックの作成
             const wb = XLSX.utils.book_new();
-            const ws_data = [
-                ["2026年度　部 員 名 簿", "", "", "", "", "", "", "", "", "", "", "クラブ名：LMC"],
-                ["", "学年", "", "役職", "学籍番号", "氏　名", "", "", "", "連絡先", "", ""],
-            ];
+            const ws_data = [];
 
-            // 1. 上部の詳細テーブル (1〜10名)
-            for (let i = 1; i <= 10; i++) {
-                const user = selectedUsers[i - 1];
-                ws_data.push([
-                    i + ".0",
-                    user ? user.year : "",
-                    "",
-                    "", // 役職 (データがないので空)
-                    user ? user.studentId : "",
-                    user ? user.name : "",
-                    "", "", "", "", "", ""
-                ]);
+            // 1行目: タイトルとクラブ名
+            ws_data[0] = ["2026年度　部 員 名 簿　　　クラブ名：LMC", "", "", "", "", "", "", "", "", "", "", ""];
+            
+            // 2行目: 役職セクションのヘッダー
+            ws_data[1] = ["", "学年", "", "役職", "学籍番号", "氏　名", "", "", "", "連絡先", "", "＊継続願提出時に、入部が確定している部員のみ入力してください。"];
+            
+            // 3〜12行目: 役職セクション (空欄として保持)
+            for (let i = 2; i <= 11; i++) {
+                const note = (i === 2) ? "＊提出時以降の部員の増減は「部員変更届」で届け出てください。" : 
+                             (i === 3) ? "＊完成したExcelを「学生課」チャットに送信するか、ＵＳＢで学生課３番窓口に提出してください。" : "";
+                ws_data[i] = [(i - 1) + ".0", "", "", "", "", "", "", "", "", "", "", note];
             }
 
-            ws_data.push([]); // 空行
-            ws_data.push(["", "学年", "学籍番号", "", "氏　名", "", "学年", "学籍番号", "", "氏　名", "", ""]);
+            // 13行目: 空白
+            ws_data[12] = [];
 
-            // 2. 下部の2列リスト (11名〜)
-            const remainingUsers = selectedUsers.slice(10);
-            const leftList = remainingUsers.slice(0, 15);
-            const rightList = remainingUsers.slice(15, 30); // 暫定的に16-30まで
+            // 14行目: リストセクションのヘッダー
+            ws_data[13] = ["", "学年", "学籍番号", "", "氏　名", "", "学年", "学籍番号", "", "氏　名", "", ""];
 
-            for (let i = 0; i < 15; i++) {
-                const uLeft = leftList[i];
-                const uRight = rightList[i];
-                const leftIdx = i + 1;
-                const rightIdx = i + 16;
+            // 15行目以降: 部員リスト (2列構成で流し込み)
+            const MAX_ROWS_PER_PAGE = 25; // 1ブロック25人x2列=50人想定
+            const totalMembers = selectedUsers.length;
+            
+            // 必要な行数を計算
+            const neededRows = Math.ceil(totalMembers / 2);
+            const blocks = Math.ceil(neededRows / MAX_ROWS_PER_PAGE);
+
+            let userIdx = 0;
+            for (let b = 0; b < blocks; b++) {
+                const startRow = 14 + (b * (MAX_ROWS_PER_PAGE + 1));
                 
-                ws_data.push([
-                    leftIdx + ".0",
-                    uLeft ? uLeft.year : "",
-                    uLeft ? uLeft.studentId : "",
-                    "",
-                    uLeft ? uLeft.name : "",
-                    "",
-                    rightIdx + ".0",
-                    uRight ? uRight.year : "",
-                    uRight ? uRight.studentId : "",
-                    "",
-                    uRight ? uRight.name : "",
-                    ""
-                ]);
+                // ブロックごとのヘッダー (最初のブロック以外)
+                if (b > 0) {
+                    ws_data[startRow - 1] = ["", "学年", "学籍番号", "", "氏　名", "", "学年", "学籍番号", "", "氏　名", "", ""];
+                }
+
+                for (let r = 0; r < MAX_ROWS_PER_PAGE; r++) {
+                    const currentRow = startRow + r;
+                    const leftIdx = (b * MAX_ROWS_PER_PAGE * 2) + r + 1;
+                    const rightIdx = leftIdx + MAX_ROWS_PER_PAGE;
+                    
+                    const uLeft = selectedUsers[leftIdx - 1];
+                    const uRight = selectedUsers[rightIdx - 1];
+
+                    ws_data[currentRow] = [
+                        leftIdx + ".0",
+                        uLeft ? uLeft.year : "",
+                        uLeft ? uLeft.studentId : "",
+                        "",
+                        uLeft ? uLeft.name : "",
+                        "",
+                        rightIdx + ".0",
+                        uRight ? uRight.year : "",
+                        uRight ? uRight.studentId : "",
+                        "",
+                        uRight ? uRight.name : "",
+                        ""
+                    ];
+                }
+                userIdx += (MAX_ROWS_PER_PAGE * 2);
             }
 
             const ws = XLSX.utils.aoa_to_sheet(ws_data);
 
-            // セルの結合設定 (テンプレートに近づける)
+            // セルの結合設定 (テンプレート再現)
             ws['!merges'] = [
                 { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // タイトル
-                { s: { r: 1, c: 5 }, e: { r: 1, c: 8 } }, // 詳細見出し：氏名
-                { s: { r: 1, c: 9 }, e: { r: 1, c: 11 } }, // 詳細見出し：連絡先
+                { s: { r: 1, c: 5 }, e: { r: 1, c: 8 } }, // 氏名見出し
+                { s: { r: 1, c: 9 }, e: { r: 1, c: 11 } } // 連絡先見出し
+            ];
+
+            // 列幅の設定
+            ws['!cols'] = [
+                { wch: 4 }, { wch: 5 }, { wch: 12 }, { wch: 2 }, { wch: 15 }, 
+                { wch: 2 }, { wch: 4 }, { wch: 5 }, { wch: 12 }, { wch: 2 }, { wch: 15 }
             ];
 
             XLSX.utils.book_append_sheet(wb, ws, "部員名簿");
-            
-            // ファイルの書き出し
             XLSX.writeFile(wb, `部員名簿_提出用_${new Date().toISOString().split('T')[0]}.xlsx`);
         }
 
