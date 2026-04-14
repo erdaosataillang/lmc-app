@@ -31,6 +31,11 @@
         .custom-checkbox {
             @apply w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer;
         }
+
+        /* 編集フォーム用入力スタイル */
+        .edit-input {
+            @apply w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all;
+        }
     </style>
 </head>
 <body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
@@ -106,14 +111,14 @@
 
         <!-- コンテンツ表示エリア -->
         <div id="members-content-area">
-            <!-- グリッド表示 (デフォルト) -->
+            <!-- グリッド表示 -->
             <div id="users-grid-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
                 <div class="col-span-full py-10 text-center text-gray-400 font-bold">
                     <span id="loading-status-text">読み込み中...</span>
                 </div>
             </div>
 
-            <!-- テーブル表示 (初期は非表示) -->
+            <!-- テーブル表示 -->
             <div id="users-table-container" class="hidden bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden mb-12">
                 <div class="overflow-x-auto">
                     <table class="w-full member-table border-collapse">
@@ -155,28 +160,36 @@
     <!-- Logic -->
     <script type="module">
         import { initAdminPage, db } from "/js/admin-common.js";
-        import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, onSnapshot, doc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const usersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
 
         let usersData = [];
         let filteredData = [];
         let userSearchQuery = "";
         let userShowOnlyCurrent = true;
         let userSortOrder = "name";
-        let viewMode = "grid"; // "grid" or "table"
+        let viewMode = "grid"; 
         let selectedUserIds = new Set();
+        let isEditing = false;
 
         // 担当楽器の日本語マップ
         const partMap = {
             'drum': 'ドラム',
             'guitar': 'ギター',
-            'Vocal': 'ボーカル',
-            'Keyboard': 'キーボード',
+            'vocal': 'ボーカル',
+            'keyboard': 'キーボード',
             'bass': 'ベース'
         };
 
-        const getPartName = (p) => partMap[p] || p || '未設定';
+        const getPartName = (p) => {
+            if (!p) return '未設定';
+            const normalizedPart = p.toLowerCase();
+            return partMap[normalizedPart] || p;
+        };
 
-        // 安全装置: 初期化解除
+        // 安全装置
         const safetyTimer = setTimeout(() => {
             const loader = document.getElementById('initial-loader');
             if (loader) loader.style.opacity = '0';
@@ -187,13 +200,12 @@
         initAdminPage('users', (user) => {
             clearTimeout(safetyTimer);
             
-            // ユーザーデータのリアルタイム監視
-            onSnapshot(collection(db, 'users'), 
+            // リアルタイム監視
+            onSnapshot(usersCollectionRef, 
                 (s) => {
                     usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
                     renderUsers();
                     
-                    // ローダーを消す
                     const loader = document.getElementById('initial-loader');
                     if (loader) {
                         loader.style.opacity = '0';
@@ -214,12 +226,10 @@
         function renderUsers() {
             const gridContainer = document.getElementById('users-grid-container');
             const tableContainer = document.getElementById('users-table-container');
-            const tableBody = document.getElementById('users-table-body');
             if (!gridContainer || !tableContainer) return;
 
             const q = userSearchQuery.toLowerCase();
             
-            // 1. フィルタリング
             filteredData = usersData.filter(u => 
                 (u.name || "").toLowerCase().includes(q) || 
                 (u.kana || "").toLowerCase().includes(q) || 
@@ -234,7 +244,6 @@
                 });
             }
             
-            // 2. ソート
             filteredData.sort((a,b) => {
                 if (userSortOrder === "name") {
                     return (a.kana || a.name || "").localeCompare(b.kana || b.name || "", "ja");
@@ -248,16 +257,8 @@
                 }
             });
 
-            // 選択状態の更新（フィルタされた結果に含まれないIDを整理）
-            const filteredIds = new Set(filteredData.map(u => u.id));
-            selectedUserIds.forEach(id => {
-                if (!filteredIds.has(id)) {
-                    // 検索やフィルタで消えたものは選択解除しない
-                }
-            });
             updateSelectionUI();
 
-            // 表示モードの切り替え
             if (viewMode === "grid") {
                 gridContainer.classList.remove('hidden');
                 tableContainer.classList.add('hidden');
@@ -321,7 +322,6 @@
                 return;
             }
 
-            // 全選択チェックボックスの同期
             const allSelectedInFiltered = data.every(u => selectedUserIds.has(u.id));
             selectAllCheck.checked = data.length > 0 && allSelectedInFiltered;
 
@@ -365,7 +365,6 @@
                 `;
             }).join('');
 
-            // イベント付与
             document.querySelectorAll('.user-checkbox').forEach(cb => {
                 cb.addEventListener('change', (e) => {
                     const id = e.target.dataset.id;
@@ -380,14 +379,202 @@
             const countLabel = document.getElementById('selected-count');
             const downloadBtn = document.getElementById('csv-download-btn');
             const count = selectedUserIds.size;
-            
-            countLabel.innerText = count;
-            if (count > 0) {
-                downloadBtn.classList.remove('hidden');
-            } else {
-                downloadBtn.classList.add('hidden');
+            if (countLabel) countLabel.innerText = count;
+            if (downloadBtn) {
+                if (count > 0) downloadBtn.classList.remove('hidden');
+                else downloadBtn.classList.add('hidden');
             }
         }
+
+        // ----------------------------------------------------
+        // Detail & Edit Functions
+        // ----------------------------------------------------
+
+        window.showUserDetail = (userId) => {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            isEditing = false;
+            renderModalContent(user);
+            const modal = document.getElementById('user-detail-modal');
+            modal.classList.remove('hidden');
+        };
+
+        function renderModalContent(user) {
+            const content = document.getElementById('user-modal-content');
+            
+            let birthStr = '未登録';
+            let birthInputVal = '';
+            if (user.birthday) {
+                const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000 || user.birthday);
+                birthStr = d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                birthInputVal = d.toISOString().split('T')[0];
+            }
+
+            const iconLarge = user.icon 
+                ? `<img src="${user.icon}" class="w-32 h-32 rounded-[40px] border-[6px] border-white shadow-2xl object-cover bg-white">` 
+                : `<div class="w-32 h-32 rounded-[40px] bg-white flex items-center justify-center text-5xl font-bold text-indigo-100 border-[6px] border-white shadow-2xl">${(user.name||"?")[0]}</div>`;
+
+            if (!isEditing) {
+                // 表示モード
+                content.innerHTML = `
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 h-36 w-full relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+                    </div>
+                    <div class="px-8 pb-10 -mt-16 relative">
+                        <div class="mb-6 flex justify-between items-end">
+                            ${iconLarge}
+                            <button onclick="window.toggleEditMode('${user.id}')" class="px-6 py-2 bg-white text-gray-800 font-bold rounded-xl shadow-lg hover:bg-gray-50 transition-all border border-gray-100 flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square text-indigo-500"></i> 編集
+                            </button>
+                        </div>
+                        
+                        <h3 class="text-3xl font-extrabold text-gray-800 mb-1">${user.name}</h3>
+                        <p class="text-indigo-500 font-bold text-sm mb-6">${user.kana || ''}</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">学年 / 学部</span>
+                                <span class="font-bold text-gray-800 text-lg">${user.year ? user.year + '年' : ''} ${user.faculty || '学部未設定'}</span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">学籍番号</span>
+                                <span class="font-bold text-gray-800 text-lg font-mono">${user.studentId || '未登録'}</span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">担当パート</span>
+                                <span class="font-bold text-gray-800">${getPartName(user.part)}</span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">誕生日</span>
+                                <span class="font-bold text-gray-800">${birthStr}</span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 col-span-full">
+                                 <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">User System ID</span>
+                                 <span class="font-mono text-[10px] text-gray-400 break-all">${user.id}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // 編集モード
+                content.innerHTML = `
+                    <div class="bg-gray-100 h-24 w-full relative"></div>
+                    <div class="px-8 pb-10 -mt-12 relative">
+                        <div class="flex justify-between items-start mb-6">
+                             <div class="w-24 h-24 rounded-3xl bg-white shadow-xl flex items-center justify-center text-indigo-300 text-3xl font-black border-4 border-white">
+                                ${(user.name||"?")[0]}
+                             </div>
+                             <div class="flex gap-2 mt-12">
+                                <button onclick="window.toggleEditMode('${user.id}')" class="px-4 py-2 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-all">キャンセル</button>
+                                <button id="save-user-btn" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-indigo-200 shadow-xl hover:bg-indigo-700 transition-all">保存する</button>
+                             </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1 ml-1">氏名 / かな</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text" id="edit-name" value="${user.name || ''}" class="edit-input" placeholder="氏名">
+                                    <input type="text" id="edit-kana" value="${user.kana || ''}" class="edit-input" placeholder="かな">
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1 ml-1">学年</label>
+                                    <select id="edit-year" class="edit-input">
+                                        <option value="">選択してください</option>
+                                        <option value="1" ${user.year == '1' ? 'selected' : ''}>1年</option>
+                                        <option value="2" ${user.year == '2' ? 'selected' : ''}>2年</option>
+                                        <option value="3" ${user.year == '3' ? 'selected' : ''}>3年</option>
+                                        <option value="4" ${user.year == '4' ? 'selected' : ''}>4年</option>
+                                        <option value="5" ${user.year == '5' ? 'selected' : ''}>OB/OG</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1 ml-1">学部</label>
+                                    <input type="text" id="edit-faculty" value="${user.faculty || ''}" class="edit-input" placeholder="学部名">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1 ml-1">学籍番号</label>
+                                    <input type="text" id="edit-studentId" value="${user.studentId || ''}" class="edit-input font-mono" placeholder="Student ID">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1 ml-1">担当パート</label>
+                                    <select id="edit-part" class="edit-input">
+                                        <option value="">選択してください</option>
+                                        <option value="vocal" ${user.part == 'vocal' ? 'selected' : ''}>ボーカル</option>
+                                        <option value="guitar" ${user.part == 'guitar' ? 'selected' : ''}>ギター</option>
+                                        <option value="bass" ${user.part == 'bass' ? 'selected' : ''}>ベース</option>
+                                        <option value="drum" ${user.part == 'drum' ? 'selected' : ''}>ドラム</option>
+                                        <option value="keyboard" ${user.part == 'keyboard' ? 'selected' : ''}>キーボード</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
+                                <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('save-user-btn').addEventListener('click', () => saveUserChanges(user.id));
+            }
+        }
+
+        window.toggleEditMode = (userId) => {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            isEditing = !isEditing;
+            renderModalContent(user);
+        };
+
+        async function saveUserChanges(userId) {
+            const saveBtn = document.getElementById('save-user-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
+
+            const name = document.getElementById('edit-name').value;
+            const kana = document.getElementById('edit-kana').value;
+            const year = document.getElementById('edit-year').value;
+            const faculty = document.getElementById('edit-faculty').value;
+            const studentId = document.getElementById('edit-studentId').value;
+            const part = document.getElementById('edit-part').value;
+            const birthdayInput = document.getElementById('edit-birthday').value;
+
+            let birthday = null;
+            if (birthdayInput) {
+                birthday = Timestamp.fromDate(new Date(birthdayInput));
+            }
+
+            try {
+                const userRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', userId);
+                await updateDoc(userRef, {
+                    name, kana, year, faculty, studentId, part, birthday
+                });
+                
+                isEditing = false;
+                const updatedUser = usersData.find(u => u.id === userId);
+                // リアルタイム反映されるが、即時UIを更新するために再描画
+                Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, birthday });
+                renderModalContent(updatedUser);
+            } catch (err) {
+                console.error("Error updating user:", err);
+                alert("保存に失敗しました。権限を確認してください。");
+                saveBtn.disabled = false;
+                saveBtn.innerText = "保存する";
+            }
+        }
+
+        window.closeUserDetail = () => {
+            const modal = document.getElementById('user-detail-modal');
+            if (modal) modal.classList.add('hidden');
+        };
 
         // ----------------------------------------------------
         // CSV Download Logic
@@ -395,125 +582,37 @@
 
         function downloadCSV() {
             if (selectedUserIds.size === 0) return;
-
-            // 選択されたユーザーを取得
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
+            selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
             
-            // 学年順にソート (1年が上)
-            selectedUsers.sort((a, b) => {
-                const yearA = parseInt(a.year) || 99;
-                const yearB = parseInt(b.year) || 99;
-                return yearA - yearB;
-            });
-            
-            // CSV ヘッダー
             const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '誕生日', 'システムID'];
-            
             const rows = selectedUsers.map(u => {
                 let birthStr = '';
                 if (u.birthday) {
                     const d = u.birthday.toDate ? u.birthday.toDate() : new Date(u.birthday.seconds * 1000 || u.birthday);
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
-                
                 return [
-                    u.name || '',
-                    u.kana || '',
-                    u.year ? u.year + '年' : '',
-                    u.faculty || '',
-                    u.studentId || '',
-                    getPartName(u.part), // CSV内も日本語表記
-                    birthStr,
-                    u.id
+                    u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '',
+                    getPartName(u.part), birthStr, u.id
                 ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
             });
 
             const csvContent = "\ufeff" + [headers.join(','), ...rows].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            
             const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', `members_export_${new Date().toISOString().split('T')[0]}.csv`);
-            link.style.visibility = 'hidden';
+            link.href = url;
+            link.download = `members_export_${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
         // ----------------------------------------------------
-        // Detail Modal Functions
-        // ----------------------------------------------------
-
-        window.showUserDetail = (userId) => {
-            const user = usersData.find(u => u.id === userId);
-            if (!user) return;
-            
-            const modal = document.getElementById('user-detail-modal');
-            const content = document.getElementById('user-modal-content');
-            
-            let birthStr = '未登録';
-            if (user.birthday) {
-                const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000 || user.birthday);
-                birthStr = d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-            }
-
-            const iconLarge = user.icon 
-                ? `<img src="${user.icon}" class="w-32 h-32 rounded-[40px] border-[6px] border-white shadow-2xl object-cover bg-white">` 
-                : `<div class="w-32 h-32 rounded-[40px] bg-white flex items-center justify-center text-5xl font-bold text-indigo-100 border-[6px] border-white shadow-2xl">${(user.name||"?")[0]}</div>`;
-
-            content.innerHTML = `
-                <div class="bg-gradient-to-br from-indigo-500 to-purple-600 h-36 w-full relative overflow-hidden">
-                    <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
-                </div>
-                <div class="px-8 pb-10 -mt-16 relative">
-                    <div class="mb-6 flex justify-between items-end">
-                        ${iconLarge}
-                    </div>
-                    
-                    <h3 class="text-3xl font-extrabold text-gray-800 mb-1">${user.name}</h3>
-                    <p class="text-indigo-500 font-bold text-sm mb-6">${user.kana || ''}</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-colors hover:bg-white hover:border-indigo-100">
-                            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">学年 / 学部</span>
-                            <span class="font-bold text-gray-800 text-lg">${user.year ? user.year + '年' : ''} ${user.faculty || '学部未設定'}</span>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-colors hover:bg-white hover:border-indigo-100">
-                            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">学籍番号</span>
-                            <span class="font-bold text-gray-800 text-lg font-mono">${user.studentId || '未登録'}</span>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-colors hover:bg-white hover:border-indigo-100">
-                            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">担当パート</span>
-                            <span class="font-bold text-gray-800">${getPartName(user.part)}</span>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-colors hover:bg-white hover:border-indigo-100">
-                            <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">誕生日</span>
-                            <span class="font-bold text-gray-800">${birthStr}</span>
-                        </div>
-                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 col-span-full">
-                             <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">User System ID</span>
-                             <span class="font-mono text-[10px] text-gray-400 break-all">${user.id}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            modal.classList.remove('hidden');
-        };
-
-        window.closeUserDetail = () => {
-            const modal = document.getElementById('user-detail-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-        };
-
-        // ----------------------------------------------------
         // Event Listeners
         // ----------------------------------------------------
 
-        // 表示モード切替
         document.getElementById('view-grid-btn').addEventListener('click', () => {
             viewMode = "grid";
             updateViewButtons();
@@ -528,20 +627,14 @@
         function updateViewButtons() {
             const gridBtn = document.getElementById('view-grid-btn');
             const tableBtn = document.getElementById('view-table-btn');
-            if (viewMode === "grid") {
-                gridBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
-                gridBtn.classList.remove('text-gray-400');
-                tableBtn.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600');
-                tableBtn.classList.add('text-gray-400');
-            } else {
-                tableBtn.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
-                tableBtn.classList.remove('text-gray-400');
-                gridBtn.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600');
-                gridBtn.classList.add('text-gray-400');
-            }
+            [gridBtn, tableBtn].forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600'));
+            [gridBtn, tableBtn].forEach(b => b.classList.add('text-gray-400'));
+            
+            const active = viewMode === 'grid' ? gridBtn : tableBtn;
+            active.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+            active.classList.remove('text-gray-400');
         }
 
-        // 検索・フィルタ
         document.getElementById('user-search-input').addEventListener('input', (e) => {
             userSearchQuery = e.target.value;
             renderUsers();
@@ -557,20 +650,13 @@
             renderUsers();
         });
 
-        // 全選択
         document.getElementById('select-all-checkbox').addEventListener('change', (e) => {
-            if (e.target.checked) {
-                filteredData.forEach(u => selectedUserIds.add(u.id));
-            } else {
-                filteredData.forEach(u => selectedUserIds.delete(u.id));
-            }
+            if (e.target.checked) filteredData.forEach(u => selectedUserIds.add(u.id));
+            else filteredData.forEach(u => selectedUserIds.delete(u.id));
             renderUsers();
         });
 
-        // CSVダウンロード
         document.getElementById('csv-download-btn').addEventListener('click', downloadCSV);
-
-        // モーダル外クリックで閉じる
         document.getElementById('user-detail-modal').addEventListener('click', window.closeUserDetail);
 
     </script>
