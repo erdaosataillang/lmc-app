@@ -15,7 +15,7 @@
         
         /* ヘッダー */
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
-        .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         
@@ -31,73 +31,76 @@
         /* スライダー・リスト領域 */
         .scroll-content { flex-grow: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .band-slider { display: flex; width: 100%; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); height: 100%; }
-        .band-slide { width: 100%; height: 100%; padding: 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 20px; }
+        .band-slide { width: 100%; height: 100%; padding: 12px 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 20px; }
 
-        /* カードデザイン */
-        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; } 
+        /* カードデザイン (丸み強め・コンパクトに) */
+        .card { background: white; border-radius: 20px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; } 
         .card.band-card:active { background-color: #f5f5f5; }
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } 
         .band-item:last-child { border: none; margin: 0; padding: 0; }
-        .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; } 
+        .band-icon { width: 44px; height: 44px; background: #e0e3e7; border-radius: 16px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 18px; color: #5f6368; font-weight: bold; overflow: hidden; } 
         .band-icon img { width: 100%; height: 100%; object-fit: cover; }
-        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 16px; } 
+        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 15px; } 
 
-        /* 下側に配置されたイベント選択タブ */
-        .band-tabs { display: flex; background: white; border-radius: 12px; padding: 4px; margin: 0 16px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); flex-shrink: 0; z-index: 10; position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; } 
-        .band-tab { flex: 1; min-width: 100px; text-align: center; padding: 10px 4px; font-size: 13px; font-weight: bold; border-radius: 8px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
+        /* イベント選択タブ (丸み強め・コンパクトに) */
+        .band-tabs { display: flex; background: white; border-radius: 24px; padding: 4px; margin: 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-shrink: 0; z-index: 10; position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; } 
+        .band-tab { flex: 1; min-width: 80px; text-align: center; padding: 8px 4px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
         .band-tab.active { background: #e8f0fe; color: #0b57d0; }
 
         /* ナビゲーション */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e0e3e7; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 2000; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
-        .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } 
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 11px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
+        .nav-icon { font-size: 22px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } 
         .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } 
         .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } 
         .nav-item.active span { color: #1f1f1f; font-weight: bold; }
 
-        /* FAB (タブがあるため少し上に配置) */
-        .fab { position: absolute; bottom: 80px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900; }
+        /* FAB */
+        .fab { position: absolute; bottom: 80px; right: 20px; width: 52px; height: 52px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 900; }
 
-        /* ボタン・フォーム系 */
-        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
-        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
-        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
-        .btn-menu-item { background: #f8f9fa; color: #1f1f1f; border: 1px solid #dadce0; padding: 16px; border-radius: 12px; width: 100%; margin-bottom: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: flex-start; gap: 12px; font-size: 15px; transition: background-color 0.2s; }
+        /* ボタン・フォーム系 (完全に丸いボタン) */
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
+        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-weight: bold; }
+        .btn-menu-item { background: #f8f9fa; color: #1f1f1f; border: 1px solid #dadce0; padding: 14px 16px; border-radius: 16px; width: 100%; margin-bottom: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: flex-start; gap: 12px; font-size: 14px; transition: background-color 0.2s; }
         .btn-menu-item:active { background-color: #e8eaed; }
-        .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 80px; height: 80px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
+        
+        .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+        
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
         .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
-        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: white; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
 
         /* メンバー・通知リスト */
-        .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; }
+        .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
         .member-option.selected { background: #e8f0fe; }
-        .member-row-rich { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; } .member-avatar-small { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
-        .member-name-rich { font-size: 14px; font-weight: bold; color: #1f1f1f; } .member-role-badge { font-size: 10px; background: #e8f0fe; color: #0b57d0; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
-        .stat-badge { background: #f8f9fa; padding: 6px 12px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; flex: 1; }
-        .stat-value { font-size: 15px; font-weight: bold; color: #0b57d0; } .stat-label { font-size: 9px; color: #5f6368; font-weight: bold; }
+        .member-row-rich { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; } .member-avatar-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
+        .member-name-rich { font-size: 14px; font-weight: bold; color: #1f1f1f; } .member-role-badge { font-size: 9px; background: #e8f0fe; color: #0b57d0; padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
+        .stat-badge { background: #f8f9fa; padding: 6px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; flex: 1; }
+        .stat-value { font-size: 14px; font-weight: bold; color: #0b57d0; } .stat-label { font-size: 9px; color: #5f6368; font-weight: bold; }
         
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
         .notification-badge { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background: #d93025; border-radius: 50%; border: 2px solid white; display: none; }
         .notification-badge.show { display: block; }
         .notif-icon-box { width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
         .notif-icon-box.warning { background: #fce8e6; color: #d93025; }
-        .notification-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; }
+        .notification-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
         .notification-item.clickable { cursor: pointer; }
         .auth-code-input { letter-spacing: 4px; text-align: center; font-size: 24px; font-weight: bold; }
-        .fee-status-badge { flex: 1; padding: 10px; border-radius: 8px; font-size: 14px; font-weight: bold; text-align: center; } .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .fee-status-badge { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; } .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
     </style>
 </head>
 <body>
     <!-- カスタムダイアログ -->
     <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
-        <div class="dialog-content" style="background:white; width:85%; max-width:320px; border-radius:20px; padding:24px; text-align:center;">
-            <div id="dialogTitle" style="font-weight:bold; font-size:18px; margin-bottom:12px;">確認</div>
-            <div id="dialogMessage" style="font-size:14px; color:#444746; margin-bottom:24px; white-space:pre-wrap;"></div>
+        <div class="dialog-content" style="background:white; width:85%; max-width:320px; border-radius:24px; padding:24px; text-align:center;">
+            <div id="dialogTitle" style="font-weight:bold; font-size:16px; margin-bottom:12px;">確認</div>
+            <div id="dialogMessage" style="font-size:13px; color:#444746; margin-bottom:24px; white-space:pre-wrap;"></div>
             <div style="display:flex; gap:12px;">
                 <button id="dialogBtnCancel" class="btn-secondary" style="margin:0; flex:1;">キャンセル</button>
                 <button id="dialogBtnOk" class="btn-primary" style="margin:0; flex:1;">OK</button>
@@ -110,7 +113,7 @@
         <div class="app-header">
             <div class="header-title">
                 マイバンド
-                <span id="displayActiveEvent" style="display:none; font-size:11px; font-weight:bold; background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:12px; margin-left:4px;"></span>
+                <span id="displayActiveEvent" style="display:none; font-size:10px; font-weight:bold; background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; margin-left:4px;"></span>
             </div>
             <div class="header-right" style="display:flex; align-items:center; gap:16px;">
                 <div class="notification-btn" onclick="openNotificationModal()">
@@ -150,7 +153,7 @@
     <!-- FABメニュー -->
     <div id="modal-fab-menu" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-fab-menu')">
         <div class="modal-content" style="padding-bottom: 40px;">
-            <h3 style="margin-top:0; margin-bottom: 20px;">バンドの追加</h3>
+            <h3 style="margin-top:0; margin-bottom: 20px; font-size: 18px;">バンドの追加</h3>
             <button class="btn-menu-item" onclick="openEventRegisterModal()">
                 <span class="material-icons" style="color:#0b57d0; margin-right:12px;">event_available</span> 既存バンドをイベントに出演登録
             </button>
@@ -164,7 +167,7 @@
     <!-- 出演登録 -->
     <div id="modal-event-register" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-register')">
         <div class="modal-content">
-            <h3 style="margin-top:0;">イベントに出演登録</h3>
+            <h3 style="margin-top:0; font-size: 18px;">イベントに出演登録</h3>
             <div class="form-group">
                 <label class="form-label">出演するイベント</label>
                 <select id="selectRegisterEvent" class="form-input"></select>
@@ -181,10 +184,10 @@
     <!-- バンド作成 -->
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
         <div class="modal-content">
-            <h3 style="margin-top:0;">バンド結成</h3>
+            <h3 style="margin-top:0; font-size: 18px;">バンド結成</h3>
             <div class="image-picker-area">
                 <div class="image-picker" onclick="document.getElementById('bandIconInput').click()">
-                    <i class="material-icons">add_a_photo</i><span>写真</span>
+                    <i class="material-icons">add_a_photo</i>
                     <img id="previewBandIcon" class="hidden" src="">
                 </div>
                 <input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')">
@@ -209,12 +212,12 @@
     <!-- バンド詳細 -->
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
-            <div class="band-detail-header" style="background: white; padding: 24px 20px; border-bottom: 1px solid #f0f0f0; position: relative; text-align:center;">
-                <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 20px; color: #5f6368;">close</span></button>
-                <div class="image-picker-area" style="margin: 20px 0 10px;">
-                    <div class="image-picker" id="detailIconPicker" style="width: 88px; height: 88px; border-radius: 50%;">
+            <div class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid #f0f0f0; position: relative; text-align:center;">
+                <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px; color: #5f6368;">close</span></button>
+                <div class="image-picker-area" style="margin: 16px 0 8px;">
+                    <div class="image-picker" id="detailIconPicker" style="width: 80px; height: 80px; border-radius: 50%;">
                         <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                        <div class="edit-badge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size: 14px;">edit</span></div>
+                        <div class="edit-badge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size: 12px;">edit</span></div>
                     </div>
                     <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
                 </div>
@@ -223,39 +226,39 @@
                     <div class="stat-badge"><span class="stat-value" id="stat-booking-count">--</span><span class="stat-label">演奏回数</span></div>
                     <div class="stat-badge"><span class="stat-value" id="stat-song-count">--</span><span class="stat-label">演奏曲数</span></div>
                 </div>
-                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px; border-radius:20px;"><span class="material-icons" style="font-size:16px;">share</span> 招待リンクを送信</button>
+                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px;"><span class="material-icons" style="font-size:14px;">share</span> 招待リンクを送信</button>
             </div>
-            <div style="padding: 20px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
+            <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
                 <input type="hidden" id="detailBandId">
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px;">メンバー</h4>
+                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top: 0;">メンバー</h4>
                 <div class="card" style="padding: 0; overflow: hidden;">
                     <div id="detailMemberList"></div>
-                    <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:14px; padding:12px; border-top:1px solid #f0f0f0;" onclick="openAddMemberModal()">＋ メンバーを追加</button>
+                    <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:13px; padding:12px; border-top:1px solid #f0f0f0; margin-top:0;" onclick="openAddMemberModal()">＋ メンバーを追加</button>
                 </div>
                 
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:20px;">演奏曲</h4>
+                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">演奏曲</h4>
                 <div class="card" style="padding: 0; overflow: hidden;">
                     <div id="bandSongsList"></div>
                     <div id="bandSongAddArea" class="hidden" style="display:flex; padding:8px; gap:8px; background:#fff; border-top:1px solid #f0f0f0;">
-                        <input type="text" id="inputNewSong" class="form-input" style="padding:8px; font-size:14px; flex:1;" placeholder="曲名を入力...">
-                        <button class="btn-primary" style="width:auto; padding:0 16px; font-size:13px;" onclick="addSongToBand()">追加</button>
+                        <input type="text" id="inputNewSong" class="form-input" style="padding:8px; font-size:13px; flex:1;" placeholder="曲名を入力...">
+                        <button class="btn-primary" style="width:auto; padding:0 16px; font-size:12px;" onclick="addSongToBand()">追加</button>
                     </div>
                 </div>
 
-                <div id="bandBookingsArea" style="margin-top:20px;">
+                <div id="bandBookingsArea" style="margin-top:16px;">
                     <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px;">直近の履歴</h4>
                     <div class="card" style="padding:0;"><div id="adminBandBookingsList"></div></div>
                 </div>
 
-                <div id="bandCreatorActions" class="hidden" style="margin-top:30px; display:flex; flex-direction:column; gap:10px;">
+                <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
                     <button class="btn-primary" onclick="updateBandName()">バンド名を保存</button>
-                    <div style="display:flex; gap:10px;">
+                    <div style="display:flex; gap:8px;">
                         <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0;" onclick="archiveBand()">アーカイブ</button>
                         <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0;" onclick="restoreBand()">復元</button>
                         <button class="btn-danger" style="flex:1; margin:0;" onclick="deleteBand()">解散</button>
                     </div>
                 </div>
-                <div id="bandMemberActions" class="hidden" style="margin-top:20px;"><button class="btn-danger" onclick="leaveBand()" style="width:100%;">バンドを脱退する</button></div>
+                <div id="bandMemberActions" class="hidden" style="margin-top:16px;"><button class="btn-danger" onclick="leaveBand()" style="width:100%;">バンドを脱退する</button></div>
             </div>
         </div>
     </div>
@@ -263,7 +266,7 @@
     <!-- 通知・ステータス -->
     <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
         <div class="modal-content">
-            <h3 style="margin-top:0; margin-bottom:10px;">通知</h3>
+            <h3 style="margin-top:0; margin-bottom:10px; font-size: 18px;">通知</h3>
             <div id="notificationList" style="max-height:60vh; overflow-y:auto;"></div>
             <button class="btn-secondary" onclick="closeModal('modal-notification')">閉じる</button>
         </div>
@@ -271,18 +274,18 @@
 
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
         <div class="modal-content">
-            <h3 style="margin-top:0; text-align:center;">マイステータス</h3>
-            <div style="text-align:center; padding:20px;">
-                <img id="modalUserIcon" src="" style="width:80px; height:80px; border-radius:50%; border:4px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:10px;">
-                <div id="modalUserName" style="font-weight:bold; font-size:18px; margin-bottom:20px;"></div>
-                <div style="background:#f9f9f9; padding:15px; border-radius:12px;">
-                    <div style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">2025年度 部費状況</div>
+            <h3 style="margin-top:0; text-align:center; font-size: 18px;">マイステータス</h3>
+            <div style="text-align:center; padding:16px;">
+                <img id="modalUserIcon" src="" style="width:72px; height:72px; border-radius:50%; border:4px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:10px;">
+                <div id="modalUserName" style="font-weight:bold; font-size:16px; margin-bottom:16px;"></div>
+                <div style="background:#f9f9f9; padding:12px; border-radius:16px;">
+                    <div style="font-size:11px; color:#666; margin-bottom:8px; font-weight:bold;">2025年度 部費状況</div>
                     <div style="display:flex; gap:10px;">
                         <div id="statusFeeTerm1" class="fee-status-badge">前期: -</div>
                         <div id="statusFeeTerm2" class="fee-status-badge">後期: -</div>
                     </div>
                 </div>
-                <div id="myQRCodeArea" style="width:150px; height:150px; margin:20px auto;"></div>
+                <div id="myQRCodeArea" style="width:120px; height:120px; margin:20px auto;"></div>
             </div>
             <button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button>
         </div>
@@ -292,7 +295,7 @@
     <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
         <div class="modal-content">
             <div id="email-step-1">
-                <h3>メールアドレス登録</h3>
+                <h3 style="font-size: 18px; margin-top:0;">メールアドレス登録</h3>
                 <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
                 <div class="form-group">
                     <label class="form-label">アドレス</label>
@@ -302,7 +305,7 @@
                 <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
             </div>
             <div id="email-step-2" class="hidden">
-                <h3>認証コード入力</h3>
+                <h3 style="font-size: 18px; margin-top:0;">認証コード入力</h3>
                 <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">メールの6桁の数字を入力してください。</p>
                 <div class="form-group">
                     <input type="number" id="inputAuthCode" class="form-input auth-code-input" placeholder="000000" maxlength="6">
@@ -348,6 +351,12 @@
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
         window.goToMyPage = () => location.href = MY_PAGE_URL;
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
+        
+        // 文字列から「〇〇年度」を省略する関数
+        function formatEventName(name) {
+            if (!name) return "";
+            return name.replace(/\d{2,4}年度/g, "").trim();
+        }
 
         // --- 初期化 ---
         async function main(){ 
@@ -416,7 +425,12 @@
         async function loadTargetEvents() {
             const q = query(collection(db, "events"), orderBy("startDate", "desc"), limit(2));
             const snap = await getDocs(q);
-            targetEvents = snap.docs.map(d => ({ id: d.id, name: d.data().event || d.data().name }));
+            targetEvents = snap.docs.map(d => {
+                let rawName = d.data().event || d.data().name || "";
+                // ここで「〇〇年度」を省略
+                let shortName = formatEventName(rawName);
+                return { id: d.id, name: shortName, originalName: rawName };
+            });
             localStorage.setItem('lmc_events_cache', JSON.stringify(targetEvents));
             renderBandTabs();
         }
@@ -500,7 +514,7 @@
                     if(!assigned) arcEl?.appendChild(card);
                 }
             });
-            document.querySelectorAll('.band-slide').forEach(s => { if(!s.children.length) s.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">なし</div>'; });
+            document.querySelectorAll('.band-slide').forEach(s => { if(!s.children.length) s.innerHTML = '<div style="text-align:center; padding:40px; color:#999; font-size:14px;">なし</div>'; });
         }
 
         // --- バンド詳細ロジック ---
@@ -532,7 +546,7 @@
             songs.forEach(s => {
                 const div = document.createElement('div'); div.className = 'member-row-rich';
                 const sTitle = s.title || s;
-                div.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:8px; color:#0b57d0;">music_note</span><div style="flex:1; font-size:14px;">${sTitle}</div>${canE?`<button class="btn-outline" style="padding:2px 8px; font-size:10px;" onclick="removeSongFromBand('${sTitle}')">削除</button>`:''}`;
+                div.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:8px; color:#0b57d0;">music_note</span><div style="flex:1; font-size:13px;">${sTitle}</div>${canE?`<button class="btn-outline" style="padding:2px 8px; font-size:10px;" onclick="removeSongFromBand('${sTitle}')">削除</button>`:''}`;
                 songList.appendChild(div);
             });
             document.getElementById('bandSongAddArea').classList.toggle('hidden', !canE);
@@ -597,10 +611,10 @@
             showCustomAlert("削除しました。");
         };
         async function loadBandBookings(bid){
-            const list = document.getElementById('adminBandBookingsList'); list.innerHTML = "<div style='padding:10px; color:#999;'>読み込み中...</div>";
+            const list = document.getElementById('adminBandBookingsList'); list.innerHTML = "<div style='padding:10px; color:#999; font-size:12px;'>読み込み中...</div>";
             const qs = await getDocs(query(collection(db, "bookings"), where("bandId", "==", bid)));
             if(qs.empty) { list.innerHTML = "<div style='padding:12px; font-size:12px; color:#999;'>履歴はありません</div>"; return; }
-            let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:13px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
+            let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:12px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
             list.innerHTML = h;
         }
         window.openAddMemberModal = () => { loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); };
@@ -658,7 +672,7 @@
                 div.innerHTML = `<div class="notif-icon-box warning"><span class="material-icons">warning</span></div><div class="notif-content"><div class="notif-text">重要: メールアドレスを登録してください</div></div>`;
                 list.appendChild(div);
             }
-            if(!list.children.length) list.innerHTML = "<div style='padding:20px; color:#999; text-align:center;'>通知はありません</div>";
+            if(!list.children.length) list.innerHTML = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
             openModal('modal-notification');
         };
         window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
@@ -690,7 +704,7 @@
                 const u = d.data();
                 const div = document.createElement('div'); div.className = 'member-option';
                 div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; };
-                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${u.icon||''}" style="width:30px;height:30px;border-radius:50%;margin:0 10px;">${u.name}`;
+                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${u.icon||''}" style="width:28px;height:28px;border-radius:50%;margin:0 10px;">${u.name}`;
                 div.dataset.uid = d.id; div.dataset.uname = u.name;
                 list.appendChild(div);
             });
@@ -707,7 +721,9 @@
                 const ev = await getDoc(doc(db, "events", s.data().activeEventId));
                 if(ev.exists()) {
                     const el = document.getElementById('displayActiveEvent');
-                    el.innerText = ev.data().event || ev.data().name; el.style.display = "inline-block";
+                    let name = ev.data().event || ev.data().name || "";
+                    el.innerText = formatEventName(name); // 〇〇年度を省略してヘッダー表示
+                    el.style.display = "inline-block";
                 }
             }
         }
