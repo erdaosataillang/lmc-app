@@ -66,7 +66,7 @@
                 <!-- 検索ボックス -->
                 <div class="flex flex-1 items-center gap-3 bg-gray-50 px-5 py-3 rounded-2xl max-w-md focus-within:ring-2 focus-within:ring-indigo-100 transition-all border border-transparent focus-within:border-indigo-200">
                     <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
-                    <input type="text" id="user-search-input" placeholder="氏名・かな・学部・学籍番号で検索..." class="bg-transparent border-none outline-none text-sm w-full font-bold">
+                    <input type="text" id="user-search-input" placeholder="名前・かな・楽器・学籍番号で検索..." class="bg-transparent border-none outline-none text-sm w-full font-bold">
                 </div>
 
                 <!-- 表示切替 & フィルタ -->
@@ -171,9 +171,10 @@
         let selectedUserIds = new Set();
         let isEditing = false;
 
-        // 担当楽器の日本語マップ (小文字キーに対応)
+        // 担当楽器の日本語マップ (drumsとdrumの両方に対応)
         const partMap = {
             'drum': 'ドラム',
+            'drums': 'ドラム',
             'guitar': 'ギター',
             'vocal': 'ボーカル',
             'keyboard': 'キーボード',
@@ -235,12 +236,15 @@
 
             const q = userSearchQuery.toLowerCase();
             
-            filteredData = usersData.filter(u => 
-                (u.name || "").toLowerCase().includes(q) || 
-                (u.kana || "").toLowerCase().includes(q) || 
-                (u.studentId || "").toLowerCase().includes(q) ||
-                (u.faculty || "").toLowerCase().includes(q)
-            );
+            filteredData = usersData.filter(u => {
+                const partJapanese = getPartName(u.part);
+                return (u.name || "").toLowerCase().includes(q) || 
+                       (u.kana || "").toLowerCase().includes(q) || 
+                       (u.studentId || "").toLowerCase().includes(q) ||
+                       (u.faculty || "").toLowerCase().includes(q) ||
+                       (u.part || "").toLowerCase().includes(q) ||
+                       partJapanese.toLowerCase().includes(q);
+            });
             
             if (userShowOnlyCurrent) {
                 filteredData = filteredData.filter(u => {
@@ -515,7 +519,7 @@
                                         <option value="vocal" ${user.part?.toLowerCase() == 'vocal' ? 'selected' : ''}>ボーカル</option>
                                         <option value="guitar" ${user.part?.toLowerCase() == 'guitar' ? 'selected' : ''}>ギター</option>
                                         <option value="bass" ${user.part?.toLowerCase() == 'bass' ? 'selected' : ''}>ベース</option>
-                                        <option value="drum" ${user.part?.toLowerCase() == 'drum' ? 'selected' : ''}>ドラム</option>
+                                        <option value="drums" ${user.part?.toLowerCase() == 'drums' || user.part?.toLowerCase() == 'drum' ? 'selected' : ''}>ドラム</option>
                                         <option value="keyboard" ${user.part?.toLowerCase() == 'keyboard' ? 'selected' : ''}>キーボード</option>
                                     </select>
                                 </div>
