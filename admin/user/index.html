@@ -186,25 +186,30 @@
             return partMap[normalizedPart] || p;
         };
 
-        // 安全装置
+        // 安全装置: 5秒経っても終わらなければローダーを消す
         const safetyTimer = setTimeout(() => {
             const loader = document.getElementById('initial-loader');
             if (loader) loader.style.opacity = '0';
             setTimeout(() => loader?.remove(), 300);
-        }, 3000);
+        }, 5000);
 
-        // 初期化 (元のパス collection(db, 'users') に戻します)
+        // 初期化 (Firebaseパスを 'users' に戻し、安全な要素アクセスを行います)
         initAdminPage('users', (user) => {
             clearTimeout(safetyTimer);
-            document.getElementById('status-icon').classList.replace('text-gray-300', 'text-emerald-400');
-            document.getElementById('status-text').innerText = "System Live";
+
+            // ステータス表示の更新（nullチェック付き）
+            const statusIcon = document.getElementById('status-icon');
+            const statusText = document.getElementById('status-text');
+            if (statusIcon) statusIcon.classList.replace('text-gray-300', 'text-emerald-400');
+            if (statusText) statusText.innerText = "System Live";
             
-            // 元のパスでの監視
+            // 元のパス 'users' での監視
             onSnapshot(collection(db, 'users'), 
                 (s) => {
                     usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
                     renderUsers();
                     
+                    // データの読み込みが完了したらローダーを消す
                     const loader = document.getElementById('initial-loader');
                     if (loader) {
                         loader.style.opacity = '0';
@@ -213,8 +218,8 @@
                 },
                 (error) => {
                     console.error("Error fetching users:", error);
-                    const statusText = document.getElementById('loading-status-text');
-                    if (statusText) statusText.innerText = "データの読み込みに失敗しました。";
+                    const statusTextEl = document.getElementById('loading-status-text');
+                    if (statusTextEl) statusTextEl.innerText = "データの読み込みに失敗しました。";
                 }
             );
         });
@@ -323,7 +328,7 @@
             }
 
             const allSelectedInFiltered = data.every(u => selectedUserIds.has(u.id));
-            selectAllCheck.checked = data.length > 0 && allSelectedInFiltered;
+            if (selectAllCheck) selectAllCheck.checked = data.length > 0 && allSelectedInFiltered;
 
             tableBody.innerHTML = data.map(user => {
                 const isSelected = selectedUserIds.has(user.id);
@@ -396,11 +401,12 @@
             isEditing = false;
             renderModalContent(user);
             const modal = document.getElementById('user-detail-modal');
-            modal.classList.remove('hidden');
+            if (modal) modal.classList.remove('hidden');
         };
 
         function renderModalContent(user) {
             const content = document.getElementById('user-modal-content');
+            if (!content) return;
             
             let birthStr = '未登録';
             let birthInputVal = '';
@@ -523,7 +529,8 @@
                     </div>
                 `;
 
-                document.getElementById('save-user-btn').addEventListener('click', () => saveUserChanges(user.id));
+                const saveBtn = document.getElementById('save-user-btn');
+                if (saveBtn) saveBtn.addEventListener('click', () => saveUserChanges(user.id));
             }
         }
 
@@ -536,16 +543,18 @@
 
         async function saveUserChanges(userId) {
             const saveBtn = document.getElementById('save-user-btn');
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i>';
+            }
 
-            const name = document.getElementById('edit-name').value;
-            const kana = document.getElementById('edit-kana').value;
-            const year = document.getElementById('edit-year').value;
-            const faculty = document.getElementById('edit-faculty').value;
-            const studentId = document.getElementById('edit-studentId').value;
-            const part = document.getElementById('edit-part').value;
-            const birthdayInput = document.getElementById('edit-birthday').value;
+            const name = document.getElementById('edit-name')?.value;
+            const kana = document.getElementById('edit-kana')?.value;
+            const year = document.getElementById('edit-year')?.value;
+            const faculty = document.getElementById('edit-faculty')?.value;
+            const studentId = document.getElementById('edit-studentId')?.value;
+            const part = document.getElementById('edit-part')?.value;
+            const birthdayInput = document.getElementById('edit-birthday')?.value;
 
             let birthday = null;
             if (birthdayInput) {
@@ -553,14 +562,13 @@
             }
 
             try {
-                // パスを元の collection('users') に合わせて doc 指定
+                // 元のパス 'users' で更新
                 const userRef = doc(db, 'users', userId);
                 await updateDoc(userRef, {
                     name, kana, year, faculty, studentId, part, birthday
                 });
                 
                 isEditing = false;
-                // UI上のデータも更新（リアルタイム監視により自動反映されるが即時性のため）
                 const updatedUser = usersData.find(u => u.id === userId);
                 if (updatedUser) {
                     Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, birthday });
@@ -569,8 +577,10 @@
             } catch (err) {
                 console.error("Error updating user:", err);
                 alert("保存に失敗しました。");
-                saveBtn.disabled = false;
-                saveBtn.innerText = "保存する";
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = "保存する";
+                }
             }
         }
 
@@ -580,10 +590,55 @@
         };
 
         // ----------------------------------------------------
-        // CSV Download Logic
+        // Event Listeners
         // ----------------------------------------------------
 
-        function downloadCSV() {
+        document.getElementById('view-grid-btn')?.addEventListener('click', () => {
+            viewMode = "grid";
+            updateViewButtons();
+            renderUsers();
+        });
+        document.getElementById('view-table-btn')?.addEventListener('click', () => {
+            viewMode = "table";
+            updateViewButtons();
+            renderUsers();
+        });
+
+        function updateViewButtons() {
+            const gridBtn = document.getElementById('view-grid-btn');
+            const tableBtn = document.getElementById('view-table-btn');
+            if (!gridBtn || !tableBtn) return;
+            
+            [gridBtn, tableBtn].forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600'));
+            [gridBtn, tableBtn].forEach(b => b.classList.add('text-gray-400'));
+            
+            const active = viewMode === 'grid' ? gridBtn : tableBtn;
+            active.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+            active.classList.remove('text-gray-400');
+        }
+
+        document.getElementById('user-search-input')?.addEventListener('input', (e) => {
+            userSearchQuery = e.target.value;
+            renderUsers();
+        });
+
+        document.getElementById('user-current-toggle')?.addEventListener('change', (e) => {
+            userShowOnlyCurrent = e.target.checked;
+            renderUsers();
+        });
+
+        document.getElementById('user-sort-select')?.addEventListener('change', (e) => {
+            userSortOrder = e.target.value;
+            renderUsers();
+        });
+
+        document.getElementById('select-all-checkbox')?.addEventListener('change', (e) => {
+            if (e.target.checked) filteredData.forEach(u => selectedUserIds.add(u.id));
+            else filteredData.forEach(u => selectedUserIds.delete(u.id));
+            renderUsers();
+        });
+
+        document.getElementById('csv-download-btn')?.addEventListener('click', () => {
             if (selectedUserIds.size === 0) return;
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
             selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
@@ -610,57 +665,9 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        }
-
-        // ----------------------------------------------------
-        // Event Listeners
-        // ----------------------------------------------------
-
-        document.getElementById('view-grid-btn').addEventListener('click', () => {
-            viewMode = "grid";
-            updateViewButtons();
-            renderUsers();
-        });
-        document.getElementById('view-table-btn').addEventListener('click', () => {
-            viewMode = "table";
-            updateViewButtons();
-            renderUsers();
         });
 
-        function updateViewButtons() {
-            const gridBtn = document.getElementById('view-grid-btn');
-            const tableBtn = document.getElementById('view-table-btn');
-            [gridBtn, tableBtn].forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600'));
-            [gridBtn, tableBtn].forEach(b => b.classList.add('text-gray-400'));
-            
-            const active = viewMode === 'grid' ? gridBtn : tableBtn;
-            active.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
-            active.classList.remove('text-gray-400');
-        }
-
-        document.getElementById('user-search-input').addEventListener('input', (e) => {
-            userSearchQuery = e.target.value;
-            renderUsers();
-        });
-
-        document.getElementById('user-current-toggle').addEventListener('change', (e) => {
-            userShowOnlyCurrent = e.target.checked;
-            renderUsers();
-        });
-
-        document.getElementById('user-sort-select').addEventListener('change', (e) => {
-            userSortOrder = e.target.value;
-            renderUsers();
-        });
-
-        document.getElementById('select-all-checkbox').addEventListener('change', (e) => {
-            if (e.target.checked) filteredData.forEach(u => selectedUserIds.add(u.id));
-            else filteredData.forEach(u => selectedUserIds.delete(u.id));
-            renderUsers();
-        });
-
-        document.getElementById('csv-download-btn').addEventListener('click', downloadCSV);
-        document.getElementById('user-detail-modal').addEventListener('click', window.closeUserDetail);
+        document.getElementById('user-detail-modal')?.addEventListener('click', window.closeUserDetail);
 
     </script>
 </body>
