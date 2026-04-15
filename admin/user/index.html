@@ -36,6 +36,11 @@
         .edit-input {
             @apply w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all;
         }
+
+        /* コピーボタンのスタイル */
+        .copy-btn {
+            @apply ml-2 text-gray-300 hover:text-indigo-500 transition-colors cursor-pointer p-1 rounded hover:bg-indigo-50;
+        }
     </style>
 </head>
 <body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
@@ -401,6 +406,23 @@
         // Detail & Edit Functions
         // ----------------------------------------------------
 
+        // コピー用ヘルパー
+        window.copyInfo = (text, btnElement) => {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            // フィードバック
+            const originalHtml = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i> <span class="text-[8px] text-emerald-500 font-bold ml-1">Copied!</span>';
+            setTimeout(() => {
+                btnElement.innerHTML = originalHtml;
+            }, 2000);
+        };
+
         window.showUserDetail = (userId) => {
             const user = usersData.find(u => u.id === userId);
             if (!user) return;
@@ -427,7 +449,7 @@
                 : `<div class="w-32 h-32 rounded-[40px] bg-white flex items-center justify-center text-5xl font-bold text-indigo-100 border-[6px] border-white shadow-2xl">${(user.name||"?")[0]}</div>`;
 
             if (!isEditing) {
-                // 表示モード
+                // 表示モード (コピー機能付き)
                 content.innerHTML = `
                     <div class="bg-gradient-to-br from-indigo-500 to-purple-600 h-36 w-full relative overflow-hidden">
                         <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
@@ -440,8 +462,14 @@
                             </button>
                         </div>
                         
-                        <h3 class="text-3xl font-extrabold text-gray-800 mb-1">${user.name}</h3>
-                        <p class="text-indigo-500 font-bold text-sm mb-6">${user.kana || ''}</p>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h3 class="text-3xl font-extrabold text-gray-800">${user.name}</h3>
+                            <button onclick="window.copyInfo('${user.name}', this)" class="copy-btn"><i class="fa-regular fa-copy"></i></button>
+                        </div>
+                        <div class="flex items-center gap-2 mb-6">
+                            <p class="text-indigo-500 font-bold text-sm uppercase">${user.kana || ''}</p>
+                            ${user.kana ? `<button onclick="window.copyInfo('${user.kana}', this)" class="copy-btn text-indigo-300"><i class="fa-regular fa-copy text-xs"></i></button>` : ''}
+                        </div>
                         
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
@@ -450,11 +478,17 @@
                             </div>
                             <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                 <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">学籍番号</span>
-                                <span class="font-bold text-gray-800 text-lg font-mono">${user.studentId || '未登録'}</span>
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-gray-800 text-lg font-mono">${user.studentId || '未登録'}</span>
+                                    ${user.studentId ? `<button onclick="window.copyInfo('${user.studentId}', this)" class="copy-btn"><i class="fa-regular fa-copy text-sm"></i></button>` : ''}
+                                </div>
                             </div>
                             <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                 <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">担当パート</span>
-                                <span class="font-bold text-gray-800">${getPartName(user.part)}</span>
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-gray-800">${getPartName(user.part)}</span>
+                                    <button onclick="window.copyInfo('${getPartName(user.part)}', this)" class="copy-btn"><i class="fa-regular fa-copy text-sm"></i></button>
+                                </div>
                             </div>
                             <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
                                 <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">誕生日</span>
@@ -462,7 +496,10 @@
                             </div>
                             <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 col-span-full">
                                  <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-1">User System ID</span>
-                                 <span class="font-mono text-[10px] text-gray-400 break-all">${user.id}</span>
+                                 <div class="flex items-center justify-between">
+                                    <span class="font-mono text-[10px] text-gray-400 break-all">${user.id}</span>
+                                    <button onclick="window.copyInfo('${user.id}', this)" class="copy-btn text-gray-300"><i class="fa-regular fa-copy text-xs"></i></button>
+                                 </div>
                             </div>
                         </div>
                     </div>
