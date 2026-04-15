@@ -213,7 +213,11 @@
                 <label class="form-label">バンド名</label>
                 <input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム">
             </div>
-            <!-- メンバー選択を削除し、共有前提のUIに変更 -->
+            <div class="form-group">
+                <label class="form-label">出演するイベント</label>
+                <select id="selectNewBandEvent" class="form-input"></select>
+                <div id="newBandEventHelp" style="font-size:11px; color:#d93025; margin-top:8px; display:none;">※イベントを指定しない場合、このバンドは「アーカイブ」タブに表示されます。</div>
+            </div>
             <p style="font-size:12px; color:#5f6368; margin-bottom:20px; text-align:center;">バンドを作成し、メンバーに招待リンクを送信します。</p>
             <button class="btn-primary" onclick="saveBand()">作成して招待リンクを発行</button>
             <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
@@ -606,18 +610,38 @@
         // --- バンド操作（共有前提の作成に変更） ---
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
+            const eventId = document.getElementById('selectNewBandEvent').value;
             
             // 自分だけを初期メンバーとする
             const mIds = [currentUser], mNames = [currentProfile.displayName];
+            const initialEvents = eventId ? [eventId] : [];
+
             try {
-                const docRef = await addDoc(collection(db, "bands"), { name: name, memberIds: mIds, memberNames: mNames, creatorId: currentUser, isArchived: false, createdAt: serverTimestamp() });
-                if (tempBandIconBlob) { const url = await uploadImageToExternal(tempBandIconBlob); await updateDoc(docRef, { icon: url }); }
+                const docRef = await addDoc(collection(db, "bands"), { 
+                    name: name, 
+                    memberIds: mIds, 
+                    memberNames: mNames, 
+                    events: initialEvents, 
+                    creatorId: currentUser, 
+                    isArchived: false, 
+                    createdAt: serverTimestamp() 
+                });
+                
+                if (tempBandIconBlob) { 
+                    const url = await uploadImageToExternal(tempBandIconBlob); 
+                    await updateDoc(docRef, { icon: url }); 
+                }
                 closeModal('modal-band'); 
+                
+                if (!eventId) {
+                    await showCustomAlert("イベントが指定されていないため、このバンドは「アーカイブ」タブに保存されました。");
+                }
                 
                 // 作成後そのまま招待画面を立ち上げる
                 shareBandInvite(docRef.id, name);
             } catch(e) { showCustomAlert(e.message); }
         };
+        
         window.updateBandName = async () => {
             const bid = document.getElementById('detailBandId').value, name = document.getElementById('detailBandName').value.trim();
             if(!name) return;
@@ -785,13 +809,31 @@
             myBandsAll.filter(b=>!b.isArchived).forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.innerText = b.name; bSel.appendChild(opt); });
             openModal('modal-event-register');
         };
+        
         window.openBandModal = () => {
             closeFabMenu(); 
             document.getElementById('inputBandName').value = "";
             document.getElementById('previewBandIcon').classList.add('hidden');
             tempBandIconBlob = null;
+            
+            // イベント選択肢のセットアップ
+            const eSel = document.getElementById('selectNewBandEvent');
+            eSel.innerHTML = '<option value="">指定しない（アーカイブタブに保存）</option>';
+            targetEvents.forEach(ev => {
+                const opt = document.createElement('option');
+                opt.value = ev.id;
+                opt.innerText = ev.name;
+                eSel.appendChild(opt);
+            });
+            if(targetEvents.length > 0) eSel.value = targetEvents[0].id;
+            
+            const helpText = document.getElementById('newBandEventHelp');
+            helpText.style.display = eSel.value === "" ? "block" : "none";
+            eSel.onchange = (e) => { helpText.style.display = e.target.value === "" ? "block" : "none"; };
+
             openModal('modal-band');
         };
+        
         window.saveEventRegistration = async () => {
             const eid = document.getElementById('selectRegisterEvent').value, bid = document.getElementById('selectRegisterBand').value;
             if(!eid || !bid) return;
