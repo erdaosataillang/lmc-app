@@ -34,7 +34,7 @@
         .band-slide { width: 100%; height: 100%; padding: 12px 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 20px; }
 
         /* カードデザイン (丸み強め・コンパクトに) */
-        .card { background: white; border-radius: 20px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; } 
+        .card { background: white; border-radius: 20px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; cursor: pointer; } 
         .card.band-card:active { background-color: #f5f5f5; }
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } 
         .band-item:last-child { border: none; margin: 0; padding: 0; }
@@ -524,21 +524,34 @@
             targetEvents.forEach(ev => { const el = document.getElementById(`bandList-${ev.id}`); if(el) el.innerHTML = ""; });
             const arcEl = document.getElementById('bandList-archive'); if(arcEl) arcEl.innerHTML = "";
 
-            myBandsAll.forEach(b => {
-                const card = document.createElement('div'); card.className = 'card band-card';
-                card.onclick = () => openBandDetail(b.id, b);
+            // カードを生成する共通処理
+            const createCard = (b) => {
+                const card = document.createElement('div'); 
+                card.className = 'card band-card';
+                card.onclick = () => openBandDetail(b.id, b); // <--- ここで毎回新しくイベントを付与する
                 card.innerHTML = `<div class="band-item" style="border:none; margin:0; padding:0;">
                     <div class="band-icon">${b.icon?`<img src="${b.icon}">`:b.name[0]}</div>
                     <div class="band-info"><div class="band-name">${b.name}</div></div>
                     <span class="material-icons" style="color:#ccc;">chevron_right</span>
                 </div>`;
-                
-                if(b.isArchived) arcEl?.appendChild(card);
-                else {
-                    const eIds = new Set(b.events || []); (b.songs||[]).forEach(s => { if(s.eventId) eIds.add(s.eventId); });
+                return card;
+            };
+
+            myBandsAll.forEach(b => {
+                if(b.isArchived) { 
+                    arcEl?.appendChild(createCard(b)); 
+                } else {
+                    const eIds = new Set(b.events || []); 
+                    (b.songs||[]).forEach(s => { if(s.eventId) eIds.add(s.eventId); });
                     let assigned = false;
-                    targetEvents.forEach(ev => { if(eIds.has(ev.id)) { document.getElementById(`bandList-${ev.id}`)?.appendChild(card.cloneNode(true)); assigned = true; } });
-                    if(!assigned) arcEl?.appendChild(card);
+                    targetEvents.forEach(ev => { 
+                        if(eIds.has(ev.id)) { 
+                            // cloneNodeではなく都度createCardを呼ぶことでonclickを維持
+                            document.getElementById(`bandList-${ev.id}`)?.appendChild(createCard(b)); 
+                            assigned = true; 
+                        } 
+                    });
+                    if(!assigned) arcEl?.appendChild(createCard(b));
                 }
             });
             document.querySelectorAll('.band-slide').forEach(s => { if(!s.children.length) s.innerHTML = '<div style="text-align:center; padding:40px; color:#999; font-size:14px;">なし</div>'; });
@@ -765,7 +778,7 @@
             openModal('modal-event-register');
         };
         window.openBandModal = () => {
-            loadUserList('userSelectList'); openModal('modal-band');
+            closeFabMenu(); loadUserList('userSelectList'); openModal('modal-band');
         };
         window.saveEventRegistration = async () => {
             const eid = document.getElementById('selectRegisterEvent').value, bid = document.getElementById('selectRegisterBand').value;
