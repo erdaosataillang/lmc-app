@@ -87,7 +87,7 @@
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
         .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
@@ -185,7 +185,7 @@
     <!-- モーダル群 -->
     <!-- 出演登録 -->
     <div id="modal-event-register" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-register')">
-        <div class="modal-content">
+        <div class="modal-content" style="padding: 24px;">
             <h3 style="margin-top:0; font-size: 18px;">イベントに出演登録</h3>
             <div class="form-group">
                 <label class="form-label">出演するイベント</label>
@@ -202,7 +202,7 @@
 
     <!-- バンド作成 -->
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
-        <div class="modal-content">
+        <div class="modal-content" style="padding: 24px;">
             <h3 style="margin-top:0; font-size: 18px;">バンド結成</h3>
             <div class="image-picker-area">
                 <div class="image-picker" onclick="document.getElementById('bandIconInput').click()">
@@ -282,36 +282,54 @@
 
     <!-- 通知・ステータス -->
     <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
-        <div class="modal-content">
+        <div class="modal-content" style="padding: 24px;">
             <h3 style="margin-top:0; margin-bottom:10px; font-size: 18px;">通知</h3>
-            <div id="notificationList" style="max-height:60vh; overflow-y:auto;"></div>
+            <div id="notificationList" style="max-height:60vh; overflow-y:auto; margin: -24px -24px 20px; padding: 24px;"></div>
             <button class="btn-secondary" onclick="closeModal('modal-notification')">閉じる</button>
         </div>
     </div>
 
+    <!-- Twitter(X)風 マイステータス -->
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
-        <div class="modal-content">
-            <div style="padding:16px 0;">
-                <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px;">
-                    <img id="modalUserIcon" src="" style="width:64px; height:64px; border-radius:50%; border:2px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.1); flex-shrink:0;">
-                    <div id="modalUserName" style="font-weight:bold; font-size:18px; color:#1f1f1f;"></div>
+        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
+            <!-- ヘッダー画像 -->
+            <div style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); position: relative;">
+                <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
+            </div>
+            
+            <div style="padding: 0 16px 20px;">
+                <!-- アイコン -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: -40px; margin-bottom: 12px;">
+                    <img id="modalUserIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2;">
                 </div>
-                <div style="background:#f9f9f9; padding:16px; border-radius:16px;">
-                    <div style="font-size:12px; color:#666; margin-bottom:12px; font-weight:bold;">2026年度 部費状況</div>
-                    <div style="display:flex; gap:12px;">
+                
+                <!-- 名前と @ID -->
+                <div>
+                    <div id="modalUserName" style="font-weight: 800; font-size: 22px; color: #0f1419; line-height: 1.2;"></div>
+                    <div id="modalUserLineName" style="font-size: 15px; color: #536471; margin-top: 4px;"></div>
+                </div>
+
+                <!-- 部費状況 -->
+                <div style="background:#f9f9f9; padding:16px; border-radius:16px; margin-top: 24px;">
+                    <div style="font-size:12px; color:#536471; margin-bottom:8px; font-weight:bold;">2026年度 部費状況</div>
+                    <div style="display:flex; gap:10px;">
                         <div id="statusFeeTerm1" class="fee-status-badge">前期: -</div>
                         <div id="statusFeeTerm2" class="fee-status-badge">後期: -</div>
                     </div>
                 </div>
-                <div id="myQRCodeArea" style="width:140px; height:140px; margin:32px auto 20px;"></div>
+                
+                <!-- QRコード -->
+                <div style="margin-top: 24px; text-align: center;">
+                    <div style="font-size: 13px; color: #536471; margin-bottom: 12px; font-weight: bold;">会員QRコード</div>
+                    <div id="myQRCodeArea" style="width:120px; height:120px; margin:0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"></div>
+                </div>
             </div>
-            <button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button>
         </div>
     </div>
 
     <!-- メール認証 -->
     <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
-        <div class="modal-content">
+        <div class="modal-content" style="padding: 24px;">
             <div id="email-step-1">
                 <h3 style="font-size: 18px; margin-top:0;">メールアドレス登録</h3>
                 <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
@@ -336,7 +354,7 @@
 
     <!-- メンバー追加モーダル -->
     <div id="modal-add-member" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-add-member')">
-        <div class="modal-content">
+        <div class="modal-content" style="padding: 24px;">
             <h3 style="margin-top:0; font-size: 18px;">メンバーを追加</h3>
             <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">追加したいメンバーを選択してください。</p>
             <div class="form-group">
@@ -476,7 +494,8 @@
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
             // 管理者タブ表示制御 (role または roll が存在し、かつ裏方である場合)
-            if(isU && (d.role || d.roll)) {
+            const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
+            if(isU && (d.role || hasLmcAll)) {
                 document.getElementById('nav-admin').classList.remove('hidden');
             } else {
                 document.getElementById('nav-admin').classList.add('hidden');
@@ -487,7 +506,9 @@
         window.openUserStatusModal = async () => {
             const year=2026; const status=currentUserData.feeStatus||{};
             document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
-            document.getElementById('modalUserName').innerText=currentUserData.name+" さん";
+            document.getElementById('modalUserName').innerText=currentUserData.name;
+            // LINE名を @つきで表示
+            document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
             const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
             t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
             t2.innerText=`後期: ${status[`${year}_2`]?'済':'未納'}`; t2.className=`fee-status-badge ${status[`${year}_2`]?'fee-paid':'fee-unpaid'}`;
