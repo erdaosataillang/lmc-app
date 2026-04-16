@@ -1,847 +1,676 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LMC Mobile - マイバンド</title>
-    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Members - LMC Admin</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 共通CSS -->
+    <link rel="stylesheet" href="/css/style.css">
     <style>
-        /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
-        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        /* 万が一の真っ白防止用 */
+        body.loading-failed { display: block !important; }
         
-        /* ボトムナビ(88px)の分だけpaddingをあけてかぶらないようにする */
-        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; padding-bottom: 88px; box-sizing: border-box; } 
-        .hidden { display: none !important; }
-        
-        /* ヘッダー */
-        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
-        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
-        .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
-        
-        /* 役職リング演出 */
-        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); } 
-        .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
-        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52,168,83,0.5); } 
-        .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234,67,53,0.5); }
-        .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
-        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
-        @keyframes spin { 100% { transform: rotate(360deg); } } @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+        /* スイッチのスタイル調整 */
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #6366f1; }
+        input:checked + .slider:before { transform: translateX(14px); }
 
-        /* スライダー・リスト領域 */
-        .scroll-content { flex-grow: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
-        .band-slider { display: flex; width: 100%; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); height: 100%; }
-        .band-slide { width: 100%; height: 100%; padding: 12px 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 20px; }
+        /* テーブル表示用の調整 */
+        .member-table th { @apply px-4 py-3 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100; }
+        .member-table td { @apply px-4 py-3 text-sm border-b border-gray-50; }
+        .member-table tr:hover td { @apply bg-gray-50/50; }
 
-        /* カードデザイン (丸み強め・コンパクトに) */
-        .card { background: white; border-radius: 20px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; cursor: pointer; } 
-        .card.band-card:active { background-color: #f5f5f5; }
-        .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } 
-        .band-item:last-child { border: none; margin: 0; padding: 0; }
-        .band-icon { width: 44px; height: 44px; background: #e0e3e7; border-radius: 16px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 18px; color: #5f6368; font-weight: bold; overflow: hidden; } 
-        .band-icon img { width: 100%; height: 100%; object-fit: cover; }
-        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 15px; } 
+        /* チェックボックスのスタイル */
+        .custom-checkbox {
+            @apply w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer;
+        }
 
-        /* イベント選択タブ (グラスモーフィズムでなめらかに、左寄せでFABとかぶらないように) */
-        .band-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; padding: 4px; margin: 0 auto 12px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100% - 88px); } 
-        .band-tab { flex: 0 0 auto; min-width: 60px; text-align: center; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
-        .band-tab.active { background: #ffffff; color: #0b57d0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        /* 編集フォーム用入力スタイル */
+        .edit-input {
+            @apply w-full bg-white border border-gray-200 rounded-xl px-4 py-2 text-sm font-bold outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 transition-all;
+        }
 
-        /* ナビゲーション */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e0e3e7; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 2000; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 11px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
-        .nav-icon { font-size: 22px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } 
-        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } 
-        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } 
-        .nav-item.active span { color: #1f1f1f; font-weight: bold; }
+        /* コピーボタンのスタイル */
+        .copy-btn {
+            @apply ml-1 text-gray-300 hover:text-indigo-500 transition-all cursor-pointer p-1.5 rounded-lg hover:bg-indigo-50 active:scale-90;
+        }
 
-        /* FAB コンテナとスピードダイヤルアニメーション */
-        .fab-container { position: absolute; bottom: 120px; right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
-        .fab-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 900; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
-        .fab-overlay.open { opacity: 1; visibility: visible; }
-        
-        .fab { width: 52px; height: 52px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s; z-index: 902; pointer-events: auto; }
-        /* 開いたときに回転し、色が変わる */
-        .fab.open { transform: rotate(135deg); background: white; color: #d93025; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
-        .fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; margin-bottom: 16px; pointer-events: none; }
-        .fab-menu-item { display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(20px) scale(0.8); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
-        .fab-menu.open .fab-menu-item { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-        /* 順番に現れるようにディレイを設定 */
-        .fab-menu.open .fab-menu-item:nth-child(2) { transition-delay: 0.05s; }
-        .fab-menu.open .fab-menu-item:nth-child(1) { transition-delay: 0.1s; }
-
-        .fab-menu-label { background: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; color: #1f1f1f; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; }
-        .fab-menu-btn { width: 44px; height: 44px; border-radius: 50%; background: white; color: #0b57d0; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; }
-        .fab-menu-btn:active { background: #f0f0f0; }
-
-        /* ボタン・フォーム系 */
-        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
-        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-weight: bold; }
-        
-        .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
-        .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
-        
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
-        .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
-        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
-
-        /* メンバー・通知リスト */
-        .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
-        .member-option.selected { background: #e8f0fe; }
-        .member-row-rich { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; } .member-avatar-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
-        .member-name-rich { font-size: 14px; font-weight: bold; color: #1f1f1f; } .member-role-badge { font-size: 9px; background: #e8f0fe; color: #0b57d0; padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
-        .stat-badge { background: #f8f9fa; padding: 6px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; flex: 1; }
-        .stat-value { font-size: 14px; font-weight: bold; color: #0b57d0; } .stat-label { font-size: 9px; color: #5f6368; font-weight: bold; }
-        
-        .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
-        .notification-badge { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background: #d93025; border-radius: 50%; border: 2px solid white; display: none; }
-        .notification-badge.show { display: block; }
-        .notif-icon-box { width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
-        .notif-icon-box.warning { background: #fce8e6; color: #d93025; }
-        .notification-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
-        .notification-item.clickable { cursor: pointer; }
-        .auth-code-input { letter-spacing: 4px; text-align: center; font-size: 24px; font-weight: bold; }
-        .fee-status-badge { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; } .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        /* モーダル内のカード登場アニメーション */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-item {
+            animation: fadeInUp 0.4s ease-out forwards;
+            opacity: 0;
+        }
     </style>
 </head>
-<body>
-    <!-- カスタムダイアログ -->
-    <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
-        <div class="dialog-content" style="background:white; width:85%; max-width:320px; border-radius:24px; padding:24px; text-align:center;">
-            <div id="dialogTitle" style="font-weight:bold; font-size:16px; margin-bottom:12px;">確認</div>
-            <div id="dialogMessage" style="font-size:13px; color:#444746; margin-bottom:24px; white-space:pre-wrap;"></div>
-            <div style="display:flex; gap:12px;">
-                <button id="dialogBtnCancel" class="btn-secondary" style="margin:0; flex:1;">キャンセル</button>
-                <button id="dialogBtnOk" class="btn-primary" style="margin:0; flex:1;">OK</button>
-            </div>
-        </div>
+<body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
+    <!-- ローディング画面 -->
+    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+        <p class="text-xs font-bold text-gray-400 tracking-widest uppercase">Initializing System...</p>
     </div>
 
-    <div class="container">
-        <!-- ヘッダー -->
-        <div class="app-header">
-            <div class="header-title">
-                マイバンド
-                <span id="displayActiveEvent" style="display:none; font-size:10px; font-weight:bold; background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; margin-left:4px;"></span>
+    <!-- サイドバーコンテナ -->
+    <div id="sidebar-container"></div>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-1 ml-[260px] h-screen overflow-y-auto p-8 relative">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-extrabold text-gray-800 uppercase tracking-widest">Members</h2>
+                <p class="text-[10px] text-gray-400 mt-1 font-bold uppercase tracking-wider">部員名簿・検索・管理</p>
             </div>
-            <div class="header-right" style="display:flex; align-items:center; gap:16px;">
-                <div class="notification-btn" onclick="openNotificationModal()">
-                    <span class="material-icons" style="color:#5f6368;">notifications</span>
-                    <span class="notification-badge" id="headerNotifBadge"></span>
+            <div id="db-status" class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <i id="status-icon" class="fa-solid fa-circle text-[8px] text-gray-300"></i> <span id="status-text">Connecting...</span>
+            </div>
+        </header>
+
+        <!-- ツールバー: 検索 & フィルタ -->
+        <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 p-6 mb-8">
+            <div class="flex flex-wrap items-center justify-between gap-6">
+                <!-- 検索ボックス -->
+                <div class="flex flex-1 items-center gap-3 bg-gray-50 px-5 py-3 rounded-2xl max-w-md focus-within:ring-2 focus-within:ring-indigo-100 transition-all border border-transparent focus-within:border-indigo-200">
+                    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                    <input type="text" id="user-search-input" placeholder="名前・かな・楽器・学籍番号で検索..." class="bg-transparent border-none outline-none text-sm w-full font-bold">
                 </div>
-                <div class="header-avatar" id="headerIconBands"></div>
-            </div>
-        </div>
 
-        <!-- メインコンテンツ（スライダー） -->
-        <div class="scroll-content">
-            <div id="bandSlider" class="band-slider">
-                <!-- JSで動的に生成 -->
-            </div>
-        </div>
-
-        <!-- 下側に配置したイベント選択タブ -->
-        <div class="band-tabs" id="bandTabs">
-            <div class="band-tab active">読み込み中...</div>
-        </div>
-        
-        <!-- アニメーション付き FAB (スピードダイヤル) -->
-        <div id="fab-overlay" class="fab-overlay" onclick="toggleFabMenu()"></div>
-        <div class="fab-container">
-            <div class="fab-menu" id="fabMenu">
-                <div class="fab-menu-item" onclick="openEventRegisterModal()">
-                    <span class="fab-menu-label">既存バンドをイベントに登録</span>
-                    <div class="fab-menu-btn"><span class="material-icons">event_available</span></div>
-                </div>
-                <div class="fab-menu-item" onclick="openBandModal()">
-                    <span class="fab-menu-label">新しいバンドを結成</span>
-                    <div class="fab-menu-btn"><span class="material-icons">group_add</span></div>
-                </div>
-            </div>
-            <div class="fab" id="mainFab" onclick="toggleFabMenu()">
-                <span class="material-icons">add</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- ボトムナビゲーション -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
-        <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
-        <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <!-- 管理者用タブ (role/rollがある場合のみ表示) -->
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon" style="color:#EA4335;">admin_panel_settings</span><span>管理</span></div>
-        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
-    </div>
-
-    <!-- モーダル群 -->
-    <!-- 出演登録 -->
-    <div id="modal-event-register" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-register')">
-        <div class="modal-content">
-            <h3 style="margin-top:0; font-size: 18px;">イベントに出演登録</h3>
-            <div class="form-group">
-                <label class="form-label">出演するイベント</label>
-                <select id="selectRegisterEvent" class="form-input"></select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">登録するバンド</label>
-                <select id="selectRegisterBand" class="form-input"></select>
-            </div>
-            <button class="btn-primary" onclick="saveEventRegistration()">登録する</button>
-            <button class="btn-secondary" onclick="closeModal('modal-event-register')">キャンセル</button>
-        </div>
-    </div>
-
-    <!-- バンド作成 -->
-    <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
-        <div class="modal-content">
-            <h3 style="margin-top:0; font-size: 18px;">バンド結成</h3>
-            <div class="image-picker-area">
-                <div class="image-picker" onclick="document.getElementById('bandIconInput').click()">
-                    <i class="material-icons">add_a_photo</i>
-                    <img id="previewBandIcon" class="hidden" src="">
-                </div>
-                <input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')">
-            </div>
-            <div class="form-group">
-                <label class="form-label">バンド名</label>
-                <input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム">
-            </div>
-            <div class="form-group">
-                <label class="form-label">出演するイベント</label>
-                <select id="selectNewBandEvent" class="form-input"></select>
-                <div id="newBandEventHelp" style="font-size:11px; color:#d93025; margin-top:8px; display:none;">※イベントを指定しない場合、このバンドは「アーカイブ」タブに表示されます。</div>
-            </div>
-            <p style="font-size:12px; color:#5f6368; margin-bottom:20px; text-align:center;">バンドを作成し、メンバーに招待リンクを送信します。</p>
-            <button class="btn-primary" onclick="saveBand()">作成して招待リンクを発行</button>
-            <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
-        </div>
-    </div>
-
-    <!-- バンド詳細 -->
-    <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
-        <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
-            <div class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid #f0f0f0; position: relative; text-align:center;">
-                <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px; color: #5f6368;">close</span></button>
-                <div class="image-picker-area" style="margin: 16px 0 8px;">
-                    <div class="image-picker" id="detailIconPicker" style="width: 80px; height: 80px; border-radius: 50%;">
-                        <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                        <div class="edit-badge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size: 12px;">edit</span></div>
+                <!-- 表示切替 & フィルタ -->
+                <div class="flex flex-wrap items-center gap-4">
+                    <!-- アクションボタン -->
+                    <div id="selection-actions" class="hidden flex items-center gap-2">
+                        <button id="csv-download-btn" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border border-indigo-100">
+                            <i class="fa-solid fa-file-csv"></i> CSVダウンロード
+                        </button>
+                        <span class="text-[10px] font-black text-gray-400 bg-gray-100 px-2 py-2 rounded-lg"><span id="selected-count">0</span> 選択中</span>
                     </div>
-                    <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
-                </div>
-                <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 18px; font-weight: bold; border: none; background: transparent; width: 100%; text-align:center; color: #1f1f1f;">
-                <div style="display: flex; gap: 8px; justify-content:center; margin-top:12px;">
-                    <div class="stat-badge"><span class="stat-value" id="stat-booking-count">--</span><span class="stat-label">演奏回数</span></div>
-                    <div class="stat-badge"><span class="stat-value" id="stat-song-count">--</span><span class="stat-label">演奏曲数</span></div>
-                </div>
-                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px;"><span class="material-icons" style="font-size:14px;">share</span> 招待リンクを送信</button>
-            </div>
-            <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
-                <input type="hidden" id="detailBandId">
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top: 0;">メンバー</h4>
-                <div class="card" style="padding: 0; overflow: hidden;">
-                    <div id="detailMemberList"></div>
-                    <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:13px; padding:12px; border-top:1px solid #f0f0f0; margin-top:0;" onclick="openAddMemberModal()">＋ メンバーを追加</button>
-                </div>
-                
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">演奏曲</h4>
-                <div class="card" style="padding: 0; overflow: hidden;">
-                    <div id="bandSongsList"></div>
-                    <div id="bandSongAddArea" class="hidden" style="display:flex; padding:8px; gap:8px; background:#fff; border-top:1px solid #f0f0f0;">
-                        <input type="text" id="inputNewSong" class="form-input" style="padding:8px; font-size:13px; flex:1;" placeholder="曲名を入力...">
-                        <button class="btn-primary" style="width:auto; padding:0 16px; font-size:12px;" onclick="addSongToBand()">追加</button>
+
+                    <!-- View Switcher -->
+                    <div class="flex bg-gray-100 p-1 rounded-xl">
+                        <button id="view-grid-btn" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all flex items-center gap-2 bg-white shadow-sm text-indigo-600">
+                            <i class="fa-solid fa-grip"></i> Grid
+                        </button>
+                        <button id="view-table-btn" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all flex items-center gap-2 text-gray-400 hover:text-gray-600">
+                            <i class="fa-solid fa-table-list"></i> Table
+                        </button>
+                    </div>
+
+                    <!-- 現役生フィルタ -->
+                    <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100 shadow-sm">
+                        <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest whitespace-nowrap">現役生のみ (1-4年)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="user-current-toggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- ソート順 -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest text-gray-400">Sort:</span>
+                        <select id="user-sort-select" class="bg-gray-50 border-none rounded-xl px-4 py-2 text-xs font-bold outline-none cursor-pointer hover:bg-gray-100 transition shadow-sm text-gray-700">
+                            <option value="name">名前順 (50音)</option>
+                            <option value="year">学年順</option>
+                            <option value="birthday">誕生日順</option>
+                        </select>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div id="bandBookingsArea" style="margin-top:16px;">
-                    <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px;">直近の履歴</h4>
-                    <div class="card" style="padding:0;"><div id="adminBandBookingsList"></div></div>
+        <!-- コンテンツ表示エリア -->
+        <div id="members-content-area">
+            <!-- グリッド表示 -->
+            <div id="users-grid-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
+                <div class="col-span-full py-10 text-center text-gray-400 font-bold">
+                    <span id="loading-status-text">部員データを読み込み中...</span>
                 </div>
+            </div>
 
-                <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
-                    <button class="btn-primary" onclick="updateBandName()">バンド名を保存</button>
-                    <div style="display:flex; gap:8px;">
-                        <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0;" onclick="archiveBand()">アーカイブ</button>
-                        <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0;" onclick="restoreBand()">復元</button>
-                        <button class="btn-danger" style="flex:1; margin:0;" onclick="deleteBand()">解散</button>
-                    </div>
+            <!-- テーブル表示 -->
+            <div id="users-table-container" class="hidden bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden mb-12">
+                <div class="overflow-x-auto">
+                    <table class="w-full member-table border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/50">
+                                <th class="pl-6 w-10">
+                                    <input type="checkbox" id="select-all-checkbox" class="custom-checkbox">
+                                </th>
+                                <th>名前</th>
+                                <th>学年</th>
+                                <th>学部</th>
+                                <th>学籍番号</th>
+                                <th>パート</th>
+                                <th>誕生日</th>
+                                <th class="pr-8 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- JSでデータが挿入されます -->
+                        </tbody>
+                    </table>
                 </div>
-                <div id="bandMemberActions" class="hidden" style="margin-top:16px;"><button class="btn-danger" onclick="leaveBand()" style="width:100%;">バンドを脱退する</button></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- 個人詳細モーダル -->
+    <div id="user-detail-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-lg rounded-[48px] shadow-[0_20px_50px_rgba(0,0,0,0.2)] overflow-hidden relative animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+            <button onclick="window.closeUserDetail()" class="absolute top-6 right-6 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-gray-500 z-20 shadow-md transition-all hover:rotate-90 active:scale-90"><i class="fa-solid fa-xmark"></i></button>
+            <div id="user-modal-content" class="overflow-y-auto flex-1 p-0 text-left">
+                <!-- JSでコンテンツが動的に注入されます -->
             </div>
         </div>
     </div>
 
-    <!-- 通知・ステータス -->
-    <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
-        <div class="modal-content">
-            <h3 style="margin-top:0; margin-bottom:10px; font-size: 18px;">通知</h3>
-            <div id="notificationList" style="max-height:60vh; overflow-y:auto;"></div>
-            <button class="btn-secondary" onclick="closeModal('modal-notification')">閉じる</button>
-        </div>
-    </div>
-
-    <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
-        <div class="modal-content">
-            <h3 style="margin-top:0; text-align:center; font-size: 18px;">マイステータス</h3>
-            <div style="text-align:center; padding:16px;">
-                <img id="modalUserIcon" src="" style="width:72px; height:72px; border-radius:50%; border:4px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.1); margin-bottom:10px;">
-                <div id="modalUserName" style="font-weight:bold; font-size:16px; margin-bottom:16px;"></div>
-                <div style="background:#f9f9f9; padding:12px; border-radius:16px;">
-                    <div style="font-size:11px; color:#666; margin-bottom:8px; font-weight:bold;">2025年度 部費状況</div>
-                    <div style="display:flex; gap:10px;">
-                        <div id="statusFeeTerm1" class="fee-status-badge">前期: -</div>
-                        <div id="statusFeeTerm2" class="fee-status-badge">後期: -</div>
-                    </div>
-                </div>
-                <div id="myQRCodeArea" style="width:120px; height:120px; margin:20px auto;"></div>
-            </div>
-            <button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button>
-        </div>
-    </div>
-
-    <!-- メール認証 -->
-    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
-        <div class="modal-content">
-            <div id="email-step-1">
-                <h3 style="font-size: 18px; margin-top:0;">メールアドレス登録</h3>
-                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
-                <div class="form-group">
-                    <label class="form-label">アドレス</label>
-                    <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
-                </div>
-                <button class="btn-primary" onclick="sendAuthCode()">認証コード送信</button>
-                <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
-            </div>
-            <div id="email-step-2" class="hidden">
-                <h3 style="font-size: 18px; margin-top:0;">認証コード入力</h3>
-                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">メールの6桁の数字を入力してください。</p>
-                <div class="form-group">
-                    <input type="number" id="inputAuthCode" class="form-input auth-code-input" placeholder="000000" maxlength="6">
-                </div>
-                <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
-                <button class="btn-secondary" onclick="backToEmailInput()">戻る</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- メンバー追加モーダル -->
-    <div id="modal-add-member" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-add-member')">
-        <div class="modal-content">
-            <h3 style="margin-top:0; font-size: 18px;">メンバーを追加</h3>
-            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">追加したいメンバーを選択してください。</p>
-            <div class="form-group">
-                <div class="member-select-list" id="addMemberSelectList"></div>
-            </div>
-            <button class="btn-primary" onclick="saveAddedMembers()">追加する</button>
-            <button class="btn-secondary" onclick="closeModal('modal-add-member')">キャンセル</button>
-        </div>
-    </div>
-
+    <!-- Logic -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, limit, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile, updateEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { initAdminPage, db } from "/js/admin-common.js";
+        import { collection, onSnapshot, doc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
-        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
-        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        let usersData = [];
+        let filteredData = [];
+        let userSearchQuery = "";
+        let userShowOnlyCurrent = true;
+        let userSortOrder = "name";
+        let viewMode = "grid"; 
+        let selectedUserIds = new Set();
+        let isEditing = false;
 
-        // グローバルステート
-        let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
-        let tempBandIconBlob=null, currentEditingBandId=null, currentEditingBandMembers=[];
-
-        // --- ユーティリティ ---
-        window.showCustomAlert = (msg, title="通知") => new Promise(res => {
-            const m = document.getElementById('modal-custom-dialog');
-            document.getElementById('dialogTitle').innerText = title;
-            document.getElementById('dialogMessage').innerText = msg;
-            document.getElementById('dialogBtnCancel').classList.add('hidden');
-            document.getElementById('dialogBtnOk').onclick = () => { m.classList.remove('open'); res(); };
-            m.classList.add('open');
-        });
-        window.showCustomConfirm = (msg, title="確認") => new Promise(res => {
-            const m = document.getElementById('modal-custom-dialog');
-            document.getElementById('dialogTitle').innerText = title;
-            document.getElementById('dialogMessage').innerText = msg;
-            document.getElementById('dialogBtnCancel').classList.remove('hidden');
-            document.getElementById('dialogBtnOk').onclick = () => { m.classList.remove('open'); res(true); };
-            document.getElementById('dialogBtnCancel').onclick = () => { m.classList.remove('open'); res(false); };
-            m.classList.add('open');
-        });
-        window.openModal = (id) => document.getElementById(id).classList.add('open');
-        window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-        window.goToMyPage = () => location.href = MY_PAGE_URL;
-        function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
-        
-        // 文字列から「〇〇年度」を省略する関数
-        function formatEventName(name) {
-            if (!name) return "";
-            return name.replace(/\d{2,4}年度/g, "").trim();
-        }
-
-        // --- スピードダイヤルの制御 ---
-        window.toggleFabMenu = () => {
-            document.getElementById('mainFab').classList.toggle('open');
-            document.getElementById('fabMenu').classList.toggle('open');
-            document.getElementById('fab-overlay').classList.toggle('open');
-        };
-        window.closeFabMenu = () => {
-            document.getElementById('mainFab').classList.remove('open');
-            document.getElementById('fabMenu').classList.remove('open');
-            document.getElementById('fab-overlay').classList.remove('open');
+        const partMap = {
+            'drum': 'ドラム',
+            'drums': 'ドラム',
+            'guitar': 'ギター',
+            'vocal': 'ボーカル',
+            'keyboard': 'キーボード',
+            'bass': 'ベース'
         };
 
-        // --- 初期化 ---
-        async function main(){ 
-            try{ 
-                const cachedUser = localStorage.getItem('lmc_user_cache');
-                if (cachedUser) { currentUserData = JSON.parse(cachedUser); renderHeaderIcons(currentUserData); }
-                const cachedEvents = localStorage.getItem('lmc_events_cache');
-                if (cachedEvents) { targetEvents = JSON.parse(cachedEvents); }
-                renderBandTabs(); // 初期描画フォールバック
-                
-                await liff.init({liffId: MY_LIFF_ID}); 
-                if(!liff.isLoggedIn()){liff.login(); return;} 
-                const profile = await liff.getProfile(); 
-                currentUser = profile.userId; currentProfile = profile;
+        const getPartName = (p) => {
+            if (!p) return '未設定';
+            const normalizedPart = p.toLowerCase();
+            return partMap[normalizedPart] || p;
+        };
 
-                if(typeof __initial_auth_token!=='undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
-                else await signInAnonymously(auth); 
-                
-                const userSnap = await getDoc(doc(db, "users", currentUser));
-                if(!userSnap.exists()){ location.href=MY_PAGE_URL; return; }
-                currentUserData = userSnap.data();
-                localStorage.setItem('lmc_user_cache', JSON.stringify(currentUserData));
-                renderHeaderIcons(currentUserData); 
-                
-                await loadTargetEvents();
-                loadMyBands();
-                refreshAllUsersCache();
-                loadSystemSettings();
-                checkNotifications();
-            } catch(e) { console.error(e); } 
-        }
+        const safetyTimer = setTimeout(() => {
+            const loader = document.getElementById('initial-loader');
+            if (loader) loader.style.opacity = '0';
+            setTimeout(() => loader?.remove(), 300);
+        }, 5000);
 
-        // --- ヘッダー・アイコン制御 ---
-        function renderHeaderIcons(d){
-            if(!d) return;
-            let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
-            if(d.birthday){
-                const t=new Date(), b=new Date(d.birthday);
-                if(t.getMonth()===b.getMonth() && t.getDate()===b.getDate()) r="ring-birthday";
-            }
-            if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
-            const el = document.getElementById('headerIconBands');
-            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
+        initAdminPage('users', (user) => {
+            clearTimeout(safetyTimer);
+            const statusIcon = document.getElementById('status-icon');
+            const statusText = document.getElementById('status-text');
+            if (statusIcon) statusIcon.classList.replace('text-gray-300', 'text-emerald-400');
+            if (statusText) statusText.innerText = "System Live";
             
-            // 管理者タブ表示制御 (role または roll が存在し、かつ裏方である場合)
-            if(isU && (d.role || d.roll)) {
-                document.getElementById('nav-admin').classList.remove('hidden');
-            } else {
-                document.getElementById('nav-admin').classList.add('hidden');
-            }
-        }
+            onSnapshot(collection(db, 'users'), 
+                (s) => {
+                    usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
+                    renderUsers();
+                    const loader = document.getElementById('initial-loader');
+                    if (loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.remove(), 300);
+                    }
+                },
+                (error) => {
+                    console.error("Error fetching users:", error);
+                    const statusTextEl = document.getElementById('loading-status-text');
+                    if (statusTextEl) statusTextEl.innerText = "データの読み込みに失敗しました。";
+                }
+            );
+        });
 
-        // --- ステータスモーダル ---
-        window.openUserStatusModal = async () => {
-            const year=2025; const status=currentUserData.feeStatus||{};
-            document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
-            document.getElementById('modalUserName').innerText=currentUserData.name+" さん";
-            const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
-            t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
-            t2.innerText=`後期: ${status[`${year}_2`]?'済':'未納'}`; t2.className=`fee-status-badge ${status[`${year}_2`]?'fee-paid':'fee-unpaid'}`;
-            document.getElementById('myQRCodeArea').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:100%;height:100%;">`;
-            openModal('modal-user-status');
-        };
+        function renderUsers() {
+            const gridContainer = document.getElementById('users-grid-container');
+            const tableContainer = document.getElementById('users-table-container');
+            if (!gridContainer || !tableContainer) return;
 
-        // --- イベント・タブ・スライダー ---
-        async function loadTargetEvents() {
-            const q = query(collection(db, "events"), orderBy("startDate", "desc"), limit(2));
-            const snap = await getDocs(q);
-            targetEvents = snap.docs.map(d => {
-                let rawName = d.data().event || d.data().name || "";
-                let shortName = formatEventName(rawName);
-                return { id: d.id, name: shortName, originalName: rawName };
+            const q = userSearchQuery.toLowerCase();
+            filteredData = usersData.filter(u => {
+                const partJapanese = getPartName(u.part);
+                return (u.name || "").toLowerCase().includes(q) || 
+                       (u.kana || "").toLowerCase().includes(q) || 
+                       (u.studentId || "").toLowerCase().includes(q) ||
+                       (u.faculty || "").toLowerCase().includes(q) ||
+                       (u.part || "").toLowerCase().includes(q) ||
+                       partJapanese.toLowerCase().includes(q);
             });
-            localStorage.setItem('lmc_events_cache', JSON.stringify(targetEvents));
-            renderBandTabs();
+            
+            if (userShowOnlyCurrent) {
+                filteredData = filteredData.filter(u => {
+                    const yearVal = parseInt(u.year);
+                    return !isNaN(yearVal) && yearVal >= 1 && yearVal <= 4;
+                });
+            }
+            
+            filteredData.sort((a,b) => {
+                if (userSortOrder === "name") {
+                    return (a.kana || a.name || "").localeCompare(b.kana || b.name || "", "ja");
+                } else if (userSortOrder === "year") {
+                    const yearA = parseInt(a.year) || 99;
+                    const yearB = parseInt(b.year) || 99;
+                    return yearA - yearB;
+                } else {
+                    const getSeconds = (field) => field?.seconds || (field instanceof Date ? field.getTime() / 1000 : 0);
+                    return getSeconds(b.birthday) - getSeconds(a.birthday);
+                }
+            });
+
+            updateSelectionUI();
+
+            if (viewMode === "grid") {
+                gridContainer.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                renderGrid(filteredData);
+            } else {
+                gridContainer.classList.add('hidden');
+                tableContainer.classList.remove('hidden');
+                renderTable(filteredData);
+            }
         }
 
-        function renderBandTabs() {
-            const tabs = document.getElementById('bandTabs');
-            const slider = document.getElementById('bandSlider');
-            
-            if (targetEvents.length === 0) {
-                tabs.innerHTML = '<div class="band-tab active">読み込み中...</div>';
-                slider.innerHTML = '<div class="band-slide"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>';
+        function renderGrid(data) {
+            const container = document.getElementById('users-grid-container');
+            if (data.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members match your search</div>`;
                 return;
             }
-
-            tabs.innerHTML = ""; slider.innerHTML = "";
-
-            targetEvents.forEach((ev, i) => {
-                const tab = document.createElement('div');
-                tab.className = `band-tab ${i === currentBandTab ? 'active' : ''}`;
-                tab.innerText = ev.name; tab.onclick = () => switchBandTab(i);
-                tabs.appendChild(tab);
-
-                const slide = document.createElement('div');
-                slide.id = `bandList-${ev.id}`; slide.className = 'band-slide';
-                slider.appendChild(slide);
-            });
-
-            const arcIndex = targetEvents.length;
-            const arcTab = document.createElement('div');
-            arcTab.className = `band-tab ${arcIndex === currentBandTab ? 'active' : ''}`;
-            arcTab.innerText = "アーカイブ"; arcTab.onclick = () => switchBandTab(arcIndex);
-            tabs.appendChild(arcTab);
-
-            const arcSlide = document.createElement('div');
-            arcSlide.id = 'bandList-archive'; arcSlide.className = 'band-slide';
-            slider.appendChild(arcSlide);
-
-            const total = targetEvents.length + 1;
-            slider.style.width = `${total * 100}%`;
-            Array.from(slider.children).forEach(child => { child.style.width = `${100 / total}%`; });
-            
-            // データ更新によるズレ防止処理
-            if(currentBandTab >= total) currentBandTab = total - 1;
-            switchBandTab(currentBandTab);
-            
-            if(myBandsAll.length > 0) renderBandList();
-        }
-
-        window.switchBandTab = (index) => {
-            currentBandTab = index;
-            document.querySelectorAll('.band-tab').forEach((t, i) => t.classList.toggle('active', i === index));
-            const total = targetEvents.length + 1;
-            document.getElementById('bandSlider').style.transform = `translateX(${-(100 / total) * index}%)`;
-        };
-
-        // --- バンドリスト取得・描画 ---
-        function loadMyBands(){ 
-            onSnapshot(query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)), (snap) => {
-                myBandsAll = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderBandList();
-            });
-        }
-
-        function renderBandList(){
-            if(targetEvents.length === 0) return; 
-            
-            targetEvents.forEach(ev => { const el = document.getElementById(`bandList-${ev.id}`); if(el) el.innerHTML = ""; });
-            const arcEl = document.getElementById('bandList-archive'); if(arcEl) arcEl.innerHTML = "";
-
-            // カードを生成する共通処理
-            const createCard = (b) => {
-                const card = document.createElement('div'); 
-                card.className = 'card band-card';
-                card.onclick = () => openBandDetail(b.id, b); 
-                card.innerHTML = `<div class="band-item" style="border:none; margin:0; padding:0;">
-                    <div class="band-icon">${b.icon?`<img src="${b.icon}">`:b.name[0]}</div>
-                    <div class="band-info"><div class="band-name">${b.name}</div></div>
-                    <span class="material-icons" style="color:#ccc;">chevron_right</span>
+            const getYearColor = (year) => {
+                const y = parseInt(year);
+                switch(y) {
+                    case 1: return 'bg-blue-50 text-blue-500 border-blue-100';
+                    case 2: return 'bg-emerald-50 text-emerald-500 border-emerald-100';
+                    case 3: return 'bg-amber-50 text-amber-600 border-amber-100';
+                    case 4: return 'bg-rose-50 text-rose-500 border-rose-100';
+                    default: return 'bg-gray-50 text-gray-400 border-gray-100';
+                }
+            };
+            container.innerHTML = data.map(user => {
+                const iconHtml = user.icon 
+                    ? `<img src="${user.icon}" class="w-12 h-12 rounded-full object-cover border border-gray-100 shadow-sm group-hover:scale-105 transition-transform duration-300">` 
+                    : `<div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-400 font-bold border border-indigo-100 shadow-sm text-lg">${(user.name||"?")[0]}</div>`;
+                const yearColorClass = getYearColor(user.year);
+                return `<div onclick="window.showUserDetail('${user.id}')" class="cursor-pointer p-5 border border-gray-100 rounded-[28px] hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center gap-4 bg-white shadow-sm group">
+                    <div class="flex-shrink-0">${iconHtml}</div>
+                    <div class="flex-1 min-w-0 text-left">
+                        <div class="flex items-center gap-2 mb-0.5">
+                            <h4 class="font-bold text-gray-800 text-base group-hover:text-indigo-600 transition-colors whitespace-nowrap overflow-visible">${user.name}</h4>
+                            ${user.year ? `<span class="${yearColorClass} text-[9px] font-black px-1.5 py-0.5 rounded-md border uppercase leading-none flex-shrink-0">${user.year}年</span>` : ''}
+                        </div>
+                        <p class="text-[9px] text-gray-400 font-bold tracking-wider truncate uppercase">${user.faculty || '学部未設定'} · ${user.kana || ''}</p>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-200 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </div>
                 </div>`;
-                return card;
-            };
-
-            myBandsAll.forEach(b => {
-                if(b.isArchived) { 
-                    arcEl?.appendChild(createCard(b)); 
-                } else {
-                    const eIds = new Set(b.events || []); 
-                    (b.songs||[]).forEach(s => { if(s.eventId) eIds.add(s.eventId); });
-                    let assigned = false;
-                    targetEvents.forEach(ev => { 
-                        if(eIds.has(ev.id)) { 
-                            document.getElementById(`bandList-${ev.id}`)?.appendChild(createCard(b)); 
-                            assigned = true; 
-                        } 
-                    });
-                    if(!assigned) arcEl?.appendChild(createCard(b));
-                }
-            });
-            document.querySelectorAll('.band-slide').forEach(s => { if(!s.children.length) s.innerHTML = '<div style="text-align:center; padding:40px; color:#999; font-size:14px;">なし</div>'; });
+            }).join('');
         }
 
-        // --- バンド詳細ロジック ---
-        window.openBandDetail = async (bid, data) => {
-            currentEditingBandId = bid; currentEditingBandMembers = data.memberIds;
-            document.getElementById('detailBandId').value = bid; document.getElementById('detailBandName').value = data.name;
-            document.getElementById('detailBandIcon').src = data.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
-            const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
-            const canE = (data.creatorId === currentUser) || isAdmin;
-            
-            document.getElementById('bandCreatorActions').classList.toggle('hidden', !canE);
-            document.getElementById('bandMemberActions').classList.toggle('hidden', canE);
-            document.getElementById('btnAddMemberToBand').classList.toggle('hidden', !canE);
-            document.getElementById('btnArchive').classList.toggle('hidden', data.isArchived);
-            document.getElementById('btnRestore').classList.toggle('hidden', !data.isArchived);
-            document.getElementById('detailBandName').readOnly = !canE;
-
-            const mList = document.getElementById('detailMemberList'); mList.innerHTML = "";
-            data.memberIds.forEach(uid => {
-                const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg' };
-                const div = document.createElement('div'); div.className = 'member-row-rich';
-                const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
-                div.innerHTML = `<img src="${u.icon}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${u.name}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${delBtn}`;
-                mList.appendChild(div);
-            });
-
-            const songs = data.songs || []; document.getElementById('stat-song-count').innerText = songs.length;
-            const songList = document.getElementById('bandSongsList'); songList.innerHTML = "";
-            songs.forEach(s => {
-                const div = document.createElement('div'); div.className = 'member-row-rich';
-                const sTitle = s.title || s;
-                div.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:8px; color:#0b57d0;">music_note</span><div style="flex:1; font-size:13px;">${sTitle}</div>${canE?`<button class="btn-outline" style="padding:2px 8px; font-size:10px;" onclick="removeSongFromBand('${sTitle}')">削除</button>`:''}`;
-                songList.appendChild(div);
-            });
-            document.getElementById('bandSongAddArea').classList.toggle('hidden', !canE);
-            loadBandBookings(bid); openModal('modal-band-detail');
-        };
-
-        // --- バンド操作（共有前提の作成に変更） ---
-        window.saveBand = async () => {
-            const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
-            const eventId = document.getElementById('selectNewBandEvent').value;
-            
-            // 自分だけを初期メンバーとする
-            const mIds = [currentUser], mNames = [currentProfile.displayName];
-            const initialEvents = eventId ? [eventId] : [];
-
-            try {
-                const docRef = await addDoc(collection(db, "bands"), { 
-                    name: name, 
-                    memberIds: mIds, 
-                    memberNames: mNames, 
-                    events: initialEvents, 
-                    creatorId: currentUser, 
-                    isArchived: false, 
-                    createdAt: serverTimestamp() 
+        function renderTable(data) {
+            const tableBody = document.getElementById('users-table-body');
+            const selectAllCheck = document.getElementById('select-all-checkbox');
+            if (data.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="8" class="py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members found</td></tr>`;
+                return;
+            }
+            const allSelectedInFiltered = data.every(u => selectedUserIds.has(u.id));
+            if (selectAllCheck) selectAllCheck.checked = data.length > 0 && allSelectedInFiltered;
+            tableBody.innerHTML = data.map(user => {
+                const isSelected = selectedUserIds.has(user.id);
+                const iconHtml = user.icon 
+                    ? `<img src="${user.icon}" class="w-8 h-8 rounded-full object-cover">` 
+                    : `<div class="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-400 font-bold text-[10px]">${(user.name||"?")[0]}</div>`;
+                let birthStr = '-';
+                if (user.birthday) {
+                    const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000 || user.birthday);
+                    birthStr = d.toLocaleDateString('ja-JP');
+                }
+                return `<tr class="transition-colors ${isSelected ? 'bg-indigo-50/30' : ''}">
+                    <td class="pl-6"><input type="checkbox" class="user-checkbox custom-checkbox" data-id="${user.id}" ${isSelected ? 'checked' : ''}></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            ${iconHtml}
+                            <div><div class="font-bold text-gray-800">${user.name}</div><div class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">${user.kana || ''}</div></div>
+                        </div>
+                    </td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-bold text-gray-600">${user.year ? user.year + '年' : '-'}</span></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-gray-500 uppercase">${user.faculty || '-'}</span></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-400">${user.studentId || '-'}</span></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-indigo-500">${getPartName(user.part)}</span></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs text-gray-500">${birthStr}</span></td>
+                    <td class="pr-8 text-center"><button onclick="window.showUserDetail('${user.id}')" class="w-8 h-8 rounded-full hover:bg-indigo-50 text-gray-300 hover:text-indigo-500 transition-colors"><i class="fa-solid fa-ellipsis"></i></button></td>
+                </tr>`;
+            }).join('');
+            document.querySelectorAll('.user-checkbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const id = e.target.dataset.id;
+                    if (e.target.checked) selectedUserIds.add(id);
+                    else selectedUserIds.delete(id);
+                    updateSelectionUI();
                 });
-                
-                if (tempBandIconBlob) { 
-                    const url = await uploadImageToExternal(tempBandIconBlob); 
-                    await updateDoc(docRef, { icon: url }); 
-                }
-                closeModal('modal-band'); 
-                
-                if (!eventId) {
-                    await showCustomAlert("イベントが指定されていないため、このバンドは「アーカイブ」タブに保存されました。");
-                }
-                
-                // 作成後そのまま招待画面を立ち上げる
-                shareBandInvite(docRef.id, name);
-            } catch(e) { showCustomAlert(e.message); }
-        };
-        
-        window.updateBandName = async () => {
-            const bid = document.getElementById('detailBandId').value, name = document.getElementById('detailBandName').value.trim();
-            if(!name) return;
-            try { await updateDoc(doc(db, "bands", bid), { name: name }); showCustomAlert("更新しました。"); } catch(e) { showCustomAlert(e.message); }
-        };
-        window.archiveBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            if(await showCustomConfirm("アーカイブしますか？")) { await updateDoc(doc(db, "bands", bid), { isArchived: true }); closeModal('modal-band-detail'); }
-        };
-        window.restoreBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            await updateDoc(doc(db, "bands", bid), { isArchived: false }); closeModal('modal-band-detail');
-        };
-        window.deleteBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            if(await showCustomConfirm("本当に解散（削除）しますか？")) { await deleteDoc(doc(db, "bands", bid)); closeModal('modal-band-detail'); }
-        };
-        window.leaveBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            if(await showCustomConfirm("脱退しますか？")) { 
-                await updateDoc(doc(db, "bands", bid), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); 
-                closeModal('modal-band-detail'); 
-            }
-        };
-        window.removeMember = async (bid, uid, name) => {
-            if(await showCustomConfirm(name + " さんを削除しますか？")) {
-                await updateDoc(doc(db, "bands", bid), { memberIds: arrayRemove(uid) });
-                showCustomAlert("削除しました。再度開くと反映されます。");
-            }
-        };
-
-        // --- 曲・履歴・メンバー追加 ---
-        window.addSongToBand = async () => {
-            const song = document.getElementById('inputNewSong').value.trim(); if(!song) return;
-            const bid = document.getElementById('detailBandId').value;
-            await updateDoc(doc(db, "bands", bid), { songs: arrayUnion({ title: song }) });
-            document.getElementById('inputNewSong').value = ""; showCustomAlert("追加しました。");
-        };
-        window.removeSongFromBand = async (title) => {
-            const bid = document.getElementById('detailBandId').value;
-            const bSnap = await getDoc(doc(db, "bands", bid));
-            const newSongs = (bSnap.data().songs || []).filter(s => (s.title || s) !== title);
-            await updateDoc(doc(db, "bands", bid), { songs: newSongs });
-            showCustomAlert("削除しました。");
-        };
-        async function loadBandBookings(bid){
-            const list = document.getElementById('adminBandBookingsList'); list.innerHTML = "<div style='padding:10px; color:#999; font-size:12px;'>読み込み中...</div>";
-            const qs = await getDocs(query(collection(db, "bookings"), where("bandId", "==", bid)));
-            if(qs.empty) { list.innerHTML = "<div style='padding:12px; font-size:12px; color:#999;'>履歴はありません</div>"; return; }
-            let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:12px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
-            list.innerHTML = h;
-        }
-        window.openAddMemberModal = () => { loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); };
-        window.saveAddedMembers = async () => {
-            const sel = document.querySelectorAll('#addMemberSelectList .member-option.selected');
-            const ids = [], nms = []; sel.forEach(el => { ids.push(el.dataset.uid); nms.push(el.dataset.uname); });
-            if(!ids.length) return;
-            await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...ids), memberNames: arrayUnion(...nms) });
-            showCustomAlert("追加完了！"); closeModal('modal-add-member');
-        };
-
-        // --- 画像処理 ---
-        window.handleImageSelect = async (inp, pid) => {
-            if(inp.files?.[0]) {
-                const b = await compressImage(inp.files[0]); tempBandIconBlob = b;
-                const i = document.getElementById(pid); i.src = URL.createObjectURL(b); i.classList.remove('hidden');
-            }
-        };
-        window.handleImageEdit = async (inp) => {
-            if(inp.files?.[0] && await showCustomConfirm("アイコンを変更しますか？")) {
-                const b = await compressImage(inp.files[0]); const url = await uploadImageToExternal(b);
-                await updateDoc(doc(db, "bands", document.getElementById('detailBandId').value), { icon: url });
-                document.getElementById('detailBandIcon').src = url;
-            }
-        };
-        const compressImage = (f) => new Promise(res => {
-            const i = new Image(); i.src = URL.createObjectURL(f);
-            i.onload = () => {
-                const c = document.createElement('canvas'); const ctx = c.getContext('2d'); const s = 200;
-                c.width = s; c.height = s; ctx.drawImage(i, 0, 0, i.width, i.height, 0, 0, s, s);
-                c.toBlob(b => res(b), 'image/jpeg', 0.8);
-            };
-        });
-        async function uploadImageToExternal(blob){
-            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
-            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
-            const json = await res.json(); return json.files[0].url;
+            });
         }
 
-        // --- 招待Picker ---
-        window.shareBandInvite = async (bid, bn) => {
-            const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`;
-            if (liff.isApiAvailable('shareTargetPicker')) {
-                await liff.shareTargetPicker([{ type: "flex", altText: bn + "への招待", contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [{ type: "text", text: "🎸 バンド招待", weight: "bold", color: "#1DB446" }, { type: "text", text: bn, weight: "bold", size: "xl" }] }, footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", action: { type: "uri", label: "参加する", uri: u } }] } } }]);
-            } else { await showCustomAlert("招待URL: " + u); }
+        function updateSelectionUI() {
+            const countLabel = document.getElementById('selected-count');
+            const actionsContainer = document.getElementById('selection-actions');
+            const count = selectedUserIds.size;
+            if (countLabel) countLabel.innerText = count;
+            if (actionsContainer) {
+                if (count > 0) actionsContainer.classList.remove('hidden');
+                else actionsContainer.classList.add('hidden');
+            }
+        }
+
+        window.copyInfo = (text, btnElement) => {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            const originalHtml = btnElement.innerHTML;
+            btnElement.innerHTML = '<i class="fa-solid fa-check text-emerald-500"></i>';
+            btnElement.classList.add('bg-emerald-50');
+            setTimeout(() => {
+                btnElement.innerHTML = originalHtml;
+                btnElement.classList.remove('bg-emerald-50');
+            }, 1500);
         };
 
-        // --- メール認証ロジック ---
-        window.openNotificationModal = () => {
-            const list = document.getElementById('notificationList'); list.innerHTML = "";
-            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
-            if (!hasEmail) {
-                const div = document.createElement('div'); div.className = "notification-item clickable";
-                div.onclick = () => openEmailRegisterModal();
-                div.innerHTML = `<div class="notif-icon-box warning"><span class="material-icons">warning</span></div><div class="notif-content"><div class="notif-text">重要: メールアドレスを登録してください</div></div>`;
-                list.appendChild(div);
-            }
-            if(!list.children.length) list.innerHTML = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
-            openModal('modal-notification');
+        window.showUserDetail = (userId) => {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            isEditing = false;
+            renderModalContent(user);
+            const modal = document.getElementById('user-detail-modal');
+            if (modal) modal.classList.remove('hidden');
         };
-        window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
-        window.sendAuthCode = async () => {
-            const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        function renderModalContent(user) {
+            const content = document.getElementById('user-modal-content');
+            if (!content) return;
+            
+            let birthStr = '未登録';
+            let birthInputVal = '';
+            if (user.birthday) {
+                const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000 || user.birthday);
+                birthStr = d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                birthInputVal = d.toISOString().split('T')[0];
+            }
+
+            const iconLarge = user.icon 
+                ? `<img src="${user.icon}" class="w-28 h-28 rounded-[36px] border-[6px] border-white shadow-xl object-cover bg-white">` 
+                : `<div class="w-28 h-28 rounded-[36px] bg-indigo-50 flex items-center justify-center text-4xl font-bold text-indigo-300 border-[6px] border-white shadow-xl">${(user.name||"?")[0]}</div>`;
+
+            if (!isEditing) {
+                content.innerHTML = `
+                    <div class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 h-32 w-full relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]"></div>
+                        <div class="absolute bottom-4 right-8 text-white/20 text-6xl font-black italic select-none">LMC MEMBER</div>
+                    </div>
+                    <div class="px-8 pb-8 -mt-14 relative">
+                        <div class="mb-4 flex justify-between items-end">
+                            ${iconLarge}
+                            <button onclick="window.toggleEditMode('${user.id}')" class="px-5 py-2 bg-gray-900 text-white text-xs font-black rounded-2xl shadow-xl hover:bg-gray-800 transition-all active:scale-95 flex items-center gap-2">
+                                <i class="fa-solid fa-pen text-[10px]"></i> EDIT INFO
+                            </button>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-2xl font-black text-gray-800 tracking-tight">${user.name}</h3>
+                                <button onclick="window.copyInfo('${user.name}', this)" class="copy-btn"><i class="fa-regular fa-copy text-sm"></i></button>
+                            </div>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <p class="text-indigo-500 font-bold text-xs tracking-widest uppercase">${user.kana || 'NAME KANA'}</p>
+                                ${user.kana ? `<button onclick="window.copyInfo('${user.kana}', this)" class="copy-btn text-indigo-200 hover:text-indigo-400"><i class="fa-regular fa-copy text-[10px]"></i></button>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.1s">
+                                <div class="flex items-center gap-2 mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                    <i class="fa-solid fa-graduation-cap text-xs"></i>
+                                    <span class="text-[9px] font-black uppercase tracking-widest">Year / Faculty</span>
+                                </div>
+                                <div class="font-bold text-gray-800 text-sm leading-tight">${user.year ? user.year + '年' : ''}<br><span class="text-[11px] text-gray-500">${user.faculty || '学部未設定'}</span></div>
+                            </div>
+                            
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.2s">
+                                <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-id-card text-xs"></i>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">Student ID</span>
+                                    </div>
+                                    <button onclick="window.copyInfo('${user.studentId}', this)" class="copy-btn"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                </div>
+                                <div class="font-mono font-bold text-gray-800 text-sm">${user.studentId || 'NOT SET'}</div>
+                            </div>
+
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.3s">
+                                <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-guitar text-xs"></i>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">Part</span>
+                                    </div>
+                                    <button onclick="window.copyInfo('${getPartName(user.part)}', this)" class="copy-btn"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                </div>
+                                <div class="font-bold text-gray-800 text-sm">${getPartName(user.part)}</div>
+                            </div>
+
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.4s">
+                                <div class="flex items-center gap-2 mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                    <i class="fa-solid fa-cake-candles text-xs"></i>
+                                    <span class="text-[9px] font-black uppercase tracking-widest">Birthday</span>
+                                </div>
+                                <div class="font-bold text-gray-800 text-sm">${birthStr}</div>
+                            </div>
+
+                            <div class="animate-item bg-gray-50/50 p-3 rounded-2xl col-span-full flex items-center justify-between group mt-2" style="animation-delay: 0.5s">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[8px] font-black text-gray-300 uppercase tracking-tighter">System UID:</span>
+                                    <span class="font-mono text-[9px] text-gray-400">${user.id}</span>
+                                </div>
+                                <button onclick="window.copyInfo('${user.id}', this)" class="copy-btn text-gray-200"><i class="fa-regular fa-copy text-[9px]"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                content.innerHTML = `
+                    <div class="bg-gray-100 h-24 w-full relative"></div>
+                    <div class="px-8 pb-10 -mt-12 relative">
+                        <div class="flex justify-between items-start mb-6">
+                             <div class="w-24 h-24 rounded-3xl bg-white shadow-xl flex items-center justify-center text-indigo-300 text-3xl font-black border-4 border-white">
+                                ${(user.name||"?")[0]}
+                             </div>
+                             <div class="flex gap-2 mt-12">
+                                <button onclick="window.toggleEditMode('${user.id}')" class="px-4 py-2 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-all text-xs">CANCEL</button>
+                                <button id="save-user-btn" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all text-xs uppercase tracking-widest">Save Changes</button>
+                             </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Name / Kana</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text" id="edit-name" value="${user.name || ''}" class="edit-input" placeholder="氏名">
+                                    <input type="text" id="edit-kana" value="${user.kana || ''}" class="edit-input" placeholder="かな">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Grade</label>
+                                    <select id="edit-year" class="edit-input">
+                                        <option value="">選択してください</option>
+                                        <option value="1" ${user.year == '1' ? 'selected' : ''}>1年</option>
+                                        <option value="2" ${user.year == '2' ? 'selected' : ''}>2年</option>
+                                        <option value="3" ${user.year == '3' ? 'selected' : ''}>3年</option>
+                                        <option value="4" ${user.year == '4' ? 'selected' : ''}>4年</option>
+                                        <option value="5" ${user.year == '5' ? 'selected' : ''}>OB/OG</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Faculty</label>
+                                    <input type="text" id="edit-faculty" value="${user.faculty || ''}" class="edit-input" placeholder="学部名">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Student ID</label>
+                                    <input type="text" id="edit-studentId" value="${user.studentId || ''}" class="edit-input font-mono" placeholder="Student ID">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Part</label>
+                                    <select id="edit-part" class="edit-input">
+                                        <option value="">選択してください</option>
+                                        <option value="vocal" ${user.part?.toLowerCase() == 'vocal' ? 'selected' : ''}>ボーカル</option>
+                                        <option value="guitar" ${user.part?.toLowerCase() == 'guitar' ? 'selected' : ''}>ギター</option>
+                                        <option value="bass" ${user.part?.toLowerCase() == 'bass' ? 'selected' : ''}>ベース</option>
+                                        <option value="drums" ${user.part?.toLowerCase() == 'drums' || user.part?.toLowerCase() == 'drum' ? 'selected' : ''}>ドラム</option>
+                                        <option value="keyboard" ${user.part?.toLowerCase() == 'keyboard' ? 'selected' : ''}>キーボード</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Birthday</label>
+                                <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                const saveBtn = document.getElementById('save-user-btn');
+                if (saveBtn) saveBtn.addEventListener('click', () => saveUserChanges(user.id));
+            }
+        }
+
+        window.toggleEditMode = (userId) => {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+            isEditing = !isEditing;
+            renderModalContent(user);
+        };
+
+        async function saveUserChanges(userId) {
+            const saveBtn = document.getElementById('save-user-btn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> SAVING...';
+            }
+            const name = document.getElementById('edit-name')?.value;
+            const kana = document.getElementById('edit-kana')?.value;
+            const year = document.getElementById('edit-year')?.value;
+            const faculty = document.getElementById('edit-faculty')?.value;
+            const studentId = document.getElementById('edit-studentId')?.value;
+            const part = document.getElementById('edit-part')?.value;
+            const birthdayInput = document.getElementById('edit-birthday')?.value;
+            let birthday = null;
+            if (birthdayInput) birthday = Timestamp.fromDate(new Date(birthdayInput));
             try {
-                await updateDoc(doc(db, "users", currentUser), { tempEmail: email, authCode: code });
-                await addDoc(collection(db, "mail_queue"), { to: email, subject: "認証コード", body: `コード: ${code}`, userId: currentUser, createdAt: serverTimestamp() });
-                showCustomAlert("コードを送信しました。");
-                document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
-            } catch(e) { showCustomAlert(e.message); }
-        };
-        window.verifyAuthCode = async () => {
-            const input = document.getElementById('inputAuthCode').value.trim();
-            const userData = (await getDoc(doc(db, "users", currentUser))).data();
-            if (userData.authCode === input) {
-                await updateDoc(doc(db, "users", currentUser), { Email: userData.tempEmail, tempEmail: deleteField(), authCode: deleteField() });
-                showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
-            } else { showCustomAlert("コードが正しくありません。"); }
-        };
-
-        // --- その他UIロジック ---
-        async function loadUserList(id, exclude=[]) {
-            const list = document.getElementById(id); list.innerHTML = "読込中...";
-            const snap = await getDocs(collection(db, "users")); list.innerHTML = "";
-            snap.forEach(d => {
-                if(d.id === currentUser || exclude.includes(d.id)) return;
-                const u = d.data();
-                const div = document.createElement('div'); div.className = 'member-option';
-                div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; };
-                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${u.icon||''}" style="width:28px;height:28px;border-radius:50%;margin:0 10px;">${u.name}`;
-                div.dataset.uid = d.id; div.dataset.uname = u.name;
-                list.appendChild(div);
-            });
-        }
-
-        async function loadSystemSettings() {
-            const s = await getDoc(doc(db, "system", "settings"));
-            if(s.exists() && s.data().activeEventId) {
-                const ev = await getDoc(doc(db, "events", s.data().activeEventId));
-                if(ev.exists()) {
-                    const el = document.getElementById('displayActiveEvent');
-                    let name = ev.data().event || ev.data().name || "";
-                    el.innerText = formatEventName(name); // 〇〇年度を省略してヘッダー表示
-                    el.style.display = "inline-block";
+                await updateDoc(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, birthday });
+                isEditing = false;
+                const updatedUser = usersData.find(u => u.id === userId);
+                if (updatedUser) {
+                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, birthday });
+                    renderModalContent(updatedUser);
+                }
+            } catch (err) {
+                console.error(err);
+                alert("保存に失敗しました。");
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerText = "SAVE CHANGES";
                 }
             }
         }
-        async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); }
-        function checkNotifications() { if(!(currentUserData?.Email || currentUserData?.email)) document.getElementById('headerNotifBadge').classList.add('show'); }
-        
-        window.openEventRegisterModal = () => {
-            closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
-            targetEvents.forEach(ev => { const opt = document.createElement('option'); opt.value = ev.id; opt.innerText = ev.name; eSel.appendChild(opt); });
-            const bSel = document.getElementById('selectRegisterBand'); bSel.innerHTML = "";
-            myBandsAll.filter(b=>!b.isArchived).forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.innerText = b.name; bSel.appendChild(opt); });
-            openModal('modal-event-register');
+
+        window.closeUserDetail = () => {
+            const modal = document.getElementById('user-detail-modal');
+            if (modal) modal.classList.add('hidden');
         };
-        
-        window.openBandModal = () => {
-            closeFabMenu(); 
-            document.getElementById('inputBandName').value = "";
-            document.getElementById('previewBandIcon').classList.add('hidden');
-            tempBandIconBlob = null;
-            
-            // イベント選択肢のセットアップ
-            const eSel = document.getElementById('selectNewBandEvent');
-            eSel.innerHTML = '<option value="">指定しない（アーカイブタブに保存）</option>';
-            targetEvents.forEach(ev => {
-                const opt = document.createElement('option');
-                opt.value = ev.id;
-                opt.innerText = ev.name;
-                eSel.appendChild(opt);
+
+        document.getElementById('view-grid-btn')?.addEventListener('click', () => {
+            viewMode = "grid";
+            updateViewButtons();
+            renderUsers();
+        });
+        document.getElementById('view-table-btn')?.addEventListener('click', () => {
+            viewMode = "table";
+            updateViewButtons();
+            renderUsers();
+        });
+
+        function updateViewButtons() {
+            const gridBtn = document.getElementById('view-grid-btn');
+            const tableBtn = document.getElementById('view-table-btn');
+            if (!gridBtn || !tableBtn) return;
+            [gridBtn, tableBtn].forEach(b => b.classList.remove('bg-white', 'shadow-sm', 'text-indigo-600'));
+            [gridBtn, tableBtn].forEach(b => b.classList.add('text-gray-400'));
+            const active = viewMode === 'grid' ? gridBtn : tableBtn;
+            active.classList.add('bg-white', 'shadow-sm', 'text-indigo-600');
+            active.classList.remove('text-gray-400');
+        }
+
+        document.getElementById('user-search-input')?.addEventListener('input', (e) => {
+            userSearchQuery = e.target.value;
+            renderUsers();
+        });
+
+        document.getElementById('user-current-toggle')?.addEventListener('change', (e) => {
+            userShowOnlyCurrent = e.target.checked;
+            renderUsers();
+        });
+
+        document.getElementById('user-sort-select')?.addEventListener('change', (e) => {
+            userSortOrder = e.target.value;
+            renderUsers();
+        });
+
+        document.getElementById('select-all-checkbox')?.addEventListener('change', (e) => {
+            if (e.target.checked) filteredData.forEach(u => selectedUserIds.add(u.id));
+            else filteredData.forEach(u => selectedUserIds.delete(u.id));
+            renderUsers();
+        });
+
+        document.getElementById('csv-download-btn')?.addEventListener('click', () => {
+            if (selectedUserIds.size === 0) return;
+            const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
+            selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
+            const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '誕生日', 'システムID'];
+            const rows = selectedUsers.map(u => {
+                let birthStr = '';
+                if (u.birthday) {
+                    const d = u.birthday.toDate ? u.birthday.toDate() : new Date(u.birthday.seconds * 1000 || u.birthday);
+                    birthStr = d.toLocaleDateString('ja-JP');
+                }
+                return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
             });
-            if(targetEvents.length > 0) eSel.value = targetEvents[0].id;
-            
-            const helpText = document.getElementById('newBandEventHelp');
-            helpText.style.display = eSel.value === "" ? "block" : "none";
-            eSel.onchange = (e) => { helpText.style.display = e.target.value === "" ? "block" : "none"; };
+            const csvContent = "\ufeff" + [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `members_export_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
 
-            openModal('modal-band');
-        };
-        
-        window.saveEventRegistration = async () => {
-            const eid = document.getElementById('selectRegisterEvent').value, bid = document.getElementById('selectRegisterBand').value;
-            if(!eid || !bid) return;
-            await updateDoc(doc(db, "bands", bid), { events: arrayUnion(eid) });
-            showCustomAlert("登録しました。"); closeModal('modal-event-register');
-        };
-
-        main();
+        document.getElementById('user-detail-modal')?.addEventListener('click', window.closeUserDetail);
     </script>
 </body>
 </html>
