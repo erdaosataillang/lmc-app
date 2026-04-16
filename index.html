@@ -177,7 +177,7 @@
         <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
         <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
         <!-- 管理者用タブ (rollにlmc_allがある場合のみ表示) -->
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='https://lmc-mobile.sorairosystem.com/manage.html'"><span class="material-icons nav-icon" style="color:#EA4335;">admin_panel_settings</span><span>管理</span></div>
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='https://lmc-mobile.sorairosystem.com/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
         <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
@@ -410,7 +410,11 @@
             try{ 
                 // 1. キャッシュから最速でUIを構築 (Local First)
                 const cachedUser = localStorage.getItem(CACHE_KEY_USER);
-                if (cachedUser) { currentUserData = JSON.parse(cachedUser); renderHeaderIcons(currentUserData); }
+                if (cachedUser) { 
+                    currentUserData = JSON.parse(cachedUser); 
+                    // キャッシュから権限情報を含めて初期描画
+                    renderHeaderIcons(currentUserData); 
+                }
                 
                 const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
                 if (cachedActiveEvent) {
