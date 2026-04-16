@@ -354,6 +354,12 @@
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
 
+        // キャッシュキー
+        const CACHE_KEY_USER = 'lmc_user_cache';
+        const CACHE_KEY_BANDS = 'lmc_bands_cache';
+        const CACHE_KEY_EVENTS = 'lmc_events_cache';
+        const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
+
         // グローバルステート
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
         let tempBandIconBlob=null, currentEditingBandId=null, currentEditingBandMembers=[];
@@ -402,12 +408,32 @@
         // --- 初期化 ---
         async function main(){ 
             try{ 
-                const cachedUser = localStorage.getItem('lmc_user_cache');
+                // 1. キャッシュから最速でUIを構築 (Local First)
+                const cachedUser = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUser) { currentUserData = JSON.parse(cachedUser); renderHeaderIcons(currentUserData); }
-                const cachedEvents = localStorage.getItem('lmc_events_cache');
-                if (cachedEvents) { targetEvents = JSON.parse(cachedEvents); }
-                renderBandTabs(); // 初期描画フォールバック
                 
+                const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
+                if (cachedActiveEvent) {
+                    const el = document.getElementById('displayActiveEvent');
+                    el.innerText = cachedActiveEvent;
+                    el.style.display = "inline-block";
+                }
+
+                const cachedEvents = localStorage.getItem(CACHE_KEY_EVENTS);
+                if (cachedEvents) { targetEvents = JSON.parse(cachedEvents); }
+                
+                const cachedBands = localStorage.getItem(CACHE_KEY_BANDS);
+                if (cachedBands) { myBandsAll = JSON.parse(cachedBands); }
+
+                // キャッシュデータで初期描画
+                if (targetEvents.length > 0) {
+                    renderBandTabs(); 
+                } else {
+                    // キャッシュがない場合のフォールバック描画
+                    renderBandTabsFallback();
+                }
+                
+                // 2. LIFF初期化と認証 (バックグラウンドで進行)
                 await liff.init({liffId: MY_LIFF_ID}); 
                 if(!liff.isLoggedIn()){liff.login(); return;} 
                 const profile = await liff.getProfile(); 
@@ -416,10 +442,11 @@
                 if(typeof __initial_auth_token!=='undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
                 else await signInAnonymously(auth); 
                 
+                // 3. 最新データをFirestoreから取得して同期
                 const userSnap = await getDoc(doc(db, "users", currentUser));
                 if(!userSnap.exists()){ location.href=MY_PAGE_URL; return; }
                 currentUserData = userSnap.data();
-                localStorage.setItem('lmc_user_cache', JSON.stringify(currentUserData));
+                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 renderHeaderIcons(currentUserData); 
                 
                 await loadTargetEvents();
@@ -471,8 +498,15 @@
                 let shortName = formatEventName(rawName);
                 return { id: d.id, name: shortName, originalName: rawName };
             });
-            localStorage.setItem('lmc_events_cache', JSON.stringify(targetEvents));
+            localStorage.setItem(CACHE_KEY_EVENTS, JSON.stringify(targetEvents));
             renderBandTabs();
+        }
+
+        function renderBandTabsFallback() {
+            const tabs = document.getElementById('bandTabs');
+            const slider = document.getElementById('bandSlider');
+            tabs.innerHTML = '<div class="band-tab active">読み込み中...</div>';
+            slider.innerHTML = '<div class="band-slide"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>';
         }
 
         function renderBandTabs() {
@@ -480,8 +514,7 @@
             const slider = document.getElementById('bandSlider');
             
             if (targetEvents.length === 0) {
-                tabs.innerHTML = '<div class="band-tab active">読み込み中...</div>';
-                slider.innerHTML = '<div class="band-slide"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>';
+                renderBandTabsFallback();
                 return;
             }
 
@@ -530,6 +563,7 @@
         function loadMyBands(){ 
             onSnapshot(query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)), (snap) => {
                 myBandsAll = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
                 renderBandList();
             });
         }
@@ -608,7 +642,7 @@
             loadBandBookings(bid); openModal('modal-band-detail');
         };
 
-        // --- バンド操作（共有前提の作成に変更） ---
+        // --- バンド操作 ---
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
             const eventId = document.getElementById('selectNewBandEvent').value;
@@ -795,9 +829,14 @@
                 if(ev.exists()) {
                     const el = document.getElementById('displayActiveEvent');
                     let name = ev.data().event || ev.data().name || "";
-                    el.innerText = formatEventName(name); // 〇〇年度を省略してヘッダー表示
+                    let shortName = formatEventName(name);
+                    el.innerText = shortName; // 〇〇年度を省略してヘッダー表示
                     el.style.display = "inline-block";
+                    localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
                 }
+            } else {
+                document.getElementById('displayActiveEvent').style.display = "none";
+                localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
             }
         }
         async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); }
