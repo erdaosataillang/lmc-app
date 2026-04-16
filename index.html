@@ -176,8 +176,8 @@
         <div class="nav-item active" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
         <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
         <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <!-- 管理者用タブ (role/rollがある場合のみ表示) -->
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon" style="color:#EA4335;">admin_panel_settings</span><span>管理</span></div>
+        <!-- 管理者用タブ (rollにlmc_allがある場合のみ表示) -->
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='https://lmc-mobile.sorairosystem.com/manage.html'"><span class="material-icons nav-icon" style="color:#EA4335;">admin_panel_settings</span><span>管理</span></div>
         <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
@@ -469,8 +469,9 @@
             const el = document.getElementById('headerIconBands');
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
-            // 管理者タブ表示制御 (role または roll が存在し、かつ裏方である場合)
-            if(isU && (d.role || d.roll)) {
+            // 管理者タブ表示制御 (rollに "lmc_all" が含まれる場合)
+            const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
+            if(hasLmcAll) {
                 document.getElementById('nav-admin').classList.remove('hidden');
             } else {
                 document.getElementById('nav-admin').classList.add('hidden');
