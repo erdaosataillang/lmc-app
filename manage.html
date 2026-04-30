@@ -109,9 +109,47 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
         .sync-indicator { margin-right: 12px; animation: spin 1.5s linear infinite; display: flex; }
+
+        /* デバッグコンソール */
+        #debug-console {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 220px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            z-index: 10001; /* 他のモーダル(9000~10000)よりも上 */
+            pointer-events: none;
+            overflow: hidden;
+            display: none; /* 初期は非表示 */
+            flex-direction: column;
+            word-wrap: break-word;
+        }
+        #debug-console-sys {
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+            color: #fff;
+            font-weight: bold;
+        }
+        #debug-console-logs {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
     </style>
 </head>
 <body>
+    <!-- デバッグコンソール -->
+    <div id="debug-console">
+        <div id="debug-console-sys">SysInfo</div>
+        <div id="debug-console-logs"></div>
+    </div>
+
     <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
         <div class="dialog-content">
             <div id="dialogTitle" class="dialog-title">確認</div>
@@ -318,8 +356,37 @@
         </div>
     </div>
 
-    <!-- 先行実行スクリプト: DOM読み込み直後にキャッシュからUI構築 -->
     <script>
+        // デバッグログ機能
+        let isDebugMode = false;
+        window.debugLog = function(msg) {
+            if(!isDebugMode) return;
+            const logs = document.getElementById('debug-console-logs');
+            if(!logs) return;
+            const div = document.createElement('div');
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            div.innerText = `[${timeStr}] ${msg}`;
+            logs.appendChild(div);
+            // 最新10件程度を保持
+            while(logs.children.length > 10) logs.removeChild(logs.firstChild);
+        };
+
+        function initDebugConsole() {
+            const sys = document.getElementById('debug-console-sys');
+            if(!sys) return;
+            const ua = navigator.userAgent;
+            let mem = navigator.deviceMemory ? navigator.deviceMemory + 'GB RAM' : 'Mem Info N/A';
+            let os = "Unknown";
+            if (/android/i.test(ua)) os = "Android";
+            else if (/iPad|iPhone|iPod/.test(ua)) os = "iOS";
+            else if (/Mac/.test(ua)) os = "Mac";
+            else if (/Win/.test(ua)) os = "Windows";
+            sys.innerText = `OS: ${os} | ${mem}`;
+            
+            document.getElementById('debug-console').style.display = 'flex';
+        }
+
         (function(){
             const CACHE_KEY_USER = 'lmc_user_cache';
             function initUI() {
@@ -334,6 +401,14 @@
 
                         // 権限チェック
                         const hasAdminRole = u.roll && (Array.isArray(u.roll) ? (u.roll.includes('lmc_all') || u.roll.includes('admin')) : (u.roll === 'lmc_all' || u.roll === 'admin'));
+                        const hasDebugRole = u.roll && (Array.isArray(u.roll) ? u.roll.includes('debug') : u.roll === 'debug');
+
+                        if(hasDebugRole) {
+                            isDebugMode = true;
+                            initDebugConsole();
+                            debugLog("Cache Loaded");
+                        }
+
                         if(!hasAdminRole){
                             document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>';
                         }
@@ -373,16 +448,19 @@
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
-        window.openPage=(id)=>document.getElementById('page-'+id).classList.add('open');
-        window.closePage=(id)=>document.getElementById('page-'+id).classList.remove('open');
-        window.openModal=(id)=>document.getElementById(id).classList.add('open');
-        window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
+        
+        window.openPage=(id)=>{ debugLog("Open Page: "+id); document.getElementById('page-'+id).classList.add('open'); };
+        window.closePage=(id)=>{ debugLog("Close Page: "+id); document.getElementById('page-'+id).classList.remove('open'); };
+        window.openModal=(id)=>{ debugLog("Open Modal: "+id); document.getElementById(id).classList.add('open'); };
+        window.closeModal=(id)=>{ debugLog("Close Modal: "+id); document.getElementById(id).classList.remove('open'); };
         window.goToMyPage=()=>window.location.href='/mypage.html';
+        
         function getNameById(uid){ const u=allUsersCache.find(x=>x.id===uid); return u?u.name:"不明"; }
-        async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); }
+        async function refreshAllUsersCache(){ debugLog("Fetch All Users"); const qs=await getDocs(collection(db,"users")); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); }
 
-        window.openAdminFeesMenu=()=>openPage('admin-fees-menu');
+        window.openAdminFeesMenu=()=>{ debugLog("Action: Open Fee Menu"); openPage('admin-fees-menu'); };
         window.openAdminFeeHistory=async()=>{ 
+            debugLog("Action: Open QR Scan");
             openPage('admin-fees-history'); 
             const yearSelect=document.getElementById('scanFeeYear'); 
             yearSelect.innerHTML=""; 
@@ -390,6 +468,7 @@
             [currentYear-1,currentYear,currentYear+1].forEach(y=>{ const op=document.createElement('option'); op.value=y; op.text=`${y}年度`; if(y===currentYear)op.selected=true; yearSelect.appendChild(op); }); await refreshAllUsersCache(); 
         };
         window.openAdminFeeSettings=async()=>{ 
+            debugLog("Action: Open Fee Settings");
             openPage('admin-fees-settings'); 
             try{ 
                 const docSnap=await getDoc(doc(db,"system","fees")); 
@@ -408,6 +487,7 @@
         };
 
         window.adjustFeeYear = (diff) => {
+            debugLog("Action: Adjust Fee Year ("+diff+")");
             const input = document.getElementById('feeSettingYear');
             const display = document.getElementById('display-fee-year');
             let val = parseInt(input.value) || getFiscalYear();
@@ -419,44 +499,46 @@
         };
 
         async function loadFeeSummary(){ if(allUsersCache.length===0)await refreshAllUsersCache(); const year=parseInt(document.getElementById('feeSettingYear').value)||getFiscalYear(); const yearLabel=document.getElementById('feeSummaryYearLabel'); if(yearLabel)yearLabel.innerText=year; const t1=parseInt(currentFeeSettings.term1_amount)||0, t2=parseInt(currentFeeSettings.term2_amount)||0, k1=`${year}_1`, k2=`${year}_2`; let count1=0, count2=0, totalUsers=allUsersCache.length; allUsersCache.forEach(u=>{ if(u.feeStatus){ if(u.feeStatus[k1])count1++; if(u.feeStatus[k2])count2++; } }); const sum1=count1*t1, sum2=count2*t2, total=sum1+sum2; let maxTotal=0; if(t1>0)maxTotal+=totalUsers*t1; if(t2>0)maxTotal+=totalUsers*t2; let percent=(maxTotal>0)?Math.round((total/maxTotal)*100):0; document.getElementById('feeTotalAmount').innerText=total.toLocaleString(); document.getElementById('feeTotalTerm1').innerText='¥'+sum1.toLocaleString(); document.getElementById('feeCountTerm1').innerText=`(${count1}/${totalUsers}人)`; document.getElementById('feeTotalTerm2').innerText='¥'+sum2.toLocaleString(); document.getElementById('feeCountTerm2').innerText=`(${count2}/${totalUsers}人)`; document.getElementById('feeProgressPercent').innerText=`${percent}%`; document.getElementById('feeProgressChart').style.background=`conic-gradient(rgba(255,255,255,0.9) 0% ${percent}%, rgba(255,255,255,0.2) ${percent}% 100%)`; }
-        window.saveFeeSettings=async()=>{ const year=parseInt(document.getElementById('feeSettingYear').value), t1=parseInt(document.getElementById('feeSettingTerm1').value), t2=parseInt(document.getElementById('feeSettingTerm2').value); if(!year)return await showCustomAlert("年度を入力してください", "入力エラー"); try{ await setDoc(doc(db,"system","fees"),{year:year,term1_amount:t1||0,term2_amount:t2||0,updatedAt:serverTimestamp()},{merge:true}); currentFeeSettings={year,term1_amount:t1,term2_amount:t2}; await showCustomAlert("部費設定を保存しました。"); loadFeeSummary(); }catch(e){await showCustomAlert("保存エラー: " + e.message, "エラー")} };
-        window.openAdminFeeList=async()=>{ openPage('admin-fees-list'); document.getElementById('feeUserList').innerHTML='<div style="text-align:center; padding:20px;">読み込み中...</div>'; await getDoc(doc(db,"system","fees")).then(snap=>{if(snap.exists())currentFeeSettings=snap.data()}); document.getElementById('feeListYearLabel').innerText=currentFeeSettings.year||getFiscalYear(); loadFeeUserList(); };
+        window.saveFeeSettings=async()=>{ debugLog("Action: Save Fee Settings"); const year=parseInt(document.getElementById('feeSettingYear').value), t1=parseInt(document.getElementById('feeSettingTerm1').value), t2=parseInt(document.getElementById('feeSettingTerm2').value); if(!year)return await showCustomAlert("年度を入力してください", "入力エラー"); try{ await setDoc(doc(db,"system","fees"),{year:year,term1_amount:t1||0,term2_amount:t2||0,updatedAt:serverTimestamp()},{merge:true}); currentFeeSettings={year,term1_amount:t1,term2_amount:t2}; await showCustomAlert("部費設定を保存しました。"); loadFeeSummary(); }catch(e){await showCustomAlert("保存エラー: " + e.message, "エラー")} };
+        window.openAdminFeeList=async()=>{ debugLog("Action: Open Fee List"); openPage('admin-fees-list'); document.getElementById('feeUserList').innerHTML='<div style="text-align:center; padding:20px;">読み込み中...</div>'; await getDoc(doc(db,"system","fees")).then(snap=>{if(snap.exists())currentFeeSettings=snap.data()}); document.getElementById('feeListYearLabel').innerText=currentFeeSettings.year||getFiscalYear(); loadFeeUserList(); };
         async function loadFeeUserList(){ const container=document.getElementById('feeUserList'); container.innerHTML='<div style="text-align:center; padding:20px;">ユーザー取得中...</div>'; try{ const q=query(collection(db,"users"),orderBy("studentId","asc")); const qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); renderFeeUserList(allUsersCache); }catch(e){container.innerHTML='<div style="padding:20px; color:#d93025; text-align:center;">エラー: '+e.message+'</div>'} }
         function renderFeeUserList(users){ const container=document.getElementById('feeUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:40px; text-align:center; color:#999;">ユーザーがいません</div>'; return;} const targetYear=currentFeeSettings.year||getFiscalYear(), k1=`${targetYear}_1`, k2=`${targetYear}_2`; users.forEach(u=>{ const status=u.feeStatus||{}, div=document.createElement('div'); div.className='fee-user-item'; div.innerHTML=`<div><div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${u.name}</div><div style="font-size:11px; color:#5f6368;">${u.studentId||'-'} ${u.part?'('+getPartLabel(u.part)+')':''}</div></div><div class="fee-check-group"><div class="fee-checkbox ${status[k1]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k1}',this)"><div class="fee-label">前期</div><div class="fee-label" style="font-weight:normal; font-size:11px;">¥${currentFeeSettings.term1_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div><div class="fee-checkbox ${status[k2]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k2}',this)"><div class="fee-label">後期</div><div class="fee-label" style="font-weight:normal; font-size:11px;">¥${currentFeeSettings.term2_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div></div>`; container.appendChild(div); }); }
         document.getElementById('feeListSearchInput')?.addEventListener('input',(e)=>{ const term=e.target.value.trim(); renderFeeUserList(term?allUsersCache.filter(u=>u.name.includes(term)||(u.kana&&u.kana.includes(term))):allUsersCache); });
-        window.toggleFeeStatus=async(uid,key,element)=>{ const isChecked=element.classList.contains('checked'); if(isChecked)element.classList.remove('checked'); else element.classList.add('checked'); const newVal=!isChecked; try{ const updateData={}; updateData[`feeStatus.${key}`]=newVal; await updateDoc(doc(db,"users",uid),updateData); const user=allUsersCache.find(u=>u.id===uid); if(user){ if(!user.feeStatus)user.feeStatus={}; user.feeStatus[key]=newVal; } }catch(e){console.error(e); await showCustomAlert("更新失敗: " + e.message, "エラー"); if(isChecked)element.classList.add('checked'); else element.classList.remove('checked'); } };
+        window.toggleFeeStatus=async(uid,key,element)=>{ debugLog("Action: Toggle Fee " + key); const isChecked=element.classList.contains('checked'); if(isChecked)element.classList.remove('checked'); else element.classList.add('checked'); const newVal=!isChecked; try{ const updateData={}; updateData[`feeStatus.${key}`]=newVal; await updateDoc(doc(db,"users",uid),updateData); const user=allUsersCache.find(u=>u.id===uid); if(user){ if(!user.feeStatus)user.feeStatus={}; user.feeStatus[key]=newVal; } }catch(e){console.error(e); await showCustomAlert("更新失敗: " + e.message, "エラー"); if(isChecked)element.classList.add('checked'); else element.classList.remove('checked'); } };
         
         let videoStream=null, isScanning=false, scanLock=false;
-        window.startQRScanner=async()=>{ const video=document.getElementById('camera-video'), resultArea=document.getElementById('scan-result-area'), btnArea=document.getElementById('scan-start-btn-area'); document.getElementById('video-container').style.display='block'; btnArea.style.display='none'; resultArea.style.display='none'; try{ videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}); video.srcObject=videoStream; video.setAttribute("playsinline",true); video.play(); isScanning=true; requestAnimationFrame(scanLoop); }catch(e){await showCustomAlert("カメラ起動失敗: " + e.message, "エラー"); window.stopQRScanner();} };
-        window.stopQRScanner=()=>{ isScanning=false; if(videoStream){videoStream.getTracks().forEach(t=>t.stop()); videoStream=null;} document.getElementById('video-container').style.display='none'; document.getElementById('scan-start-btn-area').style.display='block'; document.getElementById('scan-result-area').style.display='none'; };
+        window.startQRScanner=async()=>{ debugLog("Action: Start QR Scanner"); const video=document.getElementById('camera-video'), resultArea=document.getElementById('scan-result-area'), btnArea=document.getElementById('scan-start-btn-area'); document.getElementById('video-container').style.display='block'; btnArea.style.display='none'; resultArea.style.display='none'; try{ videoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}}); video.srcObject=videoStream; video.setAttribute("playsinline",true); video.play(); isScanning=true; requestAnimationFrame(scanLoop); }catch(e){await showCustomAlert("カメラ起動失敗: " + e.message, "エラー"); window.stopQRScanner();} };
+        window.stopQRScanner=()=>{ debugLog("Action: Stop QR Scanner"); isScanning=false; if(videoStream){videoStream.getTracks().forEach(t=>t.stop()); videoStream=null;} document.getElementById('video-container').style.display='none'; document.getElementById('scan-start-btn-area').style.display='block'; document.getElementById('scan-result-area').style.display='none'; };
         function scanLoop(){ if(!isScanning)return; const video=document.getElementById('camera-video'), canvasElement=document.getElementById('qr-canvas'), canvas=canvasElement.getContext('2d'); if(video.readyState===video.HAVE_ENOUGH_DATA){ canvasElement.height=video.videoHeight; canvasElement.width=video.videoWidth; canvas.drawImage(video,0,0,canvasElement.width,canvasElement.height); const code=jsQR(canvas.getImageData(0,0,canvasElement.width,canvasElement.height).data,canvasElement.width,canvasElement.height,{inversionAttempts:"dontInvert"}); if(code&&!scanLock)handleScanSuccess(code.data); } requestAnimationFrame(scanLoop); }
-        async function handleScanSuccess(data){ scanLock=true; const userId=data, targetUser=allUsersCache.find(u=>u.id===userId), resultArea=document.getElementById('scan-result-area'), nameSpan=document.getElementById('scannedUserName'); resultArea.style.display='block'; if(targetUser){ nameSpan.innerText=targetUser.name; nameSpan.style.color='#1f1f1f'; const year=document.getElementById('scanFeeYear').value, term=document.getElementById('scanFeeTerm').value, key=`${year}_${term}`; try{ const updateData={}; updateData[`feeStatus.${key}`]=true; await updateDoc(doc(db,"users",userId),updateData); if(!targetUser.feeStatus)targetUser.feeStatus={}; targetUser.feeStatus[key]=true; if(navigator.vibrate)navigator.vibrate([100,50,100]); }catch(e){await showCustomAlert("更新エラー: " + e.message, "エラー")} }else{ nameSpan.innerText="未登録 ("+userId.substring(0,6)+"...)"; nameSpan.style.color='red'; if(navigator.vibrate)navigator.vibrate(50); } setTimeout(()=>{scanLock=false; resultArea.style.display='none';},2000); }
+        async function handleScanSuccess(data){ debugLog("Scan Success: " + data); scanLock=true; const userId=data, targetUser=allUsersCache.find(u=>u.id===userId), resultArea=document.getElementById('scan-result-area'), nameSpan=document.getElementById('scannedUserName'); resultArea.style.display='block'; if(targetUser){ nameSpan.innerText=targetUser.name; nameSpan.style.color='#1f1f1f'; const year=document.getElementById('scanFeeYear').value, term=document.getElementById('scanFeeTerm').value, key=`${year}_${term}`; try{ const updateData={}; updateData[`feeStatus.${key}`]=true; await updateDoc(doc(db,"users",userId),updateData); if(!targetUser.feeStatus)targetUser.feeStatus={}; targetUser.feeStatus[key]=true; if(navigator.vibrate)navigator.vibrate([100,50,100]); }catch(e){await showCustomAlert("更新エラー: " + e.message, "エラー")} }else{ nameSpan.innerText="未登録 ("+userId.substring(0,6)+"...)"; nameSpan.style.color='red'; if(navigator.vibrate)navigator.vibrate(50); } setTimeout(()=>{scanLock=false; resultArea.style.display='none';},2000); }
 
-        window.openAdminSettings=async()=>{ openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(docSnap.exists())currentSystemSettings=docSnap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
+        window.openAdminSettings=async()=>{ debugLog("Action: Open Admin Settings"); openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(docSnap.exists())currentSystemSettings=docSnap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
         window.toggleLotterySettings=()=>{ const isL=document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked, area=document.getElementById('lotterySettingsArea'); if(isL){area.classList.remove('hidden'); toggleLotteryExecUI();} else area.classList.add('hidden'); };
         window.toggleLotteryExecUI=()=>{ const mode=document.querySelector('input[name="lotteryExecMode"]:checked').value, autoC=document.getElementById('lotteryAutoConfig'), manuC=document.getElementById('lotteryManualConfig'); if(mode==='auto'){autoC.classList.remove('hidden'); manuC.classList.add('hidden');} else {autoC.classList.add('hidden'); manuC.classList.remove('hidden');} };
-        window.runManualLottery=async()=>{ const dVal=document.getElementById('manualLotteryDate').value; if(!dVal)return await showCustomAlert("日付を選択してください", "入力不足"); if(!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認"))return; const logB=document.getElementById('lotteryLog'); logB.innerHTML='<div style="padding:4px; font-weight:bold;">データ取得中...</div>'; logB.classList.remove('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); const targetD=new Date(dVal), startD=new Date(targetD), endD=new Date(targetD); startD.setHours(0,0,0,0); endD.setHours(23,59,59,999); try{ const q=query(collection(db,"bookings"),where("startTime",">=",startD),where("startTime","<=",endD)); const snapshot=await getDocs(q); let candidates=[], locked=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.status==='pending'&&d.type!=='event')candidates.push({id:doc.id,...d}); else if(d.status==='confirmed'||d.type==='event')locked.push({start:d.startTime.toDate(),end:d.endTime.toDate(),title:d.bandName||d.title}); }); if(candidates.length===0){logB.innerHTML+='<div style="padding:4px; color:#f9ab00; font-weight:bold;">候補なし</div>'; return;} const bandReqs={}; candidates.forEach(c=>{ if(!bandReqs[c.bandId])bandReqs[c.bandId]={id:c.bandId,name:c.bandName,requests:[],docIds:[]}; bandReqs[c.bandId].requests.push({start:c.startTime.toDate(),end:c.endTime.toDate()}); bandReqs[c.bandId].docIds.push(c.id); }); const bands=Object.values(bandReqs); logB.innerHTML+=`<div style="padding:4px; border-bottom:1px solid #eee; margin-bottom:8px;">候補:${candidates.length} エントリー:${bands.length}</div>`; let result = tryAllocate(bands, 60, locked); if (result.failedBands.length > 0) { logB.innerHTML += `<div style="padding:4px; color:#f9ab00;">60分枠では全員確保不可(${result.failedBands.length}組落選) -> 30分枠で再抽選します</div>`; result = tryAllocate(bands, 30, locked); } else { logB.innerHTML += `<div style="padding:4px; color:#1e8e3e; font-weight:bold;">全員60分枠で確保可能です</div>`; } logB.innerHTML += '<div style="margin-top:12px; font-weight:bold; color:#1f1f1f;">結果</div><div style="background:#fafafa; border-radius:8px; padding:8px; max-height:150px; overflow-y:auto; border:1px solid #eee; margin-top:8px;">'; result.assignments.forEach(a => { const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`; const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`; logB.innerHTML += `<div style="color:#1e8e3e; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">check_circle</span> ${a.bandName}: ${sStr}-${eStr} (${result.duration}分)</div>`; }); result.failedBands.forEach(b => { logB.innerHTML += `<div style="color:#d93025; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">cancel</span> ${b.name}: 確保不可</div>`; }); logB.innerHTML += '</div>'; tempLotterySchedule = result; document.getElementById('btnApplyLottery').classList.remove('hidden'); }catch(e){console.error(e); logB.innerHTML+='<div style="color:#d93025;">エラー</div>';} };
+        window.runManualLottery=async()=>{ debugLog("Action: Run Manual Lottery"); const dVal=document.getElementById('manualLotteryDate').value; if(!dVal)return await showCustomAlert("日付を選択してください", "入力不足"); if(!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認"))return; const logB=document.getElementById('lotteryLog'); logB.innerHTML='<div style="padding:4px; font-weight:bold;">データ取得中...</div>'; logB.classList.remove('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); const targetD=new Date(dVal), startD=new Date(targetD), endD=new Date(targetD); startD.setHours(0,0,0,0); endD.setHours(23,59,59,999); try{ const q=query(collection(db,"bookings"),where("startTime",">=",startD),where("startTime","<=",endD)); const snapshot=await getDocs(q); let candidates=[], locked=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.status==='pending'&&d.type!=='event')candidates.push({id:doc.id,...d}); else if(d.status==='confirmed'||d.type==='event')locked.push({start:d.startTime.toDate(),end:d.endTime.toDate(),title:d.bandName||d.title}); }); if(candidates.length===0){logB.innerHTML+='<div style="padding:4px; color:#f9ab00; font-weight:bold;">候補なし</div>'; return;} const bandReqs={}; candidates.forEach(c=>{ if(!bandReqs[c.bandId])bandReqs[c.bandId]={id:c.bandId,name:c.bandName,requests:[],docIds:[]}; bandReqs[c.bandId].requests.push({start:c.startTime.toDate(),end:c.endTime.toDate()}); bandReqs[c.bandId].docIds.push(c.id); }); const bands=Object.values(bandReqs); logB.innerHTML+=`<div style="padding:4px; border-bottom:1px solid #eee; margin-bottom:8px;">候補:${candidates.length} エントリー:${bands.length}</div>`; let result = tryAllocate(bands, 60, locked); if (result.failedBands.length > 0) { logB.innerHTML += `<div style="padding:4px; color:#f9ab00;">60分枠では全員確保不可(${result.failedBands.length}組落選) -> 30分枠で再抽選します</div>`; result = tryAllocate(bands, 30, locked); } else { logB.innerHTML += `<div style="padding:4px; color:#1e8e3e; font-weight:bold;">全員60分枠で確保可能です</div>`; } logB.innerHTML += '<div style="margin-top:12px; font-weight:bold; color:#1f1f1f;">結果</div><div style="background:#fafafa; border-radius:8px; padding:8px; max-height:150px; overflow-y:auto; border:1px solid #eee; margin-top:8px;">'; result.assignments.forEach(a => { const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`; const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`; logB.innerHTML += `<div style="color:#1e8e3e; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">check_circle</span> ${a.bandName}: ${sStr}-${eStr} (${result.duration}分)</div>`; }); result.failedBands.forEach(b => { logB.innerHTML += `<div style="color:#d93025; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">cancel</span> ${b.name}: 確保不可</div>`; }); logB.innerHTML += '</div>'; tempLotterySchedule = result; document.getElementById('btnApplyLottery').classList.remove('hidden'); }catch(e){console.error(e); logB.innerHTML+='<div style="color:#d93025;">エラー</div>';} };
         function tryAllocate(bands, duration, lockedItems) { const START_H = 9; const END_H = 20; const TOTAL_M = (END_H - START_H) * 60; const SLOT_UNIT = 30; const SLOTS = TOTAL_M / SLOT_UNIT; const timeline = new Array(SLOTS).fill(null); if (lockedItems) { lockedItems.forEach(l => { const sM = (l.start.getHours() - START_H) * 60 + l.start.getMinutes(); const eM = (l.end.getHours() - START_H) * 60 + l.end.getMinutes(); const startSlot = Math.floor(Math.max(0, sM) / SLOT_UNIT); const endSlot = Math.ceil(Math.min(TOTAL_M, eM) / SLOT_UNIT); for (let i = startSlot; i < endSlot; i++) { if (i >= 0 && i < SLOTS) timeline[i] = "LOCKED"; } }); } const assignments = []; const failedBands = []; const shuffledBands = [...bands].sort(() => Math.random() - 0.5); const neededSlots = Math.ceil(duration / SLOT_UNIT); for (const band of shuffledBands) { let isAssigned = false; const reqs = [...band.requests].sort(() => Math.random() - 0.5); for (const req of reqs) { if (isAssigned) break; const reqStartM = (req.start.getHours() - START_H) * 60 + req.start.getMinutes(); const reqEndM = (req.end.getHours() - START_H) * 60 + req.end.getMinutes(); const reqStartSlot = Math.floor(reqStartM / SLOT_UNIT); const reqEndSlot = Math.floor(reqEndM / SLOT_UNIT); for (let t = reqStartSlot; t <= reqEndSlot - neededSlots; t++) { let isFree = true; for (let k = 0; k < neededSlots; k++) { if (t + k >= SLOTS || timeline[t + k] !== null) { isFree = false; break; } } if (isFree) { for (let k = 0; k < neededSlots; k++) { timeline[t + k] = band.name; } const assignedStart = new Date(req.start); assignedStart.setHours(START_H + Math.floor((t * SLOT_UNIT) / 60)); assignedStart.setMinutes((t * SLOT_UNIT) % 60); assignedStart.setSeconds(0); assignedStart.setMilliseconds(0); const assignedEnd = new Date(assignedStart); assignedEnd.setMinutes(assignedStart.getMinutes() + duration); assignments.push({ bandId: band.id, bandName: band.name, start: assignedStart, end: assignedEnd, originalDocIds: band.docIds }); isAssigned = true; break; } } } if (!isAssigned) { failedBands.push(band); } } return { duration: duration, assignments: assignments, failedBands: failedBands, successCount: assignments.length, totalCount: bands.length }; }
-        window.applyLotteryResults=async()=>{ if(!tempLotterySchedule||!await showCustomConfirm("抽選結果をスケジュールに反映しますか？", "反映の確認"))return; const batch=writeBatch(db); tempLotterySchedule.assignments.forEach(a=>{ const ref=doc(collection(db,"bookings")); batch.set(ref,{bandId:a.bandId,bandName:a.bandName,creatorId:currentUser,userName:"抽選確定",startTime:a.start,endTime:a.end,type:'normal',status:'confirmed',source:'lottery',createdAt:new Date()}); a.originalDocIds.forEach(oldId=>batch.delete(doc(db,"bookings",oldId))); }); try{await batch.commit(); await showCustomAlert("抽選結果を反映しました。\n(落選した希望はそのまま残っています)"); closePage('admin-calendar-stub');}catch(e){await showCustomAlert(e.message, "エラー")} };
-        window.saveSystemSettings=async()=>{ const mode=document.querySelector('input[name="adminBookingMode"]:checked').value, eMode=document.querySelector('input[name="lotteryExecMode"]:checked').value, days=parseInt(document.getElementById('lotteryAutoDays').value), time=parseInt(document.getElementById('lotteryAutoTime').value); try{ await setDoc(doc(db,"system","settings"),{bookingMode:mode,lotteryConfig:{mode:eMode,daysBefore:days,time:time},updatedAt:serverTimestamp(),updatedBy:currentUser},{merge:true}); await showCustomAlert("システム設定を保存しました。"); closePage('admin-calendar-stub'); }catch(e){await showCustomAlert(e.message, "エラー")} };
+        window.applyLotteryResults=async()=>{ debugLog("Action: Apply Lottery"); if(!tempLotterySchedule||!await showCustomConfirm("抽選結果をスケジュールに反映しますか？", "反映の確認"))return; const batch=writeBatch(db); tempLotterySchedule.assignments.forEach(a=>{ const ref=doc(collection(db,"bookings")); batch.set(ref,{bandId:a.bandId,bandName:a.bandName,creatorId:currentUser,userName:"抽選確定",startTime:a.start,endTime:a.end,type:'normal',status:'confirmed',source:'lottery',createdAt:new Date()}); a.originalDocIds.forEach(oldId=>batch.delete(doc(db,"bookings",oldId))); }); try{await batch.commit(); await showCustomAlert("抽選結果を反映しました。\n(落選した希望はそのまま残っています)"); closePage('admin-calendar-stub');}catch(e){await showCustomAlert(e.message, "エラー")} };
+        window.saveSystemSettings=async()=>{ debugLog("Action: Save Settings"); const mode=document.querySelector('input[name="adminBookingMode"]:checked').value, eMode=document.querySelector('input[name="lotteryExecMode"]:checked').value, days=parseInt(document.getElementById('lotteryAutoDays').value), time=parseInt(document.getElementById('lotteryAutoTime').value); try{ await setDoc(doc(db,"system","settings"),{bookingMode:mode,lotteryConfig:{mode:eMode,daysBefore:days,time:time},updatedAt:serverTimestamp(),updatedBy:currentUser},{merge:true}); await showCustomAlert("システム設定を保存しました。"); closePage('admin-calendar-stub'); }catch(e){await showCustomAlert(e.message, "エラー")} };
 
-        window.openAdminUsers=async()=>{ openPage('admin-users'); document.getElementById('adminUserList').innerHTML='<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try{ const q=query(collection(db,"users"),orderBy("createdAt","desc")), qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>{ const d=doc.data(); d.affiliations=d.affiliations||(d.org?[d.org]:[]); allUsersCache.push({id:doc.id,...d}); }); renderAdminList(allUsersCache); }catch(e){document.getElementById('adminUserList').innerHTML=e.message} };
-        window.sortUsers=(type)=>{ if(type==='year')allUsersCache.sort((a,b)=>(a.year||99)-(b.year||99)); else if(type==='kana')allUsersCache.sort((a,b)=>(a.kana||"").localeCompare(b.kana||"","ja")); renderAdminList(allUsersCache); };
+        window.openAdminUsers=async()=>{ debugLog("Action: Open Users List"); openPage('admin-users'); document.getElementById('adminUserList').innerHTML='<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try{ const q=query(collection(db,"users"),orderBy("createdAt","desc")), qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>{ const d=doc.data(); d.affiliations=d.affiliations||(d.org?[d.org]:[]); allUsersCache.push({id:doc.id,...d}); }); renderAdminList(allUsersCache); }catch(e){document.getElementById('adminUserList').innerHTML=e.message} };
+        window.sortUsers=(type)=>{ debugLog("Sort Users: " + type); if(type==='year')allUsersCache.sort((a,b)=>(a.year||99)-(b.year||99)); else if(type==='kana')allUsersCache.sort((a,b)=>(a.kana||"").localeCompare(b.kana||"","ja")); renderAdminList(allUsersCache); };
         function renderAdminList(users){ const container=document.getElementById('adminUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:40px; text-align:center; color:#999;">ユーザーが見つかりません</div>';return;} users.forEach(u=>{ const div=document.createElement('div'); div.className='user-list-item'; div.onclick=()=>openAdminEdit(u); let badges=(u.affiliations.includes('urakata')?'<span style="color:#ea4335; font-weight:bold; font-size:10px; margin-right:6px; background:#fce8e6; padding:2px 6px; border-radius:10px;">裏方</span>':'')+(u.affiliations.includes('lmc')?'<span style="color:#5f6368; font-weight:bold; font-size:10px; background:#f1f3f4; padding:2px 6px; border-radius:10px;">LMC</span>':''); let kanaHtml=u.kana?`<div style="font-size:10px; color:#999; margin-bottom:2px;">${u.kana}</div>`:''; div.innerHTML=`<img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon"><div class="user-info-main">${kanaHtml}<div class="user-name">${u.name} ${u.role?`<span style="font-size:10px; background:#0b57d0; color:white; padding:2px 6px; border-radius:10px; margin-left:6px; vertical-align:middle;">${u.role}</span>`:''}</div><div class="user-sub" style="margin-top:4px;">${badges} <span style="margin-left:4px;">${u.year||'-'}年</span></div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`; container.appendChild(div); }); }
         document.getElementById('adminSearchInput').addEventListener('input',(e)=>{ const t=e.target.value.trim(); renderAdminList(t?allUsersCache.filter(u=>u.name.includes(t)||u.kana?.includes(t)):allUsersCache); });
-        function openAdminEdit(u){ adminEditingUserId=u.id; openPage('admin-edit'); document.getElementById('admin-user-icon').src=u.icon||"https://ul.h3z.jp/Vnukmtvq.jpg"; document.getElementById('admin-user-lineName').innerText="@"+(u.lineDisplayName||"LINE_User"); document.getElementById('admin-edit-docId').innerText=u.id; document.getElementById('admin-show-name').innerText=u.name; document.getElementById('admin-show-kana').innerText=u.kana||"-"; document.getElementById('admin-show-studentId').innerText=u.studentId||"-"; document.getElementById('admin-show-year').innerText=(u.year||"-")+"年"; let affText=(u.affiliations.includes('urakata')?"裏方部 ":"")+(u.affiliations.includes('lmc')?"LMC ":""); document.getElementById('admin-show-aff').innerText=affText||"-"; document.getElementById('admin-show-part').innerText=getPartLabel(u.part)||"-"; document.getElementById('admin-edit-role').value=u.role||""; loadAdminUserBands(u.id); }
+        function openAdminEdit(u){ debugLog("Open User Edit: " + u.name); adminEditingUserId=u.id; openPage('admin-edit'); document.getElementById('admin-user-icon').src=u.icon||"https://ul.h3z.jp/Vnukmtvq.jpg"; document.getElementById('admin-user-lineName').innerText="@"+(u.lineDisplayName||"LINE_User"); document.getElementById('admin-edit-docId').innerText=u.id; document.getElementById('admin-show-name').innerText=u.name; document.getElementById('admin-show-kana').innerText=u.kana||"-"; document.getElementById('admin-show-studentId').innerText=u.studentId||"-"; document.getElementById('admin-show-year').innerText=(u.year||"-")+"年"; let affText=(u.affiliations.includes('urakata')?"裏方部 ":"")+(u.affiliations.includes('lmc')?"LMC ":""); document.getElementById('admin-show-aff').innerText=affText||"-"; document.getElementById('admin-show-part').innerText=getPartLabel(u.part)||"-"; document.getElementById('admin-edit-role').value=u.role||""; loadAdminUserBands(u.id); }
         async function loadAdminUserBands(uid){ const container=document.getElementById('admin-user-band-list'); container.innerHTML='<div style="text-align:center; padding:10px; color:#999;">読み込み中...</div>'; try{ const q=query(collection(db,"bands"),where("memberIds","array-contains",uid)), qs=await getDocs(q); if(qs.empty)container.innerHTML='<div style="color:#999;">所属バンドはありません</div>'; else { let h="<ul style='padding-left:20px; margin:0; color:#1f1f1f;'>"; qs.forEach(doc=>{ const b=doc.data(); h+=`<li style="margin-bottom:8px;">${b.name} ${b.creatorId===uid?'<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px; font-weight:bold; margin-left:4px;">リーダー</span>':''}</li>` }); h+="</ul>"; container.innerHTML=h; } }catch(e){container.innerHTML='<div style="color:#d93025;">エラーが発生しました</div>'} }
-        document.getElementById('btn-save-user-role').addEventListener('click',async()=>{ if(!adminEditingUserId)return; const btn=document.getElementById('btn-save-user-role'); btn.innerText="保存中..."; try{await updateDoc(doc(db,"users",adminEditingUserId),{role:document.getElementById('admin-edit-role').value}); await showCustomAlert("役職設定を保存しました。"); closePage('admin-edit');}catch(e){await showCustomAlert(e.message, "エラー")}finally{btn.innerText="役職を保存"} });
+        document.getElementById('btn-save-user-role').addEventListener('click',async()=>{ debugLog("Action: Save User Role"); if(!adminEditingUserId)return; const btn=document.getElementById('btn-save-user-role'); btn.innerText="保存中..."; try{await updateDoc(doc(db,"users",adminEditingUserId),{role:document.getElementById('admin-edit-role').value}); await showCustomAlert("役職設定を保存しました。"); closePage('admin-edit');}catch(e){await showCustomAlert(e.message, "エラー")}finally{btn.innerText="役職を保存"} });
         function getPartLabel(p){ return {vocal:"Vocal",guitar:"Guitar",bass:"Bass",drums:"Drums",keyboard:"Keyboard"}[p]||""; }
-        window.openAdminBands=async()=>{ openPage('admin-bands'); document.getElementById('adminBandList').innerHTML='<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try{ const qs=await getDocs(collection(db,"bands")); allBandsCache=[]; qs.forEach(doc=>allBandsCache.push({id:doc.id,...doc.data()})); allBandsCache.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0)); renderAdminBandList(allBandsCache); }catch(e){document.getElementById('adminBandList').innerHTML='<div style="color:#d93025; text-align:center; padding:20px;">'+e.message+'</div>'} };
+        window.openAdminBands=async()=>{ debugLog("Action: Open Bands List"); openPage('admin-bands'); document.getElementById('adminBandList').innerHTML='<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try{ const qs=await getDocs(collection(db,"bands")); allBandsCache=[]; qs.forEach(doc=>allBandsCache.push({id:doc.id,...doc.data()})); allBandsCache.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0)); renderAdminBandList(allBandsCache); }catch(e){document.getElementById('adminBandList').innerHTML='<div style="color:#d93025; text-align:center; padding:20px;">'+e.message+'</div>'} };
         
         window.handleBandSort = (e) => {
+            debugLog("Sort Bands: " + e.target.value);
             bandSortOrder = e.target.value;
             renderAdminBandList(allBandsCache);
         };
 
         window.toggleArchiveView = () => {
             showArchivedBands = document.getElementById('archiveToggle').checked;
+            debugLog("Toggle Archive View: " + showArchivedBands);
             renderAdminBandList(allBandsCache);
         };
 
@@ -501,6 +583,7 @@
         
         // --- Admin Band Detail Logic ---
         window.openAdminBandDetail = async (band) => {
+            debugLog("Open Band Detail: " + band.name);
             openPage('admin-band-detail');
             currentAdminBandId = band.id;
             
@@ -555,6 +638,7 @@
         };
 
         window.saveAdminBandCuesheet = async () => {
+            debugLog("Action: Save Cue Sheet URL");
             if (!currentAdminBandId) return;
             const newUrl = document.getElementById('admin-bd-cuesheet-input').value.trim();
             
@@ -575,6 +659,7 @@
         };
 
         window.toggleBandArchiveStatus = async () => {
+            debugLog("Action: Toggle Band Archive");
             if (!currentAdminBandId) return;
             const newVal = document.getElementById('admin-bd-archive-switch').checked;
             try {
@@ -589,6 +674,7 @@
         };
 
         window.adminDeleteBand = async () => {
+            debugLog("Action: Delete Band");
             if (!currentAdminBandId) return;
             if (await showCustomConfirm("本当にこのバンドを削除しますか？\n関連する予約等に影響が出る可能性があります。この操作は取り消せません。", "完全削除の確認")) {
                 try {
@@ -603,15 +689,16 @@
             }
         };
 
-        window.openAdminEvents = async () => { openPage('admin-events'); await loadAdminEvents(); };
+        window.openAdminEvents = async () => { debugLog("Action: Open Events List"); openPage('admin-events'); await loadAdminEvents(); };
         async function loadAdminEvents() { const container = document.getElementById('adminEventList'); container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try { const q = query(collection(db, 'events'), orderBy("startDate", "desc")); const qs = await getDocs(q); container.innerHTML = ""; if (qs.empty) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">イベントがありません</div>'; return; } qs.forEach(docSnap => { const ev = docSnap.data(); const id = docSnap.id; const div = document.createElement('div'); div.className = 'event-admin-item'; const iconClass = `type-${ev.type || 'other'}`; const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' }; const iconName = iconMap[ev.type] || 'event'; div.innerHTML = `<div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div><div class="event-admin-info"><div class="event-admin-name">${ev.event}</div><div class="event-admin-date">${ev.startDate ? ev.startDate.split('-').join('/') : '-'}</div></div><button class="btn-remove-member" style="margin-left:12px;" onclick="deleteAdminEvent('${id}', '${ev.event}')">削除</button>`; container.appendChild(div); }); } catch (e) { container.innerHTML = '<div style="color:#d93025; padding:20px; text-align:center;">エラー: ' + e.message + '</div>'; } }
-        window.openCreateEventModal = () => { document.getElementById('inputEventName').value = ""; document.getElementById('inputEventDate').value = ""; document.getElementById('inputEventDesc').value = ""; document.getElementById('inputEventType').value = ""; document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected')); openModal('modal-event-admin'); };
+        window.openCreateEventModal = () => { debugLog("Action: Open Create Event"); document.getElementById('inputEventName').value = ""; document.getElementById('inputEventDate').value = ""; document.getElementById('inputEventDesc').value = ""; document.getElementById('inputEventType').value = ""; document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected')); openModal('modal-event-admin'); };
         document.querySelectorAll('.event-type-chip').forEach(chip => { chip.addEventListener('click', () => { document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected')); chip.classList.add('selected'); document.getElementById('inputEventType').value = chip.dataset.type; const nameInput = document.getElementById('inputEventName'); if (!nameInput.value) { nameInput.value = chip.innerText; } }); });
-        window.saveAdminEvent = async () => { const type = document.getElementById('inputEventType').value; const name = document.getElementById('inputEventName').value.trim(); const date = document.getElementById('inputEventDate').value; const desc = document.getElementById('inputEventDesc').value.trim(); if (!type || !name || !date) { return await showCustomAlert("種別、名前、日付を入力してください。", "入力エラー"); } try { const idDatePart = date.replace(/-/g, ''); const docId = `e${idDatePart}`; await setDoc(doc(db, 'events', docId), { event: name, startDate: date, endDate: date, type, desc, createdAt: serverTimestamp(), createdBy: currentUser }, { merge: true }); await showCustomAlert("イベントを作成しました。"); closeModal('modal-event-admin'); await loadAdminEvents(); } catch (e) { await showCustomAlert("保存エラー: " + e.message, "エラー"); } };
-        window.deleteAdminEvent = async (id, name) => { if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) { try { await deleteDoc(doc(db, 'events', id)); await showCustomAlert("削除しました。"); await loadAdminEvents(); } catch (e) { await showCustomAlert(e.message, "エラー"); } } };
+        window.saveAdminEvent = async () => { debugLog("Action: Save Admin Event"); const type = document.getElementById('inputEventType').value; const name = document.getElementById('inputEventName').value.trim(); const date = document.getElementById('inputEventDate').value; const desc = document.getElementById('inputEventDesc').value.trim(); if (!type || !name || !date) { return await showCustomAlert("種別、名前、日付を入力してください。", "入力エラー"); } try { const idDatePart = date.replace(/-/g, ''); const docId = `e${idDatePart}`; await setDoc(doc(db, 'events', docId), { event: name, startDate: date, endDate: date, type, desc, createdAt: serverTimestamp(), createdBy: currentUser }, { merge: true }); await showCustomAlert("イベントを作成しました。"); closeModal('modal-event-admin'); await loadAdminEvents(); } catch (e) { await showCustomAlert("保存エラー: " + e.message, "エラー"); } };
+        window.deleteAdminEvent = async (id, name) => { debugLog("Action: Delete Admin Event"); if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) { try { await deleteDoc(doc(db, 'events', id)); await showCustomAlert("削除しました。"); await loadAdminEvents(); } catch (e) { await showCustomAlert(e.message, "エラー"); } } };
 
         // 1. Open Basic Settings Page
         window.openAdminBasics = async () => {
+            debugLog("Action: Open Basic Settings");
             openPage('admin-basics');
             await loadBasicConfig();
             renderOfficerList();
@@ -619,6 +706,7 @@
 
         // 2. Load Config
         async function loadBasicConfig() {
+            debugLog("Load Basic Config");
             try {
                 // UIへの反映
                 const y = currentBasicConfig.currentYear || getFiscalYear();
@@ -645,6 +733,7 @@
 
         // Adjust Year Logic
         window.adjustYear = (diff) => {
+            debugLog("Adjust Year: " + diff);
             const input = document.getElementById('basic-setting-year');
             const display = document.getElementById('display-year-text');
             let val = parseInt(input.value) || getFiscalYear();
@@ -655,6 +744,7 @@
 
         // 3. Save Config
         window.saveBasicConfig = async () => {
+            debugLog("Action: Save Basic Config");
             const y = parseInt(document.getElementById('basic-setting-year').value);
             const eId = document.getElementById('basic-setting-event').value;
             
@@ -709,6 +799,7 @@
 
         // 5. Open User Picker
         window.openUserPicker = async (mode) => {
+            debugLog("Action: Open User Picker ("+mode+")");
             openModal('modal-user-picker');
             const list = document.getElementById('pickerUserList');
             list.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>';
@@ -752,6 +843,7 @@
 
         // 6. Add/Remove Officer Logic
         window.selectUserForOfficer = async (uid, name) => {
+            debugLog("Action: Add Officer - " + name);
             if (await showCustomConfirm(`${name} さんに幹部権限（裏方）を付与しますか？`, "権限付与")) {
                 try {
                     const u = allUsersCache.find(x => x.id === uid);
@@ -770,6 +862,7 @@
         };
 
         window.removeOfficer = async (uid, name) => {
+            debugLog("Action: Remove Officer - " + name);
             if (await showCustomConfirm(`${name} さんの幹部権限を解除しますか？`, "権限解除")) {
                 try {
                     const u = allUsersCache.find(x => x.id === uid);
@@ -786,6 +879,7 @@
 
         async function main(){ 
             try {
+                debugLog("main() init");
                 const cachedUser = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUser) {
                     try {
@@ -802,6 +896,8 @@
                 const profile=await liff.getProfile(); 
                 currentUser=profile.userId; 
                 currentProfile=profile; 
+                
+                debugLog("Fetching User Data: " + currentUser);
                 const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
                 if(!userSnap.exists()){await showCustomAlert("権限がありません。"); return;} 
                 currentUserData=userSnap.data(); 
@@ -809,6 +905,14 @@
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 document.getElementById('headerIconAdmin').innerHTML=`<img src="${currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
                 
+                // デバッグ権限チェックとコンソールの起動
+                const hasDebugRole = currentUserData.roll && (Array.isArray(currentUserData.roll) ? currentUserData.roll.includes('debug') : currentUserData.roll === 'debug');
+                if(hasDebugRole) {
+                    isDebugMode = true;
+                    initDebugConsole();
+                    debugLog("App Initialized (Online)");
+                }
+
                 const hasAdminRole = currentUserData.roll && (Array.isArray(currentUserData.roll) ? (currentUserData.roll.includes('lmc_all') || currentUserData.roll.includes('admin')) : (currentUserData.roll === 'lmc_all' || currentUserData.roll === 'admin'));
                 if(!hasAdminRole){
                     document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>'; 
