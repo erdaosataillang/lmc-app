@@ -8,122 +8,201 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; padding-bottom: 88px; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        :root {
+            --md-sys-color-primary: #0b57d0;
+            --md-sys-color-on-primary: #ffffff;
+            --md-sys-color-secondary-container: #d3e3fd;
+            --md-sys-color-on-secondary-container: #041e49;
+            --md-sys-color-surface: #f8f9ff;
+            --md-sys-color-surface-container: #f0f4f9;
+            --md-sys-color-outline: #747775;
+            --md-sys-color-surface-variant: #e1e2ec;
+        }
+
+        body { 
+            margin: 0; padding: 0; 
+            font-family: 'Roboto', 'Noto Sans JP', sans-serif; 
+            background-color: var(--md-sys-color-surface); 
+            color: #1f1f1f; 
+            min-height: 100vh; 
+            padding-bottom: 88px; 
+            overscroll-behavior-y: none; 
+            user-select: none; 
+            -webkit-user-select: none; 
+        }
+
         .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; } 
         .hidden { display: none !important; }
         
-        /* Header */
-        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
-        .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
-        .header-actions { display: flex; align-items: center; gap: 12px; }
-        .header-icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; color: #1f1f1f; transition: background 0.2s; }
-        .header-icon-btn:active { background-color: #e0e0e0; }
-        .header-icon-btn .material-icons { font-size: 26px; }
+        /* Header - Android 15 Style */
+        .app-header { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 16px 20px; 
+            background: var(--md-sys-color-surface); 
+            flex-shrink: 0; z-index: 500; 
+        }
+        .header-title { font-size: 24px; font-weight: 500; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        .header-actions { display: flex; align-items: center; gap: 8px; }
+        .header-icon-btn { 
+            width: 40px; height: 40px; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 20px; cursor: pointer; color: #444746; 
+            transition: background 0.2s; 
+        }
+        .header-icon-btn:active { background-color: rgba(0, 0, 0, 0.1); }
 
-        /* Avatar & Rings */
-        .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
-        .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
+        /* Avatar & Rings - Fixed spinning logic */
+        .header-avatar { 
+            width: 40px; height: 40px; border-radius: 20px; 
+            display: flex; justify-content: center; align-items: center; 
+            background: var(--md-sys-color-surface-variant); 
+            cursor: pointer; position: relative; 
+        }
+        .header-avatar img { width: 34px; height: 34px; border-radius: 17px; object-fit: cover; border: 2px solid white; z-index: 2; }
         
-        /* Ring Classes */
-        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); } 
-        .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
-        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52,168,83,0.5); } 
-        .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234,67,53,0.5); }
+        .ring-sound { background: #1a73e8; } 
+        .ring-light { background: #fa7b17; }
+        .ring-stage { background: #34A853; } 
+        .ring-video { background: #EA4335; }
         .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
-        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; }
         
         @keyframes spin { 100% { transform: rotate(360deg); } } 
         @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
 
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 0 16px 100px; -webkit-overflow-scrolling: touch; }
         
-        /* Controls */
-        .calendar-controls { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 16px; border-radius: 12px; margin: 0 16px 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 400; }
-        .view-switcher { display: flex; position: relative; background: #f1f3f4; border-radius: 20px; padding: 2px; width: 90px; height: 32px; }
-        .switcher-item { flex: 1; z-index: 2; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.3s; color: #5f6368; }
-        .switcher-item.active { color: #0b57d0; }
-        .switcher-slide { position: absolute; width: 44px; height: 28px; background: white; border-radius: 18px; top: 2px; left: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1; }
-        .view-switcher.day-mode .switcher-slide { transform: translateX(42px); }
+        /* Calendar Controls - Material 3 Segmented Button */
+        .calendar-controls { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: var(--md-sys-color-surface-container); 
+            padding: 12px 16px; border-radius: 28px; margin: 0 16px 16px; 
+            flex-shrink: 0; 
+        }
+        .view-switcher { 
+            display: flex; position: relative; background: #e0e2ec; 
+            border-radius: 20px; padding: 4px; width: 100px; height: 36px; 
+        }
+        .switcher-item { 
+            flex: 1; z-index: 2; font-size: 14px; font-weight: 500; 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; 
+            transition: color 0.3s; color: #444746; 
+        }
+        .switcher-item.active { color: var(--md-sys-color-on-secondary-container); }
+        .switcher-slide { 
+            position: absolute; width: 46px; height: 28px; 
+            background: white; border-radius: 16px; top: 4px; left: 4px; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; 
+        }
+        .view-switcher.day-mode .switcher-slide { transform: translateX(46px); }
 
         /* Month Grid */
-        .month-grid { background: white; border-radius: 12px; padding: 10px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; }
-        .weekday-label { font-size: 11px; color: #5f6368; padding-bottom: 8px; font-weight: bold; }
-        .weekday-label.sun { color: #d93025; } .weekday-label.sat { color: #1a73e8; }
-        .day-cell { height: 54px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 4px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; background-color: #fafafa; }
-        .day-num { font-size: 13px; width: 24px; height: 24px; line-height: 24px; border-radius: 50%; z-index: 2; margin-bottom: 2px; } 
-        .day-cell.today { background-color: #e8f0fe; } .day-cell.today .day-num { background: #0b57d0; color: white; font-weight: bold; }
-        .day-cell.unavailable { background-color: #fff1f0; border-color: #ffccc7; } 
-        .day-cell.unavailable .day-num { color: #cf1322; }
-        .day-cell.partial-event { background-color: #fff7e6; border-color: #ffd591; }
-        .status-label { font-size: 8px; color: #cf1322; font-weight: bold; height: 12px; transform: scale(0.9); }
-        .event-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; min-height: 5px; align-items: center; } 
-        .dot { width: 4px; height: 4px; border-radius: 50%; background: #34A853; } 
-        .dot-plus { font-size: 10px; color: #137333; font-weight: bold; margin-left: 2px; line-height: 1; }
+        .month-grid { 
+            background: white; border-radius: 24px; padding: 16px; 
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; 
+            text-align: center; margin-bottom: 24px;
+        }
+        .weekday-label { font-size: 12px; color: var(--md-sys-color-outline); padding-bottom: 8px; font-weight: 500; }
+        .weekday-label.sun { color: #ba1a1a; } .weekday-label.sat { color: #0b57d0; }
+        .day-cell { 
+            height: 56px; border-radius: 16px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; transition: all 0.2s; background-color: #fdfbff; 
+        }
+        .day-num { font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 14px; } 
+        .day-cell.today .day-num { background: var(--md-sys-color-primary); color: white; font-weight: 700; }
+        .day-cell.unavailable { background-color: #f9dedc; } 
+        .day-cell.unavailable .day-num { color: #410002; }
+        .day-cell.partial-event { background-color: #fff8f1; }
 
-        /* Day View & Timeline */
-        .timeline-container { background: white; border-radius: 12px; padding: 10px 0; position: relative; height: auto; min-height: 600px; }
-        .time-slot { height: 60px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; position: relative; }
-        .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
-        .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; touch-action: pan-y; } 
-        .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
+        /* Timeline View */
+        .timeline-container { 
+            background: white; border-radius: 24px; padding: 16px 0; 
+            position: relative; min-height: 600px; 
+        }
+        .time-slot { height: 64px; border-bottom: 1px solid #e1e2ec; display: flex; align-items: flex-start; position: relative; }
+        .time-label { width: 60px; font-size: 12px; color: var(--md-sys-color-outline); text-align: center; margin-top: -8px; }
+        .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #e1e2ec; } 
+        .time-content.selecting { background-color: var(--md-sys-color-secondary-container); opacity: 0.5; }
         
-        /* Event Blocks */
-        .event-block { position: absolute; left: 0; width: 100%; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 4px; padding: 2px 3px; font-size: 10px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 1px 2px rgba(0,0,0,0.1); box-sizing: border-box; line-height: 1.1; }
-        .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; margin-bottom: 1px; } 
-        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
-        .event-block.pending { opacity: 0.9; background: #fff8e1; border-left: 4px solid #ffb300; color: #b06000; border: 1px dashed #ffb300; border-left-style: solid; }
-        .event-block.lottery-confirmed { background: #f3e5f5; border-left: 4px solid #ab47bc; color: #4a148c; }
+        /* Event Blocks - Material Design 3 */
+        .event-block { 
+            position: absolute; left: 4px; right: 4px; width: calc(100% - 8px); 
+            background: var(--md-sys-color-secondary-container); 
+            border-radius: 12px; padding: 6px 8px; 
+            font-size: 11px; color: var(--md-sys-color-on-secondary-container); 
+            overflow: hidden; cursor: pointer; z-index: 10; 
+            box-sizing: border-box; line-height: 1.2;
+        }
+        .event-title { font-weight: 700; font-size: 12px; margin-bottom: 2px; } 
+        .event-block.special-event { background: #cce8cd; color: #002107; }
+        .event-block.pending { border: 2px dashed #747775; background: #f0f0f0; }
 
-        /* Nav */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e0e3e7; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 2000; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
-        .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } 
-        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; }
-        .nav-item.active span { color: #1f1f1f; font-weight: bold; }
+        /* Navigation - Android 15 / Material 3 Style */
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: var(--md-sys-color-surface-container); 
+            display: flex; justify-content: space-around; padding: 12px 0 24px; 
+            z-index: 2000; 
+        }
+        .nav-item { 
+            display: flex; flex-direction: column; align-items: center; 
+            color: #444746; font-size: 12px; width: 64px; cursor: pointer; gap: 4px; 
+        }
+        .nav-icon-wrapper { 
+            width: 64px; height: 32px; 
+            display: flex; align-items: center; justify-content: center; 
+            border-radius: 16px; transition: background-color 0.2s; 
+        }
+        .nav-item.active .nav-icon-wrapper { background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+        .nav-item.active span { font-weight: 700; color: #1f1f1f; }
+        .nav-icon { font-size: 24px; }
 
-        /* Modals & UI */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } 
-        .modal-overlay.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        /* Modals - Android 15 Large Radius */
+        .modal-content { 
+            background: white; border-radius: 32px 32px 0 0; 
+            padding: 32px 24px; box-sizing: border-box; 
+        }
+        .btn-primary { 
+            background: var(--md-sys-color-primary); color: white; border: none; 
+            padding: 16px; border-radius: 28px; width: 100%; 
+            font-weight: 700; cursor: pointer; font-size: 16px;
+        }
+        .btn-secondary { 
+            background: var(--md-sys-color-surface-variant); color: #1f1f1f; border: none; 
+            padding: 14px; border-radius: 28px; width: 100%; margin-top: 12px; 
+            cursor: pointer; font-weight: 500; 
+        }
+        .btn-danger { 
+            background: #ffdad6; color: #410002; border: none; 
+            padding: 14px; border-radius: 28px; width: 100%; margin-top: 12px; 
+            cursor: pointer; font-weight: 500; 
+        }
         
-        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
-        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
-        
-        .form-group { margin-bottom: 16px; } 
-        .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
-        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: white; }
+        .form-input { 
+            width: 100%; padding: 16px; border: 1px solid var(--md-sys-color-outline); 
+            border-radius: 12px; box-sizing: border-box; font-size: 16px; 
+        }
 
-        #selectionToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 9500; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.2s; } 
-        #selectionToast.show { opacity: 1; }
-
-        /* Current Time Line */
-        .current-time-line { position: absolute; left: 50px; width: calc(100% - 50px); border-top: 2px solid #ea4335; z-index: 50; pointer-events: none; display: none; }
-        .current-time-badge { position: absolute; left: -50px; width: 50px; top: -10px; text-align: center; display: flex; justify-content: center; align-items: center; }
-        .current-time-text { background-color: #ea4335; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; height: 16px; line-height: 16px; }
-        .current-time-dot { width: 8px; height: 8px; background-color: #ea4335; border-radius: 50%; position: absolute; left: -4px; top: -5px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-
-        /* Week Strip */
-        .week-strip { position: relative; overflow: hidden; height: 74px; background: white; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; user-select: none; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .week-strip-wrapper { display: flex; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-        .week-strip-page { width: 100%; flex-shrink: 0; display: flex; justify-content: space-around; padding: 12px 0; box-sizing: border-box; }
-        .week-day-item { display: flex; flex-direction: column; align-items: center; width: 40px; cursor: pointer; }
-        .week-day-label { font-size: 10px; color: #5f6368; margin-bottom: 6px; font-weight: bold; }
-        .week-day-num { width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; font-size: 15px; font-weight: bold; color: #1f1f1f; transition: background-color 0.2s; }
-        .week-day-item.selected .week-day-num { background-color: #0b57d0; color: white; }
-        .week-day-item.today .week-day-num { border: 1px solid #0b57d0; box-sizing: border-box; } 
+        /* Week Strip - Clean pill shape */
+        .week-strip { 
+            height: 80px; background: white; border-radius: 24px; 
+            margin-bottom: 16px; padding: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .week-day-item { width: 44px; padding: 8px 0; border-radius: 20px; transition: 0.2s; }
+        .week-day-item.selected { background-color: var(--md-sys-color-primary); color: white; }
+        .week-day-item.selected .week-day-num, .week-day-item.selected .week-day-label { color: white; }
     </style>
 </head>
 <body>
-    <div id="selectionToast">なぞって時間を選択...</div>
+    <div id="selectionToast">長押しで時間を選択...</div>
     
     <!-- Custom Dialog Modal -->
     <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
-        <div class="dialog-content" style="background: white; width: 85%; max-width: 320px; border-radius: 20px; padding: 24px; text-align: center; margin: auto;">
-            <div id="dialogTitle" style="font-weight: bold; font-size: 18px; margin-bottom: 12px;">確認</div>
-            <div id="dialogMessage" style="font-size: 14px; color: #444746; margin-bottom: 24px; white-space: pre-wrap;">メッセージ</div>
-            <div class="dialog-buttons" style="display: flex; gap: 12px;">
+        <div class="dialog-content" style="background: white; width: 85%; max-width: 320px; border-radius: 28px; padding: 24px; text-align: center; margin: auto;">
+            <div id="dialogTitle" style="font-weight: 700; font-size: 20px; margin-bottom: 12px;">確認</div>
+            <div id="dialogMessage" style="font-size: 15px; color: #444746; margin-bottom: 24px; white-space: pre-wrap;">メッセージ</div>
+            <div class="dialog-buttons" style="display: flex; gap: 8px;">
                 <button id="dialogBtnCancel" class="btn-secondary" style="flex:1; margin-top:0;">キャンセル</button>
                 <button id="dialogBtnOk" class="btn-primary" style="flex:1;">OK</button>
             </div>
@@ -156,21 +235,20 @@
                 <div class="switcher-item" data-mode="day" onclick="switchCalendarView('day')">日</div>
             </div>
             <div style="display:flex; align-items:center;">
-                <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span>
-                <div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px; font-weight: 500;"></div>
-                <span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span>
+                <span class="material-icons" style="cursor:pointer; color: #444746;" onclick="changeDate(-1)">chevron_left</span>
+                <div class="date-display" id="calHeaderDate" style="margin:0 8px; font-size:18px; font-weight: 500;"></div>
+                <span class="material-icons" style="cursor:pointer; color: #444746;" onclick="changeDate(1)">chevron_right</span>
             </div>
         </div>
 
-        <!-- Main Content Area -->
+        <!-- Scroll Content -->
         <div class="scroll-content">
             <div id="calMonthView">
                 <div class="month-grid" id="monthGrid"></div>
             </div>
             <div id="calDayView" class="hidden">
                 <div id="weekStrip" class="week-strip"></div>
-                <div id="bookingModeBanner" style="margin:0 10px 10px; padding:10px; border-radius:8px; font-size:13px; text-align:center; line-height:1.4;"></div>
-                <div style="font-size:12px; color:#999; text-align:center; margin-bottom:5px;">空き時間をなぞって予約 / 予約をタップで編集</div>
+                <div id="bookingModeBanner" style="margin:0 0 16px; padding:12px; border-radius:16px; font-size:13px; text-align:center;"></div>
                 <div class="timeline-container" id="timeline"></div>
             </div>
         </div>
@@ -178,37 +256,54 @@
 
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
-        <div class="nav-item" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
-        <div class="nav-item active" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
-        <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
-        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
+        <div class="nav-item" onclick="window.location.href='/index.html'">
+            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">groups</span></div>
+            <span>バンド</span>
+        </div>
+        <div class="nav-item active" onclick="window.location.href='/booking.html'">
+            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">calendar_month</span></div>
+            <span>予約</span>
+        </div>
+        <div class="nav-item" onclick="window.location.href='/cue.html'">
+            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">description</span></div>
+            <span>Cue</span>
+        </div>
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'">
+            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">admin_panel_settings</span></div>
+            <span>管理</span>
+        </div>
+        <div class="nav-item" onclick="goToMyPage()">
+            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">account_circle</span></div>
+            <span>マイ</span>
+        </div>
     </div>
 
     <!-- Booking Modal -->
     <div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')">
         <div class="modal-content">
-            <h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3>
+            <div style="width: 32px; height: 4px; background: #ccc; border-radius: 2px; margin: -16px auto 24px;"></div>
+            <h3 style="margin-top:0; font-size: 22px; font-weight: 500;" id="bookingModalTitle">予約の確認</h3>
             <input type="hidden" id="editingBookingId">
             <div class="form-group">
                 <label class="form-label">日付</label>
-                <div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div>
+                <div style="font-weight:700; font-size:18px; margin-bottom:12px;" id="bookingDateDisplay"></div>
             </div>
-            <div class="form-group">
-                <label class="checkbox-label" style="display:flex; align-items:center; gap:8px; font-weight:bold; color:#0b57d0;">
-                    <input type="checkbox" id="checkAllDay" onchange="toggleAllDay()" style="width:20px; height:20px;"> 終日 (9:00 - 20:00)
+            <div class="form-group" style="background: var(--md-sys-color-surface-container); padding: 16px; border-radius: 16px; margin-bottom: 24px;">
+                <label class="checkbox-label" style="display:flex; align-items:center; gap:12px; cursor: pointer;">
+                    <input type="checkbox" id="checkAllDay" onchange="toggleAllDay()" style="width:24px; height:24px;"> 
+                    <span style="font-weight: 700;">終日 (9:00 - 20:00)</span>
                 </label>
             </div>
-            <div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;">
+            <div class="form-group" id="timeSelectArea" style="display:flex; gap:12px; align-items:center; margin-bottom: 24px;">
                 <div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div>
-                <span>〜</span>
+                <span class="material-icons" style="color: #444746; margin-top: 20px;">arrow_forward</span>
                 <div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div>
             </div>
-            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:10px; border-radius:8px;">
+            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:16px; border-radius:16px; margin-bottom: 24px;">
                 <label class="form-label">登録種別</label>
-                <div style="display:flex; gap:15px;">
-                    <label style="display:flex; align-items:center; gap:5px;"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label>
-                    <label style="display:flex; align-items:center; gap:5px; color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label>
+                <div style="display:flex; gap:20px;">
+                    <label style="display:flex; align-items:center; gap:8px;"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> 練習</label>
+                    <label style="display:flex; align-items:center; gap:8px; color:#137333; font-weight:700;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> 不可</label>
                 </div>
             </div>
             <div id="groupBandSelect" class="form-group">
@@ -219,48 +314,33 @@
                 <label class="form-label">イベント名 / 理由</label>
                 <input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会">
             </div>
-            <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
-            <button id="btnAddToGCal" class="btn-secondary" style="display:flex; align-items:center; justify-content:center; gap:8px;" onclick="addToGoogleCalendar()">
-                <span class="material-icons" style="font-size:18px;">calendar_today</span> Googleカレンダーに追加
-            </button>
-            <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
-            <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
-        </div>
-    </div>
-
-    <!-- Search Modal -->
-    <div id="modal-search" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-search')">
-        <div class="modal-content">
-            <h3 style="margin-top:0;">予約検索</h3>
-            <div class="form-group">
-                <input type="text" id="searchInput" class="form-input" placeholder="キーワードを入力..." onkeyup="filterSearchResults()">
+            <div style="margin-top: 32px;">
+                <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
+                <button id="btnAddToGCal" class="btn-secondary" style="display:flex; align-items:center; justify-content:center; gap:8px;" onclick="addToGoogleCalendar()">
+                    <span class="material-icons" style="font-size:20px;">calendar_today</span> Googleカレンダー
+                </button>
+                <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">予約を削除</button>
+                <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
             </div>
-            <div class="form-group" style="margin-bottom:10px;">
-                <label style="display:flex; align-items:center; gap:8px; font-size:14px;">
-                    <input type="checkbox" id="filterMyBands" onchange="filterSearchResults()" style="width:18px; height:18px;">
-                    <span>自分の参加バンドのみ表示</span>
-                </label>
-            </div>
-            <div id="searchResultContainer" style="max-height: 400px; overflow-y: auto;"></div>
-            <button class="btn-secondary" onclick="closeModal('modal-search')">閉じる</button>
         </div>
     </div>
 
     <!-- User Status Modal -->
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
         <div class="modal-content">
-            <h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368;">マイステータス</h3>
-            <div style="text-align: center; padding: 20px;">
-                <img id="modalUserIcon" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; margin-bottom:10px; border:4px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-                <div id="modalUserName" style="font-size: 18px; font-weight: bold; margin-bottom: 20px;"></div>
-                <div style="background:#f9f9f9; padding:15px; border-radius:12px; margin-bottom:20px;">
-                    <div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">部費状況</div>
-                    <div style="display:flex; gap:10px; justify-content:center;">
-                        <div id="statusFeeTerm1" style="flex:1; padding:10px; border-radius:8px; font-size:14px; font-weight:bold;">前期: -</div>
-                        <div id="statusFeeTerm2" style="flex:1; padding:10px; border-radius:8px; font-size:14px; font-weight:bold;">後期: -</div>
+            <div style="width: 32px; height: 4px; background: #ccc; border-radius: 2px; margin: -16px auto 24px;"></div>
+            <h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368; font-weight: 500;">マイステータス</h3>
+            <div style="text-align: center; padding: 16px;">
+                <img id="modalUserIcon" src="" style="width:96px; height:96px; border-radius:48px; object-fit:cover; margin-bottom:12px; border:4px solid white; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                <div id="modalUserName" style="font-size: 20px; font-weight: 700; margin-bottom: 24px;"></div>
+                <div style="background:var(--md-sys-color-surface-container); padding:20px; border-radius:24px; margin-bottom:24px;">
+                    <div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:12px; font-weight:700;">部費状況</div>
+                    <div style="display:flex; gap:12px; justify-content:center;">
+                        <div id="statusFeeTerm1" style="flex:1; padding:12px; border-radius:12px; font-size:14px; font-weight:700; background: white;">前期: -</div>
+                        <div id="statusFeeTerm2" style="flex:1; padding:12px; border-radius:12px; font-size:14px; font-weight:700; background: white;">後期: -</div>
                     </div>
                 </div>
-                <div id="myQRCodeArea" style="width:150px; height:150px; background:#eee; margin:0 auto;"></div>
+                <div id="myQRCodeArea" style="width:160px; height:160px; background:#eee; margin:0 auto; border-radius: 12px; overflow: hidden;"></div>
             </div>
             <button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button>
         </div>
@@ -271,7 +351,6 @@
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
-        // Firebase Configuration
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5" };
         const app = initializeApp(firebaseConfig); 
         const db = getFirestore(app); 
@@ -281,14 +360,11 @@
         const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
-        const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
 
         let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date();
-        let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
+        let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null;
         let selectionStartHour=null, selectionEndHour=null;
         let currentSystemSettings={ bookingMode:'first_come' };
-        let loadedBookingsCache = [];
-        let touchStartX = 0, touchEndX = 0;
 
         // --- Utility ---
         window.openModal=(id)=>document.getElementById(id).classList.add('open');
@@ -324,14 +400,14 @@
             });
         };
 
-        // --- Auth & Profile ---
+        // --- Auth & Header Icon Control ---
         function renderHeaderIcons(d) {
             let r = "";
             const aff = d.affiliations || [];
             const isU = aff.includes("urakata");
             const today = new Date();
 
-            // 1. Birthday (High priority)
+            // 1. Birthday
             if (d.birthday) {
                 const b = new Date(d.birthday);
                 if (today.getMonth() === b.getMonth() && today.getDate() === b.getDate()) {
@@ -339,12 +415,10 @@
                 }
             }
 
-            // 2. Urakata attribute rings
+            // 2. Urakata attribute rings - No spin for normal users
             if (!r && isU) {
-                // If urakata, use job ring OR rainbow if no specific job
                 r = d.job ? `ring-${d.job}` : "ring-rainbow";
             }
-            // If NOT isU, r stays empty "" -> No spinning rainbow
 
             const h = `<img src="${d.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
             const el = document.getElementById('headerIconCal');
@@ -362,7 +436,6 @@
         async function main() {
             try {
                 showSyncIndicator();
-                // Auth
                 try {
                     await liff.init({ liffId: MY_LIFF_ID });
                     if (!liff.isLoggedIn()) { liff.login(); return; }
@@ -375,18 +448,16 @@
                     renderHeaderIcons(currentUserData);
                 } catch (e) { console.error(e); }
 
-                // Initial UI
                 const sysSnap = await getDoc(doc(db, "system", "settings"));
                 if (sysSnap.exists()) currentSystemSettings = sysSnap.data();
                 
                 loadMyBands();
                 switchCalendarView('month');
                 setInterval(updateCurrentTimeLine, 60000);
-                setupWeekSwipe();
             } catch (e) { console.error(e); } finally { hideSyncIndicator(); }
         }
 
-        // --- Calendar Logic ---
+        // --- Calendar Control ---
         window.switchCalendarView = (m, keepDate = false) => {
             calendarMode = m;
             if (m === 'day' && !keepDate) {
@@ -405,17 +476,17 @@
         window.changeDate = (d) => {
             if (calendarMode === 'month') displayDate.setMonth(displayDate.getMonth() + d);
             else displayDate.setDate(displayDate.getDate() + d);
-            renderCalendar(false, d > 0 ? 1 : -1);
+            renderCalendar();
         };
 
-        function renderCalendar(useCache = false, anim = 0) {
+        function renderCalendar() {
             const y = displayDate.getFullYear(), m = displayDate.getMonth() + 1;
             if (calendarMode === 'month') {
                 document.getElementById('calHeaderDate').innerText = `${y}年 ${m}月`;
                 renderMonthView(y, m - 1);
             } else {
-                document.getElementById('calHeaderDate').innerText = `${m}月`;
-                renderDayView(anim);
+                document.getElementById('calHeaderDate').innerText = `${m}月 ${displayDate.getDate()}日`;
+                renderDayView();
             }
         }
 
@@ -442,7 +513,6 @@
             const s = new Date(y, m, 1), e = new Date(y, m + 1, 0, 23, 59, 59);
             onSnapshot(query(collection(db, "bookings"), where("startTime", ">=", s), where("startTime", "<=", e)), (qs) => {
                 const bookings = []; qs.forEach(snap => bookings.push({ id: snap.id, ...snap.data() }));
-                loadedBookingsCache = bookings;
                 applyBookingDataToMonth(bookings);
             });
         }
@@ -462,21 +532,25 @@
             });
             Object.keys(stats).forEach(key => {
                 const cell = document.getElementById(key); if (!cell) return;
-                if (stats[key].event) { cell.classList.add('unavailable'); const l = cell.querySelector('.status-label'); if (l) l.innerText = "🚫不可"; }
+                if (stats[key].event) { cell.classList.add('unavailable'); const l = cell.querySelector('.status-label'); if (l) l.innerText = "🚫"; }
                 if (stats[key].count > 0) {
                     const dc = document.getElementById(key.replace('day-', 'dots-'));
-                    for (let i = 0; i < Math.min(stats[key].count, 3); i++) { const dt = document.createElement('div'); dt.className = 'dot'; dc.appendChild(dt); }
+                    for (let i = 0; i < Math.min(stats[key].count, 3); i++) { 
+                        const dt = document.createElement('div'); dt.className = 'dot'; 
+                        dt.style.background = "var(--md-sys-color-primary)"; dc.appendChild(dt); 
+                    }
                 }
             });
         }
 
         // --- Day View ---
-        function renderDayView(anim) {
+        function renderDayView() {
             const banner = document.getElementById('bookingModeBanner'), mode = currentSystemSettings.bookingMode || 'first_come';
-            banner.style.backgroundColor = (mode === 'lottery' ? '#fff3e0' : '#e8f0fe');
-            banner.innerHTML = mode === 'lottery' ? '<b>抽選受付中</b>' : '<b>即時確定（先着順）</b>';
+            banner.style.background = (mode === 'lottery' ? '#fff3e0' : '#d3e3fd');
+            banner.style.color = (mode === 'lottery' ? '#7d4a00' : '#041e49');
+            banner.innerHTML = mode === 'lottery' ? '<b>抽選予約受付中</b>' : '<b>即時確定（先着順）</b>';
             
-            renderWeekStrip(anim);
+            renderWeekStrip();
             const timeline = document.getElementById('timeline'); timeline.innerHTML = "";
             for (let h = 9; h < 20; h++) {
                 const slot = document.createElement('div'); slot.className = 'time-slot'; slot.innerHTML = `<div class="time-label">${h}:00</div>`;
@@ -490,19 +564,19 @@
             loadDayBookings();
         }
 
-        function renderWeekStrip(anim) {
+        function renderWeekStrip() {
             const strip = document.getElementById('weekStrip');
             const current = new Date(displayDate), start = new Date(current); start.setDate(current.getDate() - current.getDay());
-            let html = "";
+            let html = '<div class="week-strip-page" style="display:flex; justify-content:space-around; width:100%;">';
             for (let i = 0; i < 7; i++) {
                 const d = new Date(start); d.setDate(start.getDate() + i);
                 const isSel = d.getDate() === current.getDate() && d.getMonth() === current.getMonth();
                 html += `<div class="week-day-item ${isSel ? 'selected' : ''}" onclick="window.setDateAndRender(${d.getFullYear()},${d.getMonth()},${d.getDate()})">
-                    <div class="week-day-label">${['日', '月', '火', '水', '木', '金', '土'][i]}</div>
-                    <div class="week-day-num">${d.getDate()}</div>
+                    <div class="week-day-label" style="font-size:10px; margin-bottom:4px;">${['日','月','火','水','木','金','土'][i]}</div>
+                    <div class="week-day-num" style="font-size:16px; font-weight:700;">${d.getDate()}</div>
                 </div>`;
             }
-            strip.innerHTML = `<div class="week-strip-page">${html}</div>`;
+            html += '</div>'; strip.innerHTML = html;
         }
         window.setDateAndRender = (y, m, d) => { displayDate.setFullYear(y, m, d); renderCalendar(); };
 
@@ -518,17 +592,17 @@
 
         function renderEventBlock(d) {
             const s = d.startTime.toDate(), e = d.endTime.toDate();
-            const top = (s.getMinutes() + 1), height = (e - s) / 60000 - 2;
+            const top = s.getMinutes(), height = (e - s) / 60000 - 4;
             const slot = document.querySelector(`.time-content[data-hour="${s.getHours()}"]`);
             if (!slot) return;
             const div = document.createElement('div'); div.className = 'event-block' + (d.type === 'event' ? ' special-event' : '');
             div.style.top = top + "px"; div.style.height = height + "px";
-            div.innerHTML = `<div class="event-title">${d.type === 'event' ? d.title : d.bandName}</div><div style="font-size:9px;">${d.userName || ''}</div>`;
+            div.innerHTML = `<div class="event-title">${d.type === 'event' ? d.title : d.bandName}</div><div style="font-size:10px; opacity:0.8;">${d.userName || ''}</div>`;
             div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(d.id, d); };
             slot.appendChild(div);
         }
 
-        // --- Interaction ---
+        // --- Handlers ---
         function handleTouchStart(e) {
             const h = parseInt(e.target.dataset.hour); if (isNaN(h)) return;
             selectionTimer = setTimeout(() => {
@@ -552,10 +626,10 @@
             for (let h = s; h <= e; h++) document.querySelector(`.time-content[data-hour="${h}"]`)?.classList.add('selecting');
         }
 
-        // --- Modals Logic ---
+        // --- Persistence ---
         window.saveBooking = async () => {
             const id = document.getElementById('editingBookingId').value, type = document.querySelector('input[name="bookingType"]:checked').value;
-            const bd = { creatorId: currentUser, userName: currentProfile.displayName, type: type, startTime: null, endTime: null };
+            const bd = { creatorId: currentUser, userName: currentProfile.displayName, type: type };
             if (type === 'normal') { bd.bandId = document.getElementById('selectBookingBand').value; bd.bandName = document.getElementById('selectBookingBand').options[document.getElementById('selectBookingBand').selectedIndex].text; }
             else bd.title = document.getElementById('inputEventTitle').value;
             
@@ -579,7 +653,6 @@
             }
         };
 
-        // --- Initialization ---
         function loadMyBands() {
             onSnapshot(query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)), (qs) => {
                 myBandsAll = []; qs.forEach(s => myBandsAll.push({ id: s.id, ...s.data() }));
@@ -593,7 +666,7 @@
             const now = new Date(); if (now.getDate() !== displayDate.getDate()) { l.style.display = 'none'; return; }
             const h = now.getHours(), m = now.getMinutes();
             if (h < 9 || h >= 20) l.style.display = 'none';
-            else { l.style.display = 'block'; l.style.top = ((h - 9) * 60 + m + 10) + "px"; }
+            else { l.style.display = 'block'; l.style.top = ((h - 9) * 64 + m + 16) + "px"; }
         }
 
         function createCurrentTimeLine(container) {
@@ -602,22 +675,11 @@
             container.appendChild(div); updateCurrentTimeLine();
         }
 
-        function setupWeekSwipe() {
-            const s = document.getElementById('weekStrip');
-            s.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
-            s.addEventListener('touchend', e => {
-                touchEndX = e.changedTouches[0].clientX;
-                if (touchStartX - touchEndX > 50) changeDate(7);
-                if (touchEndX - touchStartX > 50) changeDate(-7);
-            });
-        }
-
-        main();
-
-        // Bind global functions
+        // --- Initialization Hooks ---
         window.toggleAllDay = () => {
-            const isA = document.getElementById('checkAllDay').checked;
-            if (isA) { document.getElementById('selectStartTime').value = "9:00"; document.getElementById('selectEndTime').value = "20:00"; }
+            if (document.getElementById('checkAllDay').checked) {
+                document.getElementById('selectStartTime').value = "9:00"; document.getElementById('selectEndTime').value = "20:00";
+            }
         };
         window.toggleBookingInputs = () => {
             const t = document.querySelector('input[name="bookingType"]:checked').value;
@@ -635,9 +697,9 @@
             openModal('modal-booking');
         }
         function openEditBookingModal(id, d) {
-            if (d.creatorId !== currentUser) { showCustomAlert("自分の予約以外は編集できません。"); return; }
+            if (d.creatorId !== currentUser) { showCustomAlert("他のユーザーの予約は編集できません。"); return; }
             document.getElementById('editingBookingId').value = id;
-            document.getElementById('bookingModalTitle').innerText = "予約の編集";
+            document.getElementById('bookingModalTitle').innerText = "予約の変更";
             document.getElementById('btnDeleteBooking').classList.remove('hidden');
             const s = d.startTime.toDate(), e = d.endTime.toDate();
             setupTimeOptions(s.getHours(), e.getHours());
@@ -654,8 +716,12 @@
         window.openUserStatusModal = () => {
             document.getElementById('modalUserIcon').src = currentUserData.icon;
             document.getElementById('modalUserName').innerText = currentUserData.name;
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${currentUser}`;
+            document.getElementById('myQRCodeArea').innerHTML = `<img src="${qrUrl}" style="width:100%; height:100%;">`;
             openModal('modal-user-status');
         };
+
+        main();
     </script>
 </body>
 </html>
