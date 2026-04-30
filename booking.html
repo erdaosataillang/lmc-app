@@ -1,218 +1,158 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LMC Mobile - 合わせ予約</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        :root {
-            --md-sys-color-primary: #0b57d0;
-            --md-sys-color-on-primary: #ffffff;
-            --md-sys-color-secondary-container: #d3e3fd;
-            --md-sys-color-on-secondary-container: #041e49;
-            --md-sys-color-surface: #f8f9ff;
-            --md-sys-color-surface-container: #f0f4f9;
-            --md-sys-color-outline: #747775;
-            --md-sys-color-surface-variant: #e1e2ec;
-        }
-
-        body { 
-            margin: 0; padding: 0; 
-            font-family: 'Roboto', 'Noto Sans JP', sans-serif; 
-            background-color: var(--md-sys-color-surface); 
-            color: #1f1f1f; 
-            min-height: 100vh; 
-            padding-bottom: 88px; 
-            overscroll-behavior-y: none; 
-            user-select: none; 
-            -webkit-user-select: none; 
-        }
-
-        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; } 
+        /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
+        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        
+        /* ボトムナビの分だけpaddingをあけてかぶらないようにする */
+        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; } 
         .hidden { display: none !important; }
         
-        /* Header - Android 15 Style */
-        .app-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 16px 20px; 
-            background: var(--md-sys-color-surface); 
-            flex-shrink: 0; z-index: 500; 
-        }
-        .header-title { font-size: 24px; font-weight: 500; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
-        .header-actions { display: flex; align-items: center; gap: 8px; }
-        .header-icon-btn { 
-            width: 40px; height: 40px; 
-            display: flex; align-items: center; justify-content: center; 
-            border-radius: 20px; cursor: pointer; color: #444746; 
-            transition: background 0.2s; 
-        }
-        .header-icon-btn:active { background-color: rgba(0, 0, 0, 0.1); }
-
-        /* Avatar & Rings - Fixed spinning logic */
-        .header-avatar { 
-            width: 40px; height: 40px; border-radius: 20px; 
-            display: flex; justify-content: center; align-items: center; 
-            background: var(--md-sys-color-surface-variant); 
-            cursor: pointer; position: relative; 
-        }
-        .header-avatar img { width: 34px; height: 34px; border-radius: 17px; object-fit: cover; border: 2px solid white; z-index: 2; }
+        /* ヘッダー */
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
+        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
         
-        .ring-sound { background: #1a73e8; } 
-        .ring-light { background: #fa7b17; }
-        .ring-stage { background: #34A853; } 
-        .ring-video { background: #EA4335; }
-        .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); animation: spin 4s linear infinite; }
-        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; animation: birthday-glow 3s linear infinite; }
+        /* ヘッダー右側のアクショングループ */
+        .header-actions { display: flex; align-items: center; gap: 12px; }
+        .header-icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; color: #1f1f1f; transition: background 0.2s; }
+        .header-icon-btn:active { background-color: #e0e0e0; }
+        .header-icon-btn .material-icons { font-size: 26px; }
+
+        .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
+        .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         
-        @keyframes spin { 100% { transform: rotate(360deg); } } 
-        @keyframes birthday-glow { 0% { background-position: 0 0; } 50% { background-position: 400% 0; } 100% { background-position: 0 0; } }
+        /* 役職リング演出 */
+        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); } .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
+        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52,168,83,0.5); } .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234,67,53,0.5); }
+        .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); }
+        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
 
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 0 16px 100px; -webkit-overflow-scrolling: touch; }
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 20px; -webkit-overflow-scrolling: touch; }
         
-        /* Calendar Controls - Material 3 Segmented Button */
-        .calendar-controls { 
-            display: flex; justify-content: space-between; align-items: center; 
-            background: var(--md-sys-color-surface-container); 
-            padding: 12px 16px; border-radius: 28px; margin: 0 16px 16px; 
-            flex-shrink: 0; 
-        }
-        .view-switcher { 
-            display: flex; position: relative; background: #e0e2ec; 
-            border-radius: 20px; padding: 4px; width: 100px; height: 36px; 
-        }
-        .switcher-item { 
-            flex: 1; z-index: 2; font-size: 14px; font-weight: 500; 
-            cursor: pointer; display: flex; align-items: center; justify-content: center; 
-            transition: color 0.3s; color: #444746; 
-        }
-        .switcher-item.active { color: var(--md-sys-color-on-secondary-container); }
-        .switcher-slide { 
-            position: absolute; width: 46px; height: 28px; 
-            background: white; border-radius: 16px; top: 4px; left: 4px; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1; 
-        }
-        .view-switcher.day-mode .switcher-slide { transform: translateX(46px); }
-
-        /* Month Grid */
-        .month-grid { 
-            background: white; border-radius: 24px; padding: 16px; 
-            display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; 
-            text-align: center; margin-bottom: 24px;
-        }
-        .weekday-label { font-size: 12px; color: var(--md-sys-color-outline); padding-bottom: 8px; font-weight: 500; }
-        .weekday-label.sun { color: #ba1a1a; } .weekday-label.sat { color: #0b57d0; }
-        .day-cell { 
-            height: 56px; border-radius: 16px; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            cursor: pointer; transition: all 0.2s; background-color: #fdfbff; 
-        }
-        .day-num { font-size: 14px; width: 28px; height: 28px; line-height: 28px; border-radius: 14px; } 
-        .day-cell.today .day-num { background: var(--md-sys-color-primary); color: white; font-weight: 700; }
-        .day-cell.unavailable { background-color: #f9dedc; } 
-        .day-cell.unavailable .day-num { color: #410002; }
-        .day-cell.partial-event { background-color: #fff8f1; }
-
-        /* Timeline View */
-        .timeline-container { 
-            background: white; border-radius: 24px; padding: 16px 0; 
-            position: relative; min-height: 600px; 
-        }
-        .time-slot { height: 64px; border-bottom: 1px solid #e1e2ec; display: flex; align-items: flex-start; position: relative; }
-        .time-label { width: 60px; font-size: 12px; color: var(--md-sys-color-outline); text-align: center; margin-top: -8px; }
-        .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #e1e2ec; } 
-        .time-content.selecting { background-color: var(--md-sys-color-secondary-container); opacity: 0.5; }
+        /* カレンダーコントロール */
+        .calendar-controls { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 16px; border-radius: 24px; margin: 0 16px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); flex-shrink: 0; z-index: 400; }
+        .view-switcher { display: flex; position: relative; background: #f1f3f4; border-radius: 20px; padding: 2px; width: 90px; height: 32px; }
+        .switcher-item { flex: 1; z-index: 2; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: color 0.3s; color: #5f6368; }
+        .switcher-item.active { color: #0b57d0; }
+        .switcher-slide { position: absolute; width: 44px; height: 28px; background: white; border-radius: 18px; top: 2px; left: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1; }
+        .view-switcher.day-mode .switcher-slide { transform: translateX(42px); }
         
-        /* Event Blocks - Material Design 3 */
-        .event-block { 
-            position: absolute; left: 4px; right: 4px; width: calc(100% - 8px); 
-            background: var(--md-sys-color-secondary-container); 
-            border-radius: 12px; padding: 6px 8px; 
-            font-size: 11px; color: var(--md-sys-color-on-secondary-container); 
-            overflow: hidden; cursor: pointer; z-index: 10; 
-            box-sizing: border-box; line-height: 1.2;
-        }
-        .event-title { font-weight: 700; font-size: 12px; margin-bottom: 2px; } 
-        .event-block.special-event { background: #cce8cd; color: #002107; }
-        .event-block.pending { border: 2px dashed #747775; background: #f0f0f0; }
-
-        /* Navigation - Android 15 / Material 3 Style */
-        .bottom-nav { 
-            position: fixed; bottom: 0; left: 0; width: 100%; 
-            background: var(--md-sys-color-surface-container); 
-            display: flex; justify-content: space-around; padding: 12px 0 24px; 
-            z-index: 2000; 
-        }
-        .nav-item { 
-            display: flex; flex-direction: column; align-items: center; 
-            color: #444746; font-size: 12px; width: 64px; cursor: pointer; gap: 4px; 
-        }
-        .nav-icon-wrapper { 
-            width: 64px; height: 32px; 
-            display: flex; align-items: center; justify-content: center; 
-            border-radius: 16px; transition: background-color 0.2s; 
-        }
-        .nav-item.active .nav-icon-wrapper { background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
-        .nav-item.active span { font-weight: 700; color: #1f1f1f; }
-        .nav-icon { font-size: 24px; }
-
-        /* Modals - Android 15 Large Radius */
-        .modal-content { 
-            background: white; border-radius: 32px 32px 0 0; 
-            padding: 32px 24px; box-sizing: border-box; 
-        }
-        .btn-primary { 
-            background: var(--md-sys-color-primary); color: white; border: none; 
-            padding: 16px; border-radius: 28px; width: 100%; 
-            font-weight: 700; cursor: pointer; font-size: 16px;
-        }
-        .btn-secondary { 
-            background: var(--md-sys-color-surface-variant); color: #1f1f1f; border: none; 
-            padding: 14px; border-radius: 28px; width: 100%; margin-top: 12px; 
-            cursor: pointer; font-weight: 500; 
-        }
-        .btn-danger { 
-            background: #ffdad6; color: #410002; border: none; 
-            padding: 14px; border-radius: 28px; width: 100%; margin-top: 12px; 
-            cursor: pointer; font-weight: 500; 
-        }
+        /* 月カレンダー */
+        .month-grid { background: white; border-radius: 20px; padding: 12px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .weekday-label { font-size: 11px; color: #5f6368; padding-bottom: 8px; font-weight: bold; }
+        .weekday-label.sun { color: #d93025; } .weekday-label.sat { color: #1a73e8; }
+        .day-cell { height: 54px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 4px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; background-color: #fafafa; }
+        .day-num { font-size: 13px; width: 24px; height: 24px; line-height: 24px; border-radius: 50%; z-index: 2; margin-bottom: 2px; } 
+        .day-cell.today { background-color: #e8f0fe; } .day-cell.today .day-num { background: #0b57d0; color: white; font-weight: bold; }
+        .day-cell.other-month { opacity: 0.15; cursor: default; pointer-events: none; } 
+        .day-cell.unavailable { background-color: #fff1f0; border-color: #ffccc7; } 
+        .day-cell.unavailable .day-num { color: #cf1322; }
+        .day-cell.partial-event { background-color: #fff7e6; border-color: #ffd591; }
+        .day-cell.partial-event .day-num { color: #d46b08; }
+        .status-label { font-size: 8px; color: #cf1322; font-weight: bold; height: 12px; transform: scale(0.9); }
+        .event-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; min-height: 5px; align-items: center; } 
+        .dot { width: 4px; height: 4px; border-radius: 50%; background: #34A853; } .dot.event { background: #137333; transform: scale(1.2); }
+        .dot-plus { font-size: 10px; color: #137333; font-weight: bold; margin-left: 2px; line-height: 1; }
         
-        .form-input { 
-            width: 100%; padding: 16px; border: 1px solid var(--md-sys-color-outline); 
-            border-radius: 12px; box-sizing: border-box; font-size: 16px; 
-        }
+        /* 日カレンダー・タイムライン */
+        .timeline-container { background: white; border-radius: 20px; padding: 10px 0; position: relative; height: auto; min-height: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .time-slot { height: 60px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; position: relative; }
+        .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
+        .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; touch-action: pan-y; } .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
+        
+        /* 予約ブロックのデザイン (角丸強め) */
+        .event-block { position: absolute; left: 0; width: 100%; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 8px; padding: 4px 6px; font-size: 11px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05); box-sizing: border-box; line-height: 1.2; }
+        .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; margin-bottom: 1px; } 
+        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
+        .event-block.pending { opacity: 0.9; background: #fff8e1; border-left: 4px solid #ffb300; color: #b06000; border: 1px dashed #ffb300; border-left-style: solid; }
+        .event-block.lottery-confirmed { background: #f3e5f5; border-left: 4px solid #ab47bc; color: #4a148c; }
+        .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; } .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
+        
+        /* ナビゲーション (グラスモーフィズムとポップアップアニメーション) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
+        .nav-item.active { color: #1f1f1f; transform: translateY(-4px); }
+        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; padding: 4px 20px; box-shadow: 0 4px 12px rgba(194, 231, 255, 0.6); transform: scale(1.05); margin-bottom: 0; } 
+        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); } 
+        .nav-item.active span:not(.nav-icon) { font-weight: bold; }
 
-        /* Week Strip - Clean pill shape */
-        .week-strip { 
-            height: 80px; background: white; border-radius: 24px; 
-            margin-bottom: 16px; padding: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        .week-day-item { width: 44px; padding: 8px 0; border-radius: 20px; transition: 0.2s; }
-        .week-day-item.selected { background-color: var(--md-sys-color-primary); color: white; }
-        .week-day-item.selected .week-day-num, .week-day-item.selected .week-day-label { color: white; }
+        /* ボタン・フォーム系 (完全に丸いボタン) */
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
+        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-google { background: #fff; color: #3c4043; border: 1px solid #dadce0; padding: 12px 20px; border-radius: 999px; font-weight: bold; width: 100%; margin-top: 16px; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 14px; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
+        #selectionToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; z-index: 9500; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.2s; } #selectionToast.show { opacity: 1; }
+        .radio-group { display: flex; gap: 15px; } .radio-label { display: flex; align-items: center; font-size: 15px; cursor: pointer; } .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
+        .checkbox-label { display: flex; align-items: center; font-size: 15px; font-weight: bold; color: #0b57d0; cursor: pointer; } .checkbox-label input { width: 20px; height: 20px; margin-right: 8px; }
+        .card { background: white; border-radius: 20px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; cursor: pointer; }
+        
+        /* 検索とリスト */
+        .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
+        .member-option.selected { background: #e8f0fe; }
+        
+        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; animation: zoomIn 0.2s ease; margin: auto; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #1f1f1f; }
+        .dialog-message { font-size: 13px; color: #444746; margin-bottom: 24px; line-height: 1.5; white-space: pre-wrap; }
+        .dialog-buttons { display: flex; gap: 12px; }
+        
+        .sync-indicator { margin-right: 12px; animation: spin 1.5s linear infinite; display: flex; }
+        
+        /* 現在時刻表示用のスタイル */
+        .current-time-line { position: absolute; left: 50px; width: calc(100% - 50px); border-top: 2px solid #ea4335; z-index: 50; pointer-events: none; display: none; }
+        .current-time-badge { position: absolute; left: -50px; width: 50px; top: -10px; text-align: center; display: flex; justify-content: center; align-items: center; }
+        .current-time-text { background-color: #ea4335; color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; height: 16px; line-height: 16px; }
+        .current-time-dot { width: 8px; height: 8px; background-color: #ea4335; border-radius: 50%; position: absolute; left: -4px; top: -5px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+
+        /* 週間日付ストリップ用のスタイル */
+        .week-strip { position: relative; overflow: hidden; height: 74px; background: white; margin-bottom: 12px; user-select: none; border-radius: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+        .week-strip-wrapper { display: flex; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        .week-strip-page { width: 100%; flex-shrink: 0; display: flex; justify-content: space-around; padding: 12px 0; box-sizing: border-box; }
+        
+        .week-day-item { display: flex; flex-direction: column; align-items: center; width: 40px; cursor: pointer; }
+        .week-day-label { font-size: 10px; color: #5f6368; margin-bottom: 6px; font-weight: bold; }
+        .week-day-num { width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; font-size: 15px; font-weight: bold; color: #1f1f1f; transition: background-color 0.2s; }
+        .week-day-item.selected .week-day-num { background-color: #0b57d0; color: white; }
+        .week-day-item.today .week-day-num { border: 1px solid #0b57d0; box-sizing: border-box; } 
+        .week-day-item.today.selected .week-day-num { background-color: #0b57d0; border: none; }
+        .week-day-item.sun .week-day-label { color: #d93025; }
+        .week-day-item.sat .week-day-label { color: #1a73e8; }
+        
+        .fee-status-badge { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; } 
+        .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } 
+        .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
     </style>
 </head>
 <body>
-    <div id="selectionToast">長押しで時間を選択...</div>
-    
-    <!-- Custom Dialog Modal -->
+    <div id="selectionToast">なぞって時間を選択...</div>
     <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
-        <div class="dialog-content" style="background: white; width: 85%; max-width: 320px; border-radius: 28px; padding: 24px; text-align: center; margin: auto;">
-            <div id="dialogTitle" style="font-weight: 700; font-size: 20px; margin-bottom: 12px;">確認</div>
-            <div id="dialogMessage" style="font-size: 15px; color: #444746; margin-bottom: 24px; white-space: pre-wrap;">メッセージ</div>
-            <div class="dialog-buttons" style="display: flex; gap: 8px;">
-                <button id="dialogBtnCancel" class="btn-secondary" style="flex:1; margin-top:0;">キャンセル</button>
-                <button id="dialogBtnOk" class="btn-primary" style="flex:1;">OK</button>
+        <div class="dialog-content">
+            <div id="dialogTitle" class="dialog-title">確認</div>
+            <div id="dialogMessage" class="dialog-message">メッセージ</div>
+            <div style="display:flex; gap:12px;">
+                <button id="dialogBtnCancel" class="btn-secondary" style="margin:0; flex:1;">キャンセル</button>
+                <button id="dialogBtnOk" class="btn-primary" style="margin:0; flex:1;">OK</button>
             </div>
         </div>
     </div>
 
     <div class="container">
-        <!-- App Header -->
         <div class="app-header">
             <div class="header-title">合わせ予約</div>
+            <!-- ヘッダー右側のアクションボタン群 -->
             <div class="header-actions">
                 <div id="btnSearch" class="header-icon-btn" onclick="openSearchModal()">
                     <span class="material-icons">search</span>
@@ -221,506 +161,603 @@
                     <span class="material-icons">add</span>
                 </div>
                 <div id="syncIndicator" class="sync-indicator hidden">
-                    <span class="material-icons" style="font-size: 20px; color: #5f6368; animation: spin 2s linear infinite;">sync</span>
+                    <span class="material-icons" style="font-size: 20px; color: #5f6368;">sync</span>
                 </div>
                 <div class="header-avatar" id="headerIconCal"></div>
             </div>
         </div>
-
-        <!-- Calendar Controls -->
         <div class="calendar-controls">
             <div class="view-switcher" id="viewSwitcher">
                 <div class="switcher-slide"></div>
                 <div class="switcher-item active" data-mode="month" onclick="switchCalendarView('month')">月</div>
                 <div class="switcher-item" data-mode="day" onclick="switchCalendarView('day')">日</div>
             </div>
-            <div style="display:flex; align-items:center;">
-                <span class="material-icons" style="cursor:pointer; color: #444746;" onclick="changeDate(-1)">chevron_left</span>
-                <div class="date-display" id="calHeaderDate" style="margin:0 8px; font-size:18px; font-weight: 500;"></div>
-                <span class="material-icons" style="cursor:pointer; color: #444746;" onclick="changeDate(1)">chevron_right</span>
-            </div>
+            <div style="display:flex; align-items:center;"><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span><div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px; font-weight:bold;"></div><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span></div>
         </div>
-
-        <!-- Scroll Content -->
         <div class="scroll-content">
-            <div id="calMonthView">
-                <div class="month-grid" id="monthGrid"></div>
-            </div>
+            <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
             <div id="calDayView" class="hidden">
+                <!-- 週間ストリップ -->
                 <div id="weekStrip" class="week-strip"></div>
-                <div id="bookingModeBanner" style="margin:0 0 16px; padding:12px; border-radius:16px; font-size:13px; text-align:center;"></div>
+                
+                <div id="bookingModeBanner" style="margin:0 0 12px; padding:12px; border-radius:12px; font-size:13px; text-align:center; line-height:1.4;"></div>
+                <div style="font-size:11px; color:#999; text-align:center; margin-bottom:8px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
                 <div class="timeline-container" id="timeline"></div>
             </div>
         </div>
     </div>
 
-    <!-- Bottom Navigation -->
+    <!-- ボトムナビゲーション -->
     <div class="bottom-nav">
-        <div class="nav-item" onclick="window.location.href='/index.html'">
-            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">groups</span></div>
-            <span>バンド</span>
-        </div>
-        <div class="nav-item active" onclick="window.location.href='/booking.html'">
-            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">calendar_month</span></div>
-            <span>予約</span>
-        </div>
-        <div class="nav-item" onclick="window.location.href='/cue.html'">
-            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">description</span></div>
-            <span>Cue</span>
-        </div>
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'">
-            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">admin_panel_settings</span></div>
-            <span>管理</span>
-        </div>
-        <div class="nav-item" onclick="goToMyPage()">
-            <div class="nav-icon-wrapper"><span class="material-icons nav-icon">account_circle</span></div>
-            <span>マイ</span>
-        </div>
+        <div class="nav-item" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
+        <div class="nav-item active" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
+        <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
+        <!-- 管理者用タブ (rollにlmc_allがある場合のみ表示) -->
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='https://lmc-mobile.sorairosystem.com/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
+        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
-    <!-- Booking Modal -->
     <div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')">
         <div class="modal-content">
-            <div style="width: 32px; height: 4px; background: #ccc; border-radius: 2px; margin: -16px auto 24px;"></div>
-            <h3 style="margin-top:0; font-size: 22px; font-weight: 500;" id="bookingModalTitle">予約の確認</h3>
+            <h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3>
             <input type="hidden" id="editingBookingId">
-            <div class="form-group">
-                <label class="form-label">日付</label>
-                <div style="font-weight:700; font-size:18px; margin-bottom:12px;" id="bookingDateDisplay"></div>
-            </div>
-            <div class="form-group" style="background: var(--md-sys-color-surface-container); padding: 16px; border-radius: 16px; margin-bottom: 24px;">
-                <label class="checkbox-label" style="display:flex; align-items:center; gap:12px; cursor: pointer;">
-                    <input type="checkbox" id="checkAllDay" onchange="toggleAllDay()" style="width:24px; height:24px;"> 
-                    <span style="font-weight: 700;">終日 (9:00 - 20:00)</span>
-                </label>
-            </div>
-            <div class="form-group" id="timeSelectArea" style="display:flex; gap:12px; align-items:center; margin-bottom: 24px;">
-                <div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div>
-                <span class="material-icons" style="color: #444746; margin-top: 20px;">arrow_forward</span>
+            <div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div></div>
+            <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="checkAllDay" onchange="toggleAllDay()"> 終日 (9:00 - 20:00)</label></div>
+            <div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;">
+                <div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span>〜</span>
                 <div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div>
             </div>
-            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:16px; border-radius:16px; margin-bottom: 24px;">
+            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:12px; border-radius:12px;">
                 <label class="form-label">登録種別</label>
-                <div style="display:flex; gap:20px;">
-                    <label style="display:flex; align-items:center; gap:8px;"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> 練習</label>
-                    <label style="display:flex; align-items:center; gap:8px; color:#137333; font-weight:700;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> 不可</label>
+                <div class="radio-group"><label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label><label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label></div>
+            </div>
+            <div id="groupBandSelect" class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div>
+            <div id="groupEventTitle" class="form-group hidden"><label class="form-label">イベント名 / 理由</label><input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会"></div>
+            
+            <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
+            <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button>
+            <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
+            <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
+        </div>
+    </div>
+    
+    <!-- 検索モーダル -->
+    <div id="modal-search" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-search')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">予約検索</h3>
+            <div class="form-group">
+                <input type="text" id="searchInput" class="form-input" placeholder="キーワードを入力..." onkeyup="filterSearchResults()">
+            </div>
+            <!-- フィルタリング用チェックボックスを追加 -->
+            <div class="form-group" style="margin-bottom:10px;">
+                <label class="checkbox-label" style="font-size:14px; color:#5f6368;">
+                    <input type="checkbox" id="filterMyBands" onchange="filterSearchResults()">
+                    <span style="color:#1f1f1f;">自分の参加バンドのみ表示</span>
+                </label>
+            </div>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:10px;">直近の読み込み済み予約から検索します。</p>
+            <div id="searchResultContainer" style="max-height: 400px; overflow-y: auto;"></div>
+            <button class="btn-secondary" onclick="closeModal('modal-search')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">予約一覧</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p>
+            <div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+            <button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button>
+        </div>
+    </div>
+
+    <!-- Twitter(X)風 マイステータス -->
+    <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
+        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
+            <!-- ヘッダー画像 -->
+            <div style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); position: relative;">
+                <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
+            </div>
+            
+            <div style="padding: 0 16px 20px;">
+                <!-- アイコン -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: -40px; margin-bottom: 12px;">
+                    <img id="modalUserIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2;">
                 </div>
-            </div>
-            <div id="groupBandSelect" class="form-group">
-                <label class="form-label">予約するバンド</label>
-                <select id="selectBookingBand" class="form-input"></select>
-            </div>
-            <div id="groupEventTitle" class="form-group hidden">
-                <label class="form-label">イベント名 / 理由</label>
-                <input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会">
-            </div>
-            <div style="margin-top: 32px;">
-                <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
-                <button id="btnAddToGCal" class="btn-secondary" style="display:flex; align-items:center; justify-content:center; gap:8px;" onclick="addToGoogleCalendar()">
-                    <span class="material-icons" style="font-size:20px;">calendar_today</span> Googleカレンダー
-                </button>
-                <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">予約を削除</button>
-                <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
+                
+                <!-- 名前と @ID -->
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div style="flex: 1; min-width: 0; padding-right: 12px;">
+                        <div id="modalUserName" style="font-weight: 800; font-size: 22px; color: #0f1419; line-height: 1.2; word-wrap: break-word;"></div>
+                        <div id="modalUserLineName" style="font-size: 15px; color: #536471; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                    </div>
+                </div>
+
+                <!-- 部費状況 -->
+                <div style="background:#f9f9f9; padding:16px; border-radius:16px; margin-top: 24px;">
+                    <div style="font-size:12px; color:#536471; margin-bottom:8px; font-weight:bold;">2026年度 部費状況</div>
+                    <div style="display:flex; gap:10px;">
+                        <div id="statusFeeTerm1" class="fee-status-badge">前期: -</div>
+                        <div id="statusFeeTerm2" class="fee-status-badge">後期: -</div>
+                    </div>
+                </div>
+                
+                <!-- QRコード -->
+                <div style="margin-top: 24px; text-align: center;">
+                    <div style="font-size: 13px; color: #536471; margin-bottom: 12px; font-weight: bold;">会員QRコード</div>
+                    <div id="myQRCodeArea" style="width:120px; height:120px; margin:0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- User Status Modal -->
-    <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
-        <div class="modal-content">
-            <div style="width: 32px; height: 4px; background: #ccc; border-radius: 2px; margin: -16px auto 24px;"></div>
-            <h3 style="margin-top:0; text-align:center; font-size:16px; color:#5f6368; font-weight: 500;">マイステータス</h3>
-            <div style="text-align: center; padding: 16px;">
-                <img id="modalUserIcon" src="" style="width:96px; height:96px; border-radius:48px; object-fit:cover; margin-bottom:12px; border:4px solid white; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-                <div id="modalUserName" style="font-size: 20px; font-weight: 700; margin-bottom: 24px;"></div>
-                <div style="background:var(--md-sys-color-surface-container); padding:20px; border-radius:24px; margin-bottom:24px;">
-                    <div id="statusFeeYear" style="font-size:12px; color:#666; margin-bottom:12px; font-weight:700;">部費状況</div>
-                    <div style="display:flex; gap:12px; justify-content:center;">
-                        <div id="statusFeeTerm1" style="flex:1; padding:12px; border-radius:12px; font-size:14px; font-weight:700; background: white;">前期: -</div>
-                        <div id="statusFeeTerm2" style="flex:1; padding:12px; border-radius:12px; font-size:14px; font-weight:700; background: white;">後期: -</div>
-                    </div>
-                </div>
-                <div id="myQRCodeArea" style="width:160px; height:160px; background:#eee; margin:0 auto; border-radius: 12px; overflow: hidden;"></div>
-            </div>
-            <button class="btn-secondary" onclick="closeModal('modal-user-status')">閉じる</button>
-        </div>
-    </div>
+    <script>
+        (function(){
+            document.addEventListener('DOMContentLoaded', function() {
+                const d = new Date();
+                const y = d.getFullYear();
+                const m = d.getMonth();
+                const header = document.getElementById('calHeaderDate');
+                if(header && header.innerText === "") header.innerText = y + "年 " + (m+1) + "月";
+                const grid = document.getElementById('monthGrid');
+                if(grid && grid.innerHTML.trim() === "") {
+                    const wds = ['日','月','火','水','木','金','土'];
+                    let html = "";
+                    wds.forEach((wd, i) => { let cls = 'weekday-label'; if(i===0) cls+=' sun'; if(i===6) cls+=' sat'; html += '<div class="'+cls+'">'+wd+'</div>'; });
+                    const firstD = new Date(y, m, 1);
+                    const lastD = new Date(y, m+1, 0);
+                    for(let i=0; i<firstD.getDay(); i++) html += '<div></div>';
+                    for(let i=1; i<=lastD.getDate(); i++){ let cls = 'day-cell'; if(i === d.getDate()) cls += ' today'; html += '<div class="'+cls+'" id="day-'+y+'-'+(m+1)+'-'+i+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots" id="dots-'+y+'-'+(m+1)+'-'+i+'"></div></div>'; }
+                    grid.innerHTML = html;
+                }
+                const strip = document.getElementById('weekStrip');
+                if(strip && strip.innerHTML.trim() === "") {
+                    // 初期表示用の週間カレンダー生成（アニメーションなし）
+                    const current = new Date(); 
+                    const dayOfWeek = current.getDay();
+                    const startOfWeek = new Date(current);
+                    startOfWeek.setDate(current.getDate() - dayOfWeek);
+                    const wds = ['日','月','火','水','木','金','土'];
+                    let html = "";
+                    for (let i = 0; i < 7; i++) {
+                        const targetD = new Date(startOfWeek);
+                        targetD.setDate(startOfWeek.getDate() + i);
+                        let cls = 'week-day-item';
+                        if (i === 0) cls += ' sun'; if (i === 6) cls += ' sat';
+                        if (targetD.getDate() === current.getDate()) cls += ' today selected';
+                        html += '<div class="'+cls+'"><div class="week-day-label">'+wds[i]+'</div><div class="week-day-num">'+targetD.getDate()+'</div></div>';
+                    }
+                    strip.innerHTML = '<div class="week-strip-page">' + html + '</div>';
+                }
+                const timeline = document.getElementById('timeline');
+                if(timeline && timeline.innerHTML.trim() === "") {
+                    let html = ""; for(let h=9; h<20; h++){ html += '<div class="time-slot"><div class="time-label">'+h+':00</div><div class="time-content" data-hour="'+h+'"></div></div>'; }
+                    timeline.innerHTML = html;
+                }
+            });
+        })();
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-
-        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5" };
-        const app = initializeApp(firebaseConfig); 
-        const db = getFirestore(app); 
-        const auth = getAuth(app);
         
-        const MY_LIFF_ID = "2008162165-vVODNp12"; 
-        const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
+        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
+        const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
 
-        let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date();
-        let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null;
-        let selectionStartHour=null, selectionEndHour=null;
-        let currentSystemSettings={ bookingMode:'first_come' };
+        let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date(), selectedTimeSlot=null, selectionStartHour=null, selectionEndHour=null;
+        let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
+        let currentSystemSettings={ bookingMode:'first_come', lotteryConfig:{ mode:'auto', daysBefore:2, time:0 } };
+        let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
+        let loadedBookingsCache = [];
+        let touchStartX = 0;
+        let touchEndX = 0;
 
-        // --- Utility ---
+        window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
+        window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
         window.openModal=(id)=>document.getElementById(id).classList.add('open');
         window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
         window.goToMyPage=()=>window.location.href=MY_PAGE_URL;
-        const showSyncIndicator = () => document.getElementById('syncIndicator').classList.remove('hidden');
-        const hideSyncIndicator = () => document.getElementById('syncIndicator').classList.add('hidden');
-
-        window.showCustomAlert = async (message, title = "通知") => {
-            return new Promise((resolve) => {
-                const modal = document.getElementById('modal-custom-dialog');
-                document.getElementById('dialogTitle').innerText = title;
-                document.getElementById('dialogMessage').innerText = message;
-                const okBtn = document.getElementById('dialogBtnOk');
-                const cancelBtn = document.getElementById('dialogBtnCancel');
-                cancelBtn.classList.add('hidden');
-                okBtn.onclick = () => { modal.classList.remove('open'); resolve(); };
-                modal.classList.add('open');
-            });
-        };
-
-        window.showCustomConfirm = async (message, title = "確認") => {
-            return new Promise((resolve) => {
-                const modal = document.getElementById('modal-custom-dialog');
-                document.getElementById('dialogTitle').innerText = title;
-                document.getElementById('dialogMessage').innerText = message;
-                const okBtn = document.getElementById('dialogBtnOk');
-                const cancelBtn = document.getElementById('dialogBtnCancel');
-                cancelBtn.classList.remove('hidden');
-                okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); };
-                cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); };
-                modal.classList.add('open');
-            });
-        };
-
-        // --- Auth & Header Icon Control ---
-        function renderHeaderIcons(d) {
-            let r = "";
-            const aff = d.affiliations || [];
-            const isU = aff.includes("urakata");
-            const today = new Date();
-
-            // 1. Birthday
-            if (d.birthday) {
-                const b = new Date(d.birthday);
-                if (today.getMonth() === b.getMonth() && today.getDate() === b.getDate()) {
-                    r = "ring-birthday";
-                }
-            }
-
-            // 2. Urakata attribute rings - No spin for normal users
-            if (!r && isU) {
-                r = d.job ? `ring-${d.job}` : "ring-rainbow";
-            }
-
-            const h = `<img src="${d.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
-            const el = document.getElementById('headerIconCal');
-            if (el) {
-                el.innerHTML = h;
-                el.className = "header-avatar " + r;
-                el.onclick = openUserStatusModal;
-            }
-            if (d.role && d.role.length > 0) {
-                const navAdmin = document.getElementById('nav-admin');
-                if (navAdmin) navAdmin.classList.remove('hidden');
-            }
-        }
-
-        async function main() {
-            try {
-                showSyncIndicator();
-                try {
-                    await liff.init({ liffId: MY_LIFF_ID });
-                    if (!liff.isLoggedIn()) { liff.login(); return; }
-                    const profile = await liff.getProfile();
-                    currentUser = profile.userId; currentProfile = profile;
-                    const userRef = doc(db, "users", currentUser), userSnap = await getDoc(userRef);
-                    if (!userSnap.exists()) { window.location.href = MY_PAGE_URL; return; }
-                    currentUserData = userSnap.data();
-                    localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
-                    renderHeaderIcons(currentUserData);
-                } catch (e) { console.error(e); }
-
-                const sysSnap = await getDoc(doc(db, "system", "settings"));
-                if (sysSnap.exists()) currentSystemSettings = sysSnap.data();
-                
-                loadMyBands();
-                switchCalendarView('month');
-                setInterval(updateCurrentTimeLine, 60000);
-            } catch (e) { console.error(e); } finally { hideSyncIndicator(); }
-        }
-
-        // --- Calendar Control ---
-        window.switchCalendarView = (m, keepDate = false) => {
-            calendarMode = m;
-            if (m === 'day' && !keepDate) {
-                const t = new Date();
-                if (displayDate.getMonth() === t.getMonth()) displayDate.setDate(t.getDate());
-            }
-            const isMonth = (calendarMode === 'month');
-            document.getElementById('calMonthView').classList.toggle('hidden', !isMonth);
-            document.getElementById('calDayView').classList.toggle('hidden', isMonth);
-            const switcher = document.getElementById('viewSwitcher');
-            switcher.classList.toggle('day-mode', !isMonth);
-            document.querySelectorAll('.switcher-item').forEach(el => el.classList.toggle('active', el.dataset.mode === calendarMode));
-            renderCalendar();
-        };
-
-        window.changeDate = (d) => {
-            if (calendarMode === 'month') displayDate.setMonth(displayDate.getMonth() + d);
-            else displayDate.setDate(displayDate.getDate() + d);
-            renderCalendar();
-        };
-
-        function renderCalendar() {
-            const y = displayDate.getFullYear(), m = displayDate.getMonth() + 1;
-            if (calendarMode === 'month') {
-                document.getElementById('calHeaderDate').innerText = `${y}年 ${m}月`;
-                renderMonthView(y, m - 1);
-            } else {
-                document.getElementById('calHeaderDate').innerText = `${m}月 ${displayDate.getDate()}日`;
-                renderDayView();
-            }
-        }
-
-        function renderMonthView(y, m) {
-            const grid = document.getElementById('monthGrid');
-            grid.innerHTML = "";
-            ['日','月','火','水','木','金','土'].forEach((wd, i) => {
-                const div = document.createElement('div'); div.className = 'weekday-label' + (i === 0 ? ' sun' : (i === 6 ? ' sat' : ''));
-                div.innerText = wd; grid.appendChild(div);
-            });
-            const firstD = new Date(y, m, 1), lastD = new Date(y, m + 1, 0), today = new Date();
-            for (let i = 0; i < firstD.getDay(); i++) grid.appendChild(document.createElement('div'));
-            for (let d = 1; d <= lastD.getDate(); d++) {
-                const div = document.createElement('div'); div.className = 'day-cell' + (y === today.getFullYear() && m === today.getMonth() && d === today.getDate() ? ' today' : '');
-                div.id = `day-${y}-${m + 1}-${d}`;
-                div.onclick = () => { displayDate.setDate(d); switchCalendarView('day', true); };
-                div.innerHTML = `<div class="day-num">${d}</div><div class="status-label"></div><div class="event-dots" id="dots-${y}-${m + 1}-${d}"></div>`;
-                grid.appendChild(div);
-            }
-            loadMonthBookings(y, m);
-        }
-
-        async function loadMonthBookings(y, m) {
-            const s = new Date(y, m, 1), e = new Date(y, m + 1, 0, 23, 59, 59);
-            onSnapshot(query(collection(db, "bookings"), where("startTime", ">=", s), where("startTime", "<=", e)), (qs) => {
-                const bookings = []; qs.forEach(snap => bookings.push({ id: snap.id, ...snap.data() }));
-                applyBookingDataToMonth(bookings);
-            });
-        }
-
-        function applyBookingDataToMonth(bookings) {
-            document.querySelectorAll('.event-dots').forEach(el => el.innerHTML = "");
-            document.querySelectorAll('.day-cell').forEach(el => {
-                el.classList.remove('unavailable', 'partial-event');
-                const st = el.querySelector('.status-label'); if (st) st.innerText = "";
-            });
-            const stats = {};
-            bookings.forEach(bk => {
-                const d = bk.startTime.toDate(); const key = `day-${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-                if (!stats[key]) stats[key] = { count: 0, event: false };
-                if (bk.type === 'event') stats[key].event = true;
-                else stats[key].count++;
-            });
-            Object.keys(stats).forEach(key => {
-                const cell = document.getElementById(key); if (!cell) return;
-                if (stats[key].event) { cell.classList.add('unavailable'); const l = cell.querySelector('.status-label'); if (l) l.innerText = "🚫"; }
-                if (stats[key].count > 0) {
-                    const dc = document.getElementById(key.replace('day-', 'dots-'));
-                    for (let i = 0; i < Math.min(stats[key].count, 3); i++) { 
-                        const dt = document.createElement('div'); dt.className = 'dot'; 
-                        dt.style.background = "var(--md-sys-color-primary)"; dc.appendChild(dt); 
-                    }
-                }
-            });
-        }
-
-        // --- Day View ---
-        function renderDayView() {
-            const banner = document.getElementById('bookingModeBanner'), mode = currentSystemSettings.bookingMode || 'first_come';
-            banner.style.background = (mode === 'lottery' ? '#fff3e0' : '#d3e3fd');
-            banner.style.color = (mode === 'lottery' ? '#7d4a00' : '#041e49');
-            banner.innerHTML = mode === 'lottery' ? '<b>抽選予約受付中</b>' : '<b>即時確定（先着順）</b>';
-            
-            renderWeekStrip();
-            const timeline = document.getElementById('timeline'); timeline.innerHTML = "";
-            for (let h = 9; h < 20; h++) {
-                const slot = document.createElement('div'); slot.className = 'time-slot'; slot.innerHTML = `<div class="time-label">${h}:00</div>`;
-                const content = document.createElement('div'); content.className = 'time-content'; content.dataset.hour = h;
-                content.addEventListener('touchstart', handleTouchStart, { passive: false });
-                content.addEventListener('touchmove', handleTouchMove, { passive: false });
-                content.addEventListener('touchend', handleTouchEnd);
-                slot.appendChild(content); timeline.appendChild(slot);
-            }
-            createCurrentTimeLine(timeline);
-            loadDayBookings();
-        }
-
-        function renderWeekStrip() {
-            const strip = document.getElementById('weekStrip');
-            const current = new Date(displayDate), start = new Date(current); start.setDate(current.getDate() - current.getDay());
-            let html = '<div class="week-strip-page" style="display:flex; justify-content:space-around; width:100%;">';
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(start); d.setDate(start.getDate() + i);
-                const isSel = d.getDate() === current.getDate() && d.getMonth() === current.getMonth();
-                html += `<div class="week-day-item ${isSel ? 'selected' : ''}" onclick="window.setDateAndRender(${d.getFullYear()},${d.getMonth()},${d.getDate()})">
-                    <div class="week-day-label" style="font-size:10px; margin-bottom:4px;">${['日','月','火','水','木','金','土'][i]}</div>
-                    <div class="week-day-num" style="font-size:16px; font-weight:700;">${d.getDate()}</div>
-                </div>`;
-            }
-            html += '</div>'; strip.innerHTML = html;
-        }
-        window.setDateAndRender = (y, m, d) => { displayDate.setFullYear(y, m, d); renderCalendar(); };
-
-        function loadDayBookings() {
-            const s = new Date(displayDate); s.setHours(0, 0, 0, 0); const e = new Date(displayDate); e.setHours(23, 59, 59, 999);
-            onSnapshot(query(collection(db, "bookings"), where("startTime", ">=", s), where("startTime", "<=", e)), (qs) => {
-                document.querySelectorAll('.event-block').forEach(el => el.remove());
-                qs.forEach(snap => {
-                    const d = snap.data(); d.id = snap.id; renderEventBlock(d);
-                });
-            });
-        }
-
-        function renderEventBlock(d) {
-            const s = d.startTime.toDate(), e = d.endTime.toDate();
-            const top = s.getMinutes(), height = (e - s) / 60000 - 4;
-            const slot = document.querySelector(`.time-content[data-hour="${s.getHours()}"]`);
-            if (!slot) return;
-            const div = document.createElement('div'); div.className = 'event-block' + (d.type === 'event' ? ' special-event' : '');
-            div.style.top = top + "px"; div.style.height = height + "px";
-            div.innerHTML = `<div class="event-title">${d.type === 'event' ? d.title : d.bandName}</div><div style="font-size:10px; opacity:0.8;">${d.userName || ''}</div>`;
-            div.onclick = (ev) => { ev.stopPropagation(); openEditBookingModal(d.id, d); };
-            slot.appendChild(div);
-        }
-
-        // --- Handlers ---
-        function handleTouchStart(e) {
-            const h = parseInt(e.target.dataset.hour); if (isNaN(h)) return;
-            selectionTimer = setTimeout(() => {
-                isSelecting = true; selectionStartHour = h; selectionEndHour = h; updateSelectionUI();
-                document.getElementById('selectionToast').classList.add('show');
-            }, 500);
-        }
-        function handleTouchMove(e) {
-            if (!isSelecting) { clearTimeout(selectionTimer); return; }
-            e.preventDefault();
-            const t = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY);
-            if (t && t.dataset.hour) { selectionEndHour = parseInt(t.dataset.hour); updateSelectionUI(); }
-        }
-        function handleTouchEnd() {
-            clearTimeout(selectionTimer);
-            if (isSelecting) { isSelecting = false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(); }
-        }
-        function updateSelectionUI() {
-            document.querySelectorAll('.time-content').forEach(el => el.classList.remove('selecting'));
-            const s = Math.min(selectionStartHour, selectionEndHour), e = Math.max(selectionStartHour, selectionEndHour);
-            for (let h = s; h <= e; h++) document.querySelector(`.time-content[data-hour="${h}"]`)?.classList.add('selecting');
-        }
-
-        // --- Persistence ---
-        window.saveBooking = async () => {
-            const id = document.getElementById('editingBookingId').value, type = document.querySelector('input[name="bookingType"]:checked').value;
-            const bd = { creatorId: currentUser, userName: currentProfile.displayName, type: type };
-            if (type === 'normal') { bd.bandId = document.getElementById('selectBookingBand').value; bd.bandName = document.getElementById('selectBookingBand').options[document.getElementById('selectBookingBand').selectedIndex].text; }
-            else bd.title = document.getElementById('inputEventTitle').value;
-            
-            const [sh, sm] = document.getElementById('selectStartTime').value.split(':').map(Number);
-            const [eh, em] = document.getElementById('selectEndTime').value.split(':').map(Number);
-            const st = new Date(displayDate); st.setHours(sh, sm, 0, 0);
-            const et = new Date(displayDate); et.setHours(eh, em, 0, 0);
-            bd.startTime = Timestamp.fromDate(st); bd.endTime = Timestamp.fromDate(et);
-
-            try {
-                if (id) await updateDoc(doc(db, "bookings", id), bd);
-                else await addDoc(collection(db, "bookings"), bd);
-                closeModal('modal-booking');
-            } catch (e) { alert(e.message); }
-        };
-
-        window.deleteBooking = async () => {
-            const id = document.getElementById('editingBookingId').value;
-            if (id && await showCustomConfirm("この予約を削除しますか？")) {
-                await deleteDoc(doc(db, "bookings", id)); closeModal('modal-booking');
-            }
-        };
-
-        function loadMyBands() {
-            onSnapshot(query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)), (qs) => {
-                myBandsAll = []; qs.forEach(s => myBandsAll.push({ id: s.id, ...s.data() }));
-                const sel = document.getElementById('selectBookingBand'); sel.innerHTML = "";
-                myBandsAll.forEach(b => sel.add(new Option(b.name, b.id)));
-            });
-        }
         
-        function updateCurrentTimeLine() {
-            const l = document.getElementById('currentTimeLine'); if (!l) return;
-            const now = new Date(); if (now.getDate() !== displayDate.getDate()) { l.style.display = 'none'; return; }
-            const h = now.getHours(), m = now.getMinutes();
-            if (h < 9 || h >= 20) l.style.display = 'none';
-            else { l.style.display = 'block'; l.style.top = ((h - 9) * 64 + m + 16) + "px"; }
+        async function loadSystemConfig(){ try{ const snap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=snap.data(); }catch(e){} }
+        
+        // ヘッダーアイコン制御 (管理者タブ表示制御を含む)
+        function renderHeaderIcons(d){
+            if(!d) return;
+            let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
+            if(d.birthday){
+                const t=new Date(), b=new Date(d.birthday);
+                if(t.getMonth()===b.getMonth() && t.getDate()===b.getDate()) r="ring-birthday";
+            }
+            if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
+            const el = document.getElementById('headerIconCal');
+            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
+            
+            // 管理者タブ表示制御 (role または roll が存在し、かつ裏方である場合)
+            const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
+            if(isU && (d.role || hasLmcAll)) {
+                document.getElementById('nav-admin').classList.remove('hidden');
+            } else {
+                document.getElementById('nav-admin').classList.add('hidden');
+            }
         }
 
-        function createCurrentTimeLine(container) {
-            const div = document.createElement('div'); div.id = 'currentTimeLine'; div.className = 'current-time-line';
-            div.innerHTML = '<div class="current-time-badge"><span class="current-time-text">NOW</span></div><div class="current-time-dot"></div>';
-            container.appendChild(div); updateCurrentTimeLine();
-        }
+        // --- ステータスモーダル (Twitter風) ---
+        window.openUserStatusModal = async () => {
+            const year=2026; const status=currentUserData.feeStatus||{};
+            document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
+            // LINE名を @つきで表示
+            document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
 
-        // --- Initialization Hooks ---
-        window.toggleAllDay = () => {
-            if (document.getElementById('checkAllDay').checked) {
-                document.getElementById('selectStartTime').value = "9:00"; document.getElementById('selectEndTime').value = "20:00";
-            }
-        };
-        window.toggleBookingInputs = () => {
-            const t = document.querySelector('input[name="bookingType"]:checked').value;
-            document.getElementById('groupBandSelect').classList.toggle('hidden', t === 'event');
-            document.getElementById('groupEventTitle').classList.toggle('hidden', t === 'normal');
-        };
-        window.handleNewBooking = () => {
-            selectionStartHour = 10; selectionEndHour = 11; openBookingModalRange();
-        };
-        function openBookingModalRange() {
-            document.getElementById('editingBookingId').value = "";
-            document.getElementById('bookingModalTitle').innerText = "新規予約";
-            document.getElementById('btnDeleteBooking').classList.add('hidden');
-            setupTimeOptions(selectionStartHour, selectionEndHour + 1);
-            openModal('modal-booking');
-        }
-        function openEditBookingModal(id, d) {
-            if (d.creatorId !== currentUser) { showCustomAlert("他のユーザーの予約は編集できません。"); return; }
-            document.getElementById('editingBookingId').value = id;
-            document.getElementById('bookingModalTitle').innerText = "予約の変更";
-            document.getElementById('btnDeleteBooking').classList.remove('hidden');
-            const s = d.startTime.toDate(), e = d.endTime.toDate();
-            setupTimeOptions(s.getHours(), e.getHours());
-            openModal('modal-booking');
-        }
-        function setupTimeOptions(sh, eh) {
-            const sSel = document.getElementById('selectStartTime'), eSel = document.getElementById('selectEndTime');
-            sSel.innerHTML = ""; eSel.innerHTML = "";
-            for (let h = 9; h <= 20; h++) {
-                sSel.add(new Option(`${h}:00`, `${h}:00`)); eSel.add(new Option(`${h}:00`, `${h}:00`));
-            }
-            sSel.value = `${sh}:00`; eSel.value = `${eh}:00`;
-        }
-        window.openUserStatusModal = () => {
-            document.getElementById('modalUserIcon').src = currentUserData.icon;
-            document.getElementById('modalUserName').innerText = currentUserData.name;
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${currentUser}`;
-            document.getElementById('myQRCodeArea').innerHTML = `<img src="${qrUrl}" style="width:100%; height:100%;">`;
+            const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
+            t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
+            t2.innerText=`後期: ${status[`${year}_2`]?'済':'未納'}`; t2.className=`fee-status-badge ${status[`${year}_2`]?'fee-paid':'fee-unpaid'}`;
+            document.getElementById('myQRCodeArea').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:100%;height:100%;">`;
             openModal('modal-user-status');
         };
 
+        (function renderFromCache() {
+            try {
+                const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
+                if (cachedUserStr) {
+                    const u = JSON.parse(cachedUserStr);
+                    currentUserData = u; renderHeaderIcons(u);
+                }
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
+                        if (cachedBandsStr) myBandsAll = JSON.parse(cachedBandsStr);
+                        renderCalendar(true); 
+                    }, 0);
+                });
+            } catch (e) { console.warn("Cache render error:", e); }
+        })();
+
+        const showSyncIndicator = () => document.getElementById('syncIndicator').classList.remove('hidden');
+        const hideSyncIndicator = () => document.getElementById('syncIndicator').classList.add('hidden');
+
+        async function main(){ 
+            try{ 
+                showSyncIndicator();
+                try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
+                try {
+                    await liff.init({liffId:MY_LIFF_ID}); 
+                    if(!liff.isLoggedIn()){liff.login();return;} 
+                    const profile=await liff.getProfile(); 
+                    currentUser=profile.userId; currentProfile=profile; 
+                    const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
+                    if(!userSnap.exists()){ window.location.href=MY_PAGE_URL; return; } 
+                    await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
+                    currentUserData=userSnap.data(); 
+                    localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                    renderHeaderIcons(currentUserData);
+                } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
+                await loadSystemConfig(); loadMyBands(); 
+                switchCalendarView('month'); 
+                setInterval(updateCurrentTimeLine, 60000);
+                setupWeekSwipe();
+            }catch(e){console.error(e)} 
+        }
+
+        function setupWeekSwipe() {
+            const weekStrip = document.getElementById('weekStrip');
+            if (weekStrip) {
+                weekStrip.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+                weekStrip.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleWeekSwipe(); }, {passive: true});
+            }
+        }
+        function handleWeekSwipe() {
+            const threshold = 50; 
+            if (touchEndX < touchStartX - threshold) changeDate(7);
+            if (touchEndX > touchStartX + threshold) changeDate(-7);
+        }
+
+        function loadMyBands(){ const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); onSnapshot(q,(snapshot)=>{ myBandsAll=[]; snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll)); }); }
+        
+        window.switchCalendarView=(m, keepDate = false)=>{ calendarMode=m; if(m==='day'){ if(!keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } } } updateViewMenuUI(); renderCalendar(); };
+        function updateViewMenuUI(){ const isMonth = (calendarMode === 'month'); document.getElementById('calMonthView').classList.toggle('hidden', !isMonth); document.getElementById('calDayView').classList.toggle('hidden', isMonth); const switcher = document.getElementById('viewSwitcher'); switcher.classList.toggle('day-mode', !isMonth); document.querySelectorAll('.switcher-item').forEach(el => { el.classList.toggle('active', el.dataset.mode === calendarMode); }); }
+        
+        window.changeDate=(d)=>{ 
+            if(calendarMode==='month') displayDate.setMonth(displayDate.getMonth()+d); 
+            else displayDate.setDate(displayDate.getDate()+d); 
+            const dir = d > 0 ? 1 : -1;
+            renderCalendar(false, dir); 
+        };
+        
+        function renderCalendar(useCache = false, animationDirection = 0){ 
+            const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; 
+            if(calendarMode==='month'){
+                document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; 
+                renderMonthView(y, m-1, useCache);
+            } else {
+                const d=displayDate.getDate(), w=['日','月','火','水','木','金','土'][displayDate.getDay()]; 
+                document.getElementById('calHeaderDate').innerText=`${m}月`; 
+                renderDayView(animationDirection);
+            } 
+        }
+
+        function renderMonthView(y, m, useCache){ 
+            const grid=document.getElementById('monthGrid'); 
+            if(!grid) return;
+            if(useCache && grid.innerHTML.trim() !== "") { loadMonthBookings(y, m, true); return; }
+            grid.innerHTML=""; 
+            ['日','月','火','水','木','金','土'].forEach(wd=>{const div=document.createElement('div'); div.className='weekday-label'; div.innerText=wd; if(wd==='日')div.classList.add('sun'); if(wd==='土')div.classList.add('sat'); grid.appendChild(div);}); 
+            const firstD=new Date(y,m,1), lastD=new Date(y,m+1,0), today=new Date(); 
+            for(let i=0; i<firstD.getDay(); i++)grid.appendChild(document.createElement('div')); 
+            for(let d=1; d<=lastD.getDate(); d++){ 
+                const div=document.createElement('div'); div.className='day-cell'; div.id=`day-${y}-${m+1}-${d}`; 
+                if(y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate())div.classList.add('today'); 
+                div.onclick=()=>{displayDate.setDate(d); switchCalendarView('day', true);}; 
+                div.innerHTML=`<div class="day-num">${d}</div><div class="status-label"></div><div class="event-dots" id="dots-${y}-${m+1}-${d}"></div>`; 
+                grid.appendChild(div); 
+            } 
+            loadMonthBookings(y,m, useCache); 
+        }
+
+        function loadMonthBookings(y,m, useCache){ 
+            const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${m}`;
+            const cached = localStorage.getItem(cacheKey);
+            if(cached) { try { const data = JSON.parse(cached); loadedBookingsCache = data; applyBookingDataToMonth(data); } catch(e) {} }
+            if (useCache) return;
+            onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{ 
+                const bookings = [];
+                qs.forEach(docSnap => { const d = docSnap.data(); bookings.push({ ...d, id: docSnap.id, startTime: d.startTime.toDate().toISOString(), endTime: d.endTime.toDate().toISOString(), type: d.type }); });
+                loadedBookingsCache = bookings; localStorage.setItem(cacheKey, JSON.stringify(bookings)); applyBookingDataToMonth(bookings); hideSyncIndicator();
+            }); 
+        }
+
+        function applyBookingDataToMonth(bookings) {
+            document.querySelectorAll('.event-dots').forEach(el=>el.innerHTML=""); 
+            document.querySelectorAll('.day-cell.unavailable, .day-cell.partial-event').forEach(el=>{ el.classList.remove('unavailable', 'partial-event'); const st = el.querySelector('.status-label'); if(st) st.innerText = ""; }); 
+            const stats = {};
+            bookings.forEach(bk => {
+                const d = new Date(bk.startTime); const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+                if (!stats[key]) stats[key] = { count: 0, eventType: null };
+                if (bk.type === 'event') {
+                    const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); const sH = d.getHours(); const eH = e.getHours(); const isAllDay = (sH <= 9 && eH >= 20);
+                    if (isAllDay) { stats[key].eventType = 'unavailable'; } else if (stats[key].eventType !== 'unavailable') { stats[key].eventType = 'partial'; }
+                } else { stats[key].count++; }
+            });
+            Object.keys(stats).forEach(key => {
+                const data = stats[key]; const cell = document.getElementById(key); if (!cell) return;
+                if (data.eventType === 'unavailable') { cell.classList.add('unavailable'); const st = cell.querySelector('.status-label'); if(st) st.innerText = "🚫不可"; } else if (data.eventType === 'partial') { cell.classList.add('partial-event'); }
+                if (data.count > 0) {
+                    const dotsContainer = document.getElementById(key.replace('day-', 'dots-'));
+                    if (dotsContainer) { if (data.count <= 3) { for(let i=0; i<data.count; i++) { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); } } else { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); const plus = document.createElement('div'); plus.className = 'dot-plus'; plus.innerText = `+${data.count - 1}`; dotsContainer.appendChild(plus); } }
+                }
+            });
+        }
+
+        function renderDayView(animationDirection = 0){ 
+            const banner=document.getElementById('bookingModeBanner'), mode=currentSystemSettings.bookingMode||'first_come'; 
+            if(mode==='lottery'){banner.style.backgroundColor='#fff3e0'; banner.style.color='#e65100'; banner.style.border='1px solid #ffe0b2'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">casino</span> 抽選受付中</div><div style="font-size:11px;">希望を提出してください。</div>`;} 
+            else {banner.style.backgroundColor='#e8f0fe'; banner.style.color='#1967d2'; banner.style.border='1px solid #d2e3fc'; banner.innerHTML=`<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">即時確定します。</div>`;} 
+            
+            const container=document.getElementById('timeline'); 
+            container.innerHTML=""; 
+            
+            renderWeekStrip(animationDirection);
+
+            for(let h=9;h<20;h++){ 
+                const slot=document.createElement('div'); 
+                slot.className='time-slot'; 
+                slot.innerHTML=`<div class="time-label">${h}:00</div>`; 
+                const content=document.createElement('div'); 
+                content.className='time-content'; 
+                content.dataset.hour=h; 
+                content.addEventListener('touchstart',handleTouchStart,{passive:false}); 
+                content.addEventListener('touchmove',handleTouchMove,{passive:false}); 
+                content.addEventListener('touchend',handleTouchEnd); 
+                content.addEventListener('mousedown',handleMouseDown); 
+                slot.appendChild(content); 
+                container.appendChild(slot); 
+            } 
+            container.addEventListener('mousemove',handleMouseMove); 
+            container.addEventListener('mouseup',handleMouseUp); 
+
+            createCurrentTimeLine(container);
+            loadDayBookings(); 
+        }
+
+        function generateWeekHTML() {
+            const today = new Date();
+            const current = new Date(displayDate);
+            const dayOfWeek = current.getDay();
+            const startOfWeek = new Date(current);
+            startOfWeek.setDate(current.getDate() - dayOfWeek);
+            const wds = ['日','月','火','水','木','金','土'];
+            let html = "";
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(startOfWeek);
+                d.setDate(startOfWeek.getDate() + i);
+                let cls = 'week-day-item';
+                if (i === 0) cls += ' sun';
+                if (i === 6) cls += ' sat';
+                if (d.getDate() === current.getDate() && d.getMonth() === current.getMonth()) cls += ' selected';
+                if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) cls += ' today';
+                
+                const dateStr = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+                html += `<div class="${cls}" data-date="${dateStr}"><div class="week-day-label">${wds[i]}</div><div class="week-day-num">${d.getDate()}</div></div>`;
+            }
+            document.getElementById('calHeaderDate').innerText = `${current.getFullYear()}年 ${current.getMonth() + 1}月`;
+            return html;
+        }
+
+        function renderWeekStrip(animationDirection) {
+            const strip = document.getElementById('weekStrip');
+            if (!strip) return;
+
+            if (!strip.hasAttribute('data-click-bound')) {
+                strip.setAttribute('data-click-bound', 'true');
+                strip.addEventListener('click', (e) => {
+                    const item = e.target.closest('.week-day-item');
+                    if (item && item.dataset.date) {
+                        const parts = item.dataset.date.split('-').map(Number);
+                        displayDate.setFullYear(parts[0], parts[1]-1, parts[2]);
+                        renderCalendar(); 
+                    }
+                });
+            }
+
+            const newInnerHtml = generateWeekHTML();
+            
+            if (animationDirection === 0 || strip.innerHTML.trim() === "") {
+                strip.innerHTML = `<div class="week-strip-page">${newInnerHtml}</div>`;
+                return;
+            }
+
+            const oldPage = strip.querySelector('.week-strip-page');
+            const oldContent = oldPage ? oldPage.innerHTML : "";
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'week-strip-wrapper';
+            wrapper.style.transition = 'transform 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+
+            const oldDiv = document.createElement('div');
+            oldDiv.className = 'week-strip-page';
+            oldDiv.innerHTML = oldContent;
+
+            const newDiv = document.createElement('div');
+            newDiv.className = 'week-strip-page';
+            newDiv.innerHTML = newInnerHtml;
+
+            strip.innerHTML = '';
+            strip.appendChild(wrapper);
+
+            if (animationDirection > 0) {
+                wrapper.appendChild(oldDiv);
+                wrapper.appendChild(newDiv);
+                wrapper.style.transform = 'translateX(0)';
+                wrapper.offsetHeight; 
+                wrapper.style.transform = 'translateX(-100%)';
+            } else {
+                wrapper.appendChild(newDiv);
+                wrapper.appendChild(oldDiv);
+                wrapper.style.transform = 'translateX(-100%)';
+                wrapper.offsetHeight;
+                wrapper.style.transform = 'translateX(0)';
+            }
+
+            wrapper.addEventListener('transitionend', () => {
+                strip.innerHTML = `<div class="week-strip-page">${newInnerHtml}</div>`;
+            }, { once: true });
+        }
+
+        function createCurrentTimeLine(container) {
+            const now = new Date();
+            if (displayDate.getFullYear() === now.getFullYear() && displayDate.getMonth() === now.getMonth() && displayDate.getDate() === now.getDate()) {
+                const line = document.createElement('div'); line.id = 'currentTimeLine'; line.className = 'current-time-line';
+                line.innerHTML = '<div class="current-time-badge"><span id="currentTimeText" class="current-time-text"></span></div><div class="current-time-dot"></div>';
+                container.appendChild(line); updateCurrentTimeLine(); 
+            }
+        }
+        function updateCurrentTimeLine() {
+            const line = document.getElementById('currentTimeLine'); if (!line) return;
+            const now = new Date();
+            const isToday = displayDate.getFullYear() === now.getFullYear() && displayDate.getMonth() === now.getMonth() && displayDate.getDate() === now.getDate();
+            if (!isToday) { line.style.display = 'none'; return; }
+            const h = now.getHours();
+            if (h < 9 || h >= 20) { line.style.display = 'none'; } else {
+                line.style.display = 'block';
+                const m = now.getMinutes(); const top = ((h - 9) * 60) + m + 10; line.style.top = `${top}px`;
+                const textEl = document.getElementById('currentTimeText'); if(textEl) { textEl.innerText = `${h}:${String(m).padStart(2, '0')}`; }
+            }
+        }
+        
+        function handleTouchStart(e){ if(e.target.classList.contains('event-block'))return; const h=parseInt(e.target.dataset.hour); if(isNaN(h))return; selectionTimer=setTimeout(()=>{isSelecting=true; selectionStartHour=h; selectionEndHour=h; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate)navigator.vibrate(50);},500); }
+        function handleTouchMove(e){ if(!isSelecting){clearTimeout(selectionTimer);return;} e.preventDefault(); const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY); if(t&&t.classList.contains('time-content')){selectionEndHour=parseInt(t.dataset.hour); updateSelectionUI();} }
+        function handleTouchEnd(e){ clearTimeout(selectionTimer); if(isSelecting){isSelecting=false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange();} }
+        function handleMouseDown(e){ if(!e.target.classList.contains('time-content'))return; isSelecting=true; selectionStartHour=parseInt(e.target.dataset.hour); selectionEndHour=selectionStartHour; updateSelectionUI(); }
+        function handleMouseMove(e){ if(isSelecting&&e.target.classList.contains('time-content')){selectionEndHour=parseInt(e.target.dataset.hour); updateSelectionUI();} }
+        function handleMouseUp(){ if(isSelecting){isSelecting=false; openBookingModalRange();} }
+        function updateSelectionUI(){ document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); if(selectionStartHour===null||selectionEndHour===null)return; const s=Math.min(selectionStartHour,selectionEndHour), e=Math.max(selectionStartHour,selectionEndHour); for(let h=s; h<=e; h++)document.querySelector(`.time-content[data-hour="${h}"]`)?.classList.add('selecting'); }
+        window.toggleAllDay=()=>{ const isA=document.getElementById('checkAllDay').checked, area=document.getElementById('timeSelectArea'); if(isA){area.style.opacity="0.5"; area.style.pointerEvents="none"; document.getElementById('selectStartTime').value="9:00"; document.getElementById('selectEndTime').value="20:00";} else {area.style.opacity="1"; area.style.pointerEvents="auto";} };
+        window.toggleBookingInputs=()=>{ const t=document.querySelector('input[name="bookingType"]:checked')?.value||'normal'; if(t==='event'){document.getElementById('groupBandSelect').classList.add('hidden'); document.getElementById('groupEventTitle').classList.remove('hidden');} else {document.getElementById('groupBandSelect').classList.remove('hidden'); document.getElementById('groupEventTitle').classList.add('hidden');} };
+        function openBookingModalRange(){ document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); const s=Math.min(selectionStartHour,selectionEndHour), e=Math.max(selectionStartHour,selectionEndHour); document.getElementById('bookingModalTitle').innerText="新規予約"; document.getElementById('btnSaveBooking').innerText="確定する"; document.getElementById('btnDeleteBooking').classList.add('hidden'); document.getElementById('btnAddToGCal').classList.add('hidden'); document.getElementById('editingBookingId').value=""; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); if(isAdmin)document.querySelector('input[name="bookingType"][value="normal"]').checked=true; toggleBookingInputs(); document.getElementById('bookingDateDisplay').innerText=`${displayDate.getMonth()+1}月 ${displayDate.getDate()}日`; setupTimeSelects(`${s}:00`,`${e+1}:00`); document.getElementById('checkAllDay').checked=false; toggleAllDay(); updateBandSelect(); openModal('modal-booking'); }
+        function openEditBookingModal(id,data){ if(data.creatorId!==currentUser){ if(data.type==='event')showCustomAlert(`【${data.title}】\n既に予定が入っています。`, "予約不可"); else showCustomAlert("他のユーザーが作成した予約は編集できません。", "編集不可"); return; } document.getElementById('bookingModalTitle').innerText="予約の編集"; document.getElementById('btnSaveBooking').innerText="変更保存"; document.getElementById('btnDeleteBooking').classList.remove('hidden'); document.getElementById('btnAddToGCal').classList.remove('hidden'); document.getElementById('editingBookingId').value=id; editingBookingData=data; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); if(isAdmin)document.querySelector(`input[name="bookingType"][value="${data.type||'normal'}"]`).checked=true; toggleBookingInputs(); const s=new Date(data.startTime); const e=new Date(data.endTime); const sStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`, eStr=`${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; document.getElementById('bookingDateDisplay').innerText=`${s.getMonth()+1}月 ${s.getDate()}日`; document.getElementById('checkAllDay').checked=(sStr==="9:00"&&eStr==="20:00"); setupTimeSelects(sStr,eStr); toggleAllDay(); if(data.type==='event')document.getElementById('inputEventTitle').value=data.title||""; else updateBandSelect(data.bandId); openModal('modal-booking'); }
+        function setupTimeSelects(ds,de){ const sSel=document.getElementById('selectStartTime'), eSel=document.getElementById('selectEndTime'), opts=[]; for(let h=9;h<=20;h++){ opts.push(`${h}:00`); if(h<20)opts.push(`${h}:30`); } sSel.innerHTML=""; eSel.innerHTML=""; opts.forEach(t=>{sSel.appendChild(new Option(t,t)); eSel.appendChild(new Option(t,t));}); if(ds)sSel.value=ds; if(de)eSel.value=de; }
+        function updateBandSelect(bid=""){ const s=document.getElementById('selectBookingBand'); s.innerHTML=""; const active=myBandsAll.filter(b=>!b.isArchived); if(active.length===0)s.appendChild(new Option("なし","")); else active.forEach(b=>{const op=new Option(b.name,b.id); if(b.id===bid)op.selected=true; s.appendChild(op);}); }
+        window.openEventListModal=(evs)=>{ const c=document.getElementById('eventListContainer'); c.innerHTML=""; evs.sort((a,b)=>new Date(a.startTime)-new Date(b.startTime)).forEach(d=>{ const div=document.createElement('div'); div.className="card"; div.style.cursor="pointer"; const s=new Date(d.startTime), e=new Date(d.endTime), tStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; div.innerHTML=`<div style="font-weight:bold; color:#0b57d0;">${tStr}</div><div>${d.type==='event'?d.title:d.bandName}</div>`+(d.status==='pending'?'<div style="font-size:10px; color:#b06000;">●承認待ち</div>':''); div.onclick=()=>{closeModal('modal-event-list'); openEditBookingModal(d.id,d);}; c.appendChild(div); }); openModal('modal-event-list'); };
+        
+        window.handleNewBooking = () => { isSelecting = false; const now = new Date(); let startH = 10; if (displayDate.toDateString() === now.toDateString()) { startH = now.getHours() + 1; if (startH < 9) startH = 9; } if (startH >= 20) startH = 19; selectionStartHour = startH; selectionEndHour = startH + 1; openBookingModalRange(); };
+        window.openSearchModal = () => { document.getElementById('searchInput').value = ""; document.getElementById('filterMyBands').checked = false; document.getElementById('searchResultContainer').innerHTML = ""; window.filterSearchResults(); openModal('modal-search'); };
+        
+        window.filterSearchResults = () => {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const onlyMyBands = document.getElementById('filterMyBands').checked;
+            const container = document.getElementById('searchResultContainer');
+            container.innerHTML = "";
+            
+            const myBandIds = myBandsAll.map(b => b.id);
+
+            const filtered = loadedBookingsCache.filter(b => {
+                const text = (b.bandName || "") + (b.title || "") + (b.userName || "");
+                const matchesKeyword = text.toLowerCase().includes(keyword);
+                
+                if (onlyMyBands) {
+                    if (b.type === 'event') return false; 
+                    return matchesKeyword && myBandIds.includes(b.bandId);
+                }
+                
+                return matchesKeyword;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>該当する予約はありません</div>";
+                return;
+            }
+
+            filtered.sort((a,b)=>new Date(a.startTime)-new Date(b.startTime));
+
+            filtered.forEach(d => {
+                const div = document.createElement('div');
+                div.className = "card";
+                div.style.cursor = "pointer";
+                const s = new Date(d.startTime);
+                const dateStr = `${s.getMonth()+1}/${s.getDate()}`;
+                const timeStr = `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`;
+                
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="font-weight:bold;">${dateStr} ${timeStr}</div>
+                        <div style="font-size:12px; color:#666;">${d.type==='event'?'イベント':'練習'}</div>
+                    </div>
+                    <div style="font-weight:bold; color:#0b57d0;">${d.type==='event'?d.title:d.bandName}</div>
+                    <div style="font-size:12px;">${d.userName||''}</div>
+                `;
+                div.onclick = () => {
+                    closeModal('modal-search');
+                    displayDate.setTime(s.getTime());
+                    renderCalendar(); 
+                    setTimeout(() => openEditBookingModal(d.id, d), 300);
+                };
+                container.appendChild(div);
+            });
+        };
+
+        function loadDayBookings(){ const sD=new Date(displayDate), eD=new Date(displayDate); sD.setHours(0,0,0,0); eD.setHours(23,59,59,999); onSnapshot(query(collection(db,"bookings"),where("startTime",">=",sD),where("startTime","<=",eD)),(qs)=>{ document.querySelectorAll('.event-block').forEach(el=>el.remove()); const evs=[]; qs.forEach(snap=>{const d=snap.data(); d.id=snap.id; evs.push(d);}); if(evs.length===0)return; evs.sort((a,b)=>a.startTime.toDate()-a.startTime.toDate()); const clusters=[]; let curC=[], curE=0; evs.forEach(ev=>{const sT=ev.startTime.toDate().getTime(), eT=ev.endTime.toDate().getTime(); if(curC.length===0||sT<curE){curC.push(ev); if(eT>curE)curE=eT;} else {clusters.push(curC); curC=[ev]; curE=eT;} }); if(curC.length>0)clusters.push(curC); clusters.forEach(cl=>{ let pts=[]; cl.forEach(e=>{pts.push({t:e.startTime.toDate().getTime(),type:1}); pts.push({t:e.endTime.toDate().getTime(),type:-1});}); pts.sort((a,b)=>a.t-b.t||a.type-b.type); let maxC=0, curCon=0; pts.forEach(p=>{curCon+=p.type; if(curCon>maxC)maxC=curCon;}); 
+            // 常にカラム分割ロジックを実行するように変更 (まとめ表示廃止)
+            const cols=[]; 
+            cl.forEach(e=>{ 
+                let ok=false; const s=e.startTime.toDate().getTime(), end=e.endTime.toDate().getTime(); 
+                for(let i=0; i<cols.length;i++){if(cols[i]<=s){e.colIndex=i; cols[i]=end; ok=true; break;}} 
+                if(!ok){e.colIndex=cols.length; cols.push(end);} 
+            }); 
+            const wP=94/cols.length; // 幅を少し広めに確保
+            cl.forEach(e=>renderEventBlock(e,e.colIndex*wP,wP));
+        }); }); }
+        function renderEventBlock(d,l,w){ const s=d.startTime.toDate(), e=d.endTime.toDate(), sM=(s.getHours()-9)*60+s.getMinutes(), eM=(e.getHours()-9)*60+e.getMinutes(), slots=document.querySelectorAll('.time-slot'); if(slots[s.getHours()-9]){ const cA=slots[s.getHours()-9].querySelector('.time-content'), div=document.createElement('div'); div.className='event-block'; div.style.top=(s.getMinutes()+1)+"px"; div.style.height=(eM-sM-2)+"px"; div.style.left=l+"%"; div.style.width=w+"%"; if(d.type==='event'){div.classList.add('special-event'); div.innerHTML=`<div class="event-title">${d.title}</div>`;} else { div.innerHTML=`<div class="event-title">${d.bandName}</div><div style="font-size:10px; opacity:0.8;">${d.userName||''}</div>`; if(d.status==='pending')div.classList.add('pending'); const myB=myBandsAll.map(b=>b.id); if(myB.includes(d.bandId)){if(d.status!=='pending'){div.style.backgroundColor="#e6f4ea"; div.style.borderLeftColor="#34A853"; div.style.color="#0d652d";}} else if(d.status!=='pending'){div.style.backgroundColor="#f1f3f4"; div.style.borderLeftColor="#9aa0a6"; div.style.color="#5f6368";} if(d.source==='lottery'){div.classList.add('lottery-confirmed'); div.style.backgroundColor="#f3e5f5"; div.style.borderLeftColor="#ab47bc"; div.style.color="#4a148c";} } div.onclick=(ev)=>{ev.stopPropagation(); openEditBookingModal(d.id,d);}; cA.appendChild(div); } }
+        function renderSummaryBlock(evs,sT,eT){ const sM=(sT.getHours()-9)*60+sT.getMinutes(), eM=(eT.getHours()-9)*60+eT.getMinutes(), slots=document.querySelectorAll('.time-slot'); if(slots[sT.getHours()-9]){ const cA=slots[sT.getHours()-9].querySelector('.time-content'), div=document.createElement('div'); div.className='event-block cluster'; div.style.top=(sT.getMinutes()+1)+"px"; div.style.height=(eM-sM-2)+"px"; div.style.width="85%"; div.innerHTML=`<div class="event-title">予約 ${evs.length}件</div>`; div.onclick=(e)=>{e.stopPropagation(); openEventListModal(evs);}; cA.appendChild(div); } }
+        window.saveBooking=async()=>{ const eid=document.getElementById('editingBookingId').value, t=document.querySelector('input[name="bookingType"]:checked')?.value||'normal'; let bd={creatorId:currentUser,userName:currentProfile.displayName,type:t,createdAt:new Date()}; if(t==='normal'){const bS=document.getElementById('selectBookingBand'); if(!bS.value)return await showCustomAlert("予約するバンドを選択してください。", "入力エラー"); bd.bandId=bS.value; bd.bandName=bS.options[bS.selectedIndex].text;} else {const tit=document.getElementById('inputEventTitle').value.trim(); if(!tit)return await showCustomAlert("イベント名または理由を入力してください。", "入力エラー"); bd.title=tit; bd.bandName=tit;} let sH,sM,eH,eM; if(document.getElementById('checkAllDay').checked){sH=9;sM=0;eH=20;eM=0;} else {const sTS=document.getElementById('selectStartTime').value, eTS=document.getElementById('selectEndTime').value; [sH,sM]=sTS.split(':').map(Number); [eH,eM]=eTS.split(':').map(Number);} const st=new Date(displayDate), et=new Date(displayDate); st.setHours(sH,sM,0,0); et.setHours(eH,eM,0,0); if(st>=et)return await showCustomAlert("終了時間は開始時間より後の時間を設定してください。", "時間不正"); bd.startTime=st; bd.endTime=et; const mode=currentSystemSettings.bookingMode||'first_come'; if(mode==='first_come'){ const q=query(collection(db,"bookings"),where("startTime",">=",new Date(st).setHours(0,0,0,0)),where("startTime","<=",new Date(st).setHours(23,59,59,999))); try{ const snap=await getDocs(q); let over=false; snap.forEach(d=>{if(eid&&d.id===eid)return; const e=d.data().startTime.toDate(), f=d.data().endTime.toDate(); if(e<et&&f>st)over=true;}); if(over)return await showCustomAlert("この時間帯には既に他の予約が入っています。", "重複あり"); bd.status='confirmed'; }catch(e){return await showCustomAlert(e.message, "エラー")} } else bd.status='pending'; try{ if(eid){delete bd.createdAt; await updateDoc(doc(db,"bookings",eid),bd); await showCustomAlert("予約内容を保存しました。");} else {await addDoc(collection(db,"bookings"),bd); await showCustomAlert(mode==='lottery'?"希望を提出しました。管理者の承認をお待ちください。":"予約が完了しました。");} closeModal('modal-booking'); }catch(e){await showCustomAlert(e.message, "エラー")} };
+        window.addToGoogleCalendar=()=>{ if(!editingBookingData)return; const t=editingBookingData.bandName||"練習", s=editingBookingData.startTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g,""), e=editingBookingData.endTime.toDate().toISOString().replace(/-|:|\.\d\d\d/g,""); window.open(`https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(t)}&dates=${s}/${e}`, '_blank'); };
+        window.deleteBooking=async()=>{ const eid=document.getElementById('editingBookingId').value; if(eid && await showCustomConfirm("この予約を削除しますか？", "予約削除")){try{await deleteDoc(doc(db,"bookings",eid)); await showCustomAlert("予約を削除しました。"); closeModal('modal-booking');}catch(e){await showCustomAlert(e.message, "エラー")}} };
+        
         main();
     </script>
 </body>
