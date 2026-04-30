@@ -333,8 +333,8 @@
                         if(el) { el.innerHTML=h; el.onclick=() => window.location.href='/mypage.html'; }
 
                         // 権限チェック
-                        const hasLmcAll = u.roll && (Array.isArray(u.roll) ? u.roll.includes('lmc_all') : u.roll === 'lmc_all');
-                        if(!(u.affiliations?.includes('urakata') && (u.role || hasLmcAll))){
+                        const hasAdminRole = u.roll && (Array.isArray(u.roll) ? (u.roll.includes('lmc_all') || u.roll.includes('admin')) : (u.roll === 'lmc_all' || u.roll === 'admin'));
+                        if(!hasAdminRole){
                             document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>';
                         }
                     }
@@ -809,8 +809,10 @@
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 document.getElementById('headerIconAdmin').innerHTML=`<img src="${currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
                 
-                const hasLmcAll = currentUserData.roll && (Array.isArray(currentUserData.roll) ? currentUserData.roll.includes('lmc_all') : currentUserData.roll === 'lmc_all');
-                if(!(currentUserData.affiliations?.includes('urakata') && (currentUserData.role || hasLmcAll))){ await showCustomAlert("管理権限がありません。"); document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>'; }
+                const hasAdminRole = currentUserData.roll && (Array.isArray(currentUserData.roll) ? (currentUserData.roll.includes('lmc_all') || currentUserData.roll.includes('admin')) : (currentUserData.roll === 'lmc_all' || currentUserData.roll === 'admin'));
+                if(!hasAdminRole){
+                    document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>'; 
+                }
             }catch(e){console.error(e)} 
         }
         main();
