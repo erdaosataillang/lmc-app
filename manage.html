@@ -7,65 +7,91 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; padding-bottom: 88px; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
-        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; } .hidden { display: none !important; }
+        /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
+        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        .container { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; } 
+        .hidden { display: none !important; }
+        
+        /* ヘッダー */
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
-        .header-title { font-size: 22px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
-        .card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 12px; transition: background-color 0.2s; }
+        
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; -webkit-overflow-scrolling: touch; }
+        .card { background: white; border-radius: 20px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; }
+        
+        /* メニューリスト */
         .menu-list { display: flex; flex-direction: column; gap: 12px; }
-        .menu-btn { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #ffffff; border: none; width: 100%; text-align: left; cursor: pointer; border-radius: 24px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: transform 0.1s; } .menu-btn:active { transform: scale(0.98); background-color: #f8f9fa; }
+        .menu-btn { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #ffffff; border: none; width: 100%; text-align: left; cursor: pointer; border-radius: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.1s; } .menu-btn:active { transform: scale(0.98); background-color: #f8f9fa; }
         .menu-icon-wrapper { width: 48px; height: 48px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; } .menu-icon-wrapper .material-icons { font-size: 24px; }
         .menu-content { flex-grow: 1; } .menu-title { font-size: 16px; font-weight: 500; color: #1f1f1f; display: block; margin-bottom: 4px; } .menu-subtitle { font-size: 12px; color: #444746; display: block; line-height: 1.4; }
         .menu-arrow { color: #c4c7c5; font-size: 24px; }
         .icon-admin-cal { background-color: #fce4ec; color: #c2185b; } .icon-admin-user { background-color: #e8eaf6; color: #283593; } .icon-admin-doc { background-color: #e0f2f1; color: #00695c; } .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; } .icon-admin-fee { background-color: #fff8e1; color: #f57f17; } .icon-admin-basic { background-color: #e3f2fd; color: #1565c0; }
+        
+        /* サブページ */
         .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; } .page-container.open { transform: translateX(0); }
         .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
         .back-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1f1f1f; margin-right: 8px; margin-left: -8px; }
-        .page-title { font-size: 20px; font-weight: 400; color: #1f1f1f; } .content-area { padding: 0 16px 40px; }
-        .search-bar { padding: 12px 16px; background:white; border-radius:30px; display:flex; align-items:center; margin-bottom:12px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); } .search-bar input { border:none; width:100%; outline:none; font-size:16px; margin-left:10px; padding:0; }
-        .user-list-item { background: white; padding: 16px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; }
-        .mini-icon { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
+        .page-title { font-size: 20px; font-weight: bold; color: #1f1f1f; } .content-area { padding: 0 16px 40px; }
+        .search-bar { padding: 12px 16px; background:white; border-radius:30px; display:flex; align-items:center; margin-bottom:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); } .search-bar input { border:none; width:100%; outline:none; font-size:16px; margin-left:10px; padding:0; }
+        
+        /* ユーザー・バンド リスト */
+        .user-list-item { background: white; padding: 16px; border-radius: 20px; display: flex; align-items: center; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; }
+        .mini-icon { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
         .user-info-main { flex-grow: 1; } .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } .user-sub { font-size: 12px; color: #5f6368; }
         .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; } .info-row .label { color: #5f6368; font-size: 13px; } .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
-        .btn-admin-save { background: #c2185b; color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; }
-        .fee-user-item { background: white; padding: 12px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 2px rgba(0,0,0,0.05); } .fee-check-group { display: flex; gap: 8px; } .fee-checkbox { display: flex; flex-direction: column; align-items: center; cursor: pointer; border: 1px solid #ddd; border-radius: 8px; padding: 8px; width: 60px; transition: all 0.2s; } .fee-checkbox.checked { background-color: #e8f5e9; border-color: #4caf50; color: #2e7d32; } .fee-checkbox input { display: none; } .fee-label { font-size: 10px; font-weight: bold; margin-bottom: 4px; } .fee-status-icon { font-size: 20px; color: #ddd; } .fee-checkbox.checked .fee-status-icon { color: #4caf50; }
-        #video-container { width: 100%; border-radius: 12px; overflow: hidden; background: #000; position: relative; display: none; aspect-ratio: 1 / 1; } #camera-video { width: 100%; height: 100%; object-fit: cover; } #qr-canvas { display: none; }
-        #scan-result-area { margin-top: 10px; padding: 10px; background: white; border-radius: 12px; display: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1); } .scan-success-msg { color: #2e7d32; font-weight: bold; text-align: center; } .overlay-guide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 40px solid rgba(0,0,0,0.5); box-sizing: border-box; pointer-events: none; }
+        
+        .fee-user-item { background: white; padding: 16px; border-radius: 20px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); } .fee-check-group { display: flex; gap: 8px; } .fee-checkbox { display: flex; flex-direction: column; align-items: center; cursor: pointer; border: 1px solid #ddd; border-radius: 12px; padding: 8px; width: 60px; transition: all 0.2s; } .fee-checkbox.checked { background-color: #e8f5e9; border-color: #4caf50; color: #2e7d32; } .fee-checkbox input { display: none; } .fee-label { font-size: 10px; font-weight: bold; margin-bottom: 4px; } .fee-status-icon { font-size: 20px; color: #ddd; } .fee-checkbox.checked .fee-status-icon { color: #4caf50; }
+        
+        #video-container { width: 100%; border-radius: 20px; overflow: hidden; background: #000; position: relative; display: none; aspect-ratio: 1 / 1; } #camera-video { width: 100%; height: 100%; object-fit: cover; } #qr-canvas { display: none; }
+        #scan-result-area { margin-top: 12px; padding: 16px; background: white; border-radius: 20px; display: none; box-shadow: 0 2px 8px rgba(0,0,0,0.04); } .scan-success-msg { color: #2e7d32; font-weight: bold; text-align: center; } .overlay-guide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 40px solid rgba(0,0,0,0.5); box-sizing: border-box; pointer-events: none; }
+        
+        /* フォーム系 (丸み統一) */
         .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
-        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: white; }
-        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
-        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 24px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; }
-        .btn-remove-member { font-size: 11px; color: #d93025; border: 1px solid #d93025; background: white; border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
+        
+        /* ボタン系 (カプセル型) */
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
+        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-weight: bold; }
+        .btn-admin-save { background: #c2185b; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-remove-member { font-size: 11px; color: #d93025; border: 1px solid #d93025; background: white; border-radius: 999px; padding: 4px 12px; cursor: pointer; font-weight: bold; }
+        
+        /* モーダル */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; animation: zoomIn 0.2s ease; margin: auto; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #1f1f1f; }
+        .dialog-message { font-size: 13px; color: #444746; margin-bottom: 24px; line-height: 1.5; white-space: pre-wrap; }
+        .dialog-buttons { display: flex; gap: 12px; }
+        
         /* Band Card for Admin */
-        .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 12px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; } .band-icon img { width: 100%; height: 100%; object-fit: cover; }
-        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 16px; } .band-members { font-size: 12px; color: #5f6368; }
+        .band-icon { width: 48px; height: 48px; background: #e0e3e7; border-radius: 16px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 20px; color: #5f6368; font-weight: bold; overflow: hidden; } .band-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 15px; } .band-members { font-size: 12px; color: #5f6368; }
         .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } .band-item:last-child { border: none; margin: 0; padding: 0; }
+        
         /* Event Admin Styles */
-        .event-admin-item { background: white; padding: 16px; border-radius: 16px; display: flex; align-items: center; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .event-admin-item { background: white; padding: 16px; border-radius: 20px; display: flex; align-items: center; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
         .event-admin-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-right: 12px; color: white; }
         .type-concert { background-color: #f44336; } .type-bye { background-color: #9c27b0; } .type-sports { background-color: #4caf50; } .type-festival { background-color: #ff9800; } .type-welcome { background-color: #2196f3; } .type-other { background-color: #607d8b; }
         .event-admin-info { flex-grow: 1; } .event-admin-name { font-weight: bold; font-size: 15px; color: #1f1f1f; margin-bottom: 2px; } .event-admin-date { font-size: 12px; color: #5f6368; }
-        .event-type-chip { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 20px; border: 1px solid #dadce0; font-size: 13px; cursor: pointer; background: white; transition: all 0.2s; } .event-type-chip.selected { background-color: #e8f0fe; border-color: #0b57d0; color: #0b57d0; font-weight: bold; }
-        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 20px; padding: 24px; text-align: center; animation: zoomIn 0.2s ease; margin: auto; }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .dialog-title { font-weight: bold; font-size: 18px; margin-bottom: 12px; color: #1f1f1f; }
-        .dialog-message { font-size: 14px; color: #444746; margin-bottom: 24px; line-height: 1.5; white-space: pre-wrap; }
-        .dialog-buttons { display: flex; gap: 12px; }
-        .dialog-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-dialog-cancel { background: #f1f3f4; color: #1f1f1f; }
-        .btn-dialog-ok { background: #0b57d0; color: white; }
-        .radio-group { display: flex; gap: 15px; } .radio-label { display: flex; align-items: center; font-size: 16px; cursor: pointer; } .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
-        /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid #e0e3e7; display: flex; justify-content: space-around; padding: 12px 0 28px; z-index: 2000; box-shadow: 0 -1px 3px rgba(0,0,0,0.05); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #444746; font-size: 12px; width: 72px; cursor: pointer; gap: 4px; font-weight: 500; }
-        .nav-icon { font-size: 24px; padding: 4px 20px; border-radius: 16px; transition: background-color 0.2s ease-in-out, color 0.2s; } .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; } .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; } .nav-item.active span { color: #1f1f1f; font-weight: bold; }
+        .event-type-chip { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 999px; border: 1px solid #dadce0; font-size: 13px; cursor: pointer; background: white; transition: all 0.2s; } .event-type-chip.selected { background-color: #e8f0fe; border-color: #0b57d0; color: #0b57d0; font-weight: bold; }
+        
+        .radio-group { display: flex; gap: 15px; } .radio-label { display: flex; align-items: center; font-size: 15px; cursor: pointer; } .radio-label input { width: 20px; height: 20px; margin-right: 6px; }
+        
+        /* ナビゲーション (グラスモーフィズムとポップアップアニメーション) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
+        .nav-item.active { color: #1f1f1f; transform: translateY(-4px); }
+        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; padding: 4px 20px; box-shadow: 0 4px 12px rgba(194, 231, 255, 0.6); transform: scale(1.05); margin-bottom: 0; } 
+        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); } 
+        .nav-item.active span:not(.nav-icon) { font-weight: bold; }
         
         /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
@@ -79,32 +105,10 @@
         .officer-item { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid #f0f0f0; }
         .officer-item:last-child { border-bottom:none; }
 
-        /* --- Flowchart Animation Styles --- */
-        .flow-container { display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
-        .flow-step { background: white; border-radius: 16px; padding: 16px; width: 90%; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 0; position: relative; opacity: 0; transform: translateY(10px); transition: all 0.5s cubic-bezier(0.2, 0, 0, 1); z-index: 2; text-align: center; border: 1px solid #f0f0f0; }
-        .flow-step.show { opacity: 1; transform: translateY(0); margin-bottom: 40px; }
-        .flow-step:last-child.show { margin-bottom: 0; }
-        
-        .flow-line { width: 3px; height: 0; background: #e0e0e0; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); transition: height 0.5s ease; z-index: 1; border-radius: 2px; }
-        .flow-step.connected .flow-line { height: 40px; }
-        
-        .flow-icon { font-size: 32px; margin-bottom: 8px; display: inline-block; color: #5f6368; }
-        .flow-title { font-weight: bold; font-size: 15px; margin-bottom: 4px; color: #1f1f1f; }
-        .flow-desc { font-size: 12px; color: #666; line-height: 1.4; }
-        
         .spinner { animation: spin 1s linear infinite; color: #0b57d0; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
-        .result-list { width: 100%; text-align: left; margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; font-size: 13px; max-height: 200px; overflow-y: auto; background: #fafafa; border-radius: 8px; padding: 10px; box-sizing: border-box; }
-        .result-item { display: flex; justify-content: space-between; margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px dashed #eee; }
-        .result-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        
-        .success-color { color: #1e8e3e; }
-        .warn-color { color: #f9ab00; }
-        .error-color { color: #d93025; }
-        .bg-success-light { background-color: #e6f4ea; border-color: #ceead6; }
-        .bg-warn-light { background-color: #fef7e0; border-color: #fce8b2; }
-        .bg-error-light { background-color: #fce8e6; border-color: #fad2cf; }
+        .sync-indicator { margin-right: 12px; animation: spin 1.5s linear infinite; display: flex; }
     </style>
 </head>
 <body>
@@ -112,9 +116,9 @@
         <div class="dialog-content">
             <div id="dialogTitle" class="dialog-title">確認</div>
             <div id="dialogMessage" class="dialog-message">メッセージ</div>
-            <div class="dialog-buttons">
-                <button id="dialogBtnCancel" class="dialog-btn btn-dialog-cancel">キャンセル</button>
-                <button id="dialogBtnOk" class="dialog-btn btn-dialog-ok">OK</button>
+            <div style="display:flex; gap:12px;">
+                <button id="dialogBtnCancel" class="btn-secondary" style="margin:0; flex:1;">キャンセル</button>
+                <button id="dialogBtnOk" class="btn-primary" style="margin:0; flex:1;">OK</button>
             </div>
         </div>
     </div>
@@ -123,7 +127,6 @@
         <div class="app-header"><div class="header-title">データの管理</div><div class="header-avatar" id="headerIconAdmin"></div></div>
         <div class="scroll-content">
             <div class="menu-list">
-                <!-- NEW: Basic Settings Button -->
                 <button class="menu-btn" onclick="openAdminBasics()"><div class="menu-icon-wrapper icon-admin-basic"><span class="material-icons">settings</span></div><div class="menu-content"><span class="menu-title">基本の設定</span><span class="menu-subtitle">年度、幹部権限、実施中のイベント</span></div><span class="material-icons menu-arrow">chevron_right</span></button>
 
                 <button class="menu-btn" onclick="openAdminFeesMenu()"><div class="menu-icon-wrapper icon-admin-fee"><span class="material-icons">attach_money</span></div><div class="menu-content"><span class="menu-title">部費の管理</span><span class="menu-subtitle">金額設定、徴収状況の管理</span></div><span class="material-icons menu-arrow">chevron_right</span></button>
@@ -136,19 +139,19 @@
         </div>
     </div>
 
+    <!-- ボトムナビゲーション -->
     <div class="bottom-nav">
         <div class="nav-item" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
         <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
         <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
         <div class="nav-item active" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
-        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
+        <div class="nav-item" onclick="window.location.href='/mypage.html'"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
-    <!-- NEW: Basic Settings Page -->
+    <!-- Basic Settings Page -->
     <div id="page-admin-basics" class="page-container">
         <div class="page-header"><button class="back-btn" onclick="closePage('admin-basics')"><span class="material-icons">arrow_back</span></button><div class="page-title">基本の設定</div></div>
         <div class="content-area" style="padding-top:20px;">
-            <!-- 年度設定 (New Design) -->
             <div class="card" style="background: linear-gradient(135deg, #2196F3, #1976D2); color: white; padding: 24px 20px; text-align: center; border: none; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);">
                 <div style="font-size: 13px; opacity: 0.9; margin-bottom: 4px; font-weight: 500;">現在のシステム年度</div>
                 <div style="display: flex; justify-content: center; align-items: center; gap: 24px; margin: 12px 0;">
@@ -160,7 +163,6 @@
                 <input type="hidden" id="basic-setting-year">
             </div>
 
-            <!-- 実施中のイベント設定 -->
             <div class="card">
                 <h3 style="font-size:15px; margin:0 0 16px; color:#1f1f1f; font-weight:bold;">実施中のイベント</h3>
                 <div class="form-group" style="margin-bottom:8px;">
@@ -188,12 +190,12 @@
     </div>
 
     <div id="page-admin-fees-menu" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-menu')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の管理</div></div><div class="content-area"><div class="menu-list"><button class="menu-btn" onclick="openAdminFeeSettings()"><div class="menu-icon-wrapper" style="background:#f3e5f5; color:#7b1fa2;"><span class="material-icons">settings</span></div><div class="menu-content"><span class="menu-title">部費の設定</span><span class="menu-subtitle">前期・後期の金額設定</span></div><span class="material-icons menu-arrow">chevron_right</span></button><button class="menu-btn" onclick="openAdminFeeList()"><div class="menu-icon-wrapper" style="background:#e8eaf6; color:#283593;"><span class="material-icons">list_alt</span></div><div class="menu-content"><span class="menu-title">部費の徴収リスト</span><span class="menu-subtitle">徴収状況の確認・更新</span></div><span class="material-icons menu-arrow">chevron_right</span></button><button class="menu-btn" onclick="openAdminFeeHistory()"><div class="menu-icon-wrapper" style="background:#e0f2f1; color:#00695c;"><span class="material-icons">qr_code_scanner</span></div><div class="menu-content"><span class="menu-title">QRで徴収する</span><span class="menu-subtitle">QRスキャンで徴収記録をつける</span></div><span class="material-icons menu-arrow">chevron_right</span></button></div></div></div>
-    <div id="page-admin-fees-settings" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-settings')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の設定</div></div><div class="content-area" style="padding-top:20px;"><div class="card" style="background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 20px; text-align: center; margin-bottom: 20px; border: none; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);"><div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;"><span id="feeSummaryYearLabel" style="font-weight:bold; font-size:15px; margin-right:4px;">--</span>年度 徴収合計</div><div style="font-size: 32px; font-weight: bold; margin-bottom: 16px;">¥ <span id="feeTotalAmount">0</span></div><div style="display: flex; justify-content: space-around; align-items: center;"><div class="pie-chart" id="feeProgressChart" style="width: 80px; height: 80px; border-radius: 50%; background: conic(rgba(255,255,255,0.8) 0% 0%, rgba(255,255,255,0.2) 0% 100%); position: relative; display: flex; justify-content: center; align-items: center;"><div style="width: 64px; height: 64px; background: #7C5DF3; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px;"><span>徴収率</span><span id="feeProgressPercent" style="font-size: 14px; font-weight: bold;">0%</span></div></div><div style="text-align: left; font-size: 13px;"><div style="margin-bottom: 6px;">前期: <span id="feeTotalTerm1" style="font-weight:bold;">¥0</span> <span id="feeCountTerm1" style="font-size:10px; opacity:0.8;">(0人)</span></div><div>後期: <span id="feeTotalTerm2" style="font-weight:bold;">¥0</span> <span id="feeCountTerm2" style="font-size:10px; opacity:0.8;">(0人)</span></div></div></div></div><div class="card"><div class="form-group"><label class="form-label">対象年度</label><div style="display: flex; align-items: center; gap: 16px; background: #f8f9fa; padding: 10px; border-radius: 8px; justify-content: center;"><button onclick="adjustFeeYear(-1)" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #dadce0; background: white; cursor: pointer; display: flex; justify-content: center; align-items: center;"><span class="material-icons" style="font-size:16px;">remove</span></button><div style="font-size: 20px; font-weight: bold;" id="display-fee-year">2025</div><button onclick="adjustFeeYear(1)" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #dadce0; background: white; cursor: pointer; display: flex; justify-content: center; align-items: center;"><span class="material-icons" style="font-size:16px;">add</span></button></div><input type="hidden" id="feeSettingYear"></div><div class="form-group"><label class="form-label">前期の部費 (円)</label><input type="number" id="feeSettingTerm1" class="form-input" placeholder="0"></div><div class="form-group"><label class="form-label">後期の部費 (円)</label><input type="number" id="feeSettingTerm2" class="form-input" placeholder="0"></div><button class="btn-primary" onclick="saveFeeSettings()">設定を保存</button></div></div></div>
-    <div id="page-admin-fees-list" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-list')"><span class="material-icons">arrow_back</span></button><div class="page-title">徴収リスト</div></div><div class="content-area"><div style="background:#fff3e0; padding:10px; border-radius:8px; margin-bottom:15px; font-size:12px; color:#e65100;"><span id="feeListYearLabel" style="font-weight:bold;">2025</span>年度の徴収状況</div><div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="feeListSearchInput" placeholder="名前で検索..."></div><div id="feeUserList">読み込み中...</div></div></div>
+    <div id="page-admin-fees-settings" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-settings')"><span class="material-icons">arrow_back</span></button><div class="page-title">部費の設定</div></div><div class="content-area" style="padding-top:20px;"><div class="card" style="background: linear-gradient(135deg, #6366F1, #8B5CF6); color: white; padding: 20px; text-align: center; margin-bottom: 20px; border: none; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);"><div style="font-size: 12px; opacity: 0.9; margin-bottom: 4px;"><span id="feeSummaryYearLabel" style="font-weight:bold; font-size:15px; margin-right:4px;">--</span>年度 徴収合計</div><div style="font-size: 32px; font-weight: bold; margin-bottom: 16px;">¥ <span id="feeTotalAmount">0</span></div><div style="display: flex; justify-content: space-around; align-items: center;"><div class="pie-chart" id="feeProgressChart" style="width: 80px; height: 80px; border-radius: 50%; background: conic(rgba(255,255,255,0.8) 0% 0%, rgba(255,255,255,0.2) 0% 100%); position: relative; display: flex; justify-content: center; align-items: center;"><div style="width: 64px; height: 64px; background: #7C5DF3; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 10px;"><span>徴収率</span><span id="feeProgressPercent" style="font-size: 14px; font-weight: bold;">0%</span></div></div><div style="text-align: left; font-size: 13px;"><div style="margin-bottom: 6px;">前期: <span id="feeTotalTerm1" style="font-weight:bold;">¥0</span> <span id="feeCountTerm1" style="font-size:10px; opacity:0.8;">(0人)</span></div><div>後期: <span id="feeTotalTerm2" style="font-weight:bold;">¥0</span> <span id="feeCountTerm2" style="font-size:10px; opacity:0.8;">(0人)</span></div></div></div></div><div class="card"><div class="form-group"><label class="form-label">対象年度</label><div style="display: flex; align-items: center; gap: 16px; background: #f8f9fa; padding: 10px; border-radius: 12px; justify-content: center;"><button onclick="adjustFeeYear(-1)" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #dadce0; background: white; cursor: pointer; display: flex; justify-content: center; align-items: center;"><span class="material-icons" style="font-size:16px;">remove</span></button><div style="font-size: 20px; font-weight: bold;" id="display-fee-year">2025</div><button onclick="adjustFeeYear(1)" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #dadce0; background: white; cursor: pointer; display: flex; justify-content: center; align-items: center;"><span class="material-icons" style="font-size:16px;">add</span></button></div><input type="hidden" id="feeSettingYear"></div><div class="form-group"><label class="form-label">前期の部費 (円)</label><input type="number" id="feeSettingTerm1" class="form-input" placeholder="0"></div><div class="form-group"><label class="form-label">後期の部費 (円)</label><input type="number" id="feeSettingTerm2" class="form-input" placeholder="0"></div><button class="btn-primary" onclick="saveFeeSettings()">設定を保存</button></div></div></div>
+    <div id="page-admin-fees-list" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-list')"><span class="material-icons">arrow_back</span></button><div class="page-title">徴収リスト</div></div><div class="content-area"><div style="background:#fff3e0; padding:12px; border-radius:12px; margin-bottom:16px; font-size:13px; color:#e65100;"><span id="feeListYearLabel" style="font-weight:bold;">2025</span>年度の徴収状況</div><div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="feeListSearchInput" placeholder="名前で検索..."></div><div id="feeUserList">読み込み中...</div></div></div>
     <div id="page-admin-fees-history" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-fees-history'); stopQRScanner();"><span class="material-icons">arrow_back</span></button><div class="page-title">QR徴収</div></div><div class="content-area"><div class="card" style="margin-top:16px;"><div class="form-group"><label class="form-label">徴収する部費の対象</label><div style="display:flex; gap:10px;"><select id="scanFeeYear" class="form-input" style="flex:1;"></select><select id="scanFeeTerm" class="form-input" style="flex:1;"><option value="1">前期</option><option value="2">後期</option></select></div></div><div id="video-container"><video id="camera-video" playsinline></video><div class="overlay-guide"></div></div><canvas id="qr-canvas"></canvas><div id="scan-result-area"><div class="scan-success-msg"><span class="material-icons" style="font-size:48px;">check_circle</span><br><span id="scannedUserName">ユーザー名</span><br>徴収完了！</div></div><div id="scan-start-btn-area" style="text-align:center; padding:20px;"><button class="btn-primary" onclick="startQRScanner()"><span class="material-icons" style="vertical-align:middle; margin-right:4px;">photo_camera</span>カメラを起動する</button><div style="margin-top:10px; font-size:12px; color:#666;">部員の会員QRコード（LINE ID）をスキャンしてください</div></div></div></div></div>
     <div id="page-admin-users" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button><div class="page-title">個人の管理</div></div><div class="content-area"><div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="adminSearchInput" placeholder="ユーザー検索..."></div><div style="display:flex; gap:8px; margin-bottom:16px;"><button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button><button class="btn-outline" onclick="sortUsers('kana')"><span class="material-icons" style="font-size:14px;">sort_by_alpha</span> 五十音順</button></div><div id="adminUserList"></div></div></div>
     
-    <!-- Band Management Page (Update with Sort and Archive toggle) -->
+    <!-- Band Management Page -->
     <div id="page-admin-bands" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-bands')"><span class="material-icons">arrow_back</span></button><div class="page-title">バンドの管理</div></div>
     <div class="content-area">
         <div style="margin-bottom:16px;">
@@ -206,7 +208,7 @@
                     </label>
                     <span style="font-size:12px; color:#5f6368; font-weight:bold;">アーカイブを表示</span>
                 </div>
-                <select id="bandSortSelect" onchange="handleBandSort(event)" style="border:1px solid #ddd; border-radius:8px; padding:6px; font-size:12px;">
+                <select id="bandSortSelect" onchange="handleBandSort(event)" style="border:1px solid #dadce0; border-radius:12px; padding:8px; font-size:13px; background:white; color:#1f1f1f;">
                     <option value="name_asc">名前順 (昇順)</option>
                     <option value="name_desc">名前順 (降順)</option>
                     <option value="created_desc" selected>作成日 (新しい順)</option>
@@ -225,31 +227,31 @@
         </div>
         <div class="content-area" style="padding-top:20px;">
             <div style="text-align:center; margin-bottom:20px;">
-                <div id="admin-bd-icon" style="width:80px; height:80px; background:#e0e3e7; border-radius:12px; display:inline-flex; justify-content:center; align-items:center; font-size:30px; color:#5f6368; font-weight:bold; overflow:hidden;"></div>
-                <h3 id="admin-bd-name" style="margin:10px 0 5px;"></h3>
-                <div id="admin-bd-id" style="font-size:10px; color:#999;"></div>
+                <div id="admin-bd-icon" style="width:80px; height:80px; background:#e0e3e7; border-radius:50%; display:inline-flex; justify-content:center; align-items:center; font-size:30px; color:#5f6368; font-weight:bold; overflow:hidden;"></div>
+                <h3 id="admin-bd-name" style="margin:12px 0 6px;"></h3>
+                <div id="admin-bd-id" style="font-size:11px; color:#999;"></div>
             </div>
 
-            <!-- NEW: Cue Sheet Section -->
-            <div class="card" style="padding:16px;">
-                <h4 style="margin-top:0; font-size:14px; color:#5f6368;">Cueシート</h4>
+            <!-- Cue Sheet Section -->
+            <div class="card">
+                <h4 style="margin-top:0; font-size:14px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">Cueシート</h4>
                 <div style="margin-bottom:12px;">
                     <a id="admin-bd-cuesheet-link" href="#" target="_blank" style="font-size:14px; color:#0b57d0; text-decoration:none; display:flex; align-items:center;">
                         <span class="material-icons" style="font-size:18px; margin-right:4px;">description</span>
                         <span id="admin-bd-cuesheet-text">未登録</span>
                     </a>
                 </div>
-                <div class="form-group" style="margin-bottom:8px;">
+                <div class="form-group" style="margin-bottom:12px;">
                     <label class="form-label">URLを編集</label>
                     <input type="text" id="admin-bd-cuesheet-input" class="form-input" placeholder="https://...">
                 </div>
-                <button class="btn-primary" onclick="saveAdminBandCuesheet()" style="font-size:12px; padding:8px;">URLを保存</button>
+                <button class="btn-primary" onclick="saveAdminBandCuesheet()">URLを保存</button>
             </div>
             
-            <div class="card" style="padding:16px;">
-                <h4 style="margin-top:0; font-size:14px; color:#5f6368;">ステータス</h4>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <span>アーカイブ</span>
+            <div class="card">
+                <h4 style="margin-top:0; font-size:14px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">ステータス</h4>
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0;">
+                    <span style="font-weight:500;">アーカイブ</span>
                     <label class="switch">
                         <input type="checkbox" id="admin-bd-archive-switch" onchange="toggleBandArchiveStatus()">
                         <span class="slider"></span>
@@ -257,26 +259,26 @@
                 </div>
             </div>
 
-            <div class="card" style="padding:16px;">
-                <h4 style="margin-top:0; font-size:14px; color:#5f6368;">メンバー</h4>
+            <div class="card">
+                <h4 style="margin-top:0; font-size:14px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">メンバー</h4>
                 <div id="admin-bd-members"></div>
             </div>
 
-             <div class="card" style="padding:16px;">
-                <h4 style="margin-top:0; font-size:14px; color:#5f6368;">操作</h4>
-                <button class="btn-remove-member" style="width:100%; padding:12px; font-size:14px;" onclick="adminDeleteBand()">このバンドを完全に削除</button>
+             <div class="card">
+                <h4 style="margin-top:0; font-size:14px; color:#cf1322; border-bottom:1px solid #eee; padding-bottom:8px;">危険な操作</h4>
+                <button class="btn-danger" style="width:100%; margin-top:8px;" onclick="adminDeleteBand()">このバンドを完全に削除</button>
             </div>
         </div>
     </div>
     
     <div id="page-admin-events" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-events')"><span class="material-icons">arrow_back</span></button><div class="page-title">イベントの管理</div></div><div class="content-area" style="padding-top:16px;"><button class="btn-primary" style="margin-bottom:20px;" onclick="openCreateEventModal()"><span class="material-icons" style="vertical-align:middle; margin-right:4px;">add</span>新規イベント作成</button><div id="adminEventList">読み込み中...</div></div></div>
-    <div id="page-admin-calendar-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div><div class="content-area" style="padding-top: 20px;"><div class="card"><h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center;"><span class="material-icons" style="margin-right:8px;">tune</span>現在の予約モード</h3><div class="form-group"><div class="radio-group" style="flex-direction: column; gap: 16px;"><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">早い者勝ち (即時確定)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div></div></label><label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #eee;"><input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()"><div><div style="font-weight:bold;">抽選式 (希望提出)</div><div style="font-size:11px; color:#5f6368; margin-top:4px;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div></div></label></div></div><div id="lotterySettingsArea" class="hidden" style="margin-top:20px; border-top:1px solid #eee; padding-top:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">抽選実行設定</h3><div class="form-group"><label class="form-label">実行タイミング</label><div class="radio-group" style="flex-direction: column; gap: 10px;"><label class="radio-label"><input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()">自動 (指定日時に実行)</label><div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 10px;"><select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="1">1日前</option><option value="2" selected>2日前</option><option value="3">3日前</option><option value="7">7日前</option></select> の <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="0">0:00</option><option value="9">9:00</option><option value="12">12:00</option><option value="18">18:00</option><option value="21">21:00</option></select> に確定</div><label class="radio-label"><input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()">手動 (管理者がボタンで実行)</label><div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:10px; border-radius:8px;"><div style="font-size:12px; margin-bottom:8px;">対象日を選んで実行します</div><input type="date" id="manualLotteryDate" class="form-input"><button class="btn-primary" style="margin-top:8px; background:#e65100;" onclick="runManualLottery()">今すぐ抽選を実行</button><div id="lotteryLog" style="margin-top:16px;" class="hidden"></div><button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:20px;" onclick="applyLotteryResults()">この結果で確定する</button></div></div></div></div><button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button></div><div style="margin-top:20px; font-size:12px; color:#5f6368; padding:0 10px;">※ 設定を変更すると部員全員のアプリの挙動が切り替わります。</div></div></div>
-    <div id="page-admin-docs-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div><div class="content-area" style="text-align:center; padding-top:50px; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">print</span><br>準備中: 書類PDF出力機能</div></div>
-    <div id="page-admin-edit" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button><div class="page-title">ユーザー詳細</div></div><div class="content-area"><div style="text-align:center; margin-bottom:20px;"><img id="admin-user-icon" src="" style="width:80px; height:80px; border-radius:50%; object-fit:cover; background:#eee;"><div id="admin-user-lineName" style="font-size:12px; color:#999; margin-top:8px;"></div></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">基本情報</h3><div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div><div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div><div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div><div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div><div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div><div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">権限設定</h3><div class="form-group"><label class="form-label">役職</label><input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など"></div><button id="btn-save-user-role" class="btn-admin-save">役職を保存</button></div><div class="card" style="padding:20px;"><h3 style="font-size:14px; margin:0 0 12px; color:#0b57d0;">所属バンド</h3><div id="admin-user-band-list" style="font-size:14px;">読み込み中...</div></div><div style="font-size:10px; color:#999; text-align:center; margin-top:20px;">USER ID: <span id="admin-edit-docId"></span></div></div></div>
+    <div id="page-admin-calendar-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div><div class="content-area" style="padding-top: 20px;"><div class="card"><h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center;"><span class="material-icons" style="margin-right:8px;">tune</span>現在の予約モード</h3><div class="form-group"><div class="radio-group" style="flex-direction: column; gap: 16px;"><label class="radio-label" style="background:#f8f9fa; padding:16px; border-radius:16px; border:1px solid #e0e3e7;"><input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()"><div><div style="font-weight:bold; font-size:15px;">早い者勝ち (即時確定)</div><div style="font-size:12px; color:#5f6368; margin-top:4px; line-height:1.4;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div></div></label><label class="radio-label" style="background:#f8f9fa; padding:16px; border-radius:16px; border:1px solid #e0e3e7;"><input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()"><div><div style="font-weight:bold; font-size:15px;">抽選式 (希望提出)</div><div style="font-size:12px; color:#5f6368; margin-top:4px; line-height:1.4;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div></div></label></div></div><div id="lotterySettingsArea" class="hidden" style="margin-top:24px; border-top:1px solid #eee; padding-top:20px;"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0;">抽選実行設定</h3><div class="form-group"><label class="form-label">実行タイミング</label><div class="radio-group" style="flex-direction: column; gap: 12px;"><label class="radio-label"><input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()">自動 (指定日時に実行)</label><div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 12px;"><select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="1">1日前</option><option value="2" selected>2日前</option><option value="3">3日前</option><option value="7">7日前</option></select> の <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="0">0:00</option><option value="9">9:00</option><option value="12">12:00</option><option value="18">18:00</option><option value="21">21:00</option></select> に確定</div><label class="radio-label"><input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()">手動 (管理者がボタンで実行)</label><div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:16px; border-radius:16px;"><div style="font-size:13px; margin-bottom:8px; font-weight:bold;">対象日を選んで実行します</div><input type="date" id="manualLotteryDate" class="form-input"><button class="btn-primary" style="margin-top:12px; background:#e65100;" onclick="runManualLottery()">今すぐ抽選を実行</button><div id="lotteryLog" style="margin-top:16px; font-size:12px; background:white; padding:10px; border-radius:8px;" class="hidden"></div><button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:16px;" onclick="applyLotteryResults()">この結果で確定する</button></div></div></div></div><button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button></div><div style="margin-top:16px; font-size:12px; color:#5f6368; padding:0 10px; text-align:center;">※ 設定を変更すると部員全員のアプリの挙動が切り替わります。</div></div></div>
+    <div id="page-admin-docs-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div><div class="content-area" style="text-align:center; padding-top:80px; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">print</span><div style="font-size:16px; font-weight:bold; color:#1f1f1f;">準備中</div><div style="font-size:13px; margin-top:8px;">書類PDF出力機能は近日公開予定です</div></div></div>
+    <div id="page-admin-edit" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button><div class="page-title">ユーザー詳細</div></div><div class="content-area"><div style="text-align:center; margin:20px 0;"><img id="admin-user-icon" src="" style="width:88px; height:88px; border-radius:50%; object-fit:cover; background:#eee; border:4px solid white; box-shadow:0 4px 12px rgba(0,0,0,0.1);"><div id="admin-user-lineName" style="font-size:13px; color:#5f6368; margin-top:12px; font-weight:500;"></div></div><div class="card"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">基本情報</h3><div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div><div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div><div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div><div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div><div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div><div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div></div><div class="card"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">権限設定</h3><div class="form-group"><label class="form-label">役職</label><input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など"></div><button id="btn-save-user-role" class="btn-admin-save">役職を保存</button></div><div class="card"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">所属バンド</h3><div id="admin-user-band-list" style="font-size:14px; line-height:1.6;">読み込み中...</div></div><div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">ID: <span id="admin-edit-docId"></span></div></div></div>
 
     <div id="modal-event-admin" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-admin')">
         <div class="modal-content">
-            <h3 style="margin-top:0;">新規イベント作成</h3>
+            <h3 style="margin-top:0; font-size:18px;">新規イベント作成</h3>
             <div class="form-group">
                 <label class="form-label">イベント種別</label>
                 <div style="display:flex; flex-wrap:wrap; gap:8px;" id="eventTypeChips">
@@ -299,20 +301,20 @@
             </div>
             <div class="form-group">
                 <label class="form-label">詳細・メモ</label>
-                <textarea id="inputEventDesc" class="form-input" style="height:80px; resize:none;" placeholder="場所や備考など"></textarea>
+                <textarea id="inputEventDesc" class="form-input" style="height:100px; resize:none;" placeholder="場所や備考など"></textarea>
             </div>
             <button class="btn-primary" onclick="saveAdminEvent()">作成する</button>
             <button class="btn-secondary" onclick="closeModal('modal-event-admin')">キャンセル</button>
         </div>
     </div>
 
-    <!-- NEW: User Picker Modal -->
+    <!-- User Picker Modal -->
     <div id="modal-user-picker" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-picker')">
-        <div class="modal-content" style="max-height:80vh; display:flex; flex-direction:column;">
-            <h3 style="margin-top:0;">ユーザーを選択</h3>
-            <div class="search-bar"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="pickerSearchInput" placeholder="名前で検索..."></div>
-            <div id="pickerUserList" style="flex-grow:1; overflow-y:auto; min-height:200px;"></div>
-            <button class="btn-secondary" onclick="closeModal('modal-user-picker')">閉じる</button>
+        <div class="modal-content" style="max-height:85vh; display:flex; flex-direction:column;">
+            <h3 style="margin-top:0; font-size:18px;">ユーザーを選択</h3>
+            <div class="search-bar" style="margin-bottom:16px;"><span class="material-icons" style="color:#5f6368;">search</span><input type="text" id="pickerSearchInput" placeholder="名前で検索..."></div>
+            <div id="pickerUserList" style="flex-grow:1; overflow-y:auto; min-height:250px;"></div>
+            <button class="btn-secondary" style="margin-top:16px;" onclick="closeModal('modal-user-picker')">閉じる</button>
         </div>
     </div>
 
@@ -328,11 +330,12 @@
                         // ヘッダーアイコン
                         const h=`<img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
                         const el=document.getElementById('headerIconAdmin');
-                        if(el) el.innerHTML=h;
+                        if(el) { el.innerHTML=h; el.onclick=() => window.location.href='/mypage.html'; }
 
                         // 権限チェック
-                        if(!(u.affiliations?.includes('urakata') && u.role)){
-                            document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:10px;">lock</span><br>アクセス権限がありません。<br><br><a href="/" style="color:#0b57d0; text-decoration:none;">トップへ戻る</a></div>';
+                        const hasLmcAll = u.roll && (Array.isArray(u.roll) ? u.roll.includes('lmc_all') : u.roll === 'lmc_all');
+                        if(!(u.affiliations?.includes('urakata') && (u.role || hasLmcAll))){
+                            document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>';
                         }
                     }
                 } catch(e) { console.warn("Init UI error:", e); }
@@ -355,7 +358,7 @@
         let currentUser=null, currentProfile=null, currentUserData=null, adminEditingUserId=null, allUsersCache=[], allBandsCache=[], tempLotterySchedule=null;
         let currentSystemSettings={ bookingMode:'first_come', lotteryConfig:{ mode:'auto', daysBefore:2, time:0 } };
         let currentFeeSettings={ year:new Date().getFullYear(), term1_amount:0, term2_amount:0 };
-        // NEW: Basic Config State
+        // Basic Config State
         let currentBasicConfig = { currentYear: new Date().getFullYear(), activeEventId: null };
         let bandSortOrder = 'created_desc'; // Default Sort
         let showArchivedBands = false;
@@ -374,7 +377,7 @@
         window.closePage=(id)=>document.getElementById('page-'+id).classList.remove('open');
         window.openModal=(id)=>document.getElementById(id).classList.add('open');
         window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
-        window.goToMyPage=()=>window.location.href=MY_PAGE_URL;
+        window.goToMyPage=()=>window.location.href='/mypage.html';
         function getNameById(uid){ const u=allUsersCache.find(x=>x.id===uid); return u?u.name:"不明"; }
         async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); }
 
@@ -417,9 +420,9 @@
 
         async function loadFeeSummary(){ if(allUsersCache.length===0)await refreshAllUsersCache(); const year=parseInt(document.getElementById('feeSettingYear').value)||getFiscalYear(); const yearLabel=document.getElementById('feeSummaryYearLabel'); if(yearLabel)yearLabel.innerText=year; const t1=parseInt(currentFeeSettings.term1_amount)||0, t2=parseInt(currentFeeSettings.term2_amount)||0, k1=`${year}_1`, k2=`${year}_2`; let count1=0, count2=0, totalUsers=allUsersCache.length; allUsersCache.forEach(u=>{ if(u.feeStatus){ if(u.feeStatus[k1])count1++; if(u.feeStatus[k2])count2++; } }); const sum1=count1*t1, sum2=count2*t2, total=sum1+sum2; let maxTotal=0; if(t1>0)maxTotal+=totalUsers*t1; if(t2>0)maxTotal+=totalUsers*t2; let percent=(maxTotal>0)?Math.round((total/maxTotal)*100):0; document.getElementById('feeTotalAmount').innerText=total.toLocaleString(); document.getElementById('feeTotalTerm1').innerText='¥'+sum1.toLocaleString(); document.getElementById('feeCountTerm1').innerText=`(${count1}/${totalUsers}人)`; document.getElementById('feeTotalTerm2').innerText='¥'+sum2.toLocaleString(); document.getElementById('feeCountTerm2').innerText=`(${count2}/${totalUsers}人)`; document.getElementById('feeProgressPercent').innerText=`${percent}%`; document.getElementById('feeProgressChart').style.background=`conic-gradient(rgba(255,255,255,0.9) 0% ${percent}%, rgba(255,255,255,0.2) ${percent}% 100%)`; }
         window.saveFeeSettings=async()=>{ const year=parseInt(document.getElementById('feeSettingYear').value), t1=parseInt(document.getElementById('feeSettingTerm1').value), t2=parseInt(document.getElementById('feeSettingTerm2').value); if(!year)return await showCustomAlert("年度を入力してください", "入力エラー"); try{ await setDoc(doc(db,"system","fees"),{year:year,term1_amount:t1||0,term2_amount:t2||0,updatedAt:serverTimestamp()},{merge:true}); currentFeeSettings={year,term1_amount:t1,term2_amount:t2}; await showCustomAlert("部費設定を保存しました。"); loadFeeSummary(); }catch(e){await showCustomAlert("保存エラー: " + e.message, "エラー")} };
-        window.openAdminFeeList=async()=>{ openPage('admin-fees-list'); document.getElementById('feeUserList').innerHTML="読み込み中..."; await getDoc(doc(db,"system","fees")).then(snap=>{if(snap.exists())currentFeeSettings=snap.data()}); document.getElementById('feeListYearLabel').innerText=currentFeeSettings.year||getFiscalYear(); loadFeeUserList(); };
-        async function loadFeeUserList(){ const container=document.getElementById('feeUserList'); container.innerHTML="ユーザー取得中..."; try{ const q=query(collection(db,"users"),orderBy("studentId","asc")); const qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); renderFeeUserList(allUsersCache); }catch(e){container.innerHTML="エラー: "+e.message} }
-        function renderFeeUserList(users){ const container=document.getElementById('feeUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:20px; text-align:center;">ユーザーがいません</div>'; return;} const targetYear=currentFeeSettings.year||getFiscalYear(), k1=`${targetYear}_1`, k2=`${targetYear}_2`; users.forEach(u=>{ const status=u.feeStatus||{}, div=document.createElement('div'); div.className='fee-user-item'; div.innerHTML=`<div><div style="font-weight:bold;">${u.name}</div><div style="font-size:11px; color:#888;">${u.studentId||'-'} ${u.part?'('+getPartLabel(u.part)+')':''}</div></div><div class="fee-check-group"><div class="fee-checkbox ${status[k1]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k1}',this)"><div class="fee-label">前期</div><div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term1_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div><div class="fee-checkbox ${status[k2]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k2}',this)"><div class="fee-label">後期</div><div class="fee-label" style="font-weight:normal;">¥${currentFeeSettings.term2_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div></div>`; container.appendChild(div); }); }
+        window.openAdminFeeList=async()=>{ openPage('admin-fees-list'); document.getElementById('feeUserList').innerHTML='<div style="text-align:center; padding:20px;">読み込み中...</div>'; await getDoc(doc(db,"system","fees")).then(snap=>{if(snap.exists())currentFeeSettings=snap.data()}); document.getElementById('feeListYearLabel').innerText=currentFeeSettings.year||getFiscalYear(); loadFeeUserList(); };
+        async function loadFeeUserList(){ const container=document.getElementById('feeUserList'); container.innerHTML='<div style="text-align:center; padding:20px;">ユーザー取得中...</div>'; try{ const q=query(collection(db,"users"),orderBy("studentId","asc")); const qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>allUsersCache.push({id:doc.id,...doc.data()})); renderFeeUserList(allUsersCache); }catch(e){container.innerHTML='<div style="padding:20px; color:#d93025; text-align:center;">エラー: '+e.message+'</div>'} }
+        function renderFeeUserList(users){ const container=document.getElementById('feeUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:40px; text-align:center; color:#999;">ユーザーがいません</div>'; return;} const targetYear=currentFeeSettings.year||getFiscalYear(), k1=`${targetYear}_1`, k2=`${targetYear}_2`; users.forEach(u=>{ const status=u.feeStatus||{}, div=document.createElement('div'); div.className='fee-user-item'; div.innerHTML=`<div><div style="font-weight:bold; font-size:15px; margin-bottom:2px;">${u.name}</div><div style="font-size:11px; color:#5f6368;">${u.studentId||'-'} ${u.part?'('+getPartLabel(u.part)+')':''}</div></div><div class="fee-check-group"><div class="fee-checkbox ${status[k1]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k1}',this)"><div class="fee-label">前期</div><div class="fee-label" style="font-weight:normal; font-size:11px;">¥${currentFeeSettings.term1_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div><div class="fee-checkbox ${status[k2]?'checked':''}" onclick="toggleFeeStatus('${u.id}','${k2}',this)"><div class="fee-label">後期</div><div class="fee-label" style="font-weight:normal; font-size:11px;">¥${currentFeeSettings.term2_amount||0}</div><span class="material-icons fee-status-icon">check_circle</span></div></div>`; container.appendChild(div); }); }
         document.getElementById('feeListSearchInput')?.addEventListener('input',(e)=>{ const term=e.target.value.trim(); renderFeeUserList(term?allUsersCache.filter(u=>u.name.includes(term)||(u.kana&&u.kana.includes(term))):allUsersCache); });
         window.toggleFeeStatus=async(uid,key,element)=>{ const isChecked=element.classList.contains('checked'); if(isChecked)element.classList.remove('checked'); else element.classList.add('checked'); const newVal=!isChecked; try{ const updateData={}; updateData[`feeStatus.${key}`]=newVal; await updateDoc(doc(db,"users",uid),updateData); const user=allUsersCache.find(u=>u.id===uid); if(user){ if(!user.feeStatus)user.feeStatus={}; user.feeStatus[key]=newVal; } }catch(e){console.error(e); await showCustomAlert("更新失敗: " + e.message, "エラー"); if(isChecked)element.classList.add('checked'); else element.classList.remove('checked'); } };
         
@@ -432,20 +435,20 @@
         window.openAdminSettings=async()=>{ openPage('admin-calendar-stub'); try{ const docSnap=await getDoc(doc(db,"system","settings")); if(docSnap.exists())currentSystemSettings=docSnap.data(); const mode=currentSystemSettings.bookingMode||'first_come'; document.getElementsByName('adminBookingMode').forEach(r=>{if(r.value===mode)r.checked=true}); if(currentSystemSettings.lotteryConfig){ const lc=currentSystemSettings.lotteryConfig; document.getElementsByName('lotteryExecMode').forEach(r=>{if(r.value===(lc.mode||'auto'))r.checked=true}); document.getElementById('lotteryAutoDays').value=lc.daysBefore||2; document.getElementById('lotteryAutoTime').value=lc.time||0; } toggleLotterySettings(); }catch(e){console.error(e)} };
         window.toggleLotterySettings=()=>{ const isL=document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked, area=document.getElementById('lotterySettingsArea'); if(isL){area.classList.remove('hidden'); toggleLotteryExecUI();} else area.classList.add('hidden'); };
         window.toggleLotteryExecUI=()=>{ const mode=document.querySelector('input[name="lotteryExecMode"]:checked').value, autoC=document.getElementById('lotteryAutoConfig'), manuC=document.getElementById('lotteryManualConfig'); if(mode==='auto'){autoC.classList.remove('hidden'); manuC.classList.add('hidden');} else {autoC.classList.add('hidden'); manuC.classList.remove('hidden');} };
-        window.runManualLottery=async()=>{ const dVal=document.getElementById('manualLotteryDate').value; if(!dVal)return await showCustomAlert("日付を選択してください", "入力不足"); if(!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認"))return; const logB=document.getElementById('lotteryLog'); logB.innerHTML='<div class="log-line">データ取得中...</div>'; logB.classList.remove('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); const targetD=new Date(dVal), startD=new Date(targetD), endD=new Date(targetD); startD.setHours(0,0,0,0); endD.setHours(23,59,59,999); try{ const q=query(collection(db,"bookings"),where("startTime",">=",startD),where("startTime","<=",endD)); const snapshot=await getDocs(q); let candidates=[], locked=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.status==='pending'&&d.type!=='event')candidates.push({id:doc.id,...d}); else if(d.status==='confirmed'||d.type==='event')locked.push({start:d.startTime.toDate(),end:d.endTime.toDate(),title:d.bandName||d.title}); }); if(candidates.length===0){logB.innerHTML+='<div class="log-line log-warn">候補なし</div>'; return;} const bandReqs={}; candidates.forEach(c=>{ if(!bandReqs[c.bandId])bandReqs[c.bandId]={id:c.bandId,name:c.bandName,requests:[],docIds:[]}; bandReqs[c.bandId].requests.push({start:c.startTime.toDate(),end:c.endTime.toDate()}); bandReqs[c.bandId].docIds.push(c.id); }); const bands=Object.values(bandReqs); logB.innerHTML+=`<div class="log-line">候補:${candidates.length} エントリー:${bands.length}</div>`; let result = tryAllocate(bands, 60, locked); if (result.failedBands.length > 0) { logB.innerHTML += `<div class="log-line log-warn">60分枠では全員確保不可(${result.failedBands.length}組落選) -> 30分枠で再抽選します</div>`; result = tryAllocate(bands, 30, locked); } else { logB.innerHTML += `<div class="log-line log-success">全員60分枠で確保可能です</div>`; } logB.innerHTML += '<div class="log-line" style="border-top:1px dashed #666; margin-top:4px; padding-top:4px;">抽選結果</div>'; result.assignments.forEach(a => { const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`; const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`; logB.innerHTML += `<div class="log-line log-success">✔ ${a.bandName}: ${sStr}-${eStr} (${result.duration}分)</div>`; }); result.failedBands.forEach(b => { logB.innerHTML += `<div class="log-line log-error">✖ ${b.name}: 確保不可 (希望枠に空きなし)</div>`; }); tempLotterySchedule = result; document.getElementById('btnApplyLottery').classList.remove('hidden'); }catch(e){console.error(e); logB.innerHTML+='<div class="log-line log-error">エラー</div>';} };
+        window.runManualLottery=async()=>{ const dVal=document.getElementById('manualLotteryDate').value; if(!dVal)return await showCustomAlert("日付を選択してください", "入力不足"); if(!await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認"))return; const logB=document.getElementById('lotteryLog'); logB.innerHTML='<div style="padding:4px; font-weight:bold;">データ取得中...</div>'; logB.classList.remove('hidden'); document.getElementById('btnApplyLottery').classList.add('hidden'); const targetD=new Date(dVal), startD=new Date(targetD), endD=new Date(targetD); startD.setHours(0,0,0,0); endD.setHours(23,59,59,999); try{ const q=query(collection(db,"bookings"),where("startTime",">=",startD),where("startTime","<=",endD)); const snapshot=await getDocs(q); let candidates=[], locked=[]; snapshot.forEach(doc=>{ const d=doc.data(); if(d.status==='pending'&&d.type!=='event')candidates.push({id:doc.id,...d}); else if(d.status==='confirmed'||d.type==='event')locked.push({start:d.startTime.toDate(),end:d.endTime.toDate(),title:d.bandName||d.title}); }); if(candidates.length===0){logB.innerHTML+='<div style="padding:4px; color:#f9ab00; font-weight:bold;">候補なし</div>'; return;} const bandReqs={}; candidates.forEach(c=>{ if(!bandReqs[c.bandId])bandReqs[c.bandId]={id:c.bandId,name:c.bandName,requests:[],docIds:[]}; bandReqs[c.bandId].requests.push({start:c.startTime.toDate(),end:c.endTime.toDate()}); bandReqs[c.bandId].docIds.push(c.id); }); const bands=Object.values(bandReqs); logB.innerHTML+=`<div style="padding:4px; border-bottom:1px solid #eee; margin-bottom:8px;">候補:${candidates.length} エントリー:${bands.length}</div>`; let result = tryAllocate(bands, 60, locked); if (result.failedBands.length > 0) { logB.innerHTML += `<div style="padding:4px; color:#f9ab00;">60分枠では全員確保不可(${result.failedBands.length}組落選) -> 30分枠で再抽選します</div>`; result = tryAllocate(bands, 30, locked); } else { logB.innerHTML += `<div style="padding:4px; color:#1e8e3e; font-weight:bold;">全員60分枠で確保可能です</div>`; } logB.innerHTML += '<div style="margin-top:12px; font-weight:bold; color:#1f1f1f;">結果</div><div style="background:#fafafa; border-radius:8px; padding:8px; max-height:150px; overflow-y:auto; border:1px solid #eee; margin-top:8px;">'; result.assignments.forEach(a => { const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`; const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`; logB.innerHTML += `<div style="color:#1e8e3e; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">check_circle</span> ${a.bandName}: ${sStr}-${eStr} (${result.duration}分)</div>`; }); result.failedBands.forEach(b => { logB.innerHTML += `<div style="color:#d93025; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">cancel</span> ${b.name}: 確保不可</div>`; }); logB.innerHTML += '</div>'; tempLotterySchedule = result; document.getElementById('btnApplyLottery').classList.remove('hidden'); }catch(e){console.error(e); logB.innerHTML+='<div style="color:#d93025;">エラー</div>';} };
         function tryAllocate(bands, duration, lockedItems) { const START_H = 9; const END_H = 20; const TOTAL_M = (END_H - START_H) * 60; const SLOT_UNIT = 30; const SLOTS = TOTAL_M / SLOT_UNIT; const timeline = new Array(SLOTS).fill(null); if (lockedItems) { lockedItems.forEach(l => { const sM = (l.start.getHours() - START_H) * 60 + l.start.getMinutes(); const eM = (l.end.getHours() - START_H) * 60 + l.end.getMinutes(); const startSlot = Math.floor(Math.max(0, sM) / SLOT_UNIT); const endSlot = Math.ceil(Math.min(TOTAL_M, eM) / SLOT_UNIT); for (let i = startSlot; i < endSlot; i++) { if (i >= 0 && i < SLOTS) timeline[i] = "LOCKED"; } }); } const assignments = []; const failedBands = []; const shuffledBands = [...bands].sort(() => Math.random() - 0.5); const neededSlots = Math.ceil(duration / SLOT_UNIT); for (const band of shuffledBands) { let isAssigned = false; const reqs = [...band.requests].sort(() => Math.random() - 0.5); for (const req of reqs) { if (isAssigned) break; const reqStartM = (req.start.getHours() - START_H) * 60 + req.start.getMinutes(); const reqEndM = (req.end.getHours() - START_H) * 60 + req.end.getMinutes(); const reqStartSlot = Math.floor(reqStartM / SLOT_UNIT); const reqEndSlot = Math.floor(reqEndM / SLOT_UNIT); for (let t = reqStartSlot; t <= reqEndSlot - neededSlots; t++) { let isFree = true; for (let k = 0; k < neededSlots; k++) { if (t + k >= SLOTS || timeline[t + k] !== null) { isFree = false; break; } } if (isFree) { for (let k = 0; k < neededSlots; k++) { timeline[t + k] = band.name; } const assignedStart = new Date(req.start); assignedStart.setHours(START_H + Math.floor((t * SLOT_UNIT) / 60)); assignedStart.setMinutes((t * SLOT_UNIT) % 60); assignedStart.setSeconds(0); assignedStart.setMilliseconds(0); const assignedEnd = new Date(assignedStart); assignedEnd.setMinutes(assignedStart.getMinutes() + duration); assignments.push({ bandId: band.id, bandName: band.name, start: assignedStart, end: assignedEnd, originalDocIds: band.docIds }); isAssigned = true; break; } } } if (!isAssigned) { failedBands.push(band); } } return { duration: duration, assignments: assignments, failedBands: failedBands, successCount: assignments.length, totalCount: bands.length }; }
         window.applyLotteryResults=async()=>{ if(!tempLotterySchedule||!await showCustomConfirm("抽選結果をスケジュールに反映しますか？", "反映の確認"))return; const batch=writeBatch(db); tempLotterySchedule.assignments.forEach(a=>{ const ref=doc(collection(db,"bookings")); batch.set(ref,{bandId:a.bandId,bandName:a.bandName,creatorId:currentUser,userName:"抽選確定",startTime:a.start,endTime:a.end,type:'normal',status:'confirmed',source:'lottery',createdAt:new Date()}); a.originalDocIds.forEach(oldId=>batch.delete(doc(db,"bookings",oldId))); }); try{await batch.commit(); await showCustomAlert("抽選結果を反映しました。\n(落選した希望はそのまま残っています)"); closePage('admin-calendar-stub');}catch(e){await showCustomAlert(e.message, "エラー")} };
         window.saveSystemSettings=async()=>{ const mode=document.querySelector('input[name="adminBookingMode"]:checked').value, eMode=document.querySelector('input[name="lotteryExecMode"]:checked').value, days=parseInt(document.getElementById('lotteryAutoDays').value), time=parseInt(document.getElementById('lotteryAutoTime').value); try{ await setDoc(doc(db,"system","settings"),{bookingMode:mode,lotteryConfig:{mode:eMode,daysBefore:days,time:time},updatedAt:serverTimestamp(),updatedBy:currentUser},{merge:true}); await showCustomAlert("システム設定を保存しました。"); closePage('admin-calendar-stub'); }catch(e){await showCustomAlert(e.message, "エラー")} };
 
-        window.openAdminUsers=async()=>{ openPage('admin-users'); document.getElementById('adminUserList').innerHTML='<div style="text-align:center; padding:20px;">読み込み中...</div>'; try{ const q=query(collection(db,"users"),orderBy("createdAt","desc")), qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>{ const d=doc.data(); d.affiliations=d.affiliations||(d.org?[d.org]:[]); allUsersCache.push({id:doc.id,...d}); }); renderAdminList(allUsersCache); }catch(e){document.getElementById('adminUserList').innerHTML=e.message} };
+        window.openAdminUsers=async()=>{ openPage('admin-users'); document.getElementById('adminUserList').innerHTML='<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try{ const q=query(collection(db,"users"),orderBy("createdAt","desc")), qs=await getDocs(q); allUsersCache=[]; qs.forEach(doc=>{ const d=doc.data(); d.affiliations=d.affiliations||(d.org?[d.org]:[]); allUsersCache.push({id:doc.id,...d}); }); renderAdminList(allUsersCache); }catch(e){document.getElementById('adminUserList').innerHTML=e.message} };
         window.sortUsers=(type)=>{ if(type==='year')allUsersCache.sort((a,b)=>(a.year||99)-(b.year||99)); else if(type==='kana')allUsersCache.sort((a,b)=>(a.kana||"").localeCompare(b.kana||"","ja")); renderAdminList(allUsersCache); };
-        function renderAdminList(users){ const container=document.getElementById('adminUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:20px;">なし</div>';return;} users.forEach(u=>{ const div=document.createElement('div'); div.className='user-list-item'; div.onclick=()=>openAdminEdit(u); let badges=(u.affiliations.includes('urakata')?'<span style="color:#ea4335; font-size:10px; margin-right:4px;">●裏方</span>':'')+(u.affiliations.includes('lmc')?'<span style="color:#5f6368; font-size:10px;">●LMC</span>':''); let kanaHtml=u.kana?`<div style="font-size:9px; color:#888; margin-bottom:2px;">${u.kana}</div>`:''; div.innerHTML=`<img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon"><div class="user-info-main">${kanaHtml}<div class="user-name">${u.name} ${u.role?`<span style="font-size:10px; background:#e0e3e7; padding:2px 6px; border-radius:10px; margin-left:5px;">${u.role}</span>`:''}</div><div class="user-sub">${badges} | ${u.year||'-'}年</div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`; container.appendChild(div); }); }
+        function renderAdminList(users){ const container=document.getElementById('adminUserList'); container.innerHTML=""; if(users.length===0){container.innerHTML='<div style="padding:40px; text-align:center; color:#999;">ユーザーが見つかりません</div>';return;} users.forEach(u=>{ const div=document.createElement('div'); div.className='user-list-item'; div.onclick=()=>openAdminEdit(u); let badges=(u.affiliations.includes('urakata')?'<span style="color:#ea4335; font-weight:bold; font-size:10px; margin-right:6px; background:#fce8e6; padding:2px 6px; border-radius:10px;">裏方</span>':'')+(u.affiliations.includes('lmc')?'<span style="color:#5f6368; font-weight:bold; font-size:10px; background:#f1f3f4; padding:2px 6px; border-radius:10px;">LMC</span>':''); let kanaHtml=u.kana?`<div style="font-size:10px; color:#999; margin-bottom:2px;">${u.kana}</div>`:''; div.innerHTML=`<img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon"><div class="user-info-main">${kanaHtml}<div class="user-name">${u.name} ${u.role?`<span style="font-size:10px; background:#0b57d0; color:white; padding:2px 6px; border-radius:10px; margin-left:6px; vertical-align:middle;">${u.role}</span>`:''}</div><div class="user-sub" style="margin-top:4px;">${badges} <span style="margin-left:4px;">${u.year||'-'}年</span></div></div><span class="material-icons" style="color:#ccc;">chevron_right</span>`; container.appendChild(div); }); }
         document.getElementById('adminSearchInput').addEventListener('input',(e)=>{ const t=e.target.value.trim(); renderAdminList(t?allUsersCache.filter(u=>u.name.includes(t)||u.kana?.includes(t)):allUsersCache); });
-        function openAdminEdit(u){ adminEditingUserId=u.id; openPage('admin-edit'); document.getElementById('admin-user-icon').src=u.icon||"https://ul.h3z.jp/Vnukmtvq.jpg"; document.getElementById('admin-user-lineName').innerText="LINE: "+u.lineDisplayName; document.getElementById('admin-edit-docId').innerText=u.id; document.getElementById('admin-show-name').innerText=u.name; document.getElementById('admin-show-kana').innerText=u.kana||"-"; document.getElementById('admin-show-studentId').innerText=u.studentId||"-"; document.getElementById('admin-show-year').innerText=(u.year||"-")+"年"; let affText=(u.affiliations.includes('urakata')?"裏方部 ":"")+(u.affiliations.includes('lmc')?"LMC ":""); document.getElementById('admin-show-aff').innerText=affText; document.getElementById('admin-show-part').innerText=getPartLabel(u.part)||"-"; document.getElementById('admin-edit-role').value=u.role||""; loadAdminUserBands(u.id); }
-        async function loadAdminUserBands(uid){ const container=document.getElementById('admin-user-band-list'); container.innerHTML="読み込み中..."; try{ const q=query(collection(db,"bands"),where("memberIds","array-contains",uid)), qs=await getDocs(q); if(qs.empty)container.innerHTML="なし"; else { let h="<ul style='padding-left:20px; margin:0;'>"; qs.forEach(doc=>{ const b=doc.data(); h+=`<li>${b.name} ${b.creatorId===uid?'<span style="font-size:10px; color:#0b57d0;">(リーダー)</span>':''}</li>` }); h+="</ul>"; container.innerHTML=h; } }catch(e){container.innerHTML="エラー"} }
+        function openAdminEdit(u){ adminEditingUserId=u.id; openPage('admin-edit'); document.getElementById('admin-user-icon').src=u.icon||"https://ul.h3z.jp/Vnukmtvq.jpg"; document.getElementById('admin-user-lineName').innerText="@"+(u.lineDisplayName||"LINE_User"); document.getElementById('admin-edit-docId').innerText=u.id; document.getElementById('admin-show-name').innerText=u.name; document.getElementById('admin-show-kana').innerText=u.kana||"-"; document.getElementById('admin-show-studentId').innerText=u.studentId||"-"; document.getElementById('admin-show-year').innerText=(u.year||"-")+"年"; let affText=(u.affiliations.includes('urakata')?"裏方部 ":"")+(u.affiliations.includes('lmc')?"LMC ":""); document.getElementById('admin-show-aff').innerText=affText||"-"; document.getElementById('admin-show-part').innerText=getPartLabel(u.part)||"-"; document.getElementById('admin-edit-role').value=u.role||""; loadAdminUserBands(u.id); }
+        async function loadAdminUserBands(uid){ const container=document.getElementById('admin-user-band-list'); container.innerHTML='<div style="text-align:center; padding:10px; color:#999;">読み込み中...</div>'; try{ const q=query(collection(db,"bands"),where("memberIds","array-contains",uid)), qs=await getDocs(q); if(qs.empty)container.innerHTML='<div style="color:#999;">所属バンドはありません</div>'; else { let h="<ul style='padding-left:20px; margin:0; color:#1f1f1f;'>"; qs.forEach(doc=>{ const b=doc.data(); h+=`<li style="margin-bottom:8px;">${b.name} ${b.creatorId===uid?'<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px; font-weight:bold; margin-left:4px;">リーダー</span>':''}</li>` }); h+="</ul>"; container.innerHTML=h; } }catch(e){container.innerHTML='<div style="color:#d93025;">エラーが発生しました</div>'} }
         document.getElementById('btn-save-user-role').addEventListener('click',async()=>{ if(!adminEditingUserId)return; const btn=document.getElementById('btn-save-user-role'); btn.innerText="保存中..."; try{await updateDoc(doc(db,"users",adminEditingUserId),{role:document.getElementById('admin-edit-role').value}); await showCustomAlert("役職設定を保存しました。"); closePage('admin-edit');}catch(e){await showCustomAlert(e.message, "エラー")}finally{btn.innerText="役職を保存"} });
-        function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
-        window.openAdminBands=async()=>{ openPage('admin-bands'); document.getElementById('adminBandList').innerHTML='<div style="text-align:center; padding:20px;">読み込み中...</div>'; try{ const qs=await getDocs(collection(db,"bands")); allBandsCache=[]; qs.forEach(doc=>allBandsCache.push({id:doc.id,...doc.data()})); allBandsCache.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0)); renderAdminBandList(allBandsCache); }catch(e){document.getElementById('adminBandList').innerHTML=e.message} };
+        function getPartLabel(p){ return {vocal:"Vocal",guitar:"Guitar",bass:"Bass",drums:"Drums",keyboard:"Keyboard"}[p]||""; }
+        window.openAdminBands=async()=>{ openPage('admin-bands'); document.getElementById('adminBandList').innerHTML='<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try{ const qs=await getDocs(collection(db,"bands")); allBandsCache=[]; qs.forEach(doc=>allBandsCache.push({id:doc.id,...doc.data()})); allBandsCache.sort((a,b)=>(b.createdAt?.toDate()||0)-(a.createdAt?.toDate()||0)); renderAdminBandList(allBandsCache); }catch(e){document.getElementById('adminBandList').innerHTML='<div style="color:#d93025; text-align:center; padding:20px;">'+e.message+'</div>'} };
         
         window.handleBandSort = (e) => {
             bandSortOrder = e.target.value;
@@ -471,9 +474,7 @@
             
             // Sort
             filtered.sort((a, b) => {
-                // Archive always last
                 if (a.isArchived !== b.isArchived) return a.isArchived ? 1 : -1;
-                
                 switch (bandSortOrder) {
                     case 'name_asc': return (a.name || "").localeCompare(b.name || "", "ja");
                     case 'name_desc': return (b.name || "").localeCompare(a.name || "", "ja");
@@ -483,15 +484,14 @@
                 }
             });
 
-            if(filtered.length===0){container.innerHTML='<div style="padding:20px;">なし</div>';return;} 
+            if(filtered.length===0){container.innerHTML='<div style="padding:40px; text-align:center; color:#999;">バンドが見つかりません</div>';return;} 
             
             filtered.forEach(b=>{ 
                 const div=document.createElement('div'); 
                 div.className='card band-card'; 
-                div.onclick = () => openAdminBandDetail(b); // Click handler
-                // Safety check for memberNames
-                const memberNames = (b.memberNames && Array.isArray(b.memberNames)) ? b.memberNames.join(', ') : 'メンバー情報なし';
-                div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${(b.name||"?")[0]}</div>`}<div class="band-info"><div class="band-name">${b.name}${b.isArchived?'<span style="font-size:10px; background:#eee; padding:2px 6px; border-radius:4px; margin-left:6px;">アーカイブ</span>':''}</div><div class="band-members">${memberNames}</div></div></div>`; 
+                div.onclick = () => openAdminBandDetail(b);
+                const memberNames = (b.memberNames && Array.isArray(b.memberNames)) ? b.memberNames.join(', ') : '<span style="color:#ccc;">メンバー情報なし</span>';
+                div.innerHTML=`<div class="band-item" style="border:none; margin:0; padding:0;">${b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon" style="background:#f1f3f4;">${(b.name||"?")[0]}</div>`}<div class="band-info"><div class="band-name" style="margin-bottom:4px;">${b.name}${b.isArchived?'<span style="font-size:10px; background:#fce8e6; color:#d93025; padding:2px 8px; border-radius:12px; margin-left:8px; vertical-align:middle; font-weight:bold;">アーカイブ</span>':''}</div><div class="band-members" style="line-height:1.4;">${memberNames}</div></div><span class="material-icons" style="color:#ccc; margin-left:8px;">chevron_right</span></div>`; 
                 container.appendChild(div); 
             }); 
         }
@@ -504,7 +504,6 @@
             openPage('admin-band-detail');
             currentAdminBandId = band.id;
             
-            // Basic Info
             const iconContainer = document.getElementById('admin-bd-icon');
             if (band.icon) {
                 iconContainer.innerHTML = `<img src="${band.icon}" style="width:100%; height:100%; object-fit:cover;">`;
@@ -514,7 +513,6 @@
             document.getElementById('admin-bd-name').innerText = band.name;
             document.getElementById('admin-bd-id').innerText = `ID: ${band.id}`;
 
-            // Cue Sheet Logic (NEW)
             const cueInput = document.getElementById('admin-bd-cuesheet-input');
             const cueLink = document.getElementById('admin-bd-cuesheet-link');
             const cueText = document.getElementById('admin-bd-cuesheet-text');
@@ -535,31 +533,27 @@
                 cueText.innerText = "未登録";
             }
             
-            // Archive Switch
             document.getElementById('admin-bd-archive-switch').checked = !!band.isArchived;
 
-            // Members
             const memContainer = document.getElementById('admin-bd-members');
-            memContainer.innerHTML = "読み込み中...";
+            memContainer.innerHTML = '<div style="text-align:center; padding:10px; color:#999;">読み込み中...</div>';
             
-            // Use cached users or fetch?
             if (allUsersCache.length === 0) await refreshAllUsersCache();
             
             memContainer.innerHTML = "";
             if (!band.memberIds || band.memberIds.length === 0) {
-                memContainer.innerHTML = '<div style="color:#999; font-size:12px;">メンバーがいません</div>';
+                memContainer.innerHTML = '<div style="color:#999; font-size:12px; text-align:center; padding:10px;">メンバーがいません</div>';
             } else {
                 band.memberIds.forEach(uid => {
                     const u = allUsersCache.find(x => x.id === uid) || { name: '不明', id: uid };
                     const row = document.createElement('div');
-                    row.style.cssText = "display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:14px;";
-                    row.innerHTML = `<span>${u.name}</span><span style="font-size:10px; color:#ccc;">${uid.substring(0,6)}...</span>`;
+                    row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0; font-size:14px; color:#1f1f1f; font-weight:500;";
+                    row.innerHTML = `<span>${u.name}</span><span style="font-size:11px; color:#9aa0a6; font-family:monospace; background:#f8f9fa; padding:4px 8px; border-radius:8px;">${uid.substring(0,8)}...</span>`;
                     memContainer.appendChild(row);
                 });
             }
         };
 
-        // NEW: Save Cue Sheet URL
         window.saveAdminBandCuesheet = async () => {
             if (!currentAdminBandId) return;
             const newUrl = document.getElementById('admin-bd-cuesheet-input').value.trim();
@@ -567,15 +561,13 @@
             try {
                 await updateDoc(doc(db, "bands", currentAdminBandId), { latestCuesheetUrl: newUrl });
                 
-                // Update local cache
                 const bIndex = allBandsCache.findIndex(b => b.id === currentAdminBandId);
                 if (bIndex > -1) allBandsCache[bIndex].latestCuesheetUrl = newUrl;
                 
                 await showCustomAlert("CueシートのURLを保存しました。");
                 
-                // Refresh UI
                 const band = allBandsCache.find(b => b.id === currentAdminBandId);
-                if(band) openAdminBandDetail(band); // Re-render logic to update link state
+                if(band) openAdminBandDetail(band);
                 
             } catch(e) {
                 await showCustomAlert("保存エラー: " + e.message, "エラー");
@@ -587,20 +579,18 @@
             const newVal = document.getElementById('admin-bd-archive-switch').checked;
             try {
                 await updateDoc(doc(db, "bands", currentAdminBandId), { isArchived: newVal });
-                // Update local cache
                 const bIndex = allBandsCache.findIndex(b => b.id === currentAdminBandId);
                 if (bIndex > -1) allBandsCache[bIndex].isArchived = newVal;
-                renderAdminBandList(allBandsCache); // refresh list
+                renderAdminBandList(allBandsCache);
             } catch(e) {
                 await showCustomAlert("更新エラー: " + e.message);
-                // revert toggle visually
                 document.getElementById('admin-bd-archive-switch').checked = !newVal;
             }
         };
 
         window.adminDeleteBand = async () => {
             if (!currentAdminBandId) return;
-            if (await showCustomConfirm("本当にこのバンドを削除しますか？\nこの操作は取り消せません。", "完全削除")) {
+            if (await showCustomConfirm("本当にこのバンドを削除しますか？\n関連する予約等に影響が出る可能性があります。この操作は取り消せません。", "完全削除の確認")) {
                 try {
                     await deleteDoc(doc(db, "bands", currentAdminBandId));
                     await showCustomAlert("削除しました。");
@@ -614,16 +604,12 @@
         };
 
         window.openAdminEvents = async () => { openPage('admin-events'); await loadAdminEvents(); };
-        async function loadAdminEvents() { const container = document.getElementById('adminEventList'); container.innerHTML = "読み込み中..."; try { const q = query(collection(db, 'events'), orderBy("startDate", "desc")); const qs = await getDocs(q); container.innerHTML = ""; if (qs.empty) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">イベントがありません</div>'; return; } qs.forEach(docSnap => { const ev = docSnap.data(); const id = docSnap.id; const div = document.createElement('div'); div.className = 'event-admin-item'; const iconClass = `type-${ev.type || 'other'}`; const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' }; const iconName = iconMap[ev.type] || 'event'; div.innerHTML = `<div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div><div class="event-admin-info"><div class="event-admin-name">${ev.event}</div><div class="event-admin-date">${ev.startDate ? ev.startDate.split('-').join('/') : '-'}</div></div><button class="btn-remove-member" onclick="deleteAdminEvent('${id}', '${ev.event}')">削除</button>`; container.appendChild(div); }); } catch (e) { container.innerHTML = "エラー: " + e.message; } }
+        async function loadAdminEvents() { const container = document.getElementById('adminEventList'); container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; try { const q = query(collection(db, 'events'), orderBy("startDate", "desc")); const qs = await getDocs(q); container.innerHTML = ""; if (qs.empty) { container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">イベントがありません</div>'; return; } qs.forEach(docSnap => { const ev = docSnap.data(); const id = docSnap.id; const div = document.createElement('div'); div.className = 'event-admin-item'; const iconClass = `type-${ev.type || 'other'}`; const iconMap = { concert: 'music_note', bye: 'sentiment_very_dissatisfied', sports: 'directions_run', festival: 'festival', welcome: 'celebration', other: 'event' }; const iconName = iconMap[ev.type] || 'event'; div.innerHTML = `<div class="event-admin-icon ${iconClass}"><span class="material-icons">${iconName}</span></div><div class="event-admin-info"><div class="event-admin-name">${ev.event}</div><div class="event-admin-date">${ev.startDate ? ev.startDate.split('-').join('/') : '-'}</div></div><button class="btn-remove-member" style="margin-left:12px;" onclick="deleteAdminEvent('${id}', '${ev.event}')">削除</button>`; container.appendChild(div); }); } catch (e) { container.innerHTML = '<div style="color:#d93025; padding:20px; text-align:center;">エラー: ' + e.message + '</div>'; } }
         window.openCreateEventModal = () => { document.getElementById('inputEventName').value = ""; document.getElementById('inputEventDate').value = ""; document.getElementById('inputEventDesc').value = ""; document.getElementById('inputEventType').value = ""; document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected')); openModal('modal-event-admin'); };
         document.querySelectorAll('.event-type-chip').forEach(chip => { chip.addEventListener('click', () => { document.querySelectorAll('.event-type-chip').forEach(el => el.classList.remove('selected')); chip.classList.add('selected'); document.getElementById('inputEventType').value = chip.dataset.type; const nameInput = document.getElementById('inputEventName'); if (!nameInput.value) { nameInput.value = chip.innerText; } }); });
         window.saveAdminEvent = async () => { const type = document.getElementById('inputEventType').value; const name = document.getElementById('inputEventName').value.trim(); const date = document.getElementById('inputEventDate').value; const desc = document.getElementById('inputEventDesc').value.trim(); if (!type || !name || !date) { return await showCustomAlert("種別、名前、日付を入力してください。", "入力エラー"); } try { const idDatePart = date.replace(/-/g, ''); const docId = `e${idDatePart}`; await setDoc(doc(db, 'events', docId), { event: name, startDate: date, endDate: date, type, desc, createdAt: serverTimestamp(), createdBy: currentUser }, { merge: true }); await showCustomAlert("イベントを作成しました。"); closeModal('modal-event-admin'); await loadAdminEvents(); } catch (e) { await showCustomAlert("保存エラー: " + e.message, "エラー"); } };
         window.deleteAdminEvent = async (id, name) => { if (await showCustomConfirm(`${name} を削除しますか？`, "削除の確認")) { try { await deleteDoc(doc(db, 'events', id)); await showCustomAlert("削除しました。"); await loadAdminEvents(); } catch (e) { await showCustomAlert(e.message, "エラー"); } } };
 
-        /* ----------------------------------------------------
-           NEW: Basic Settings Logic
-           ---------------------------------------------------- */
-        
         // 1. Open Basic Settings Page
         window.openAdminBasics = async () => {
             openPage('admin-basics');
@@ -631,12 +617,9 @@
             renderOfficerList();
         };
 
-        // 2. Load Config (Simulating a fetch from 'system/basic')
+        // 2. Load Config
         async function loadBasicConfig() {
             try {
-                // In real implementation: const docSnap = await getDoc(doc(db, "system", "basic"));
-                // if (docSnap.exists()) currentBasicConfig = docSnap.data();
-                
                 // UIへの反映
                 const y = currentBasicConfig.currentYear || getFiscalYear();
                 document.getElementById('basic-setting-year').value = y;
@@ -678,7 +661,6 @@
             if (!y) return await showCustomAlert("年度を入力してください", "入力エラー");
             
             try {
-                // Save to system/settings
                 await setDoc(doc(db, "system", "settings"), { 
                     currentYear: y, 
                     activeEventId: eId || null,
@@ -704,7 +686,7 @@
             container.innerHTML = "";
             
             if (officers.length === 0) {
-                container.innerHTML = '<div style="font-size:12px; color:#999; text-align:center; padding:10px;">幹部はいません</div>';
+                container.innerHTML = '<div style="font-size:13px; color:#999; text-align:center; padding:20px; background:#fafafa; border-radius:12px;">幹部はいません</div>';
                 return;
             }
 
@@ -713,10 +695,10 @@
                 div.className = 'officer-item';
                 div.innerHTML = `
                     <div style="display:flex; align-items:center;">
-                        <img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" style="width:32px; height:32px; border-radius:50%; margin-right:8px; object-fit:cover;">
+                        <img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" style="width:36px; height:36px; border-radius:50%; margin-right:12px; object-fit:cover;">
                         <div>
-                            <div style="font-size:14px; font-weight:bold;">${u.name}</div>
-                            <div style="font-size:10px; color:#666;">${u.role || '役職なし'}</div>
+                            <div style="font-size:15px; font-weight:bold; color:#1f1f1f;">${u.name}</div>
+                            <div style="font-size:11px; color:#5f6368; margin-top:2px;">${u.role || '役職なし'}</div>
                         </div>
                     </div>
                     <button class="btn-remove-member" onclick="removeOfficer('${u.id}', '${u.name}')">解除</button>
@@ -729,7 +711,7 @@
         window.openUserPicker = async (mode) => {
             openModal('modal-user-picker');
             const list = document.getElementById('pickerUserList');
-            list.innerHTML = "読み込み中...";
+            list.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>';
             
             if (allUsersCache.length === 0) await refreshAllUsersCache();
             
@@ -745,19 +727,24 @@
         function renderUserPicker(users, mode) {
             const list = document.getElementById('pickerUserList');
             list.innerHTML = "";
+            
+            if(users.length === 0) {
+                list.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">ユーザーが見つかりません</div>';
+                return;
+            }
+
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = 'user-list-item';
-                // 既に幹部なら選択できないようにする等の制御も可能
                 const isOfficer = u.affiliations && u.affiliations.includes('urakata');
                 
                 div.innerHTML = `
                     <img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon">
                     <div class="user-info-main">
                         <div class="user-name">${u.name}</div>
-                        <div class="user-sub">${u.year}年 ${isOfficer ? '<span style="color:red;">●幹部</span>' : ''}</div>
+                        <div class="user-sub" style="margin-top:4px;">${u.year||'-'}年 ${isOfficer ? '<span style="color:#d93025; font-weight:bold; font-size:10px; background:#fce8e6; padding:2px 6px; border-radius:10px; margin-left:4px;">幹部</span>' : ''}</div>
                     </div>
-                    <button class="btn-outline" onclick="selectUserForOfficer('${u.id}', '${u.name}')">選択</button>
+                    <button class="btn-outline" style="border-radius:999px; padding:6px 16px;" onclick="selectUserForOfficer('${u.id}', '${u.name}')">選択</button>
                 `;
                 list.appendChild(div);
             });
@@ -767,10 +754,6 @@
         window.selectUserForOfficer = async (uid, name) => {
             if (await showCustomConfirm(`${name} さんに幹部権限（裏方）を付与しますか？`, "権限付与")) {
                 try {
-                    // In real implementation:
-                    // await updateDoc(doc(db, "users", uid), { affiliations: arrayUnion('urakata') });
-                    
-                    // Local Cache Update for UI
                     const u = allUsersCache.find(x => x.id === uid);
                     if (u) {
                         if (!u.affiliations) u.affiliations = [];
@@ -789,9 +772,6 @@
         window.removeOfficer = async (uid, name) => {
             if (await showCustomConfirm(`${name} さんの幹部権限を解除しますか？`, "権限解除")) {
                 try {
-                    // In real implementation:
-                    // await updateDoc(doc(db, "users", uid), { affiliations: arrayRemove('urakata') });
-                    
                     const u = allUsersCache.find(x => x.id === uid);
                     if (u && u.affiliations) {
                         u.affiliations = u.affiliations.filter(a => a !== 'urakata');
@@ -804,11 +784,9 @@
             }
         };
 
-
         async function main(){ 
             try {
-                // キャッシュからの読み込み（高速化）
-                const cachedUser = localStorage.getItem('lmc_user_cache');
+                const cachedUser = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUser) {
                     try {
                         const data = JSON.parse(cachedUser);
@@ -828,11 +806,11 @@
                 if(!userSnap.exists()){await showCustomAlert("権限がありません。"); return;} 
                 currentUserData=userSnap.data(); 
                 
-                // データの更新とキャッシュの保存
-                localStorage.setItem('lmc_user_cache', JSON.stringify(currentUserData));
+                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 document.getElementById('headerIconAdmin').innerHTML=`<img src="${currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
                 
-                if(!(currentUserData.affiliations?.includes('urakata') && currentUserData.role)){ await showCustomAlert("管理権限がありません。"); document.body.innerHTML='<div style="padding:20px; text-align:center;">アクセス権限がありません</div>'; }
+                const hasLmcAll = currentUserData.roll && (Array.isArray(currentUserData.roll) ? currentUserData.roll.includes('lmc_all') : currentUserData.roll === 'lmc_all');
+                if(!(currentUserData.affiliations?.includes('urakata') && (currentUserData.role || hasLmcAll))){ await showCustomAlert("管理権限がありません。"); document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>'; }
             }catch(e){console.error(e)} 
         }
         main();
