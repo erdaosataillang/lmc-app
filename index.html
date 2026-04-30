@@ -31,7 +31,7 @@
         .scroll-content { flex-grow: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .band-slider { display: flex; width: 100%; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); height: 100%; }
         /* タブが上に被さるため、最後のアイテムが隠れないように padding-bottom を増やす */
-        .band-slide { width: 100%; height: 100%; padding: 12px 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 80px; }
+        .band-slide { width: 100%; height: 100%; padding: 12px 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 120px; }
 
         /* カードデザイン (丸み強め・コンパクトに) */
         .card { background: white; border-radius: 20px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; cursor: pointer; } 
@@ -42,8 +42,8 @@
         .band-icon img { width: 100%; height: 100%; object-fit: cover; }
         .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 15px; } 
 
-        /* イベント選択タブ (リストの上に浮かせ、後ろのカードが透けて見えるように配置) */
-        .band-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; padding: 4px; margin: 0 auto 12px 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: absolute; bottom: 12px; left: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100% - 96px); } 
+        /* イベント選択タブ (リストの上に浮かせ、後ろのカードが透けて見えるように配置。FABと干渉しないよう幅制限) */
+        .band-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: absolute; bottom: 12px; left: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100% - 100px); } 
         .band-tab { flex: 0 0 auto; min-width: 60px; text-align: center; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
         .band-tab.active { background: #ffffff; color: #0b57d0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
@@ -56,8 +56,8 @@
         .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); } 
         .nav-item.active span:not(.nav-icon) { font-weight: bold; }
 
-        /* FAB コンテナとスピードダイヤルアニメーション */
-        .fab-container { position: absolute; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
+        /* FAB コンテナとスピードダイヤルアニメーション (より高く配置してタブと被らないように) */
+        .fab-container { position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
         .fab-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 900; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
         .fab-overlay.open { opacity: 1; visibility: visible; }
         
@@ -86,7 +86,7 @@
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
         .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
@@ -176,7 +176,7 @@
         <div class="nav-item active" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
         <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
         <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <!-- 管理者用タブ (rollにlmc_allがある場合のみ表示) -->
+        <!-- 管理者用タブ (role/rollがある場合のみ表示) -->
         <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='https://lmc-mobile.sorairosystem.com/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
         <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
@@ -489,9 +489,9 @@
             const el = document.getElementById('headerIconBands');
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
-            // 管理者タブ表示制御 (role または roll が存在する場合)
+            // 管理者タブ表示制御 (role または roll が存在し、かつ裏方である場合)
             const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
-            if(d.role || hasLmcAll) {
+            if(isU && (d.role || hasLmcAll)) {
                 document.getElementById('nav-admin').classList.remove('hidden');
             } else {
                 document.getElementById('nav-admin').classList.add('hidden');
