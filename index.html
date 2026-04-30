@@ -103,9 +103,9 @@
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
         .notification-badge { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background: #d93025; border-radius: 50%; border: 2px solid white; display: none; }
         .notification-badge.show { display: block; }
-        .notif-icon-box { width: 32px; height: 32px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
+        .notif-icon-box { width: 40px; height: 40px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
         .notif-icon-box.warning { background: #fce8e6; color: #d93025; }
-        .notification-item { padding: 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
+        .notification-item { padding: 20px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
         .notification-item.clickable { cursor: pointer; }
         .auth-code-input { letter-spacing: 4px; text-align: center; font-size: 24px; font-weight: bold; }
         .fee-status-badge { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; } .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
@@ -225,6 +225,21 @@
         </div>
     </div>
 
+    <!-- 招待確認モーダル -->
+    <div id="modal-invite-confirm" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-invite-confirm')">
+        <div class="modal-content" style="padding: 32px 24px; text-align: center;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: #e8f0fe; display: flex; justify-content: center; align-items: center; margin: 0 auto 16px; box-shadow: 0 4px 12px rgba(11, 87, 208, 0.1);">
+                <span class="material-icons" style="font-size: 36px; color: #0b57d0;">group_add</span>
+            </div>
+            <h3 style="margin-top:0; margin-bottom: 8px; font-size: 20px; font-weight: 800; color: #1f1f1f;" id="inviteBandNameTitle"></h3>
+            <p style="font-size:14px; color:#536471; margin-bottom:32px; line-height: 1.5;">このバンドから招待が届いています。<br>参加しますか？</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button class="btn-primary" id="btnAcceptInvite" style="padding: 14px;">参加する</button>
+                <button class="btn-secondary" id="btnHoldInvite" style="margin-top:0; padding: 14px; background: #f1f3f4; color: #536471;">保留</button>
+            </div>
+        </div>
+    </div>
+
     <!-- バンド詳細 -->
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
@@ -281,10 +296,12 @@
 
     <!-- 通知・ステータス -->
     <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
-        <div class="modal-content" style="padding: 24px;">
-            <h3 style="margin-top:0; margin-bottom:10px; font-size: 18px;">通知</h3>
-            <div id="notificationList" style="max-height:60vh; overflow-y:auto; margin: -24px -24px 20px; padding: 24px;"></div>
-            <button class="btn-secondary" onclick="closeModal('modal-notification')">閉じる</button>
+        <div class="modal-content" style="padding: 0;">
+            <h3 style="margin-top:0; padding: 24px 24px 10px; font-size: 18px; border-bottom: 1px solid #f0f0f0;">通知</h3>
+            <div id="notificationList" style="max-height:60vh; overflow-y:auto; padding-bottom: 20px;"></div>
+            <div style="padding: 16px 24px;">
+                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-notification')">閉じる</button>
+            </div>
         </div>
     </div>
 
@@ -433,7 +450,6 @@
                 const cachedUser = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUser) { 
                     currentUserData = JSON.parse(cachedUser); 
-                    // キャッシュから権限情報を含めて初期描画
                     renderHeaderIcons(currentUserData); 
                 }
                 
@@ -450,15 +466,9 @@
                 const cachedBands = localStorage.getItem(CACHE_KEY_BANDS);
                 if (cachedBands) { myBandsAll = JSON.parse(cachedBands); }
 
-                // キャッシュデータで初期描画
-                if (targetEvents.length > 0) {
-                    renderBandTabs(); 
-                } else {
-                    // キャッシュがない場合のフォールバック描画
-                    renderBandTabsFallback();
-                }
+                if (targetEvents.length > 0) { renderBandTabs(); } else { renderBandTabsFallback(); }
                 
-                // 2. LIFF初期化と認証 (バックグラウンドで進行)
+                // 2. LIFF初期化と認証
                 await liff.init({liffId: MY_LIFF_ID}); 
                 if(!liff.isLoggedIn()){liff.login(); return;} 
                 const profile = await liff.getProfile(); 
@@ -467,7 +477,7 @@
                 if(typeof __initial_auth_token!=='undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
                 else await signInAnonymously(auth); 
                 
-                // 3. 最新データをFirestoreから取得して同期
+                // 3. 最新データを取得
                 const userSnap = await getDoc(doc(db, "users", currentUser));
                 if(!userSnap.exists()){ location.href=MY_PAGE_URL; return; }
                 currentUserData = userSnap.data();
@@ -479,6 +489,15 @@
                 refreshAllUsersCache();
                 loadSystemSettings();
                 checkNotifications();
+                
+                // 4. URLパラメータのチェック（招待リンクからのアクセス判定）
+                const urlParams = new URLSearchParams(window.location.search);
+                const action = urlParams.get('action');
+                const inviteBandId = urlParams.get('bandId');
+                
+                if (action === 'invite' && inviteBandId) {
+                    handleInviteLink(inviteBandId);
+                }
             } catch(e) { console.error(e); } 
         }
 
@@ -503,7 +522,6 @@
             const year=2026; const status=currentUserData.feeStatus||{};
             document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
             document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
-            // LINE名を @つきで表示
             document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
 
             const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
@@ -598,7 +616,6 @@
             targetEvents.forEach(ev => { const el = document.getElementById(`bandList-${ev.id}`); if(el) el.innerHTML = ""; });
             const arcEl = document.getElementById('bandList-archive'); if(arcEl) arcEl.innerHTML = "";
 
-            // カードを生成する共通処理
             const createCard = (b) => {
                 const card = document.createElement('div'); 
                 card.className = 'card band-card';
@@ -628,7 +645,7 @@
                 }
             });
             
-            // バンドがない場合の空状態（Empty State）の表示
+            // バンドがない場合の空状態
             document.querySelectorAll('.band-slide').forEach(s => { 
                 if(!s.children.length) {
                     s.innerHTML = `
@@ -805,7 +822,7 @@
             const json = await res.json(); return json.files[0].url;
         }
 
-        // --- 招待Picker ---
+        // --- 招待ロジック ---
         window.shareBandInvite = async (bid, bn) => {
             const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`;
             if (liff.isApiAvailable('shareTargetPicker')) {
@@ -813,19 +830,165 @@
             } else { await showCustomAlert("招待URL: " + u); }
         };
 
-        // --- メール認証ロジック ---
-        window.openNotificationModal = () => {
-            const list = document.getElementById('notificationList'); list.innerHTML = "";
+        window.handleInviteLink = async (bid) => {
+            try {
+                const bandSnap = await getDoc(doc(db, "bands", bid));
+                if (!bandSnap.exists()) {
+                    showCustomAlert("このバンドは存在しないか、削除されています。");
+                    return;
+                }
+                const bandData = bandSnap.data();
+                
+                if (bandData.memberIds && bandData.memberIds.includes(currentUser)) {
+                    showCustomAlert("すでにこのバンドに参加しています。");
+                    return;
+                }
+
+                document.getElementById('inviteBandNameTitle').innerText = bandData.name;
+                document.getElementById('btnAcceptInvite').onclick = () => acceptInvite(bid, bandData.name);
+                document.getElementById('btnHoldInvite').onclick = () => holdInvite(bid);
+
+                openModal('modal-invite-confirm');
+                
+                // リロード時の再反応を防ぐためURLからパラメータを消去
+                window.history.replaceState(null, null, window.location.pathname);
+
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        window.acceptInvite = async (bid, bName) => {
+            try {
+                await updateDoc(doc(db, "bands", bid), {
+                    memberIds: arrayUnion(currentUser),
+                    memberNames: arrayUnion(currentProfile.displayName)
+                });
+                
+                // 保留リストにあれば削除
+                if (currentUserData.pendingInvites && currentUserData.pendingInvites.includes(bid)) {
+                    await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                    currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                }
+                
+                showCustomAlert(`${bName} に参加しました！`);
+                closeModal('modal-invite-confirm');
+                checkNotifications();
+            } catch(e) {
+                showCustomAlert("参加処理に失敗しました。");
+            }
+        };
+
+        window.holdInvite = async (bid) => {
+            try {
+                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayUnion(bid) });
+                if (!currentUserData.pendingInvites) currentUserData.pendingInvites = [];
+                if (!currentUserData.pendingInvites.includes(bid)) {
+                    currentUserData.pendingInvites.push(bid);
+                }
+                showCustomAlert("保留しました。右上の通知アイコンからいつでも確認・参加できます。");
+                closeModal('modal-invite-confirm');
+                checkNotifications();
+            } catch(e) {
+                showCustomAlert("保留処理に失敗しました。");
+            }
+        };
+
+        window.acceptInviteFromNotif = async (bid, bName) => {
+            await window.acceptInvite(bid, bName);
+            openNotificationModal(); // 再描画
+        };
+
+        window.rejectInvite = async (bid) => {
+            try {
+                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                openNotificationModal(); // 再描画
+                checkNotifications();
+            } catch(e) { console.error(e); }
+        };
+
+        // --- メール・通知ロジック ---
+        function checkNotifications() { 
+            let hasNotification = false;
+            if(!(currentUserData?.Email || currentUserData?.email)) {
+                hasNotification = true;
+            }
+            if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
+                hasNotification = true;
+            }
+            
+            if (hasNotification) {
+                document.getElementById('headerNotifBadge').classList.add('show'); 
+            } else {
+                document.getElementById('headerNotifBadge').classList.remove('show'); 
+            }
+        }
+
+        window.openNotificationModal = async () => {
+            const list = document.getElementById('notificationList'); 
+            list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>読み込み中...</div>";
+            openModal('modal-notification');
+
+            let html = "";
             const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
             if (!hasEmail) {
-                const div = document.createElement('div'); div.className = "notification-item clickable";
-                div.onclick = () => openEmailRegisterModal();
-                div.innerHTML = `<div class="notif-icon-box warning"><span class="material-icons">warning</span></div><div class="notif-content"><div class="notif-text">重要: メールアドレスを登録してください</div></div>`;
-                list.appendChild(div);
+                html += `
+                <div class="notification-item clickable" onclick="openEmailRegisterModal()">
+                    <div class="notif-icon-box warning"><span class="material-icons">warning</span></div>
+                    <div class="notif-content">
+                        <div class="notif-text" style="font-weight:bold;">重要: メールアドレスを登録してください</div>
+                    </div>
+                </div>`;
             }
-            if(!list.children.length) list.innerHTML = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
-            openModal('modal-notification');
+
+            // 保留中の招待を取得して表示
+            if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
+                for (const bid of currentUserData.pendingInvites) {
+                    try {
+                        const bSnap = await getDoc(doc(db, "bands", bid));
+                        if (bSnap.exists()) {
+                            const bData = bSnap.data();
+                            // 既に参加済みの場合は保留リストから消す
+                            if(bData.memberIds && bData.memberIds.includes(currentUser)){
+                                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                                continue;
+                            }
+
+                            html += `
+                            <div class="notification-item" style="flex-direction:column; gap:12px; padding: 20px 16px; border-bottom: 1px solid #f0f0f0;">
+                                <div style="display:flex; align-items:center; gap:16px;">
+                                    <div class="notif-icon-box" style="background:#e8f0fe; color:#0b57d0; width: 40px; height: 40px;">
+                                        <span class="material-icons" style="font-size: 20px;">group_add</span>
+                                    </div>
+                                    <div class="notif-content" style="flex:1;">
+                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${bData.name}</strong> からの招待</div>
+                                        <div style="font-size:12px; color:#536471; margin-top:2px;">バンドへ参加しますか？</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px; width:100%; padding-left: 56px; box-sizing: border-box;">
+                                    <button class="btn-secondary" style="margin:0; flex:1; padding:8px 0; font-size:13px; background:#f1f3f4; color:#1f1f1f;" onclick="rejectInvite('${bid}')">削除</button>
+                                    <button class="btn-primary" style="margin:0; flex:1; padding:8px 0; font-size:13px;" onclick="acceptInviteFromNotif('${bid}', '${bData.name}')">参加する</button>
+                                </div>
+                            </div>`;
+                        } else {
+                            // バンドが既に存在しない場合は保留リストから消す
+                            await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                            currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                        }
+                    } catch(e) { console.error(e); }
+                }
+            }
+
+            if(html === "") {
+                html = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
+            }
+            
+            list.innerHTML = html;
+            checkNotifications(); 
         };
+
         window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
         window.sendAuthCode = async () => {
             const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
@@ -879,7 +1042,6 @@
             }
         }
         async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); }
-        function checkNotifications() { if(!(currentUserData?.Email || currentUserData?.email)) document.getElementById('headerNotifBadge').classList.add('show'); }
         
         window.openEventRegisterModal = () => {
             closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
