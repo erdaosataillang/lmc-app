@@ -42,12 +42,12 @@
         .band-icon img { width: 100%; height: 100%; object-fit: cover; }
         .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 15px; } 
 
-        /* イベント選択タブ */
+        /* イベント選択タブ (リストの上に浮かせ、後ろのカードが透けて見えるように配置。FABと干渉しないよう幅制限) */
         .band-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: absolute; bottom: 12px; left: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100% - 100px); } 
         .band-tab { flex: 0 0 auto; min-width: 60px; text-align: center; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
         .band-tab.active { background: #ffffff; color: #0b57d0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-        /* ナビゲーション */
+        /* ナビゲーション (余白を詰め、グラスモーフィズムとポップアップアニメーションを追加) */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
@@ -56,17 +56,19 @@
         .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); } 
         .nav-item.active span:not(.nav-icon) { font-weight: bold; }
 
-        /* FAB コンテナとスピードダイヤル */
+        /* FAB コンテナとスピードダイヤルアニメーション (より高く配置してタブと被らないように) */
         .fab-container { position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
         .fab-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 900; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
         .fab-overlay.open { opacity: 1; visibility: visible; }
         
         .fab { width: 52px; height: 52px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s; z-index: 902; pointer-events: auto; }
+        /* 開いたときに回転し、色が変わる */
         .fab.open { transform: rotate(135deg); background: white; color: #d93025; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
         .fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; margin-bottom: 16px; pointer-events: none; }
         .fab-menu-item { display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(20px) scale(0.8); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
         .fab-menu.open .fab-menu-item { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        /* 順番に現れるようにディレイを設定 */
         .fab-menu.open .fab-menu-item:nth-child(2) { transition-delay: 0.05s; }
         .fab-menu.open .fab-menu-item:nth-child(1) { transition-delay: 0.1s; }
 
@@ -90,7 +92,7 @@
         .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
 
-        /* メンバーリスト */
+        /* メンバー・通知リスト */
         .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
         .member-option.selected { background: #e8f0fe; }
         .member-row-rich { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; } .member-avatar-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
@@ -98,7 +100,6 @@
         .stat-badge { background: #f8f9fa; padding: 6px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; flex: 1; }
         .stat-value { font-size: 14px; font-weight: bold; color: #0b57d0; } .stat-label { font-size: 9px; color: #5f6368; font-weight: bold; }
         
-        /* 通知バッジ */
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
         .notification-badge { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background: #d93025; border-radius: 50%; border: 2px solid white; display: none; }
         .notification-badge.show { display: block; }
@@ -131,7 +132,6 @@
                 <span id="displayActiveEvent" style="display:none; font-size:10px; font-weight:bold; background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; margin-left:4px;"></span>
             </div>
             <div class="header-right" style="display:flex; align-items:center; gap:16px;">
-                <!-- 再び通知モーダルを開くように復元 -->
                 <div class="notification-btn" onclick="openNotificationModal()">
                     <span class="material-icons" style="color:#5f6368;">notifications</span>
                     <span class="notification-badge" id="headerNotifBadge"></span>
@@ -293,7 +293,7 @@
         </div>
     </div>
 
-    <!-- 通知モーダル (復元) -->
+    <!-- 通知モーダル -->
     <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
         <div class="modal-content" style="padding: 0;">
             <h3 style="margin-top:0; padding: 24px 24px 10px; font-size: 18px; border-bottom: 1px solid #f0f0f0;">通知</h3>
@@ -304,18 +304,27 @@
         </div>
     </div>
 
-    <!-- Twitter(X)風 マイステータス (復元) -->
+    <!-- Twitter(X)風 マイステータス -->
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
         <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
-            <div style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); position: relative;">
+            <!-- ヘッダー画像 -->
+            <div id="modalHeaderBg" style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
+                <!-- ヘッダー画像変更ボタン -->
+                <button onclick="document.getElementById('headerImageInput').click()" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;">
+                    <span class="material-icons" style="font-size: 16px;">add_a_photo</span>
+                </button>
+                <input type="file" id="headerImageInput" accept="image/*" hidden onchange="handleHeaderImageEdit(this)">
+
                 <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
             </div>
             
             <div style="padding: 0 16px 20px;">
+                <!-- アイコン -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: -40px; margin-bottom: 12px;">
                     <img id="modalUserIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2;">
                 </div>
                 
+                <!-- 名前と @ID -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1; min-width: 0; padding-right: 12px;">
                         <div id="modalUserName" style="font-weight: 800; font-size: 22px; color: #0f1419; line-height: 1.2; word-wrap: break-word;"></div>
@@ -323,6 +332,7 @@
                     </div>
                 </div>
 
+                <!-- 部費状況 -->
                 <div style="background:#f9f9f9; padding:16px; border-radius:16px; margin-top: 24px;">
                     <div style="font-size:12px; color:#536471; margin-bottom:8px; font-weight:bold;">2026年度 部費状況</div>
                     <div style="display:flex; gap:10px;">
@@ -331,6 +341,7 @@
                     </div>
                 </div>
                 
+                <!-- QRコード -->
                 <div style="margin-top: 24px; text-align: center;">
                     <div style="font-size: 13px; color: #536471; margin-bottom: 12px; font-weight: bold;">会員QRコード</div>
                     <div id="myQRCodeArea" style="width:120px; height:120px; margin:0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"></div>
@@ -416,10 +427,8 @@
         });
         window.openModal = (id) => document.getElementById(id).classList.add('open');
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-        window.goToMyPage = () => window.location.href = MY_PAGE_URL;
-        function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         
-        // 文字列から「〇〇年度」を省略する関数
+        function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
 
         // --- スピードダイヤルの制御 ---
@@ -437,7 +446,7 @@
         // --- 初期化 ---
         async function main(){ 
             try{ 
-                // 1. キャッシュから最速でUIを構築 (Local First)
+                // 1. キャッシュから最速でUIを構築
                 const cachedUser = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUser) { 
                     currentUserData = JSON.parse(cachedUser); 
@@ -447,8 +456,10 @@
                 const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
                 if (cachedActiveEvent) {
                     const el = document.getElementById('displayActiveEvent');
-                    el.innerText = cachedActiveEvent;
-                    el.style.display = "inline-block";
+                    if (el) {
+                        el.innerText = cachedActiveEvent;
+                        el.style.display = "inline-block";
+                    }
                 }
 
                 const cachedEvents = localStorage.getItem(CACHE_KEY_EVENTS);
@@ -497,7 +508,6 @@
             if(!d) return;
             let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
             const el = document.getElementById('headerIconBands');
-            // ヘッダーアイコンからマイステータスモーダルを開く処理を復活
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
             // 管理者タブ表示制御
@@ -509,18 +519,96 @@
             }
         }
 
-        // --- ステータスモーダル (Twitter風) 復元 ---
+        // --- ステータスモーダル (Twitter風) ---
         window.openUserStatusModal = async () => {
             const year=2026; const status=currentUserData.feeStatus||{};
             document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
             document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
             document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
+            
+            // ヘッダー背景画像の設定
+            const headerBg = document.getElementById('modalHeaderBg');
+            if(currentUserData.headerImage) {
+                headerBg.style.background = `url(${currentUserData.headerImage}) center/cover no-repeat`;
+            } else {
+                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
+                headerBg.style.backgroundSize = `cover`;
+                headerBg.style.backgroundPosition = `center`;
+            }
 
             const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
             t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
             t2.innerText=`後期: ${status[`${year}_2`]?'済':'未納'}`; t2.className=`fee-status-badge ${status[`${year}_2`]?'fee-paid':'fee-unpaid'}`;
             document.getElementById('myQRCodeArea').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:100%;height:100%;">`;
             openModal('modal-user-status');
+        };
+
+        // --- 画像アップロード処理 ---
+        const compressImage = (f, maxWidth = 800, isSquare = false) => new Promise(res => {
+            const i = new Image(); i.src = URL.createObjectURL(f);
+            i.onload = () => {
+                const c = document.createElement('canvas'); const ctx = c.getContext('2d');
+                if (isSquare) {
+                    const s = 200;
+                    c.width = s; c.height = s; 
+                    // 中央をクロップ
+                    const minDim = Math.min(i.width, i.height);
+                    const sx = (i.width - minDim) / 2;
+                    const sy = (i.height - minDim) / 2;
+                    ctx.drawImage(i, sx, sy, minDim, minDim, 0, 0, s, s);
+                } else {
+                    let scaleSize = maxWidth / i.width;
+                    if (scaleSize > 1) scaleSize = 1;
+                    c.width = i.width * scaleSize;
+                    c.height = i.height * scaleSize;
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, c.width, c.height);
+                    ctx.drawImage(i, 0, 0, c.width, c.height);
+                }
+                c.toBlob(b => res(b), 'image/jpeg', 0.85);
+            };
+        });
+
+        async function uploadImageToExternal(blob){
+            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
+            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
+            const json = await res.json(); return json.files[0].url;
+        }
+
+        window.handleImageSelect = async (inp, pid) => {
+            if(inp.files?.[0]) {
+                const b = await compressImage(inp.files[0], 200, true); tempBandIconBlob = b;
+                const i = document.getElementById(pid); i.src = URL.createObjectURL(b); i.classList.remove('hidden');
+            }
+        };
+
+        window.handleImageEdit = async (inp) => {
+            if(inp.files?.[0] && await showCustomConfirm("アイコンを変更しますか？")) {
+                const b = await compressImage(inp.files[0], 200, true); const url = await uploadImageToExternal(b);
+                await updateDoc(doc(db, "bands", document.getElementById('detailBandId').value), { icon: url });
+                document.getElementById('detailBandIcon').src = url;
+            }
+        };
+
+        window.handleHeaderImageEdit = async (inp) => {
+            if(inp.files?.[0] && await showCustomConfirm("ヘッダー画像を変更しますか？")) {
+                try {
+                    // ヘッダー画像は横長で高画質に保つため、長辺1200px、スクエアクロップなしで圧縮
+                    const b = await compressImage(inp.files[0], 1200, false);
+                    const url = await uploadImageToExternal(b);
+                    await updateDoc(doc(db, "users", currentUser), { headerImage: url });
+                    
+                    currentUserData.headerImage = url;
+                    localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                    
+                    document.getElementById('modalHeaderBg').style.background = `url(${url}) center/cover no-repeat`;
+                    showCustomAlert("ヘッダー画像を変更しました！");
+                } catch(e) {
+                    showCustomAlert("エラーが発生しました: " + e.message);
+                } finally {
+                    inp.value = "";
+                }
+            }
         };
 
         // --- イベント・タブ・スライダー ---
@@ -636,7 +724,6 @@
                 }
             });
             
-            // バンドがない場合の空状態
             document.querySelectorAll('.band-slide').forEach(s => { 
                 if(!s.children.length) {
                     s.innerHTML = `
@@ -665,7 +752,6 @@
             document.getElementById('btnRestore').classList.toggle('hidden', !data.isArchived);
             document.getElementById('detailBandName').readOnly = !canE;
             
-            // 招待リンク送信ボタンのイベントをバインド
             document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bid, data.name);
 
             const mList = document.getElementById('detailMemberList'); mList.innerHTML = "";
@@ -694,7 +780,6 @@
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
             const eventId = document.getElementById('selectNewBandEvent').value;
             
-            // 自分だけを初期メンバーとする
             const mIds = [currentUser], mNames = [currentProfile.displayName];
             const initialEvents = eventId ? [eventId] : [];
 
@@ -719,7 +804,6 @@
                     await showCustomAlert("イベントが指定されていないため、このバンドは「アーカイブ」タブに保存されました。");
                 }
                 
-                // 作成後そのまま招待画面を立ち上げる
                 shareBandInvite(docRef.id, name);
             } catch(e) { showCustomAlert(e.message); }
         };
@@ -784,34 +868,6 @@
             await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...ids), memberNames: arrayUnion(...nms) });
             showCustomAlert("追加完了！"); closeModal('modal-add-member');
         };
-
-        // --- 画像処理 ---
-        window.handleImageSelect = async (inp, pid) => {
-            if(inp.files?.[0]) {
-                const b = await compressImage(inp.files[0]); tempBandIconBlob = b;
-                const i = document.getElementById(pid); i.src = URL.createObjectURL(b); i.classList.remove('hidden');
-            }
-        };
-        window.handleImageEdit = async (inp) => {
-            if(inp.files?.[0] && await showCustomConfirm("アイコンを変更しますか？")) {
-                const b = await compressImage(inp.files[0]); const url = await uploadImageToExternal(b);
-                await updateDoc(doc(db, "bands", document.getElementById('detailBandId').value), { icon: url });
-                document.getElementById('detailBandIcon').src = url;
-            }
-        };
-        const compressImage = (f) => new Promise(res => {
-            const i = new Image(); i.src = URL.createObjectURL(f);
-            i.onload = () => {
-                const c = document.createElement('canvas'); const ctx = c.getContext('2d'); const s = 200;
-                c.width = s; c.height = s; ctx.drawImage(i, 0, 0, i.width, i.height, 0, 0, s, s);
-                c.toBlob(b => res(b), 'image/jpeg', 0.8);
-            };
-        });
-        async function uploadImageToExternal(blob){
-            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
-            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
-            const json = await res.json(); return json.files[0].url;
-        }
 
         // --- 招待ロジック ---
         window.shareBandInvite = async (bid, bn) => {
@@ -890,7 +946,7 @@
             } catch(e) { console.error(e); }
         };
 
-        // --- メール・通知ロジック (復元) ---
+        // --- メール・通知ロジック ---
         function checkNotifications() { 
             let hasNotification = false;
             if(!(currentUserData?.Email || currentUserData?.email)) {
@@ -924,14 +980,12 @@
                 </div>`;
             }
 
-            // 保留中の招待を取得して表示
             if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 for (const bid of currentUserData.pendingInvites) {
                     try {
                         const bSnap = await getDoc(doc(db, "bands", bid));
                         if (bSnap.exists()) {
                             const bData = bSnap.data();
-                            // 既に参加済みの場合は保留リストから消す
                             if(bData.memberIds && bData.memberIds.includes(currentUser)){
                                 await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
                                 currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
@@ -955,7 +1009,6 @@
                                 </div>
                             </div>`;
                         } else {
-                            // バンドが既に存在しない場合は保留リストから消す
                             await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
                             currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
                         }
