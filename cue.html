@@ -14,7 +14,7 @@
         
         /* ヘッダー */
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
-        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         
@@ -76,7 +76,10 @@
 <body>
     <div class="container">
         <div class="app-header">
-            <div class="header-title">Cueシート</div>
+            <div class="header-title">
+                Cueシート
+                <span id="displayActiveEvent" style="display:none; font-size:10px; font-weight:bold; background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; margin-left:4px;"></span>
+            </div>
             <div class="header-avatar" id="headerIconCue"></div>
         </div>
         
@@ -125,10 +128,10 @@
                 <div style="margin-top: 24px;">
                     <input type="file" id="cueUploadInput" accept="image/*" hidden onchange="handleCueImageUpload(this)">
                     <button class="btn-primary" onclick="document.getElementById('cueUploadInput').click()" id="btnUploadCue">
-                        <span class="material-icons">add_a_photo</span> Cueシートを登録・更新
+                        <span class="material-icons">upload_file</span> Cueシートを登録・更新
                     </button>
                     <p style="font-size: 11px; color: #999; text-align: center; margin-top: 12px; line-height: 1.4;">
-                        ※登録すると以前の画像は上書きされます。<br>本番当日は最新の状態にしておきましょう。
+                        ※登録すると以前の画像は上書きされます。
                     </p>
                 </div>
             </div>
@@ -204,8 +207,10 @@
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         
+        // Cache Keys
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
+        const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
 
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[];
         let currentCuesheetBandId = null;
@@ -241,6 +246,15 @@
                     } catch (e) { console.error("Bands cache error", e); }
                 }
 
+                const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
+                if (cachedActiveEvent) {
+                    const el = document.getElementById('displayActiveEvent');
+                    if(el) {
+                        el.innerText = cachedActiveEvent;
+                        el.style.display = "inline-block";
+                    }
+                }
+
                 try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
                 
                 await liff.init({liffId:MY_LIFF_ID}); 
@@ -260,7 +274,31 @@
                 renderHeaderIcons(currentUserData); 
                 
                 loadMyBands(); 
+                loadSystemSettings();
             }catch(e){console.error(e)} 
+        }
+
+        async function loadSystemSettings() {
+            try {
+                const s = await getDoc(doc(db, "system", "settings"));
+                if(s.exists() && s.data().activeEventId) {
+                    const ev = await getDoc(doc(db, "events", s.data().activeEventId));
+                    if(ev.exists()) {
+                        const el = document.getElementById('displayActiveEvent');
+                        let name = ev.data().event || ev.data().name || "";
+                        let shortName = name ? name.replace(/\d{2,4}年度/g, "").trim() : "";
+                        if(el) {
+                            el.innerText = shortName;
+                            el.style.display = "inline-block";
+                        }
+                        localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
+                    }
+                } else {
+                    const el = document.getElementById('displayActiveEvent');
+                    if(el) el.style.display = "none";
+                    localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
+                }
+            } catch(e) { console.error(e); }
         }
 
         // --- ヘッダー・アイコン制御 ---
@@ -393,7 +431,7 @@
             }); 
         }
 
-        // --- アップロード機能 (追加) ---
+        // --- アップロード機能 ---
         window.handleCueImageUpload = async (input) => {
             if(!input.files || !input.files[0] || !currentCuesheetBandId) return;
             
@@ -405,7 +443,7 @@
             try {
                 // 画像を圧縮
                 const compressedBlob = await compressImage(input.files[0]);
-                // 外部サーバー(ul.h3z.jp)へアップロード
+                // 外部サーバーへアップロード
                 const url = await uploadImageToExternal(compressedBlob);
                 
                 // Firestoreのbandsドキュメントを更新
@@ -427,7 +465,6 @@
         const compressImage = (f) => new Promise(res => {
             const i = new Image(); i.src = URL.createObjectURL(f);
             i.onload = () => {
-                // Cueシートは文字が読める必要があるため、少し高解像度(横幅最大1200px)で圧縮
                 const c = document.createElement('canvas'); 
                 const ctx = c.getContext('2d'); 
                 const MAX_WIDTH = 1200;
@@ -437,12 +474,11 @@
                 c.width = i.width * scaleSize; 
                 c.height = i.height * scaleSize; 
                 
-                // 背景を白で塗りつぶす (透過PNG対策)
                 ctx.fillStyle = "#FFFFFF";
                 ctx.fillRect(0, 0, c.width, c.height);
                 ctx.drawImage(i, 0, 0, c.width, c.height);
                 
-                c.toBlob(b => res(b), 'image/jpeg', 0.85); // 画質85%
+                c.toBlob(b => res(b), 'image/jpeg', 0.85); 
             };
         });
 
@@ -455,7 +491,7 @@
             return json.files[0].url;
         }
 
-        // --- 全画面画像ビューア (追加) ---
+        // --- 全画面画像ビューア ---
         window.openFullscreenViewer = (src) => {
             const viewer = document.getElementById('fullscreen-viewer');
             document.getElementById('fullscreen-img').src = src;
