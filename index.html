@@ -38,10 +38,10 @@
 
         /* カードデザイン (丸み強め・コンパクトに) */
         .card { background: white; border-radius: 20px; padding: 12px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; transition: background-color 0.2s; cursor: pointer; } 
-        .card.band-card:active { background-color: #f5f5f5; }
-        .band-item { display: flex; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 12px; } 
+        .card.band-card:active { filter: brightness(0.95); }
+        .band-item { display: flex; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 12px; margin-bottom: 12px; } 
         .band-item:last-child { border: none; margin: 0; padding: 0; }
-        .band-icon { width: 44px; height: 44px; background: #e0e3e7; border-radius: 16px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 18px; color: #5f6368; font-weight: bold; overflow: hidden; } 
+        .band-icon { width: 44px; height: 44px; background: rgba(0,0,0,0.05); border-radius: 16px; display: flex; justify-content: center; align-items: center; margin-right: 12px; font-size: 18px; color: #5f6368; font-weight: bold; overflow: hidden; } 
         .band-icon img { width: 100%; height: 100%; object-fit: cover; }
         .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 15px; } 
 
@@ -59,7 +59,7 @@
         .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); } 
         .nav-item.active span:not(.nav-icon) { font-weight: bold; }
 
-        /* FAB コンテナとスピードダイヤルアニメーション */
+        /* FAB コンテナとスピードダイヤル */
         .fab-container { position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
         .fab-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 900; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
         .fab-overlay.open { opacity: 1; visibility: visible; }
@@ -86,6 +86,12 @@
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         
+        /* カラーピッカー (新規追加) */
+        .color-picker-container { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 16px; }
+        .color-circle { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+        .color-circle:active { transform: scale(0.9); }
+        .color-circle.selected { transform: scale(1.15); box-shadow: 0 0 0 2px white, 0 0 0 4px #0b57d0; z-index: 2; }
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
         .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -229,6 +235,13 @@
                 <label class="form-label">バンド名</label>
                 <input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム">
             </div>
+            <!-- カラーピッカー -->
+            <div class="form-group">
+                <label class="form-label">バンドカラー</label>
+                <div class="color-picker-container" id="newBandColorPicker"></div>
+                <input type="hidden" id="inputBandColor" value="#ffffff">
+            </div>
+            
             <div class="form-group">
                 <label class="form-label">出演するイベント</label>
                 <select id="selectNewBandEvent" class="form-input"></select>
@@ -258,7 +271,7 @@
     <!-- バンド詳細 -->
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
-            <div class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid #f0f0f0; position: relative; text-align:center;">
+            <div id="detailBandHeader" class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); position: relative; text-align:center; transition: background-color 0.3s;">
                 <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px; color: #5f6368;">close</span></button>
                 <div style="margin: 16px auto 8px; position: relative; width: 80px; height: 80px;">
                     <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0;">
@@ -272,7 +285,7 @@
                     <div class="stat-badge"><span class="stat-value" id="stat-booking-count">--</span><span class="stat-label">演奏回数</span></div>
                     <div class="stat-badge"><span class="stat-value" id="stat-song-count">--</span><span class="stat-label">演奏曲数</span></div>
                 </div>
-                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px;"><span class="material-icons" style="font-size:14px;">share</span> 招待リンクを送信</button>
+                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px; background: white;"><span class="material-icons" style="font-size:14px;">share</span> 招待リンクを送信</button>
             </div>
             <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
                 <input type="hidden" id="detailBandId">
@@ -297,7 +310,12 @@
                 </div>
 
                 <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
-                    <button class="btn-primary" onclick="updateBandName()">バンド名を保存</button>
+                    <div class="form-group">
+                        <label class="form-label">バンドカラー</label>
+                        <div class="color-picker-container" id="editBandColorPicker"></div>
+                        <input type="hidden" id="editBandColor" value="#ffffff">
+                    </div>
+                    <button class="btn-primary" onclick="updateBandInfo()">バンド情報を保存</button>
                     <div style="display:flex; gap:8px;">
                         <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0;" onclick="archiveBand()">アーカイブ</button>
                         <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0;" onclick="restoreBand()">復元</button>
@@ -419,6 +437,9 @@
         const CACHE_KEY_EVENTS = 'lmc_events_cache';
         const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
 
+        // プリセットのバンドカラー
+        const BAND_COLORS = ['#ffffff', '#ffebee', '#fce4ec', '#f3e5f5', '#e8eaf6', '#e3f2fd', '#e0f7fa', '#e8f5e9', '#fff8e1', '#fff3e0', '#f1f3f4'];
+
         // グローバルステート
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
         let tempBandIconBlob=null, currentEditingBandId=null, currentEditingBandMembers=[];
@@ -447,9 +468,31 @@
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
         window.goToMyPage = () => location.href = MY_PAGE_URL;
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
-        
-        // 文字列から「〇〇年度」を省略する関数
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
+
+        // --- カラーピッカー生成関数 ---
+        function renderColorPicker(containerId, inputId, defaultColor = '#ffffff') {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            BAND_COLORS.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'color-circle';
+                div.style.backgroundColor = c;
+                if (c === '#ffffff') div.style.boxShadow = 'inset 0 0 0 1px #dadce0';
+                if (c === defaultColor) div.classList.add('selected');
+                
+                div.onclick = () => {
+                    document.querySelectorAll(`#${containerId} .color-circle`).forEach(el => el.classList.remove('selected'));
+                    div.classList.add('selected');
+                    document.getElementById(inputId).value = c;
+                    if (containerId === 'editBandColorPicker') {
+                        document.getElementById('detailBandHeader').style.backgroundColor = c;
+                    }
+                };
+                container.appendChild(div);
+            });
+            document.getElementById(inputId).value = defaultColor;
+        }
 
         // --- スピードダイヤルの制御 ---
         window.toggleFabMenu = () => {
@@ -779,6 +822,9 @@
             const createCard = (b) => {
                 const card = document.createElement('div'); 
                 card.className = 'card band-card';
+                // バンドカラーの適用 (デフォルトは白)
+                card.style.backgroundColor = b.color || '#ffffff';
+                
                 card.onclick = () => openBandDetail(b.id, b); 
                 card.innerHTML = `<div class="band-item" style="border:none; margin:0; padding:0;">
                     <div class="band-icon">${b.icon?`<img src="${b.icon}">`:b.name[0]}</div>
@@ -823,6 +869,11 @@
             currentEditingBandId = bid; currentEditingBandMembers = data.memberIds;
             document.getElementById('detailBandId').value = bid; document.getElementById('detailBandName').value = data.name;
             document.getElementById('detailBandIcon').src = data.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            
+            // バンドカラーの反映
+            const color = data.color || '#ffffff';
+            document.getElementById('detailBandHeader').style.backgroundColor = color;
+            
             const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
             const canE = (data.creatorId === currentUser) || isAdmin;
             
@@ -832,6 +883,11 @@
             document.getElementById('btnArchive').classList.toggle('hidden', data.isArchived);
             document.getElementById('btnRestore').classList.toggle('hidden', !data.isArchived);
             document.getElementById('detailBandName').readOnly = !canE;
+            
+            // カラーピッカーを初期化
+            if(canE) {
+                renderColorPicker('editBandColorPicker', 'editBandColor', color);
+            }
             
             const editBadge = document.getElementById('detailIconEditBadge');
             if (editBadge) editBadge.style.display = canE ? 'flex' : 'none';
@@ -865,9 +921,36 @@
         };
 
         // --- バンド操作 ---
+        window.openBandModal = () => {
+            closeFabMenu(); 
+            document.getElementById('inputBandName').value = "";
+            document.getElementById('previewBandIcon').classList.add('hidden');
+            tempBandIconBlob = null;
+            
+            // カラーピッカーを初期化 (デフォルト白)
+            renderColorPicker('newBandColorPicker', 'inputBandColor', '#ffffff');
+            
+            const eSel = document.getElementById('selectNewBandEvent');
+            eSel.innerHTML = '<option value="">指定しない（アーカイブタブに保存）</option>';
+            targetEvents.forEach(ev => {
+                const opt = document.createElement('option');
+                opt.value = ev.id;
+                opt.innerText = ev.name;
+                eSel.appendChild(opt);
+            });
+            if(targetEvents.length > 0) eSel.value = targetEvents[0].id;
+            
+            const helpText = document.getElementById('newBandEventHelp');
+            helpText.style.display = eSel.value === "" ? "block" : "none";
+            eSel.onchange = (e) => { helpText.style.display = e.target.value === "" ? "block" : "none"; };
+
+            openModal('modal-band');
+        };
+
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
             const eventId = document.getElementById('selectNewBandEvent').value;
+            const color = document.getElementById('inputBandColor').value;
             
             const mIds = [currentUser], mNames = [currentProfile.displayName];
             const initialEvents = eventId ? [eventId] : [];
@@ -875,6 +958,7 @@
             try {
                 const docRef = await addDoc(collection(db, "bands"), { 
                     name: name, 
+                    color: color, // カラー情報を保存
                     memberIds: mIds, 
                     memberNames: mNames, 
                     events: initialEvents, 
@@ -897,11 +981,17 @@
             } catch(e) { showCustomAlert(e.message); }
         };
         
-        window.updateBandName = async () => {
-            const bid = document.getElementById('detailBandId').value, name = document.getElementById('detailBandName').value.trim();
+        window.updateBandInfo = async () => {
+            const bid = document.getElementById('detailBandId').value;
+            const name = document.getElementById('detailBandName').value.trim();
+            const color = document.getElementById('editBandColor').value;
             if(!name) return;
-            try { await updateDoc(doc(db, "bands", bid), { name: name }); showCustomAlert("更新しました。"); } catch(e) { showCustomAlert(e.message); }
+            try { 
+                await updateDoc(doc(db, "bands", bid), { name: name, color: color }); 
+                showCustomAlert("更新しました。"); 
+            } catch(e) { showCustomAlert(e.message); }
         };
+
         window.archiveBand = async () => {
             const bid = document.getElementById('detailBandId').value;
             if(await showCustomConfirm("アーカイブしますか？")) { await updateDoc(doc(db, "bands", bid), { isArchived: true }); closeModal('modal-band-detail'); }
@@ -1173,29 +1263,6 @@
             const bSel = document.getElementById('selectRegisterBand'); bSel.innerHTML = "";
             myBandsAll.filter(b=>!b.isArchived).forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.innerText = b.name; bSel.appendChild(opt); });
             openModal('modal-event-register');
-        };
-        
-        window.openBandModal = () => {
-            closeFabMenu(); 
-            document.getElementById('inputBandName').value = "";
-            document.getElementById('previewBandIcon').classList.add('hidden');
-            tempBandIconBlob = null;
-            
-            const eSel = document.getElementById('selectNewBandEvent');
-            eSel.innerHTML = '<option value="">指定しない（アーカイブタブに保存）</option>';
-            targetEvents.forEach(ev => {
-                const opt = document.createElement('option');
-                opt.value = ev.id;
-                opt.innerText = ev.name;
-                eSel.appendChild(opt);
-            });
-            if(targetEvents.length > 0) eSel.value = targetEvents[0].id;
-            
-            const helpText = document.getElementById('newBandEventHelp');
-            helpText.style.display = eSel.value === "" ? "block" : "none";
-            eSel.onchange = (e) => { helpText.style.display = e.target.value === "" ? "block" : "none"; };
-
-            openModal('modal-band');
         };
         
         window.saveEventRegistration = async () => {
