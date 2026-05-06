@@ -86,7 +86,7 @@
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         
-        /* カラーピッカー (新規追加) */
+        /* カラーピッカー */
         .color-picker-container { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 16px; }
         .color-circle { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
         .color-circle:active { transform: scale(0.9); }
@@ -271,10 +271,10 @@
     <!-- バンド詳細 -->
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
-            <div id="detailBandHeader" class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); position: relative; text-align:center; transition: background-color 0.3s;">
+            <div id="detailBandHeader" class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); position: relative; text-align:center;">
                 <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px; color: #5f6368;">close</span></button>
-                <div style="margin: 16px auto 8px; position: relative; width: 80px; height: 80px;">
-                    <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0;">
+                <div style="margin: 16px auto 12px; position: relative; width: 80px; height: 80px;">
+                    <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0; transition: box-shadow 0.3s;">
                         <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                     </div>
                     <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><span class="material-icons" style="font-size: 14px;">edit</span></div>
@@ -437,8 +437,8 @@
         const CACHE_KEY_EVENTS = 'lmc_events_cache';
         const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
 
-        // プリセットのバンドカラー
-        const BAND_COLORS = ['#ffffff', '#ffebee', '#fce4ec', '#f3e5f5', '#e8eaf6', '#e3f2fd', '#e0f7fa', '#e8f5e9', '#fff8e1', '#fff3e0', '#f1f3f4'];
+        // 枠線向けの少し濃いめのカラーパレット
+        const BAND_COLORS = ['#ffffff', '#ef5350', '#ec407a', '#ab47bc', '#7e57c2', '#5c6bc0', '#29b6f6', '#26a69a', '#66bb6a', '#ffa726', '#ff7043', '#8d6e63'];
 
         // グローバルステート
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
@@ -486,7 +486,7 @@
                     div.classList.add('selected');
                     document.getElementById(inputId).value = c;
                     if (containerId === 'editBandColorPicker') {
-                        document.getElementById('detailBandHeader').style.backgroundColor = c;
+                        document.getElementById('detailIconPicker').style.boxShadow = c !== '#ffffff' ? `0 0 0 4px ${c}` : 'none';
                     }
                 };
                 container.appendChild(div);
@@ -822,12 +822,15 @@
             const createCard = (b) => {
                 const card = document.createElement('div'); 
                 card.className = 'card band-card';
-                // バンドカラーの適用 (デフォルトは白)
-                card.style.backgroundColor = b.color || '#ffffff';
-                
                 card.onclick = () => openBandDetail(b.id, b); 
+                
+                // バンドカラーはアイコンの周りのリング(box-shadow)に適用
+                const bandColor = (b.color && b.color !== '#ffffff') ? b.color : 'transparent';
+                const iconStyle = `box-shadow: 0 0 0 3px ${bandColor};`;
+                
+                let iconH=b.icon?`<div class="band-icon" style="${iconStyle}"><img src="${b.icon}"></div>`:`<div class="band-icon" style="${iconStyle}">${(b.name||"?")[0]}</div>`; 
                 card.innerHTML = `<div class="band-item" style="border:none; margin:0; padding:0;">
-                    <div class="band-icon">${b.icon?`<img src="${b.icon}">`:b.name[0]}</div>
+                    ${iconH}
                     <div class="band-info"><div class="band-name">${b.name}</div></div>
                     <span class="material-icons" style="color:#ccc;">chevron_right</span>
                 </div>`;
@@ -870,9 +873,10 @@
             document.getElementById('detailBandId').value = bid; document.getElementById('detailBandName').value = data.name;
             document.getElementById('detailBandIcon').src = data.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
             
-            // バンドカラーの反映
+            // バンドカラーの反映 (ヘッダー背景ではなく、アイコンの枠として適用)
             const color = data.color || '#ffffff';
-            document.getElementById('detailBandHeader').style.backgroundColor = color;
+            document.getElementById('detailBandHeader').style.backgroundColor = 'white'; // ヘッダーは白固定
+            document.getElementById('detailIconPicker').style.boxShadow = color !== '#ffffff' ? `0 0 0 4px ${color}` : 'none';
             
             const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
             const canE = (data.creatorId === currentUser) || isAdmin;
