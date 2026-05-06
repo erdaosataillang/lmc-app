@@ -5,6 +5,9 @@
     <title>LMC Mobile - Cueシート</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Cropper.js (画像切り抜き用) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
         body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
@@ -14,7 +17,7 @@
         
         /* ヘッダー */
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
-        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         
@@ -74,6 +77,32 @@
     </style>
 </head>
 <body>
+    <!-- カスタムダイアログ -->
+    <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
+        <div class="modal-content" style="background:white; width:85%; max-width:320px; border-radius:24px; padding:24px; text-align:center; height: auto;">
+            <div id="dialogTitle" style="font-weight:bold; font-size:16px; margin-bottom:12px;">確認</div>
+            <div id="dialogMessage" style="font-size:13px; color:#444746; margin-bottom:24px; white-space:pre-wrap;"></div>
+            <div style="display:flex; justify-content: center;">
+                <button id="dialogBtnOk" class="btn-primary" style="margin:0; width: 100%;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画像切り抜きモーダル -->
+    <div id="modal-crop" class="modal-overlay" style="z-index: 9500;">
+        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column; padding: 16px;">
+            <h3 style="margin-top:0; font-size:18px; margin-bottom: 16px;">画像の切り抜き</h3>
+            <div style="font-size:12px; color:#5f6368; margin-bottom:8px; text-align:center;">ピンチイン・ピンチアウトで拡大縮小や移動ができます</div>
+            <div style="flex-grow: 1; min-height: 300px; max-height: 50vh; background: #000; border-radius: 12px; overflow: hidden; position: relative;">
+                <img id="crop-image-target" src="" style="display: block; max-width: 100%;">
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 16px;">
+                <button class="btn-secondary" style="margin:0; flex:1;" onclick="cancelCrop()">キャンセル</button>
+                <button class="btn-primary" id="btn-confirm-crop" style="margin:0; flex:1;" onclick="confirmCrop()">決定</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="app-header">
             <div class="header-title">
@@ -160,19 +189,31 @@
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
         <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
             <!-- ヘッダー画像 -->
-            <div style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); position: relative;">
+            <div id="modalHeaderBg" style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
+                <!-- ヘッダー画像変更ボタン -->
+                <button onclick="document.getElementById('headerImageInput').click()" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;">
+                    <span class="material-icons" style="font-size: 16px;">add_a_photo</span>
+                </button>
+                <input type="file" id="headerImageInput" accept="image/*" hidden onchange="handleHeaderImageEdit(this)">
+
                 <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
             </div>
+            
             <div style="padding: 0 16px 20px;">
+                <!-- アイコン -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: -40px; margin-bottom: 12px;">
                     <img id="modalUserIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2;">
                 </div>
+                
+                <!-- 名前と @ID -->
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div style="flex: 1; min-width: 0; padding-right: 12px;">
                         <div id="modalUserName" style="font-weight: 800; font-size: 22px; color: #0f1419; line-height: 1.2; word-wrap: break-word;"></div>
                         <div id="modalUserLineName" style="font-size: 15px; color: #536471; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                     </div>
                 </div>
+
+                <!-- 部費状況 -->
                 <div style="background:#f9f9f9; padding:16px; border-radius:16px; margin-top: 24px;">
                     <div style="font-size:12px; color:#536471; margin-bottom:8px; font-weight:bold;">2026年度 部費状況</div>
                     <div style="display:flex; gap:10px;">
@@ -180,21 +221,12 @@
                         <div id="statusFeeTerm2" class="fee-status-badge">後期: -</div>
                     </div>
                 </div>
+                
+                <!-- QRコード -->
                 <div style="margin-top: 24px; text-align: center;">
                     <div style="font-size: 13px; color: #536471; margin-bottom: 12px; font-weight: bold;">会員QRコード</div>
                     <div id="myQRCodeArea" style="width:120px; height:120px; margin:0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"></div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- カスタム通知用 -->
-    <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
-        <div class="modal-content" style="background:white; width:85%; max-width:320px; border-radius:24px; padding:24px; text-align:center; height: auto;">
-            <div id="dialogTitle" style="font-weight:bold; font-size:16px; margin-bottom:12px;">確認</div>
-            <div id="dialogMessage" style="font-size:13px; color:#444746; margin-bottom:24px; white-space:pre-wrap;"></div>
-            <div style="display:flex; justify-content: center;">
-                <button id="dialogBtnOk" class="btn-primary" style="margin:0; width: 100%;">OK</button>
             </div>
         </div>
     </div>
@@ -214,6 +246,8 @@
 
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[];
         let currentCuesheetBandId = null;
+        let cropper = null;
+        let currentCropResolver = null;
 
         // --- ユーティリティ ---
         window.showCustomAlert = (msg, title="通知") => new Promise(res => {
@@ -229,6 +263,7 @@
         
         async function main(){ 
             try{ 
+                // [高速化 1] ユーザー情報のキャッシュ表示
                 const cachedUserStr = localStorage.getItem(CACHE_KEY_USER);
                 if (cachedUserStr) {
                     try {
@@ -238,6 +273,7 @@
                     } catch (e) { console.error("User cache error", e); }
                 }
 
+                // [高速化 2] バンド一覧のキャッシュ表示
                 const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
                 if (cachedBandsStr) {
                     try {
@@ -246,6 +282,7 @@
                     } catch (e) { console.error("Bands cache error", e); }
                 }
 
+                // [高速化 3] アクティブイベントのキャッシュ表示
                 const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
                 if (cachedActiveEvent) {
                     const el = document.getElementById('displayActiveEvent');
@@ -255,6 +292,7 @@
                     }
                 }
 
+                // 通常フロー
                 try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
                 
                 await liff.init({liffId:MY_LIFF_ID}); 
@@ -270,6 +308,7 @@
                 await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
                 currentUserData=userSnap.data(); 
                 
+                // キャッシュ更新と再描画
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 renderHeaderIcons(currentUserData); 
                 
@@ -313,6 +352,7 @@
             const el = document.getElementById('headerIconCue');
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
+            // 管理者タブ表示制御
             const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
             if(isU && (d.role || hasLmcAll)) {
                 document.getElementById('nav-admin').classList.remove('hidden');
@@ -321,12 +361,22 @@
             }
         }
 
-        // --- ステータスモーダル ---
+        // --- ステータスモーダル (Twitter風) ---
         window.openUserStatusModal = async () => {
             const year=2026; const status=currentUserData.feeStatus||{};
             document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
             document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
             document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
+            
+            // ヘッダー背景画像の設定
+            const headerBg = document.getElementById('modalHeaderBg');
+            if(currentUserData.headerImage) {
+                headerBg.style.background = `url(${currentUserData.headerImage}) center/cover no-repeat`;
+            } else {
+                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
+                headerBg.style.backgroundSize = `cover`;
+                headerBg.style.backgroundPosition = `center`;
+            }
 
             const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
             t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
@@ -335,12 +385,129 @@
             openModal('modal-user-status');
         };
 
-        // --- バンドリスト ---
+        // --- Cropper.js による切り抜き処理 ---
+        window.openCropModal = (file, aspectRatio) => {
+            return new Promise((resolve, reject) => {
+                const image = document.getElementById('crop-image-target');
+                image.src = URL.createObjectURL(file);
+                openModal('modal-crop');
+                
+                if (cropper) cropper.destroy();
+                
+                image.onload = () => {
+                    cropper = new Cropper(image, {
+                        aspectRatio: aspectRatio,
+                        viewMode: 1,
+                        dragMode: 'move', // ピンチイン・アウト、スワイプ移動に対応
+                        autoCropArea: 1,
+                        restore: false,
+                        modal: true,
+                        guides: true,
+                        highlight: false,
+                        cropBoxMovable: false,
+                        cropBoxResizable: false,
+                        toggleDragModeOnDblclick: false,
+                    });
+                };
+                
+                currentCropResolver = { resolve, reject };
+            });
+        };
+
+        window.confirmCrop = () => {
+            if (!cropper || !currentCropResolver) return;
+            const btn = document.getElementById('btn-confirm-crop');
+            const originalText = btn.innerText;
+            btn.innerText = "処理中...";
+            btn.disabled = true;
+            
+            // 少しディレイを入れてUIを更新
+            setTimeout(() => {
+                const canvas = cropper.getCroppedCanvas({
+                    maxWidth: 1200,
+                    maxHeight: 1200,
+                    fillColor: '#fff',
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high',
+                });
+                canvas.toBlob((blob) => {
+                    currentCropResolver.resolve(blob);
+                    closeCropModal();
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 'image/jpeg', 0.85);
+            }, 50);
+        };
+
+        window.cancelCrop = () => {
+            if (currentCropResolver) currentCropResolver.reject(new Error("Canceled"));
+            closeCropModal();
+        };
+
+        window.closeCropModal = () => {
+            closeModal('modal-crop');
+            if (cropper) { cropper.destroy(); cropper = null; }
+            currentCropResolver = null;
+            document.getElementById('crop-image-target').src = "";
+        };
+
+        async function uploadImageToExternal(blob){
+            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
+            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
+            const json = await res.json(); return json.files[0].url;
+        }
+
+        window.handleHeaderImageEdit = async (inp) => {
+            if(inp.files && inp.files[0]) {
+                try {
+                    const file = inp.files[0];
+                    inp.value = "";
+                    // ヘッダーは 3:1
+                    const b = await openCropModal(file, 3);
+                    const url = await uploadImageToExternal(b);
+                    await updateDoc(doc(db, "users", currentUser), { headerImage: url });
+                    
+                    currentUserData.headerImage = url;
+                    localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                    
+                    document.getElementById('modalHeaderBg').style.background = `url(${url}) center/cover no-repeat`;
+                    showCustomAlert("ヘッダー画像を変更しました！");
+                } catch(e) {
+                    if (e.message !== "Canceled") showCustomAlert("エラーが発生しました: " + e.message);
+                }
+            }
+        };
+
+        const compressImage = (f, maxWidth = 800, isSquare = false) => new Promise(res => {
+            const i = new Image(); i.src = URL.createObjectURL(f);
+            i.onload = () => {
+                const c = document.createElement('canvas'); const ctx = c.getContext('2d');
+                if (isSquare) {
+                    const s = 200;
+                    c.width = s; c.height = s; 
+                    const minDim = Math.min(i.width, i.height);
+                    const sx = (i.width - minDim) / 2;
+                    const sy = (i.height - minDim) / 2;
+                    ctx.drawImage(i, sx, sy, minDim, minDim, 0, 0, s, s);
+                } else {
+                    let scaleSize = maxWidth / i.width;
+                    if (scaleSize > 1) scaleSize = 1;
+                    c.width = i.width * scaleSize;
+                    c.height = i.height * scaleSize;
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, c.width, c.height);
+                    ctx.drawImage(i, 0, 0, c.width, c.height);
+                }
+                c.toBlob(b => res(b), 'image/jpeg', 0.85);
+            };
+        });
+
         function loadMyBands(){ 
             const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); 
             onSnapshot(q,(snapshot)=>{ 
                 myBandsAll=[]; 
                 snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); 
+                // キャッシュ更新
                 localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
                 renderCuesheetBandList(); 
             }); 
@@ -441,55 +608,23 @@
             btn.disabled = true;
 
             try {
-                // 画像を圧縮
-                const compressedBlob = await compressImage(input.files[0]);
-                // 外部サーバーへアップロード
+                // 画像を圧縮 (maxWidth 1200, isSquare false)
+                const compressedBlob = await compressImage(input.files[0], 1200, false);
                 const url = await uploadImageToExternal(compressedBlob);
                 
-                // Firestoreのbandsドキュメントを更新
                 await updateDoc(doc(db, "bands", currentCuesheetBandId), {
                     latestCuesheetUrl: url
                 });
                 
-                // Alert表示
                 showCustomAlert("Cueシートを新しく登録しました！", "アップロード完了");
             } catch (e) {
                 showCustomAlert("アップロードに失敗しました: " + e.message, "エラー");
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
-                input.value = ""; // リセット
+                input.value = ""; 
             }
         };
-
-        const compressImage = (f) => new Promise(res => {
-            const i = new Image(); i.src = URL.createObjectURL(f);
-            i.onload = () => {
-                const c = document.createElement('canvas'); 
-                const ctx = c.getContext('2d'); 
-                const MAX_WIDTH = 1200;
-                let scaleSize = MAX_WIDTH / i.width;
-                if (scaleSize > 1) scaleSize = 1;
-                
-                c.width = i.width * scaleSize; 
-                c.height = i.height * scaleSize; 
-                
-                ctx.fillStyle = "#FFFFFF";
-                ctx.fillRect(0, 0, c.width, c.height);
-                ctx.drawImage(i, 0, 0, c.width, c.height);
-                
-                c.toBlob(b => res(b), 'image/jpeg', 0.85); 
-            };
-        });
-
-        async function uploadImageToExternal(blob){
-            const fd = new FormData(); 
-            fd.append('files', blob, 'cuesheet.jpg');
-            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
-            if (!res.ok) throw new Error("サーバーエラー");
-            const json = await res.json(); 
-            return json.files[0].url;
-        }
 
         // --- 全画面画像ビューア ---
         window.openFullscreenViewer = (src) => {
