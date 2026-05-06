@@ -86,12 +86,6 @@
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
         
-        /* カラーピッカー */
-        .color-picker-container { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 16px; }
-        .color-circle { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
-        .color-circle:active { transform: scale(0.9); }
-        .color-circle.selected { transform: scale(1.15); box-shadow: 0 0 0 2px white, 0 0 0 4px #0b57d0; z-index: 2; }
-
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
         .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
@@ -235,12 +229,6 @@
                 <label class="form-label">バンド名</label>
                 <input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム">
             </div>
-            <!-- カラーピッカー -->
-            <div class="form-group">
-                <label class="form-label">バンドカラー</label>
-                <div class="color-picker-container" id="newBandColorPicker"></div>
-                <input type="hidden" id="inputBandColor" value="#ffffff">
-            </div>
             
             <div class="form-group">
                 <label class="form-label">出演するイベント</label>
@@ -310,12 +298,7 @@
                 </div>
 
                 <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
-                    <div class="form-group">
-                        <label class="form-label">バンドカラー</label>
-                        <div class="color-picker-container" id="editBandColorPicker"></div>
-                        <input type="hidden" id="editBandColor" value="#ffffff">
-                    </div>
-                    <button class="btn-primary" onclick="updateBandInfo()">バンド情報を保存</button>
+                    <button class="btn-primary" onclick="updateBandName()">バンド名を保存</button>
                     <div style="display:flex; gap:8px;">
                         <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0;" onclick="archiveBand()">アーカイブ</button>
                         <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0;" onclick="restoreBand()">復元</button>
@@ -437,9 +420,6 @@
         const CACHE_KEY_EVENTS = 'lmc_events_cache';
         const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
 
-        // 枠線向けの少し濃いめのカラーパレット
-        const BAND_COLORS = ['#ffffff', '#ef5350', '#ec407a', '#ab47bc', '#7e57c2', '#5c6bc0', '#29b6f6', '#26a69a', '#66bb6a', '#ffa726', '#ff7043', '#8d6e63'];
-
         // グローバルステート
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
         let tempBandIconBlob=null, currentEditingBandId=null, currentEditingBandMembers=[];
@@ -469,30 +449,6 @@
         window.goToMyPage = () => location.href = MY_PAGE_URL;
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
-
-        // --- カラーピッカー生成関数 ---
-        function renderColorPicker(containerId, inputId, defaultColor = '#ffffff') {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            BAND_COLORS.forEach(c => {
-                const div = document.createElement('div');
-                div.className = 'color-circle';
-                div.style.backgroundColor = c;
-                if (c === '#ffffff') div.style.boxShadow = 'inset 0 0 0 1px #dadce0';
-                if (c === defaultColor) div.classList.add('selected');
-                
-                div.onclick = () => {
-                    document.querySelectorAll(`#${containerId} .color-circle`).forEach(el => el.classList.remove('selected'));
-                    div.classList.add('selected');
-                    document.getElementById(inputId).value = c;
-                    if (containerId === 'editBandColorPicker') {
-                        document.getElementById('detailIconPicker').style.boxShadow = c !== '#ffffff' ? `0 0 0 4px ${c}` : 'none';
-                    }
-                };
-                container.appendChild(div);
-            });
-            document.getElementById(inputId).value = defaultColor;
-        }
 
         // --- スピードダイヤルの制御 ---
         window.toggleFabMenu = () => {
@@ -824,11 +780,7 @@
                 card.className = 'card band-card';
                 card.onclick = () => openBandDetail(b.id, b); 
                 
-                // バンドカラーはアイコンの周りのリング(box-shadow)に適用
-                const bandColor = (b.color && b.color !== '#ffffff') ? b.color : 'transparent';
-                const iconStyle = `box-shadow: 0 0 0 3px ${bandColor};`;
-                
-                let iconH=b.icon?`<div class="band-icon" style="${iconStyle}"><img src="${b.icon}"></div>`:`<div class="band-icon" style="${iconStyle}">${(b.name||"?")[0]}</div>`; 
+                let iconH=b.icon?`<div class="band-icon"><img src="${b.icon}"></div>`:`<div class="band-icon">${(b.name||"?")[0]}</div>`; 
                 card.innerHTML = `<div class="band-item" style="border:none; margin:0; padding:0;">
                     ${iconH}
                     <div class="band-info"><div class="band-name">${b.name}</div></div>
@@ -873,11 +825,6 @@
             document.getElementById('detailBandId').value = bid; document.getElementById('detailBandName').value = data.name;
             document.getElementById('detailBandIcon').src = data.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
             
-            // バンドカラーの反映 (ヘッダー背景ではなく、アイコンの枠として適用)
-            const color = data.color || '#ffffff';
-            document.getElementById('detailBandHeader').style.backgroundColor = 'white'; // ヘッダーは白固定
-            document.getElementById('detailIconPicker').style.boxShadow = color !== '#ffffff' ? `0 0 0 4px ${color}` : 'none';
-            
             const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
             const canE = (data.creatorId === currentUser) || isAdmin;
             
@@ -887,11 +834,6 @@
             document.getElementById('btnArchive').classList.toggle('hidden', data.isArchived);
             document.getElementById('btnRestore').classList.toggle('hidden', !data.isArchived);
             document.getElementById('detailBandName').readOnly = !canE;
-            
-            // カラーピッカーを初期化
-            if(canE) {
-                renderColorPicker('editBandColorPicker', 'editBandColor', color);
-            }
             
             const editBadge = document.getElementById('detailIconEditBadge');
             if (editBadge) editBadge.style.display = canE ? 'flex' : 'none';
@@ -931,9 +873,6 @@
             document.getElementById('previewBandIcon').classList.add('hidden');
             tempBandIconBlob = null;
             
-            // カラーピッカーを初期化 (デフォルト白)
-            renderColorPicker('newBandColorPicker', 'inputBandColor', '#ffffff');
-            
             const eSel = document.getElementById('selectNewBandEvent');
             eSel.innerHTML = '<option value="">指定しない（アーカイブタブに保存）</option>';
             targetEvents.forEach(ev => {
@@ -954,7 +893,6 @@
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
             const eventId = document.getElementById('selectNewBandEvent').value;
-            const color = document.getElementById('inputBandColor').value;
             
             const mIds = [currentUser], mNames = [currentProfile.displayName];
             const initialEvents = eventId ? [eventId] : [];
@@ -962,7 +900,6 @@
             try {
                 const docRef = await addDoc(collection(db, "bands"), { 
                     name: name, 
-                    color: color, // カラー情報を保存
                     memberIds: mIds, 
                     memberNames: mNames, 
                     events: initialEvents, 
@@ -985,15 +922,10 @@
             } catch(e) { showCustomAlert(e.message); }
         };
         
-        window.updateBandInfo = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            const name = document.getElementById('detailBandName').value.trim();
-            const color = document.getElementById('editBandColor').value;
+        window.updateBandName = async () => {
+            const bid = document.getElementById('detailBandId').value, name = document.getElementById('detailBandName').value.trim();
             if(!name) return;
-            try { 
-                await updateDoc(doc(db, "bands", bid), { name: name, color: color }); 
-                showCustomAlert("更新しました。"); 
-            } catch(e) { showCustomAlert(e.message); }
+            try { await updateDoc(doc(db, "bands", bid), { name: name }); showCustomAlert("更新しました。"); } catch(e) { showCustomAlert(e.message); }
         };
 
         window.archiveBand = async () => {
@@ -1250,12 +1182,15 @@
                     const el = document.getElementById('displayActiveEvent');
                     let name = ev.data().event || ev.data().name || "";
                     let shortName = formatEventName(name);
-                    el.innerText = shortName;
-                    el.style.display = "inline-block";
+                    if(el) {
+                        el.innerText = shortName;
+                        el.style.display = "inline-block";
+                    }
                     localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
                 }
             } else {
-                document.getElementById('displayActiveEvent').style.display = "none";
+                const el = document.getElementById('displayActiveEvent');
+                if(el) el.style.display = "none";
                 localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
             }
         }
