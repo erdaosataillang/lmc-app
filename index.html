@@ -5,6 +5,9 @@
     <title>LMC Mobile - マイバンド</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Cropper.js (画像切り抜き用) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
         body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
@@ -42,12 +45,12 @@
         .band-icon img { width: 100%; height: 100%; object-fit: cover; }
         .band-info { flex-grow: 1; } .band-name { font-weight: bold; font-size: 15px; } 
 
-        /* イベント選択タブ (リストの上に浮かせ、後ろのカードが透けて見えるように配置。FABと干渉しないよう幅制限) */
+        /* イベント選択タブ */
         .band-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: absolute; bottom: 12px; left: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100% - 100px); } 
         .band-tab { flex: 0 0 auto; min-width: 60px; text-align: center; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
         .band-tab.active { background: #ffffff; color: #0b57d0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-        /* ナビゲーション (余白を詰め、グラスモーフィズムとポップアップアニメーションを追加) */
+        /* ナビゲーション */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
@@ -56,19 +59,17 @@
         .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); } 
         .nav-item.active span:not(.nav-icon) { font-weight: bold; }
 
-        /* FAB コンテナとスピードダイヤルアニメーション (より高く配置してタブと被らないように) */
+        /* FAB コンテナとスピードダイヤルアニメーション */
         .fab-container { position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
         .fab-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 900; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
         .fab-overlay.open { opacity: 1; visibility: visible; }
         
         .fab { width: 52px; height: 52px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s; z-index: 902; pointer-events: auto; }
-        /* 開いたときに回転し、色が変わる */
         .fab.open { transform: rotate(135deg); background: white; color: #d93025; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
         .fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; margin-bottom: 16px; pointer-events: none; }
         .fab-menu-item { display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(20px) scale(0.8); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
         .fab-menu.open .fab-menu-item { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
-        /* 順番に現れるようにディレイを設定 */
         .fab-menu.open .fab-menu-item:nth-child(2) { transition-delay: 0.05s; }
         .fab-menu.open .fab-menu-item:nth-child(1) { transition-delay: 0.1s; }
 
@@ -120,6 +121,21 @@
             <div style="display:flex; gap:12px;">
                 <button id="dialogBtnCancel" class="btn-secondary" style="margin:0; flex:1;">キャンセル</button>
                 <button id="dialogBtnOk" class="btn-primary" style="margin:0; flex:1;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画像切り抜きモーダル -->
+    <div id="modal-crop" class="modal-overlay" style="z-index: 9500;">
+        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column; padding: 16px;">
+            <h3 style="margin-top:0; font-size:18px; margin-bottom: 16px;">画像の切り抜き</h3>
+            <div style="font-size:12px; color:#5f6368; margin-bottom:8px; text-align:center;">ピンチイン・ピンチアウトで拡大縮小や移動ができます</div>
+            <div style="flex-grow: 1; min-height: 300px; max-height: 50vh; background: #000; border-radius: 12px; overflow: hidden; position: relative;">
+                <img id="crop-image-target" src="" style="display: block; max-width: 100%;">
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 16px;">
+                <button class="btn-secondary" style="margin:0; flex:1;" onclick="cancelCrop()">キャンセル</button>
+                <button class="btn-primary" id="btn-confirm-crop" style="margin:0; flex:1;" onclick="confirmCrop()">決定</button>
             </div>
         </div>
     </div>
@@ -406,6 +422,8 @@
         // グローバルステート
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
         let tempBandIconBlob=null, currentEditingBandId=null, currentEditingBandMembers=[];
+        let cropper = null;
+        let currentCropResolver = null;
 
         // --- ユーティリティ ---
         window.showCustomAlert = (msg, title="通知") => new Promise(res => {
@@ -427,8 +445,10 @@
         });
         window.openModal = (id) => document.getElementById(id).classList.add('open');
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-        
+        window.goToMyPage = () => location.href = MY_PAGE_URL;
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
+        
+        // 文字列から「〇〇年度」を省略する関数
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
 
         // --- スピードダイヤルの制御 ---
@@ -507,6 +527,11 @@
         function renderHeaderIcons(d){
             if(!d) return;
             let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
+            if(d.birthday){
+                const t=new Date(), b=new Date(d.birthday);
+                if(t.getMonth()===b.getMonth() && t.getDate()===b.getDate()) r="ring-birthday";
+            }
+            if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
             const el = document.getElementById('headerIconBands');
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
@@ -543,31 +568,71 @@
             openModal('modal-user-status');
         };
 
-        // --- 画像アップロード処理 ---
-        const compressImage = (f, maxWidth = 800, isSquare = false) => new Promise(res => {
-            const i = new Image(); i.src = URL.createObjectURL(f);
-            i.onload = () => {
-                const c = document.createElement('canvas'); const ctx = c.getContext('2d');
-                if (isSquare) {
-                    const s = 200;
-                    c.width = s; c.height = s; 
-                    // 中央をクロップ
-                    const minDim = Math.min(i.width, i.height);
-                    const sx = (i.width - minDim) / 2;
-                    const sy = (i.height - minDim) / 2;
-                    ctx.drawImage(i, sx, sy, minDim, minDim, 0, 0, s, s);
-                } else {
-                    let scaleSize = maxWidth / i.width;
-                    if (scaleSize > 1) scaleSize = 1;
-                    c.width = i.width * scaleSize;
-                    c.height = i.height * scaleSize;
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.fillRect(0, 0, c.width, c.height);
-                    ctx.drawImage(i, 0, 0, c.width, c.height);
-                }
-                c.toBlob(b => res(b), 'image/jpeg', 0.85);
-            };
-        });
+        // --- Cropper.js による切り抜き処理 ---
+        window.openCropModal = (file, aspectRatio) => {
+            return new Promise((resolve, reject) => {
+                const image = document.getElementById('crop-image-target');
+                image.src = URL.createObjectURL(file);
+                openModal('modal-crop');
+                
+                if (cropper) cropper.destroy();
+                
+                image.onload = () => {
+                    cropper = new Cropper(image, {
+                        aspectRatio: aspectRatio,
+                        viewMode: 1,
+                        dragMode: 'move', // ピンチイン・アウト、スワイプ移動に対応
+                        autoCropArea: 1,
+                        restore: false,
+                        modal: true,
+                        guides: true,
+                        highlight: false,
+                        cropBoxMovable: false,
+                        cropBoxResizable: false,
+                        toggleDragModeOnDblclick: false,
+                    });
+                };
+                
+                currentCropResolver = { resolve, reject };
+            });
+        };
+
+        window.confirmCrop = () => {
+            if (!cropper || !currentCropResolver) return;
+            const btn = document.getElementById('btn-confirm-crop');
+            const originalText = btn.innerText;
+            btn.innerText = "処理中...";
+            btn.disabled = true;
+            
+            // 少しディレイを入れてUIを更新
+            setTimeout(() => {
+                const canvas = cropper.getCroppedCanvas({
+                    maxWidth: 1200,
+                    maxHeight: 1200,
+                    fillColor: '#fff',
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high',
+                });
+                canvas.toBlob((blob) => {
+                    currentCropResolver.resolve(blob);
+                    closeCropModal();
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 'image/jpeg', 0.85);
+            }, 50);
+        };
+
+        window.cancelCrop = () => {
+            if (currentCropResolver) currentCropResolver.reject(new Error("Canceled"));
+            closeCropModal();
+        };
+
+        window.closeCropModal = () => {
+            closeModal('modal-crop');
+            if (cropper) { cropper.destroy(); cropper = null; }
+            currentCropResolver = null;
+            document.getElementById('crop-image-target').src = "";
+        };
 
         async function uploadImageToExternal(blob){
             const fd = new FormData(); fd.append('files', blob, 'image.jpg');
@@ -576,25 +641,43 @@
         }
 
         window.handleImageSelect = async (inp, pid) => {
-            if(inp.files?.[0]) {
-                const b = await compressImage(inp.files[0], 200, true); tempBandIconBlob = b;
-                const i = document.getElementById(pid); i.src = URL.createObjectURL(b); i.classList.remove('hidden');
+            if(inp.files && inp.files[0]) {
+                try {
+                    const file = inp.files[0];
+                    inp.value = "";
+                    // バンドアイコンは 1:1
+                    const b = await openCropModal(file, 1);
+                    tempBandIconBlob = b;
+                    const i = document.getElementById(pid); 
+                    i.src = URL.createObjectURL(b); 
+                    i.classList.remove('hidden');
+                } catch(e) { /* Canceled */ }
             }
         };
 
         window.handleImageEdit = async (inp) => {
-            if(inp.files?.[0] && await showCustomConfirm("アイコンを変更しますか？")) {
-                const b = await compressImage(inp.files[0], 200, true); const url = await uploadImageToExternal(b);
-                await updateDoc(doc(db, "bands", document.getElementById('detailBandId').value), { icon: url });
-                document.getElementById('detailBandIcon').src = url;
+            if(inp.files && inp.files[0]) {
+                try {
+                    const file = inp.files[0];
+                    inp.value = "";
+                    const b = await openCropModal(file, 1);
+                    if (await showCustomConfirm("アイコンを変更しますか？")) {
+                        const url = await uploadImageToExternal(b);
+                        await updateDoc(doc(db, "bands", document.getElementById('detailBandId').value), { icon: url });
+                        document.getElementById('detailBandIcon').src = url;
+                        showCustomAlert("アイコンを変更しました。");
+                    }
+                } catch(e) { /* Canceled */ }
             }
         };
 
         window.handleHeaderImageEdit = async (inp) => {
-            if(inp.files?.[0] && await showCustomConfirm("ヘッダー画像を変更しますか？")) {
+            if(inp.files && inp.files[0]) {
                 try {
-                    // ヘッダー画像は横長で高画質に保つため、長辺1200px、スクエアクロップなしで圧縮
-                    const b = await compressImage(inp.files[0], 1200, false);
+                    const file = inp.files[0];
+                    inp.value = "";
+                    // ヘッダーは 3:1
+                    const b = await openCropModal(file, 3);
                     const url = await uploadImageToExternal(b);
                     await updateDoc(doc(db, "users", currentUser), { headerImage: url });
                     
@@ -604,9 +687,7 @@
                     document.getElementById('modalHeaderBg').style.background = `url(${url}) center/cover no-repeat`;
                     showCustomAlert("ヘッダー画像を変更しました！");
                 } catch(e) {
-                    showCustomAlert("エラーが発生しました: " + e.message);
-                } finally {
-                    inp.value = "";
+                    if (e.message !== "Canceled") showCustomAlert("エラーが発生しました: " + e.message);
                 }
             }
         };
