@@ -260,11 +260,11 @@
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
             <div class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid #f0f0f0; position: relative; text-align:center;">
                 <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px; color: #5f6368;">close</span></button>
-                <div class="image-picker-area" style="margin: 16px 0 8px;">
-                    <div class="image-picker" id="detailIconPicker" style="width: 80px; height: 80px; border-radius: 50%;">
+                <div style="margin: 16px auto 8px; position: relative; width: 80px; height: 80px;">
+                    <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0;">
                         <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
-                        <div class="edit-badge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size: 12px;">edit</span></div>
                     </div>
+                    <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><span class="material-icons" style="font-size: 14px;">edit</span></div>
                     <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
                 </div>
                 <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 18px; font-weight: bold; border: none; background: transparent; width: 100%; text-align:center; color: #1f1f1f;">
@@ -832,6 +832,14 @@
             document.getElementById('btnArchive').classList.toggle('hidden', data.isArchived);
             document.getElementById('btnRestore').classList.toggle('hidden', !data.isArchived);
             document.getElementById('detailBandName').readOnly = !canE;
+            
+            const editBadge = document.getElementById('detailIconEditBadge');
+            if (editBadge) editBadge.style.display = canE ? 'flex' : 'none';
+            const iconPicker = document.getElementById('detailIconPicker');
+            if (iconPicker) {
+                iconPicker.onclick = canE ? () => document.getElementById('editBandIconInput').click() : null;
+                iconPicker.style.cursor = canE ? 'pointer' : 'default';
+            }
             
             document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bid, data.name);
 
