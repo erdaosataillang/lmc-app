@@ -192,9 +192,8 @@
         <div class="nav-item" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
         <div class="nav-item active" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
         <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <!-- 管理者用タブ (rollにlmc_allがある場合のみ表示) -->
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='https://lmc-mobile.sorairosystem.com/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
-        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
+        <div class="nav-item" onclick="window.location.href='/mypage.html'"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
     <div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')">
@@ -362,7 +361,6 @@
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
         window.openModal=(id)=>document.getElementById(id).classList.add('open');
         window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
-        window.goToMyPage=()=>window.location.href=MY_PAGE_URL;
         
         async function loadSystemConfig(){ try{ const snap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=snap.data(); }catch(e){} }
         
@@ -378,9 +376,9 @@
             const el = document.getElementById('headerIconCal');
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
-            // 管理者タブ表示制御 (role または roll が存在し、かつ裏方である場合)
-            const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
-            if(isU && (d.role || hasLmcAll)) {
+            // 管理者タブ表示制御
+            const hasAdminRole = d.roll && (Array.isArray(d.roll) ? (d.roll.includes('lmc_all') || d.roll.includes('admin')) : (d.roll === 'lmc_all' || d.roll === 'admin'));
+            if(hasAdminRole) {
                 document.getElementById('nav-admin').classList.remove('hidden');
             } else {
                 document.getElementById('nav-admin').classList.add('hidden');
