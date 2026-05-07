@@ -388,6 +388,7 @@
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
         const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
+        const CACHE_KEY_SYSTEM_SETTINGS = 'lmc_system_settings_cache';
 
         let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date(), selectedTimeSlot=null, selectionStartHour=null, selectionEndHour=null;
         let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
@@ -404,7 +405,15 @@
         window.openModal=(id)=>document.getElementById(id).classList.add('open');
         window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
         
-        async function loadSystemConfig(){ try{ const snap=await getDoc(doc(db,"system","settings")); if(snap.exists())currentSystemSettings=snap.data(); }catch(e){} }
+        async function loadSystemConfig(){ 
+            try{ 
+                const snap=await getDoc(doc(db,"system","settings")); 
+                if(snap.exists()) {
+                    currentSystemSettings=snap.data(); 
+                    localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
+                }
+            }catch(e){} 
+        }
         
         // ヘッダーアイコン制御 (管理者タブ表示制御を含む)
         function renderHeaderIcons(d){
@@ -550,6 +559,10 @@
                     const u = JSON.parse(cachedUserStr);
                     currentUserData = u; renderHeaderIcons(u);
                 }
+                const cachedSys = localStorage.getItem(CACHE_KEY_SYSTEM_SETTINGS);
+                if (cachedSys) {
+                    try { currentSystemSettings = JSON.parse(cachedSys); } catch(e) {}
+                }
                 requestAnimationFrame(() => {
                     setTimeout(() => {
                         const cachedBandsStr = localStorage.getItem(CACHE_KEY_BANDS);
@@ -579,8 +592,13 @@
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                     renderHeaderIcons(currentUserData);
                 } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
-                await loadSystemConfig(); loadMyBands(); 
-                switchCalendarView('month'); 
+                await loadSystemConfig(); 
+                loadMyBands(); 
+                
+                // 初回のみ現在のモードで再描画（強制的に月表示に戻さない）
+                updateViewMenuUI();
+                renderCalendar(); 
+                
                 setInterval(updateCurrentTimeLine, 60000);
                 setupSwipes();
             }catch(e){console.error(e)} 
