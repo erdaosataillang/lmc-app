@@ -85,10 +85,16 @@
         
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
-        
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
         .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; animation: zoomIn 0.2s ease; margin: auto; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #1f1f1f; }
+        .dialog-message { font-size: 13px; color: #444746; margin-bottom: 24px; line-height: 1.5; white-space: pre-wrap; }
+        .dialog-buttons { display: flex; gap: 12px; }
         
         .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
@@ -96,7 +102,9 @@
         /* メンバー・通知リスト */
         .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
         .member-option.selected { background: #e8f0fe; }
-        .member-row-rich { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; } .member-avatar-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
+        .member-row-rich { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s; cursor: pointer; } 
+        .member-row-rich:active { background-color: #f8f9fa; }
+        .member-avatar-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
         .member-name-rich { font-size: 14px; font-weight: bold; color: #1f1f1f; } .member-role-badge { font-size: 9px; background: #e8f0fe; color: #0b57d0; padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
         .stat-badge { background: #f8f9fa; padding: 6px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; flex: 1; }
         .stat-value { font-size: 14px; font-weight: bold; color: #0b57d0; } .stat-label { font-size: 9px; color: #5f6368; font-weight: bold; }
@@ -115,12 +123,37 @@
 <body>
     <!-- カスタムダイアログ -->
     <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
-        <div class="dialog-content" style="background:white; width:85%; max-width:320px; border-radius:24px; padding:24px; text-align:center;">
-            <div id="dialogTitle" style="font-weight:bold; font-size:16px; margin-bottom:12px;">確認</div>
-            <div id="dialogMessage" style="font-size:13px; color:#444746; margin-bottom:24px; white-space:pre-wrap;"></div>
+        <div class="dialog-content">
+            <div id="dialogTitle" class="dialog-title">確認</div>
+            <div id="dialogMessage" class="dialog-message">メッセージ</div>
             <div style="display:flex; gap:12px;">
                 <button id="dialogBtnCancel" class="btn-secondary" style="margin:0; flex:1;">キャンセル</button>
                 <button id="dialogBtnOk" class="btn-primary" style="margin:0; flex:1;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メンバープロフィールポップアップ -->
+    <div id="modal-member-profile" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-member-profile')" style="z-index: 9500; align-items: center;">
+        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff; max-width: 320px; border-radius: 24px; margin: auto; animation: zoomIn 0.2s ease;">
+            <!-- ヘッダー画像 -->
+            <div id="profileModalHeaderBg" style="height: 100px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
+                <button onclick="closeModal('modal-member-profile')" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 16px;">close</span></button>
+            </div>
+            <div style="padding: 0 20px 24px;">
+                <!-- アイコン -->
+                <div style="display: flex; justify-content: center; margin-top: -40px; margin-bottom: 12px;">
+                    <img id="profileModalIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                </div>
+                <!-- 情報 -->
+                <div style="text-align: center;">
+                    <div id="profileModalName" style="font-weight: 800; font-size: 20px; color: #1f1f1f; margin-bottom: 4px;"></div>
+                    <div id="profileModalSub" style="font-size: 13px; color: #5f6368; margin-bottom: 16px;"></div>
+                    
+                    <div style="display:flex; justify-content: center; gap: 8px; flex-wrap: wrap;" id="profileModalBadges">
+                        <!-- バッジ領域 -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -192,7 +225,7 @@
         <div class="nav-item active" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
         <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
         <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='https://lmc-mobile.sorairosystem.com/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
         <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
@@ -229,7 +262,6 @@
                 <label class="form-label">バンド名</label>
                 <input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム">
             </div>
-            
             <div class="form-group">
                 <label class="form-label">出演するイベント</label>
                 <select id="selectNewBandEvent" class="form-input"></select>
@@ -259,10 +291,10 @@
     <!-- バンド詳細 -->
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
-            <div id="detailBandHeader" class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); position: relative; text-align:center;">
+            <div class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid #f0f0f0; position: relative; text-align:center;">
                 <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px; color: #5f6368;">close</span></button>
-                <div style="margin: 16px auto 12px; position: relative; width: 80px; height: 80px;">
-                    <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0; transition: box-shadow 0.3s;">
+                <div style="margin: 16px auto 8px; position: relative; width: 80px; height: 80px;">
+                    <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0;">
                         <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                     </div>
                     <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><span class="material-icons" style="font-size: 14px;">edit</span></div>
@@ -273,7 +305,7 @@
                     <div class="stat-badge"><span class="stat-value" id="stat-booking-count">--</span><span class="stat-label">演奏回数</span></div>
                     <div class="stat-badge"><span class="stat-value" id="stat-song-count">--</span><span class="stat-label">演奏曲数</span></div>
                 </div>
-                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px; background: white;"><span class="material-icons" style="font-size:14px;">share</span> 招待リンクを送信</button>
+                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px;"><span class="material-icons" style="font-size:14px;">share</span> 招待リンクを送信</button>
             </div>
             <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
                 <input type="hidden" id="detailBandId">
@@ -321,7 +353,7 @@
         </div>
     </div>
 
-    <!-- Twitter(X)風 マイステータス -->
+    <!-- Twitter(X)風 マイステータスモーダル -->
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
         <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
             <!-- ヘッダー画像 -->
@@ -449,6 +481,37 @@
         window.goToMyPage = () => location.href = MY_PAGE_URL;
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
+
+        // --- メンバープロフィールポップアップ表示 ---
+        window.showMemberProfile = (uid) => {
+            const u = allUsersCache.find(x => x.id === uid);
+            if(!u) return;
+
+            document.getElementById('profileModalIcon').src = u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('profileModalName').innerText = u.name;
+            
+            // ヘッダー背景
+            const headerBg = document.getElementById('profileModalHeaderBg');
+            if(u.headerImage) {
+                headerBg.style.background = `url(${u.headerImage}) center/cover no-repeat`;
+            } else {
+                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
+            }
+
+            let subText = "";
+            if(u.year) subText += `${u.year}年`;
+            if(u.part) subText += (subText ? ` | ` : ``) + `${getPartLabel(u.part)}`;
+            if(u.lineDisplayName) subText += (subText ? ` | ` : ``) + `@${u.lineDisplayName}`;
+            document.getElementById('profileModalSub').innerText = subText;
+
+            const badges = document.getElementById('profileModalBadges');
+            badges.innerHTML = "";
+            if(u.role) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:12px;">${u.role}</div>`;
+            if(u.affiliations?.includes('urakata')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#fce8e6; color:#d93025; padding:4px 10px; border-radius:12px;">裏方</div>`;
+            if(u.affiliations?.includes('lmc')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#f1f3f4; color:#5f6368; padding:4px 10px; border-radius:12px;">LMC</div>`;
+
+            openModal('modal-member-profile');
+        };
 
         // --- スピードダイヤルの制御 ---
         window.toggleFabMenu = () => {
@@ -847,9 +910,12 @@
 
             const mList = document.getElementById('detailMemberList'); mList.innerHTML = "";
             data.memberIds.forEach(uid => {
-                const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg' };
+                const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg', id: uid };
                 const div = document.createElement('div'); div.className = 'member-row-rich';
-                const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
+                
+                div.onclick = () => showMemberProfile(uid);
+                
+                const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="event.stopPropagation(); removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
                 div.innerHTML = `<img src="${u.icon}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${u.name}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${delBtn}`;
                 mList.appendChild(div);
             });
@@ -1182,15 +1248,12 @@
                     const el = document.getElementById('displayActiveEvent');
                     let name = ev.data().event || ev.data().name || "";
                     let shortName = formatEventName(name);
-                    if(el) {
-                        el.innerText = shortName;
-                        el.style.display = "inline-block";
-                    }
+                    el.innerText = shortName;
+                    el.style.display = "inline-block";
                     localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
                 }
             } else {
-                const el = document.getElementById('displayActiveEvent');
-                if(el) el.style.display = "none";
+                document.getElementById('displayActiveEvent').style.display = "none";
                 localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
             }
         }
