@@ -134,6 +134,10 @@
         .week-day-item.sun .week-day-label { color: #d93025; }
         .week-day-item.sat .week-day-label { color: #1a73e8; }
         
+        /* 月カレンダーアニメーション用 */
+        .month-page { width: 100%; flex-shrink: 0; box-sizing: border-box; }
+        .month-slider-wrapper { display: flex; width: 100%; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); align-items: flex-start; }
+
         .fee-status-badge { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; } 
         .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } 
         .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
@@ -193,7 +197,7 @@
             <div style="display:flex; align-items:center;"><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span><div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px; font-weight:bold;"></div><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span></div>
         </div>
         <div class="scroll-content" id="calMainScroll">
-            <div id="calMonthView"><div class="month-grid" id="monthGrid"></div></div>
+            <div id="calMonthView" style="position: relative; overflow: hidden; width: 100%;"></div>
             <div id="calDayView" class="hidden">
                 <!-- 週間ストリップ -->
                 <div id="weekStrip" class="week-strip"></div>
@@ -321,17 +325,20 @@
                 const m = d.getMonth();
                 const header = document.getElementById('calHeaderDate');
                 if(header && header.innerText === "") header.innerText = y + "年 " + (m+1) + "月";
-                const grid = document.getElementById('monthGrid');
-                if(grid && grid.innerHTML.trim() === "") {
+                
+                const calMonthView = document.getElementById('calMonthView');
+                if(calMonthView && calMonthView.innerHTML.trim() === "") {
                     const wds = ['日','月','火','水','木','金','土'];
-                    let html = "";
-                    wds.forEach((wd, i) => { let cls = 'weekday-label'; if(i===0) cls+=' sun'; if(i===6) cls+=' sat'; html += '<div class="'+cls+'">'+wd+'</div>'; });
+                    let gridHtml = '<div class="month-grid">';
+                    wds.forEach((wd, i) => { let cls = 'weekday-label'; if(i===0) cls+=' sun'; if(i===6) cls+=' sat'; gridHtml += '<div class="'+cls+'">'+wd+'</div>'; });
                     const firstD = new Date(y, m, 1);
                     const lastD = new Date(y, m+1, 0);
-                    for(let i=0; i<firstD.getDay(); i++) html += '<div></div>';
-                    for(let i=1; i<=lastD.getDate(); i++){ let cls = 'day-cell'; if(i === d.getDate()) cls += ' today'; html += '<div class="'+cls+'" id="day-'+y+'-'+(m+1)+'-'+i+'"><div class="day-num">'+i+'</div><div class="status-label"></div><div class="event-dots" id="dots-'+y+'-'+(m+1)+'-'+i+'"></div></div>'; }
-                    grid.innerHTML = html;
+                    for(let i=0; i<firstD.getDay(); i++) gridHtml += '<div></div>';
+                    for(let dNum=1; dNum<=lastD.getDate(); dNum++){ let cls = 'day-cell'; if(dNum === d.getDate()) cls += ' today'; gridHtml += '<div class="'+cls+'" id="day-'+y+'-'+(m+1)+'-'+dNum+'"><div class="day-num">'+dNum+'</div><div class="status-label"></div><div class="event-dots" id="dots-'+y+'-'+(m+1)+'-'+dNum+'"></div></div>'; }
+                    gridHtml += '</div>';
+                    calMonthView.innerHTML = '<div class="month-page">' + gridHtml + '</div>';
                 }
+                
                 const strip = document.getElementById('weekStrip');
                 if(strip && strip.innerHTML.trim() === "") {
                     // 初期表示用の週間カレンダー生成（アニメーションなし）
@@ -607,7 +614,7 @@
             const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; 
             if(calendarMode==='month'){
                 document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; 
-                renderMonthView(y, m-1, useCache);
+                renderMonthView(y, m-1, useCache, animationDirection);
             } else {
                 const d=displayDate.getDate(), w=['日','月','火','水','木','金','土'][displayDate.getDay()]; 
                 document.getElementById('calHeaderDate').innerText=`${m}月`; 
@@ -615,54 +622,148 @@
             } 
         }
 
-        function renderMonthView(y, m, useCache){ 
-            const grid=document.getElementById('monthGrid'); 
-            if(!grid) return;
-            if(useCache && grid.innerHTML.trim() !== "") { loadMonthBookings(y, m, true); return; }
-            grid.innerHTML=""; 
-            ['日','月','火','水','木','金','土'].forEach(wd=>{const div=document.createElement('div'); div.className='weekday-label'; div.innerText=wd; if(wd==='日')div.classList.add('sun'); if(wd==='土')div.classList.add('sat'); grid.appendChild(div);}); 
-            const firstD=new Date(y,m,1), lastD=new Date(y,m+1,0), today=new Date(); 
-            for(let i=0; i<firstD.getDay(); i++)grid.appendChild(document.createElement('div')); 
-            for(let d=1; d<=lastD.getDate(); d++){ 
-                const div=document.createElement('div'); div.className='day-cell'; div.id=`day-${y}-${m+1}-${d}`; 
-                if(y===today.getFullYear()&&m===today.getMonth()&&d===today.getDate())div.classList.add('today'); 
-                div.onclick=()=>{displayDate.setDate(d); switchCalendarView('day', true);}; 
-                div.innerHTML=`<div class="day-num">${d}</div><div class="status-label"></div><div class="event-dots" id="dots-${y}-${m+1}-${d}"></div>`; 
-                grid.appendChild(div); 
+        function generateMonthHTML(y, m) {
+            let html = '<div class="month-grid">';
+            ['日','月','火','水','木','金','土'].forEach((wd, i) => {
+                let cls = 'weekday-label'; 
+                if(i === 0) cls += ' sun'; 
+                if(i === 6) cls += ' sat'; 
+                html += `<div class="${cls}">${wd}</div>`;
+            }); 
+            const firstD = new Date(y, m, 1);
+            const lastD = new Date(y, m+1, 0);
+            const today = new Date(); 
+            for(let i=0; i<firstD.getDay(); i++) {
+                html += '<div></div>';
             } 
-            loadMonthBookings(y,m, useCache); 
+            for(let d=1; d<=lastD.getDate(); d++) {
+                let cls = 'day-cell';
+                if(y === today.getFullYear() && m === today.getMonth() && d === today.getDate()) cls += ' today';
+                html += `<div class="${cls}" id="day-${y}-${m+1}-${d}">
+                            <div class="day-num">${d}</div>
+                            <div class="status-label"></div>
+                            <div class="event-dots" id="dots-${y}-${m+1}-${d}"></div>
+                         </div>`; 
+            } 
+            html += '</div>';
+            return html;
+        }
+
+        function renderMonthView(y, m, useCache, animationDirection = 0){ 
+            const viewContainer = document.getElementById('calMonthView'); 
+            if(!viewContainer) return;
+            
+            if (!viewContainer.hasAttribute('data-click-bound')) {
+                viewContainer.setAttribute('data-click-bound', 'true');
+                viewContainer.addEventListener('click', (e) => {
+                    const cell = e.target.closest('.day-cell');
+                    if (cell && cell.id && !cell.classList.contains('other-month')) {
+                        const parts = cell.id.split('-');
+                        if(parts.length === 4) {
+                            displayDate.setFullYear(parseInt(parts[1]), parseInt(parts[2])-1, parseInt(parts[3]));
+                            switchCalendarView('day', true);
+                        }
+                    }
+                });
+            }
+
+            const newInnerHtml = generateMonthHTML(y, m);
+            
+            if (animationDirection === 0 || viewContainer.innerHTML.trim() === "") {
+                viewContainer.innerHTML = `<div class="month-page">${newInnerHtml}</div>`;
+                loadMonthBookings(y, m, useCache);
+                return;
+            }
+
+            const oldPage = viewContainer.querySelector('.month-page');
+            const oldContent = oldPage ? oldPage.innerHTML : "";
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'month-slider-wrapper';
+            
+            const oldDiv = document.createElement('div');
+            oldDiv.className = 'month-page';
+            oldDiv.innerHTML = oldContent;
+
+            const newDiv = document.createElement('div');
+            newDiv.className = 'month-page';
+            newDiv.innerHTML = newInnerHtml;
+
+            viewContainer.innerHTML = '';
+            viewContainer.appendChild(wrapper);
+
+            if (animationDirection > 0) {
+                // Next (slide left)
+                wrapper.appendChild(oldDiv);
+                wrapper.appendChild(newDiv);
+                wrapper.style.transform = 'translateX(0)';
+                wrapper.offsetHeight; // force reflow
+                wrapper.style.transform = 'translateX(-100%)';
+            } else {
+                // Prev (slide right)
+                wrapper.appendChild(newDiv);
+                wrapper.appendChild(oldDiv);
+                wrapper.style.transform = 'translateX(-100%)';
+                wrapper.offsetHeight; // force reflow
+                wrapper.style.transform = 'translateX(0)';
+            }
+
+            loadMonthBookings(y, m, useCache);
+
+            wrapper.addEventListener('transitionend', () => {
+                viewContainer.innerHTML = `<div class="month-page">${newInnerHtml}</div>`;
+                const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${m+1}`;
+                const cached = localStorage.getItem(cacheKey);
+                if(cached) { try { applyBookingDataToMonth(JSON.parse(cached), y, m+1); } catch(e) {} }
+            }, { once: true });
         }
 
         function loadMonthBookings(y,m, useCache){ 
-            const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${m}`;
+            const displayM = m + 1;
+            const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${displayM}`;
             const cached = localStorage.getItem(cacheKey);
-            if(cached) { try { const data = JSON.parse(cached); loadedBookingsCache = data; applyBookingDataToMonth(data); } catch(e) {} }
+            if(cached) { try { const data = JSON.parse(cached); loadedBookingsCache = data; applyBookingDataToMonth(data, y, displayM); } catch(e) {} }
             if (useCache) return;
             onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{ 
                 const bookings = [];
                 qs.forEach(docSnap => { const d = docSnap.data(); bookings.push({ ...d, id: docSnap.id, startTime: d.startTime.toDate().toISOString(), endTime: d.endTime.toDate().toISOString(), type: d.type }); });
-                loadedBookingsCache = bookings; localStorage.setItem(cacheKey, JSON.stringify(bookings)); applyBookingDataToMonth(bookings); hideSyncIndicator();
+                loadedBookingsCache = bookings; localStorage.setItem(cacheKey, JSON.stringify(bookings)); applyBookingDataToMonth(bookings, y, displayM); hideSyncIndicator();
             }); 
         }
 
-        function applyBookingDataToMonth(bookings) {
-            document.querySelectorAll('.event-dots').forEach(el=>el.innerHTML=""); 
-            document.querySelectorAll('.day-cell.unavailable, .day-cell.partial-event').forEach(el=>{ el.classList.remove('unavailable', 'partial-event'); const st = el.querySelector('.status-label'); if(st) st.innerText = ""; }); 
+        function applyBookingDataToMonth(bookings, y, m) {
+            document.querySelectorAll(`.day-cell[id^="day-${y}-${m}-"]`).forEach(cell => {
+                cell.classList.remove('unavailable', 'partial-event');
+                const st = cell.querySelector('.status-label');
+                if(st) st.innerText = "";
+            });
+            document.querySelectorAll(`.event-dots[id^="dots-${y}-${m}-"]`).forEach(el => el.innerHTML = "");
+
             const stats = {};
             bookings.forEach(bk => {
-                const d = new Date(bk.startTime); const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-                if (!stats[key]) stats[key] = { count: 0, eventType: null };
-                if (bk.type === 'event') {
-                    const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); const sH = d.getHours(); const eH = e.getHours(); const isAllDay = (sH <= 9 && eH >= 20);
-                    if (isAllDay) { stats[key].eventType = 'unavailable'; } else if (stats[key].eventType !== 'unavailable') { stats[key].eventType = 'partial'; }
-                } else { stats[key].count++; }
+                const d = new Date(bk.startTime); 
+                if (d.getFullYear() === y && (d.getMonth() + 1) === m) {
+                    const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+                    if (!stats[key]) stats[key] = { count: 0, eventType: null };
+                    if (bk.type === 'event') {
+                        const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); const sH = d.getHours(); const eH = e.getHours(); const isAllDay = (sH <= 9 && eH >= 20);
+                        if (isAllDay) { stats[key].eventType = 'unavailable'; } else if (stats[key].eventType !== 'unavailable') { stats[key].eventType = 'partial'; }
+                    } else { stats[key].count++; }
+                }
             });
             Object.keys(stats).forEach(key => {
                 const data = stats[key]; const cell = document.getElementById(key); if (!cell) return;
                 if (data.eventType === 'unavailable') { cell.classList.add('unavailable'); const st = cell.querySelector('.status-label'); if(st) st.innerText = "不可"; } else if (data.eventType === 'partial') { cell.classList.add('partial-event'); }
                 if (data.count > 0) {
                     const dotsContainer = document.getElementById(key.replace('day-', 'dots-'));
-                    if (dotsContainer) { if (data.count <= 3) { for(let i=0; i<data.count; i++) { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); } } else { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); const plus = document.createElement('div'); plus.className = 'dot-plus'; plus.innerText = `+${data.count - 1}`; dotsContainer.appendChild(plus); } }
+                    if (dotsContainer) { 
+                        if (data.count <= 3) { 
+                            for(let i=0; i<data.count; i++) { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); } 
+                        } else { 
+                            const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); 
+                            const plus = document.createElement('div'); plus.className = 'dot-plus'; plus.innerText = `+${data.count - 1}`; dotsContainer.appendChild(plus); 
+                        } 
+                    }
                 }
             });
         }
