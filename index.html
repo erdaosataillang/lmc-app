@@ -528,7 +528,8 @@
                 headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
             }
             
-            document.getElementById('profileModalBandCount').innerText = "-";
+            // キャッシュがあれば即時表示、なければ '-'
+            document.getElementById('profileModalBandCount').innerText = u.cachedBandCount !== undefined ? u.cachedBandCount : "-";
             document.getElementById('profileModalLikeCount').innerText = "0";
 
             let subText = "";
@@ -546,14 +547,17 @@
             openModal('modal-member-profile');
 
             try {
-                // タップされたユーザーが所属するバンドを取得し、アーカイブされていないものだけカウントする
+                // タップされたユーザーが所属するバンドを取得し、アーカイブ済みも含めてすべてカウントする
                 const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid));
                 const snap = await getDocs(q);
-                let activeBands = 0;
-                snap.forEach(d => {
-                    if(!d.data().isArchived) activeBands++;
-                });
-                document.getElementById('profileModalBandCount').innerText = activeBands;
+                const totalBands = snap.size;
+                
+                document.getElementById('profileModalBandCount').innerText = totalBands;
+                
+                // キャッシュに保存して次回高速化
+                u.cachedBandCount = totalBands;
+                localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
+                
             } catch(e) {
                 console.error(e);
                 document.getElementById('profileModalBandCount').innerText = "?";
@@ -664,9 +668,9 @@
             document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
             
             // バンド数といいね数の反映
-            const activeBandsCount = myBandsAll.filter(b => !b.isArchived).length;
+            const allBandsCount = myBandsAll.length; // アーカイブ含むすべて
             const elBandCount = document.getElementById('modalUserBandCount');
-            if(elBandCount) elBandCount.innerText = activeBandsCount;
+            if(elBandCount) elBandCount.innerText = allBandsCount;
             const elLikeCount = document.getElementById('modalUserLikeCount');
             if(elLikeCount) elLikeCount.innerText = "0";
 
