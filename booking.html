@@ -5,6 +5,9 @@
     <title>LMC Mobile - 合わせ予約</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Cropper.js (画像切り抜き用) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
         body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
@@ -149,6 +152,21 @@
         </div>
     </div>
 
+    <!-- 画像切り抜きモーダル (Cropper) -->
+    <div id="modal-crop" class="modal-overlay" style="z-index: 9500;">
+        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column; padding: 16px;">
+            <h3 style="margin-top:0; font-size:18px; margin-bottom: 16px;">画像の切り抜き</h3>
+            <div style="font-size:12px; color:#5f6368; margin-bottom:8px; text-align:center;">ピンチイン・ピンチアウトで拡大縮小や移動ができます</div>
+            <div style="flex-grow: 1; min-height: 300px; max-height: 50vh; background: #000; border-radius: 12px; overflow: hidden; position: relative;">
+                <img id="crop-image-target" src="" style="display: block; max-width: 100%;">
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 16px;">
+                <button class="btn-secondary" style="margin:0; flex:1;" onclick="cancelCrop()">キャンセル</button>
+                <button class="btn-primary" id="btn-confirm-crop" style="margin:0; flex:1;" onclick="confirmCrop()">決定</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="app-header">
             <div class="header-title">合わせ予約</div>
@@ -249,11 +267,17 @@
         </div>
     </div>
 
-    <!-- Twitter(X)風 マイステータス -->
+    <!-- Twitter(X)風 マイステータスモーダル -->
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
         <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
             <!-- ヘッダー画像 -->
-            <div style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); position: relative;">
+            <div id="modalHeaderBg" style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
+                <!-- ヘッダー画像変更ボタン -->
+                <button onclick="document.getElementById('headerImageInput').click()" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;">
+                    <span class="material-icons" style="font-size: 16px;">add_a_photo</span>
+                </button>
+                <input type="file" id="headerImageInput" accept="image/*" hidden onchange="handleHeaderImageEdit(this)">
+
                 <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
             </div>
             
@@ -356,6 +380,8 @@
         let loadedBookingsCache = [];
         let touchStartX = 0;
         let touchEndX = 0;
+        let cropper = null;
+        let currentCropResolver = null;
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
@@ -385,6 +411,97 @@
             }
         }
 
+        // --- Cropper.js による切り抜き処理 ---
+        window.openCropModal = (file, aspectRatio) => {
+            return new Promise((resolve, reject) => {
+                const image = document.getElementById('crop-image-target');
+                image.src = URL.createObjectURL(file);
+                openModal('modal-crop');
+                
+                if (cropper) cropper.destroy();
+                
+                image.onload = () => {
+                    cropper = new Cropper(image, {
+                        aspectRatio: aspectRatio,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        restore: false,
+                        modal: true,
+                        guides: true,
+                        highlight: false,
+                        cropBoxMovable: false,
+                        cropBoxResizable: false,
+                        toggleDragModeOnDblclick: false,
+                    });
+                };
+                
+                currentCropResolver = { resolve, reject };
+            });
+        };
+
+        window.confirmCrop = () => {
+            if (!cropper || !currentCropResolver) return;
+            const btn = document.getElementById('btn-confirm-crop');
+            const originalText = btn.innerText;
+            btn.innerText = "処理中...";
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                const canvas = cropper.getCroppedCanvas({
+                    maxWidth: 1200,
+                    maxHeight: 1200,
+                    fillColor: '#fff',
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high',
+                });
+                canvas.toBlob((blob) => {
+                    currentCropResolver.resolve(blob);
+                    closeCropModal();
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 'image/jpeg', 0.85);
+            }, 50);
+        };
+
+        window.cancelCrop = () => {
+            if (currentCropResolver) currentCropResolver.reject(new Error("Canceled"));
+            closeCropModal();
+        };
+
+        window.closeCropModal = () => {
+            closeModal('modal-crop');
+            if (cropper) { cropper.destroy(); cropper = null; }
+            currentCropResolver = null;
+            document.getElementById('crop-image-target').src = "";
+        };
+
+        async function uploadImageToExternal(blob){
+            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
+            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
+            const json = await res.json(); return json.files[0].url;
+        }
+
+        window.handleHeaderImageEdit = async (inp) => {
+            if(inp.files && inp.files[0]) {
+                try {
+                    const file = inp.files[0];
+                    inp.value = "";
+                    const b = await openCropModal(file, 3); // 3:1 ratio
+                    const url = await uploadImageToExternal(b);
+                    await updateDoc(doc(db, "users", currentUser), { headerImage: url });
+                    
+                    currentUserData.headerImage = url;
+                    localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                    
+                    document.getElementById('modalHeaderBg').style.background = `url(${url}) center/cover no-repeat`;
+                    showCustomAlert("ヘッダー画像を変更しました！");
+                } catch(e) {
+                    if (e.message !== "Canceled") showCustomAlert("エラーが発生しました: " + e.message);
+                }
+            }
+        };
+
         // --- ステータスモーダル (Twitter風) ---
         window.openUserStatusModal = async () => {
             const year=2026; const status=currentUserData.feeStatus||{};
@@ -392,6 +509,16 @@
             document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
             // LINE名を @つきで表示
             document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
+
+            // ヘッダー背景画像の設定
+            const headerBg = document.getElementById('modalHeaderBg');
+            if(currentUserData.headerImage) {
+                headerBg.style.background = `url(${currentUserData.headerImage}) center/cover no-repeat`;
+            } else {
+                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
+                headerBg.style.backgroundSize = `cover`;
+                headerBg.style.backgroundPosition = `center`;
+            }
 
             const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
             t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
