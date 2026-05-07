@@ -69,11 +69,18 @@
         .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; touch-action: pan-y; } .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
         
         /* 予約ブロックのデザイン (角丸強め) */
-        .event-block { position: absolute; left: 0; width: 100%; background: #e8f0fe; border-left: 4px solid #0b57d0; border-radius: 8px; padding: 4px 6px; font-size: 11px; color: #0b57d0; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05); box-sizing: border-box; line-height: 1.2; }
+        .event-block { position: absolute; left: 0; width: 100%; border-left: 4px solid transparent; border-radius: 8px; padding: 4px 6px; font-size: 11px; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05); box-sizing: border-box; line-height: 1.2; }
         .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; margin-bottom: 1px; } 
-        .event-block.special-event { background: #e6f4ea; border-left: 4px solid #137333; color: #0d652d; }
-        .event-block.pending { opacity: 0.9; background: #fff8e1; border-left: 4px solid #ffb300; color: #b06000; border: 1px dashed #ffb300; border-left-style: solid; }
-        .event-block.lottery-confirmed { background: #f3e5f5; border-left: 4px solid #ab47bc; color: #4a148c; }
+        
+        /* 即確定 (青系) */
+        .event-block.normal-confirmed { background: #e8f0fe; border-left-color: #0b57d0; color: #0b57d0; }
+        /* 抽選 確定前 (オレンジ系) */
+        .event-block.pending { opacity: 0.9; background: #fff8e1; border-color: #ffb300; color: #b06000; border-style: dashed; border-left-style: solid; border-width: 1px 1px 1px 4px; }
+        /* 抽選 確定後 (紫系) */
+        .event-block.lottery-confirmed { background: #f3e5f5; border-left-color: #ab47bc; color: #4a148c; }
+        /* 管理者による確定/イベント (緑系) */
+        .event-block.special-event { background: #e6f4ea; border-left-color: #137333; color: #0d652d; }
+        
         .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; } .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
         
         /* ナビゲーション (グラスモーフィズムとポップアップアニメーション) */
@@ -812,16 +819,13 @@
                     div.classList.add('special-event'); div.innerHTML=`<div class="event-title">${d.title}</div>`;
                 } else { 
                     div.innerHTML=`<div class="event-title">${d.bandName}</div><div style="font-size:10px; opacity:0.8;">${d.userName||''}</div>`; 
-                    if(d.status==='pending')div.classList.add('pending'); 
-                    const myB=myBandsAll.map(b=>b.id); 
-                    if(myB.includes(d.bandId)){
-                        if(d.status!=='pending'){div.style.backgroundColor="#e6f4ea"; div.style.borderLeftColor="#34A853"; div.style.color="#0d652d";}
-                    } else if(d.status!=='pending'){
-                        div.style.backgroundColor="#f1f3f4"; div.style.borderLeftColor="#9aa0a6"; div.style.color="#5f6368";
-                    } 
-                    if(d.source==='lottery'){
-                        div.classList.add('lottery-confirmed'); div.style.backgroundColor="#f3e5f5"; div.style.borderLeftColor="#ab47bc"; div.style.color="#4a148c";
-                    } 
+                    if(d.status==='pending'){
+                        div.classList.add('pending');
+                    } else if(d.source==='lottery'){
+                        div.classList.add('lottery-confirmed');
+                    } else {
+                        div.classList.add('normal-confirmed');
+                    }
                 } 
                 div.onclick=(ev)=>{ev.stopPropagation(); openEditBookingModal(d.id,d);}; 
                 cA.appendChild(div); 
