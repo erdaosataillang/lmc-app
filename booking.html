@@ -119,6 +119,15 @@
         .dialog-message { font-size: 13px; color: #444746; margin-bottom: 24px; line-height: 1.5; white-space: pre-wrap; }
         .dialog-buttons { display: flex; gap: 12px; }
         
+        /* フルスクリーン展開用アニメーション */
+        .pop-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #f8f9fa; z-index: 9999; clip-path: circle(0px at var(--origin-x, 50%) var(--origin-y, 50%)); transition: clip-path 0.5s cubic-bezier(0.2, 0, 0, 1), opacity 0.4s ease; opacity: 0; pointer-events: none; display: flex; flex-direction: column; }
+        .pop-overlay.open { clip-path: circle(150% at var(--origin-x, 50%) var(--origin-y, 50%)); opacity: 1; pointer-events: auto; }
+        .search-header-bar { display: flex; padding: 12px 16px; align-items: center; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 2; }
+        .search-input-wrapper { flex: 1; position: relative; margin-left: 12px; }
+        .search-input-wrapper .material-icons { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #5f6368; }
+        .search-input-wrapper input { width: 100%; padding: 12px 12px 12px 40px; border-radius: 999px; border: none; background: #f1f3f4; font-size: 16px; outline: none; box-sizing: border-box; transition: background 0.3s; }
+        .search-input-wrapper input:focus { background: #e8f0fe; }
+        
         /* 同期アイコンの左回り回転 */
         .sync-indicator { margin-right: 12px; animation: spin-reverse 1.5s linear infinite; display: flex; }
         @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
@@ -200,7 +209,7 @@
                 <div id="btnSearch" class="header-icon-btn" onclick="openSearchModal(event)">
                     <span class="material-icons">search</span>
                 </div>
-                <div id="btnAdd" class="header-icon-btn" onclick="handleNewBooking()">
+                <div id="btnAdd" class="header-icon-btn" onclick="handleNewBooking(event)">
                     <span class="material-icons">add</span>
                 </div>
                 <div class="header-avatar" id="headerIconCal"></div>
@@ -236,34 +245,41 @@
         <div class="nav-item" onclick="window.location.href='/mypage.html'"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
-    <div id="modal-booking" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking')">
-        <div class="modal-content">
-            <h3 style="margin-top:0;" id="bookingModalTitle">予約の確認</h3>
+    <!-- 新規予約・編集 フルスクリーンオーバーレイ -->
+    <div id="modal-booking" class="pop-overlay">
+        <div class="search-header-bar" style="justify-content: flex-start; gap: 12px;">
+            <button onclick="closeModal('modal-booking')" style="border:none; background:none; padding:8px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-left:-8px; transition: background 0.2s;">
+                <span class="material-icons" style="font-size: 24px; color: #1f1f1f;">arrow_back</span>
+            </button>
+            <h3 style="margin:0; font-size: 18px; color: #1f1f1f;" id="bookingModalTitle">予約の確認</h3>
+        </div>
+        <div style="padding: 20px 16px; flex: 1; overflow-y: auto;">
             <input type="hidden" id="editingBookingId">
-            <div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:16px; margin-bottom:10px;" id="bookingDateDisplay"></div></div>
+            <div class="form-group"><label class="form-label">日付</label><div style="font-weight:bold; font-size:18px; margin-bottom:10px; color:#1f1f1f;" id="bookingDateDisplay"></div></div>
             <div class="form-group"><label class="checkbox-label"><input type="checkbox" id="checkAllDay" onchange="toggleAllDay()"> 終日 (9:00 - 20:00)</label></div>
             <div class="form-group" id="timeSelectArea" style="display:flex; gap:10px; align-items:center;">
-                <div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span>〜</span>
+                <div style="flex:1;"><label class="form-label">開始</label><select id="selectStartTime" class="form-input"></select></div><span style="color:#5f6368; font-weight:bold;">〜</span>
                 <div style="flex:1;"><label class="form-label">終了</label><select id="selectEndTime" class="form-input"></select></div>
             </div>
-            <div id="bookingTypeSelector" class="form-group hidden" style="background:#f8f9fa; padding:12px; border-radius:12px;">
+            <div id="bookingTypeSelector" class="form-group hidden" style="background:white; padding:16px; border-radius:16px; box-shadow:0 1px 3px rgba(0,0,0,0.05); border:1px solid #eee;">
                 <label class="form-label">登録種別</label>
                 <div class="radio-group"><label class="radio-label"><input type="radio" name="bookingType" value="normal" checked onchange="toggleBookingInputs()"> バンド練習</label><label class="radio-label" style="color:#137333; font-weight:bold;"><input type="radio" name="bookingType" value="event" onchange="toggleBookingInputs()"> イベント・不可日</label></div>
             </div>
             <div id="groupBandSelect" class="form-group"><label class="form-label">予約するバンド</label><select id="selectBookingBand" class="form-input"></select></div>
             <div id="groupEventTitle" class="form-group hidden"><label class="form-label">イベント名 / 理由</label><input type="text" id="inputEventTitle" class="form-input" placeholder="例: 定期演奏会"></div>
             
-            <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
-            <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button>
-            <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
-            <button class="btn-secondary" onclick="closeModal('modal-booking')">キャンセル</button>
+            <div style="margin-top: 32px;">
+                <button id="btnSaveBooking" class="btn-primary" onclick="saveBooking()">予約を確定する</button>
+                <button id="btnAddToGCal" class="btn-google hidden" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> Googleカレンダーに追加</button>
+                <button id="btnDeleteBooking" class="btn-danger hidden" onclick="deleteBooking()">この予約を削除</button>
+            </div>
         </div>
     </div>
     
     <!-- 検索フルスクリーンオーバーレイ -->
-    <div id="search-overlay" class="search-overlay">
+    <div id="modal-search" class="pop-overlay">
         <div class="search-header-bar">
-            <button onclick="closeSearchModal()" style="border:none; background:none; padding:8px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-left:-8px;">
+            <button onclick="closeModal('modal-search')" style="border:none; background:none; padding:8px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-left:-8px; transition: background 0.2s;">
                 <span class="material-icons" style="font-size: 24px; color: #1f1f1f;">arrow_back</span>
             </button>
             <div class="search-input-wrapper">
@@ -274,21 +290,10 @@
         <div style="padding: 12px 16px; display:flex; justify-content:space-between; align-items: center;">
             <span style="font-size: 13px; color: #5f6368; font-weight: bold;">検索結果</span>
             <label class="checkbox-label" style="font-size:13px; margin:0;">
-                <input type="checkbox" id="filterMyBands" onchange="filterSearchResults()"> 自分のバンドのみ
+                <input type="checkbox" id="filterMyBands" onchange="filterSearchResults()"> 自分の参加バンドのみ
             </label>
         </div>
-        <div id="searchResultContainer" style="flex:1; overflow-y:auto; padding: 0 16px 20px;">
-            <!-- JSで結果を描画 -->
-        </div>
-    </div>
-
-    <div id="modal-event-list" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-list')">
-        <div class="modal-content">
-            <h3 style="margin-top:0;">予約一覧</h3>
-            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">詳細を確認・編集したい予約をタップしてください。</p>
-            <div id="eventListContainer" style="max-height: 400px; overflow-y: auto;"></div>
-            <button class="btn-secondary" onclick="closeModal('modal-event-list')">閉じる</button>
-        </div>
+        <div id="searchResultContainer" style="flex:1; overflow-y:auto; padding: 0 16px 20px;"></div>
     </div>
 
     <!-- Twitter(X)風 マイステータスモーダル -->
@@ -1040,59 +1045,121 @@
         
         function handleTouchStart(e){ if(e.target.classList.contains('event-block'))return; const h=parseInt(e.target.dataset.hour); if(isNaN(h))return; selectionTimer=setTimeout(()=>{isSelecting=true; selectionStartHour=h; selectionEndHour=h; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate)navigator.vibrate(50);},500); }
         function handleTouchMove(e){ if(!isSelecting){clearTimeout(selectionTimer);return;} e.preventDefault(); const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY); if(t&&t.classList.contains('time-content')){selectionEndHour=parseInt(t.dataset.hour); updateSelectionUI();} }
-        function handleTouchEnd(e){ clearTimeout(selectionTimer); if(isSelecting){isSelecting=false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange();} }
+        function handleTouchEnd(e){ clearTimeout(selectionTimer); if(isSelecting){isSelecting=false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(e);} }
         function handleMouseDown(e){ if(!e.target.classList.contains('time-content'))return; isSelecting=true; selectionStartHour=parseInt(e.target.dataset.hour); selectionEndHour=selectionStartHour; updateSelectionUI(); }
         function handleMouseMove(e){ if(isSelecting&&e.target.classList.contains('time-content')){selectionEndHour=parseInt(e.target.dataset.hour); updateSelectionUI();} }
-        function handleMouseUp(){ if(isSelecting){isSelecting=false; openBookingModalRange();} }
+        function handleMouseUp(e){ if(isSelecting){isSelecting=false; openBookingModalRange(e);} }
         function updateSelectionUI(){ document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); if(selectionStartHour===null||selectionEndHour===null)return; const s=Math.min(selectionStartHour,selectionEndHour), e=Math.max(selectionStartHour,selectionEndHour); for(let h=s; h<=e; h++)document.querySelector(`.time-content[data-hour="${h}"]`)?.classList.add('selecting'); }
+        
+        // アニメーションの起点を設定する関数
+        function setModalOrigin(modalId, e) {
+            const overlay = document.getElementById(modalId);
+            if (!overlay) return;
+            let x = '50%', y = '50%';
+            if (e) {
+                if (e.clientX !== undefined && e.clientY !== undefined) {
+                    x = `${e.clientX}px`; y = `${e.clientY}px`;
+                } else if (e.changedTouches && e.changedTouches.length > 0) {
+                    x = `${e.changedTouches[0].clientX}px`; y = `${e.changedTouches[0].clientY}px`;
+                } else if (e.target && e.target.getBoundingClientRect) {
+                    const el = e.target.closest('.header-icon-btn, .event-block, .card, .time-content, .day-cell');
+                    if (el) {
+                        const rect = el.getBoundingClientRect();
+                        x = `${rect.left + rect.width / 2}px`;
+                        y = `${rect.top + rect.height / 2}px`;
+                    }
+                }
+            }
+            overlay.style.setProperty('--origin-x', x);
+            overlay.style.setProperty('--origin-y', y);
+        }
+
         window.toggleAllDay=()=>{ const isA=document.getElementById('checkAllDay').checked, area=document.getElementById('timeSelectArea'); if(isA){area.style.opacity="0.5"; area.style.pointerEvents="none"; document.getElementById('selectStartTime').value="9:00"; document.getElementById('selectEndTime').value="20:00";} else {area.style.opacity="1"; area.style.pointerEvents="auto";} };
         window.toggleBookingInputs=()=>{ const t=document.querySelector('input[name="bookingType"]:checked')?.value||'normal'; if(t==='event'){document.getElementById('groupBandSelect').classList.add('hidden'); document.getElementById('groupEventTitle').classList.remove('hidden');} else {document.getElementById('groupBandSelect').classList.remove('hidden'); document.getElementById('groupEventTitle').classList.add('hidden');} };
-        function openBookingModalRange(){ document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); const s=Math.min(selectionStartHour,selectionEndHour), e=Math.max(selectionStartHour,selectionEndHour); document.getElementById('bookingModalTitle').innerText="新規予約"; document.getElementById('btnSaveBooking').innerText="確定する"; document.getElementById('btnDeleteBooking').classList.add('hidden'); document.getElementById('btnAddToGCal').classList.add('hidden'); document.getElementById('editingBookingId').value=""; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); if(isAdmin)document.querySelector('input[name="bookingType"][value="normal"]').checked=true; toggleBookingInputs(); document.getElementById('bookingDateDisplay').innerText=`${displayDate.getMonth()+1}月 ${displayDate.getDate()}日`; setupTimeSelects(`${s}:00`,`${e+1}:00`); document.getElementById('checkAllDay').checked=false; toggleAllDay(); updateBandSelect(); openModal('modal-booking'); }
-        function openEditBookingModal(id,data){ if(data.creatorId!==currentUser){ if(data.type==='event')showCustomAlert(`【${data.title}】\n既に予定が入っています。`, "予約不可"); else showCustomAlert("他のユーザーが作成した予約は編集できません。", "編集不可"); return; } document.getElementById('bookingModalTitle').innerText="予約の編集"; document.getElementById('btnSaveBooking').innerText="変更保存"; document.getElementById('btnDeleteBooking').classList.remove('hidden'); document.getElementById('btnAddToGCal').classList.remove('hidden'); document.getElementById('editingBookingId').value=id; editingBookingData=data; const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); if(isAdmin)document.querySelector(`input[name="bookingType"][value="${data.type||'normal'}"]`).checked=true; toggleBookingInputs(); const s=new Date(data.startTime); const e=new Date(data.endTime); const sStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`, eStr=`${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}`; document.getElementById('bookingDateDisplay').innerText=`${s.getMonth()+1}月 ${s.getDate()}日`; document.getElementById('checkAllDay').checked=(sStr==="9:00"&&eStr==="20:00"); setupTimeSelects(sStr,eStr); toggleAllDay(); if(data.type==='event')document.getElementById('inputEventTitle').value=data.title||""; else updateBandSelect(data.bandId); openModal('modal-booking'); }
+        
+        function openBookingModalRange(e){ 
+            document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); 
+            const s=Math.min(selectionStartHour,selectionEndHour), e_hr=Math.max(selectionStartHour,selectionEndHour); 
+            document.getElementById('bookingModalTitle').innerText="新規予約"; 
+            document.getElementById('btnSaveBooking').innerText="確定する"; 
+            document.getElementById('btnDeleteBooking').classList.add('hidden'); 
+            document.getElementById('btnAddToGCal').classList.add('hidden'); 
+            document.getElementById('editingBookingId').value=""; 
+            const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; 
+            document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); 
+            if(isAdmin)document.querySelector('input[name="bookingType"][value="normal"]').checked=true; 
+            toggleBookingInputs(); 
+            document.getElementById('bookingDateDisplay').innerText=`${displayDate.getMonth()+1}月 ${displayDate.getDate()}日`; 
+            setupTimeSelects(`${s}:00`,`${e_hr+1}:00`); 
+            document.getElementById('checkAllDay').checked=false; 
+            toggleAllDay(); 
+            updateBandSelect(); 
+            
+            setModalOrigin('modal-booking', e);
+            openModal('modal-booking'); 
+        }
+        
+        function openEditBookingModal(id, data, e){ 
+            if(data.creatorId!==currentUser){ 
+                if(data.type==='event')showCustomAlert(`【${data.title}】\n既に予定が入っています。`, "予約不可"); 
+                else showCustomAlert("他のユーザーが作成した予約は編集できません。", "編集不可"); 
+                return; 
+            } 
+            document.getElementById('bookingModalTitle').innerText="予約の編集"; 
+            document.getElementById('btnSaveBooking').innerText="変更保存"; 
+            document.getElementById('btnDeleteBooking').classList.remove('hidden'); 
+            document.getElementById('btnAddToGCal').classList.remove('hidden'); 
+            document.getElementById('editingBookingId').value=id; 
+            editingBookingData=data; 
+            const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; 
+            document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); 
+            if(isAdmin)document.querySelector(`input[name="bookingType"][value="${data.type||'normal'}"]`).checked=true; 
+            toggleBookingInputs(); 
+            const s=new Date(data.startTime); 
+            const end_time=new Date(data.endTime); 
+            const sStr=`${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')}`, eStr=`${end_time.getHours()}:${String(end_time.getMinutes()).padStart(2,'0')}`; 
+            document.getElementById('bookingDateDisplay').innerText=`${s.getMonth()+1}月 ${s.getDate()}日`; 
+            document.getElementById('checkAllDay').checked=(sStr==="9:00"&&eStr==="20:00"); 
+            setupTimeSelects(sStr,eStr); 
+            toggleAllDay(); 
+            if(data.type==='event')document.getElementById('inputEventTitle').value=data.title||""; 
+            else updateBandSelect(data.bandId); 
+            
+            setModalOrigin('modal-booking', e);
+            openModal('modal-booking'); 
+        }
         function setupTimeSelects(ds,de){ const sSel=document.getElementById('selectStartTime'), eSel=document.getElementById('selectEndTime'), opts=[]; for(let h=9;h<=20;h++){ opts.push(`${h}:00`); if(h<20)opts.push(`${h}:30`); } sSel.innerHTML=""; eSel.innerHTML=""; opts.forEach(t=>{sSel.appendChild(new Option(t,t)); eSel.appendChild(new Option(t,t));}); if(ds)sSel.value=ds; if(de)eSel.value=de; }
         function updateBandSelect(bid=""){ const s=document.getElementById('selectBookingBand'); s.innerHTML=""; const active=myBandsAll.filter(b=>!b.isArchived); if(active.length===0)s.appendChild(new Option("なし","")); else active.forEach(b=>{const op=new Option(b.name,b.id); if(b.id===bid)op.selected=true; s.appendChild(op);}); }
         
-        window.handleNewBooking = () => { isSelecting = false; const now = new Date(); let startH = 10; if (displayDate.toDateString() === now.toDateString()) { startH = now.getHours() + 1; if (startH < 9) startH = 9; } if (startH >= 20) startH = 19; selectionStartHour = startH; selectionEndHour = startH + 1; openBookingModalRange(); };
+        window.handleNewBooking = (e) => { 
+            isSelecting = false; 
+            const now = new Date(); 
+            let startH = 10; 
+            if (displayDate.toDateString() === now.toDateString()) { 
+                startH = now.getHours() + 1; 
+                if (startH < 9) startH = 9; 
+            } 
+            if (startH >= 20) startH = 19; 
+            selectionStartHour = startH; 
+            selectionEndHour = startH + 1; 
+            openBookingModalRange(e); 
+        };
         
         window.openSearchModal = (e) => { 
-            const overlay = document.getElementById('search-overlay');
-            if (e && e.target) {
-                const btn = e.target.closest('.header-icon-btn');
-                if (btn) {
-                    const rect = btn.getBoundingClientRect();
-                    const x = rect.left + rect.width / 2;
-                    const y = rect.top + rect.height / 2;
-                    overlay.style.setProperty('--origin-x', `${x}px`);
-                    overlay.style.setProperty('--origin-y', `${y}px`);
-                }
-            } else {
-                overlay.style.setProperty('--origin-x', `50%`);
-                overlay.style.setProperty('--origin-y', `50%`);
-            }
-            
+            setModalOrigin('modal-search', e);
             document.getElementById('searchInput').value = ""; 
             document.getElementById('filterMyBands').checked = false; 
             document.getElementById('searchResultContainer').innerHTML = "<div style='padding:60px 20px; text-align:center; color:#999;'><span class='material-icons' style='font-size:64px; color:#dadce0; margin-bottom:16px;'>search</span><br><div style='font-weight:bold; color:#1f1f1f; font-size:16px; margin-bottom:8px;'>予約を探す</div><div style='font-size:13px;'>バンド名、イベント名、<br>または日付（12/5など）で検索できます</div></div>"; 
-            
-            overlay.classList.add('open');
-            setTimeout(() => document.getElementById('searchInput').focus(), 300);
-        };
-        
-        window.closeSearchModal = () => {
-            document.getElementById('search-overlay').classList.remove('open');
+            openModal('modal-search');
+            setTimeout(() => document.getElementById('searchInput').focus(), 300); 
         };
         
         window.filterSearchResults = () => {
-            const keyword = document.getElementById('searchInput').value.toLowerCase().replace(/\s+/g, '');
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
             const onlyMyBands = document.getElementById('filterMyBands').checked;
             const container = document.getElementById('searchResultContainer');
-            
-            if(!keyword && !onlyMyBands) {
-                container.innerHTML = "<div style='padding:60px 20px; text-align:center; color:#999;'><span class='material-icons' style='font-size:64px; color:#dadce0; margin-bottom:16px;'>search</span><br><div style='font-weight:bold; color:#1f1f1f; font-size:16px; margin-bottom:8px;'>予約を探す</div><div style='font-size:13px;'>バンド名、イベント名、<br>または日付（12/5など）で検索できます</div></div>";
-                return;
-            }
-            
             container.innerHTML = "";
+            
             const myBandIds = myBandsAll.map(b => b.id);
 
             const filtered = loadedBookingsCache.filter(b => {
@@ -1112,7 +1179,7 @@
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = "<div style='text-align:center; color:#999; padding:40px;'>該当する予約はありません</div>";
+                container.innerHTML = "<div style='text-align:center; color:#999; padding:20px;'>該当する予約はありません</div>";
                 return;
             }
 
@@ -1151,11 +1218,11 @@
                     </div>
                     <span class="material-icons" style="color: #dadce0;">chevron_right</span>
                 `;
-                div.onclick = () => {
-                    closeSearchModal();
+                div.onclick = (event) => {
+                    closeModal('modal-search');
                     displayDate.setTime(s.getTime());
                     renderCalendar(); 
-                    setTimeout(() => openEditBookingModal(d.id, d), 400); // オーバーレイが閉じるのを待つ
+                    setTimeout(() => openEditBookingModal(d.id, d, event), 300);
                 };
                 container.appendChild(div);
             });
