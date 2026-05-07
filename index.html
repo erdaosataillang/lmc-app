@@ -118,6 +118,7 @@
         .notification-item.clickable { cursor: pointer; }
         .auth-code-input { letter-spacing: 4px; text-align: center; font-size: 24px; font-weight: bold; }
         .fee-status-badge { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; } .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -479,6 +480,7 @@
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
         const CACHE_KEY_EVENTS = 'lmc_events_cache';
         const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
+        const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache';
 
         // グローバルステート
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
@@ -594,6 +596,9 @@
                 
                 const cachedBands = localStorage.getItem(CACHE_KEY_BANDS);
                 if (cachedBands) { myBandsAll = JSON.parse(cachedBands); }
+
+                const cachedAllUsers = localStorage.getItem(CACHE_KEY_ALL_USERS);
+                if (cachedAllUsers) { allUsersCache = JSON.parse(cachedAllUsers); }
 
                 if (targetEvents.length > 0) { renderBandTabs(); } else { renderBandTabsFallback(); }
                 
@@ -959,17 +964,7 @@
             
             document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bid, data.name);
 
-            const mList = document.getElementById('detailMemberList'); mList.innerHTML = "";
-            data.memberIds.forEach(uid => {
-                const u = allUsersCache.find(x => x.id === uid) || { name: '不明', icon: 'https://ul.h3z.jp/Vnukmtvq.jpg', id: uid };
-                const div = document.createElement('div'); div.className = 'member-row-rich';
-                
-                div.onclick = () => showMemberProfile(uid);
-                
-                const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="event.stopPropagation(); removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
-                div.innerHTML = `<img src="${u.icon}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${u.name}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${delBtn}`;
-                mList.appendChild(div);
-            });
+            renderBandMembersInModal(data);
 
             const songs = data.songs || []; document.getElementById('stat-song-count').innerText = songs.length;
             const songList = document.getElementById('bandSongsList'); songList.innerHTML = "";
@@ -982,6 +977,29 @@
             document.getElementById('bandSongAddArea').classList.toggle('hidden', !canE);
             loadBandBookings(bid); openModal('modal-band-detail');
         };
+
+        function renderBandMembersInModal(data) {
+            const bid = data.id || document.getElementById('detailBandId').value;
+            const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
+            const canE = (data.creatorId === currentUser) || isAdmin;
+            const mList = document.getElementById('detailMemberList'); 
+            mList.innerHTML = "";
+            
+            (data.memberIds || []).forEach(uid => {
+                const u = allUsersCache.find(x => x.id === uid);
+                const div = document.createElement('div'); 
+                div.className = 'member-row-rich';
+                
+                if (u) {
+                    div.onclick = () => showMemberProfile(uid);
+                    const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="event.stopPropagation(); removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
+                    div.innerHTML = `<img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${u.name}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${delBtn}`;
+                } else {
+                    div.innerHTML = `<div class="member-avatar-small" style="background:#f1f3f4; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:16px; color:#9aa0a6; animation: spin 1s linear infinite;">sync</span></div><div class="member-info-rich" style="flex:1;"><div class="member-name-rich" style="color:#9aa0a6;">読み込み中...</div><div style="font-size:10px; color:#ccc;">${uid.substring(0,8)}...</div></div>`;
+                }
+                mList.appendChild(div);
+            });
+        }
 
         // --- バンド操作 ---
         window.openBandModal = () => {
@@ -1308,7 +1326,19 @@
                 localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
             }
         }
-        async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); }
+
+        async function refreshAllUsersCache(){ 
+            const qs=await getDocs(collection(db,"users")); 
+            allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); 
+            localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
+            
+            // バンド詳細モーダルが開かれていればメンバーリストを自動再描画
+            const detailModal = document.getElementById('modal-band-detail');
+            if (detailModal && detailModal.classList.contains('open') && currentEditingBandId) {
+                const band = myBandsAll.find(b => b.id === currentEditingBandId);
+                if (band) renderBandMembersInModal(band);
+            }
+        }
         
         window.openEventRegisterModal = () => {
             closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
