@@ -123,9 +123,9 @@
 <body>
     <!-- カスタムダイアログ -->
     <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
-        <div class="dialog-content">
-            <div id="dialogTitle" class="dialog-title">確認</div>
-            <div id="dialogMessage" class="dialog-message">メッセージ</div>
+        <div class="dialog-content" style="background:white; width:85%; max-width:320px; border-radius:24px; padding:24px; text-align:center;">
+            <div id="dialogTitle" style="font-weight:bold; font-size:16px; margin-bottom:12px;">確認</div>
+            <div id="dialogMessage" style="font-size:13px; color:#444746; margin-bottom:24px; white-space:pre-wrap;"></div>
             <div style="display:flex; gap:12px;">
                 <button id="dialogBtnCancel" class="btn-secondary" style="margin:0; flex:1;">キャンセル</button>
                 <button id="dialogBtnOk" class="btn-primary" style="margin:0; flex:1;">OK</button>
@@ -135,39 +135,42 @@
 
     <!-- メンバープロフィールポップアップ -->
     <div id="modal-member-profile" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-member-profile')" style="z-index: 9500; align-items: center;">
-        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff; max-width: 360px; border-radius: 24px; margin: auto; animation: zoomIn 0.2s ease;">
+        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff; max-width: 320px; border-radius: 24px; margin: auto; animation: zoomIn 0.2s ease;">
             <!-- ヘッダー画像 -->
             <div id="profileModalHeaderBg" style="height: 100px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
                 <button onclick="closeModal('modal-member-profile')" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 16px;">close</span></button>
             </div>
             
             <div style="padding: 0 20px 24px;">
-                <div style="display: flex; margin-top: -30px; position: relative; z-index: 2; align-items: flex-end;">
+                <!-- インスタ風レイアウト -->
+                <div style="display: flex; margin-top: -30px; position: relative; z-index: 2;">
                     <!-- 左側：アイコン -->
                     <div style="flex-shrink: 0;">
                         <img id="profileModalIcon" src="" style="width: 76px; height: 76px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     </div>
                     
-                    <!-- 右側：スタッツ -->
-                    <div style="flex: 1; display: flex; justify-content: space-around; align-items: center; padding-left: 12px; margin-bottom: 4px;">
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <div id="profileModalBandCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">-</div>
-                            <div style="font-size: 11px; color: #536471; font-weight: bold;">バンド</div>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <div id="profileModalLikeCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
-                            <div style="font-size: 11px; color: #536471; font-weight: bold;">いいね</div>
+                    <!-- 右側：名前とスタッツ -->
+                    <div style="flex: 1; padding-left: 16px; padding-top: 36px; display: flex; flex-direction: column; justify-content: flex-start;">
+                        <!-- 名前 -->
+                        <div id="profileModalName" style="font-weight: 800; font-size: 18px; color: #1f1f1f; margin-bottom: 2px;"></div>
+                        <div id="profileModalSub" style="font-size: 12px; color: #5f6368; margin-bottom: 12px;"></div>
+                        
+                        <!-- スタッツ（バンド数・いいね） -->
+                        <div style="display: flex; gap: 20px;">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div id="profileModalBandCount" style="font-weight: 800; font-size: 16px; color: #1f1f1f;">-</div>
+                                <div style="font-size: 11px; color: #536471;">バンド</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div id="profileModalLikeCount" style="font-weight: 800; font-size: 16px; color: #1f1f1f;">0</div>
+                                <div style="font-size: 11px; color: #536471;">いいね</div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- 名前とサブ情報 -->
-                <div style="margin-top: 12px;">
-                    <div id="profileModalName" style="font-weight: 800; font-size: 18px; color: #1f1f1f; margin-bottom: 2px;"></div>
-                    <div id="profileModalSub" style="font-size: 13px; color: #5f6368; margin-bottom: 12px;"></div>
-                    <div style="display:flex; gap: 8px; flex-wrap: wrap;" id="profileModalBadges">
-                        <!-- バッジ領域 -->
-                    </div>
+                <div style="display:flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;" id="profileModalBadges">
+                    <!-- バッジ領域 -->
                 </div>
             </div>
         </div>
@@ -382,28 +385,27 @@
                 <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
             </div>
             
-            <div style="padding: 0 20px 24px;">
-                <div style="display: flex; margin-top: -40px; position: relative; z-index: 2;">
-                    <!-- 左側：アイコン -->
-                    <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
-                         <img id="modalUserIcon" src="" style="width: 88px; height: 88px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <div style="padding: 0 16px 20px;">
+                <!-- アイコン -->
+                <div style="display: flex; margin-top: -40px; margin-bottom: 12px;">
+                    <img id="modalUserIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2;">
+                </div>
+                
+                <!-- 名前と @ID (アイコンの下) -->
+                <div>
+                    <div id="modalUserName" style="font-weight: 800; font-size: 22px; color: #0f1419; line-height: 1.2; word-wrap: break-word;"></div>
+                    <div id="modalUserLineName" style="font-size: 15px; color: #536471; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                </div>
+
+                <!-- バンド数といいね -->
+                <div style="display: flex; gap: 24px; margin-top: 16px;">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <div id="modalUserBandCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
+                        <div style="font-size: 12px; color: #536471;">バンド</div>
                     </div>
-                    
-                    <!-- 右側：名前とステータス -->
-                    <div style="flex: 1; padding-left: 20px; padding-top: 48px; display: flex; flex-direction: column; justify-content: flex-start;">
-                        <div id="modalUserName" style="font-weight: 800; font-size: 20px; color: #0f1419; line-height: 1.2;"></div>
-                        <div id="modalUserLineName" style="font-size: 13px; color: #536471; margin-top: 2px;"></div>
-                        
-                        <div style="display: flex; gap: 24px; margin-top: 12px;">
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <div id="modalUserBandCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
-                                <div style="font-size: 11px; color: #536471; font-weight: bold;">バンド</div>
-                            </div>
-                            <div style="display: flex; flex-direction: column; align-items: center;">
-                                <div id="modalUserLikeCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
-                                <div style="font-size: 11px; color: #536471; font-weight: bold;">いいね</div>
-                            </div>
-                        </div>
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <div id="modalUserLikeCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
+                        <div style="font-size: 12px; color: #536471;">いいね</div>
                     </div>
                 </div>
 
@@ -647,9 +649,7 @@
             } else {
                 document.getElementById('nav-admin').classList.add('hidden');
             }
-        }
-
-        // --- ステータスモーダル (Instagram風) ---
+        // --- ステータスモーダル (Twitter風) ---
         window.openUserStatusModal = async () => {
             const year=2026; const status=currentUserData.feeStatus||{};
             document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
@@ -658,8 +658,10 @@
             
             // バンド数といいね数の反映
             const activeBandsCount = myBandsAll.filter(b => !b.isArchived).length;
-            document.getElementById('modalUserBandCount').innerText = activeBandsCount;
-            document.getElementById('modalUserLikeCount').innerText = "0";
+            const elBandCount = document.getElementById('modalUserBandCount');
+            if(elBandCount) elBandCount.innerText = activeBandsCount;
+            const elLikeCount = document.getElementById('modalUserLikeCount');
+            if(elLikeCount) elLikeCount.innerText = "0";
 
             // ヘッダー背景画像の設定
             const headerBg = document.getElementById('modalHeaderBg');
