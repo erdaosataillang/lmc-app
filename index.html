@@ -135,22 +135,37 @@
 
     <!-- メンバープロフィールポップアップ -->
     <div id="modal-member-profile" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-member-profile')" style="z-index: 9500; align-items: center;">
-        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff; max-width: 320px; border-radius: 24px; margin: auto; animation: zoomIn 0.2s ease;">
+        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff; max-width: 360px; border-radius: 24px; margin: auto; animation: zoomIn 0.2s ease;">
             <!-- ヘッダー画像 -->
             <div id="profileModalHeaderBg" style="height: 100px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
                 <button onclick="closeModal('modal-member-profile')" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 16px;">close</span></button>
             </div>
+            
             <div style="padding: 0 20px 24px;">
-                <!-- アイコン -->
-                <div style="display: flex; justify-content: center; margin-top: -40px; margin-bottom: 12px;">
-                    <img id="profileModalIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                </div>
-                <!-- 情報 -->
-                <div style="text-align: center;">
-                    <div id="profileModalName" style="font-weight: 800; font-size: 20px; color: #1f1f1f; margin-bottom: 4px;"></div>
-                    <div id="profileModalSub" style="font-size: 13px; color: #5f6368; margin-bottom: 16px;"></div>
+                <div style="display: flex; margin-top: -30px; position: relative; z-index: 2; align-items: flex-end;">
+                    <!-- 左側：アイコン -->
+                    <div style="flex-shrink: 0;">
+                        <img id="profileModalIcon" src="" style="width: 76px; height: 76px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    </div>
                     
-                    <div style="display:flex; justify-content: center; gap: 8px; flex-wrap: wrap;" id="profileModalBadges">
+                    <!-- 右側：スタッツ -->
+                    <div style="flex: 1; display: flex; justify-content: space-around; align-items: center; padding-left: 12px; margin-bottom: 4px;">
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div id="profileModalBandCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">-</div>
+                            <div style="font-size: 11px; color: #536471; font-weight: bold;">バンド</div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: center;">
+                            <div id="profileModalLikeCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
+                            <div style="font-size: 11px; color: #536471; font-weight: bold;">いいね</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 名前とサブ情報 -->
+                <div style="margin-top: 12px;">
+                    <div id="profileModalName" style="font-weight: 800; font-size: 18px; color: #1f1f1f; margin-bottom: 2px;"></div>
+                    <div id="profileModalSub" style="font-size: 13px; color: #5f6368; margin-bottom: 12px;"></div>
+                    <div style="display:flex; gap: 8px; flex-wrap: wrap;" id="profileModalBadges">
                         <!-- バッジ領域 -->
                     </div>
                 </div>
@@ -494,7 +509,7 @@
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
 
         // --- メンバープロフィールポップアップ表示 ---
-        window.showMemberProfile = (uid) => {
+        window.showMemberProfile = async (uid) => {
             const u = allUsersCache.find(x => x.id === uid);
             if(!u) return;
 
@@ -508,6 +523,9 @@
             } else {
                 headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
             }
+            
+            document.getElementById('profileModalBandCount').innerText = "-";
+            document.getElementById('profileModalLikeCount').innerText = "0";
 
             let subText = "";
             if(u.year) subText += `${u.year}年`;
@@ -522,6 +540,20 @@
             if(u.affiliations?.includes('lmc')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#f1f3f4; color:#5f6368; padding:4px 10px; border-radius:12px;">LMC</div>`;
 
             openModal('modal-member-profile');
+
+            try {
+                // タップされたユーザーが所属するバンドを取得し、アーカイブされていないものだけカウントする
+                const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid));
+                const snap = await getDocs(q);
+                let activeBands = 0;
+                snap.forEach(d => {
+                    if(!d.data().isArchived) activeBands++;
+                });
+                document.getElementById('profileModalBandCount').innerText = activeBands;
+            } catch(e) {
+                console.error(e);
+                document.getElementById('profileModalBandCount').innerText = "?";
+            }
         };
 
         // --- スピードダイヤルの制御 ---
