@@ -367,17 +367,28 @@
                 <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
             </div>
             
-            <div style="padding: 0 16px 20px;">
-                <!-- アイコン -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: -40px; margin-bottom: 12px;">
-                    <img id="modalUserIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2;">
-                </div>
-                
-                <!-- 名前と @ID -->
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div style="flex: 1; min-width: 0; padding-right: 12px;">
-                        <div id="modalUserName" style="font-weight: 800; font-size: 22px; color: #0f1419; line-height: 1.2; word-wrap: break-word;"></div>
-                        <div id="modalUserLineName" style="font-size: 15px; color: #536471; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+            <div style="padding: 0 20px 24px;">
+                <div style="display: flex; margin-top: -40px; position: relative; z-index: 2;">
+                    <!-- 左側：アイコン -->
+                    <div style="display: flex; flex-direction: column; align-items: center; flex-shrink: 0;">
+                         <img id="modalUserIcon" src="" style="width: 88px; height: 88px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    </div>
+                    
+                    <!-- 右側：名前とステータス -->
+                    <div style="flex: 1; padding-left: 20px; padding-top: 48px; display: flex; flex-direction: column; justify-content: flex-start;">
+                        <div id="modalUserName" style="font-weight: 800; font-size: 20px; color: #0f1419; line-height: 1.2;"></div>
+                        <div id="modalUserLineName" style="font-size: 13px; color: #536471; margin-top: 2px;"></div>
+                        
+                        <div style="display: flex; gap: 24px; margin-top: 12px;">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div id="modalUserBandCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
+                                <div style="font-size: 11px; color: #536471; font-weight: bold;">バンド</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div id="modalUserLikeCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
+                                <div style="font-size: 11px; color: #536471; font-weight: bold;">いいね</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -478,7 +489,7 @@
         });
         window.openModal = (id) => document.getElementById(id).classList.add('open');
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
-        window.goToMyPage = () => location.href = MY_PAGE_URL;
+        
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
 
@@ -606,13 +617,18 @@
             }
         }
 
-        // --- ステータスモーダル (Twitter風) ---
+        // --- ステータスモーダル (Instagram風) ---
         window.openUserStatusModal = async () => {
             const year=2026; const status=currentUserData.feeStatus||{};
             document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
             document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
             document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
             
+            // バンド数といいね数の反映
+            const activeBandsCount = myBandsAll.filter(b => !b.isArchived).length;
+            document.getElementById('modalUserBandCount').innerText = activeBandsCount;
+            document.getElementById('modalUserLikeCount').innerText = "0";
+
             // ヘッダー背景画像の設定
             const headerBg = document.getElementById('modalHeaderBg');
             if(currentUserData.headerImage) {
@@ -887,7 +903,6 @@
             currentEditingBandId = bid; currentEditingBandMembers = data.memberIds;
             document.getElementById('detailBandId').value = bid; document.getElementById('detailBandName').value = data.name;
             document.getElementById('detailBandIcon').src = data.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
-            
             const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
             const canE = (data.creatorId === currentUser) || isAdmin;
             
