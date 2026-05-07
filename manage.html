@@ -376,7 +376,7 @@
     
     <div id="page-admin-events" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-events')"><span class="material-icons">arrow_back</span></button><div class="page-title">イベントの管理</div></div><div class="content-area" style="padding-top:16px;"><button class="btn-primary" style="margin-bottom:20px;" onclick="openCreateEventModal()"><span class="material-icons" style="vertical-align:middle; margin-right:4px;">add</span>新規イベント作成</button><div id="adminEventList">読み込み中...</div></div></div>
     <div id="page-admin-calendar-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-calendar-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">予約システム管理</div></div><div class="content-area" style="padding-top: 20px;"><div class="card"><h3 style="font-size:16px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center;"><span class="material-icons" style="margin-right:8px;">tune</span>現在の予約モード</h3><div class="form-group"><div class="radio-group" style="flex-direction: column; gap: 16px;"><label class="radio-label" style="background:#f8f9fa; padding:16px; border-radius:16px; border:1px solid #e0e3e7;"><input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()"><div><div style="font-weight:bold; font-size:15px;">早い者勝ち (即時確定)</div><div style="font-size:12px; color:#5f6368; margin-top:4px; line-height:1.4;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div></div></label><label class="radio-label" style="background:#f8f9fa; padding:16px; border-radius:16px; border:1px solid #e0e3e7;"><input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()"><div><div style="font-weight:bold; font-size:15px;">抽選式 (希望提出)</div><div style="font-size:12px; color:#5f6368; margin-top:4px; line-height:1.4;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div></div></label></div></div><div id="lotterySettingsArea" class="hidden" style="margin-top:24px; border-top:1px solid #eee; padding-top:20px;"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0;">抽選実行設定</h3><div class="form-group"><label class="form-label">実行タイミング</label><div class="radio-group" style="flex-direction: column; gap: 12px;"><label class="radio-label"><input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()">自動 (指定日時に実行)</label><div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 12px;"><select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="1">1日前</option><option value="2" selected>2日前</option><option value="3">3日前</option><option value="7">7日前</option></select> の <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px;"><option value="0">0:00</option><option value="9">9:00</option><option value="12">12:00</option><option value="18">18:00</option><option value="21">21:00</option></select> に確定</div><label class="radio-label"><input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()">手動 (管理者がボタンで実行)</label><div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:16px; border-radius:16px;"><div style="font-size:13px; margin-bottom:8px; font-weight:bold;">対象日を選んで実行します</div><input type="date" id="manualLotteryDate" class="form-input"><button class="btn-primary" style="margin-top:12px; background:#e65100;" onclick="runManualLottery()">今すぐ抽選を実行</button><div id="lotteryLog" style="margin-top:16px; font-size:12px; background:white; padding:10px; border-radius:8px;" class="hidden"></div><button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:16px;" onclick="applyLotteryResults()">この結果で確定する</button></div></div></div></div><button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button></div><div style="margin-top:16px; font-size:12px; color:#5f6368; padding:0 10px; text-align:center;">※ 設定を変更すると部員全員のアプリの挙動が切り替わります。</div></div></div>
-    <div id="page-admin-docs-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div><div class="content-area" style="text-align:center; padding-top:80px; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">print</span><div style="font-size:16px; font-weight:bold; color:#1f1f1f;">準備中</div><div style="font-size:13px; margin-top:8px;">書類PDF出力機能は近日公開予定</div></div></div>
+    <div id="page-admin-docs-stub" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-docs-stub')"><span class="material-icons">arrow_back</span></button><div class="page-title">提出書類の作成</div></div><div class="content-area" style="text-align:center; padding-top:80px; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">print</span><div style="font-size:16px; font-weight:bold; color:#1f1f1f;">準備中</div><div style="font-size:13px; margin-top:8px;">書類PDF出力機能は近日公開予定です</div></div></div>
     <div id="page-admin-edit" class="page-container"><div class="page-header"><button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button><div class="page-title">ユーザー詳細</div></div><div class="content-area"><div style="text-align:center; margin:20px 0;"><img id="admin-user-icon" src="" style="width:88px; height:88px; border-radius:50%; object-fit:cover; background:#eee; border:4px solid white; box-shadow:0 4px 12px rgba(0,0,0,0.1);"><div id="admin-user-lineName" style="font-size:13px; color:#5f6368; margin-top:12px; font-weight:500;"></div></div><div class="card"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">基本情報</h3><div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div><div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div><div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div><div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div><div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div><div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div></div><div class="card"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">権限設定</h3><div class="form-group"><label class="form-label">役職</label><input type="text" id="admin-edit-role" class="form-input" placeholder="部長, 会計 など"></div><button id="btn-save-user-role" class="btn-admin-save">役職を保存</button></div><div class="card"><h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">所属バンド</h3><div id="admin-user-band-list" style="font-size:14px; line-height:1.6;">読み込み中...</div></div><div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">ID: <span id="admin-edit-docId"></span></div></div></div>
 
     <div id="modal-event-admin" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-admin')">
@@ -408,6 +408,44 @@
             </div>
             <button class="btn-primary" onclick="saveAdminEvent()">作成する</button>
             <button class="btn-secondary" onclick="closeModal('modal-event-admin')">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- User Role Select Modal -->
+    <div id="modal-officer-role" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-officer-role')">
+        <div class="modal-content" style="padding: 24px;">
+            <h3 style="margin-top:0; font-size: 18px;">権限の付与</h3>
+            <p style="font-size:13px; color:#5f6368; margin-bottom:16px;"><span id="officerTargetName" style="font-weight:bold; color:#1f1f1f;"></span> さんに付与する権限を選択してください。</p>
+            
+            <div class="form-group">
+                <div class="radio-group" style="flex-direction: column; gap: 12px;">
+                    <label class="radio-label" style="background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #e0e3e7; cursor:pointer;">
+                        <input type="radio" name="officerRoleType" value="all" checked>
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; font-size:15px; color:#0b57d0;">永続幹部 (lmc_all)</div>
+                            <div style="font-size:11px; color:#5f6368; margin-top:4px;">無期限の管理権限を付与します。</div>
+                        </div>
+                    </label>
+                    <label class="radio-label" style="background:#fef7e0; padding:12px; border-radius:12px; border:1px solid #fce8b2; cursor:pointer;">
+                        <input type="radio" name="officerRoleType" value="limit_1d">
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; font-size:15px; color:#b06000;">臨時権限 (24時間)</div>
+                            <div style="font-size:11px; color:#5f6368; margin-top:4px;">24時間限定で管理操作を許可します。</div>
+                        </div>
+                    </label>
+                    <label class="radio-label" style="background:#fef7e0; padding:12px; border-radius:12px; border:1px solid #fce8b2; cursor:pointer;">
+                        <input type="radio" name="officerRoleType" value="limit_7d">
+                        <div style="flex:1;">
+                            <div style="font-weight:bold; font-size:15px; color:#b06000;">臨時権限 (1週間)</div>
+                            <div style="font-size:11px; color:#5f6368; margin-top:4px;">7日間限定で管理操作を許可します。</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <input type="hidden" id="officerTargetUid">
+            
+            <button class="btn-primary" onclick="confirmAddOfficer()">付与する</button>
+            <button class="btn-secondary" onclick="closeModal('modal-officer-role')">キャンセル</button>
         </div>
     </div>
 
@@ -452,6 +490,21 @@
             document.getElementById('debug-console').style.display = 'flex';
         }
 
+        // 権限チェック関数 (lmc_all または 期限内の lmc_limit_xxx または admin)
+        function checkAdminRole(roll) {
+            if (!roll) return false;
+            const rolls = Array.isArray(roll) ? roll : [roll];
+            const now = Date.now();
+            for (const r of rolls) {
+                if (r === 'lmc_all' || r === 'admin') return true;
+                if (r.startsWith('lmc_limit_')) {
+                    const limitTime = parseInt(r.replace('lmc_limit_', ''), 10);
+                    if (!isNaN(limitTime) && limitTime > now) return true;
+                }
+            }
+            return false;
+        }
+
         (function(){
             const CACHE_KEY_USER = 'lmc_user_cache';
             function initUI() {
@@ -465,15 +518,16 @@
                         // onclickをマイステータスモーダル呼び出しに変更
                         if(el) { el.innerHTML=h; el.onclick = window.openUserStatusModal || function(){}; }
 
-                        // 権限チェック
-                        const hasAdminRole = u.roll && (Array.isArray(u.roll) ? (u.roll.includes('lmc_all') || u.roll.includes('admin')) : (u.roll === 'lmc_all' || u.roll === 'admin'));
+                        // デバッグモード判定
                         const hasDebugRole = u.roll && (Array.isArray(u.roll) ? u.roll.includes('debug') : u.roll === 'debug');
-
                         if(hasDebugRole) {
                             isDebugMode = true;
                             initDebugConsole();
                             debugLog("Cache Loaded");
                         }
+
+                        // 新しい権限チェックロジック
+                        const hasAdminRole = checkAdminRole(u.roll);
 
                         if(!hasAdminRole){
                             document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>';
@@ -511,6 +565,40 @@
         function getFiscalYear() {
             const now = new Date();
             return now.getMonth() < 3 ? now.getFullYear() - 1 : now.getFullYear();
+        }
+
+        // 新しい権限判定ロジック
+        function checkAdminRole(roll) {
+            if (!roll) return false;
+            const rolls = Array.isArray(roll) ? roll : [roll];
+            const now = Date.now();
+            for (const r of rolls) {
+                if (r === 'lmc_all' || r === 'admin') return true;
+                if (r.startsWith('lmc_limit_')) {
+                    const limitTime = parseInt(r.replace('lmc_limit_', ''), 10);
+                    if (!isNaN(limitTime) && limitTime > now) return true;
+                }
+            }
+            return false;
+        }
+
+        // 権限の詳細を取得するヘルパー
+        function getAdminRoleDetails(roll) {
+            if (!roll) return null;
+            const rolls = Array.isArray(roll) ? roll : [roll];
+            const now = Date.now();
+            for (const r of rolls) {
+                if (r === 'lmc_all' || r === 'admin') return { type: '永続', text: '幹部 (永続)' };
+                if (r.startsWith('lmc_limit_')) {
+                    const timeStr = r.replace('lmc_limit_', '');
+                    const limitTime = parseInt(timeStr, 10);
+                    if (!isNaN(limitTime) && limitTime > now) {
+                        const limitDate = new Date(limitTime);
+                        return { type: '臨時', text: `臨時 (${limitDate.getMonth()+1}/${limitDate.getDate()} ${limitDate.getHours()}:${String(limitDate.getMinutes()).padStart(2,'0')}迄)`, raw: r };
+                    }
+                }
+            }
+            return null;
         }
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
@@ -1003,7 +1091,7 @@
             const container = document.getElementById('admin-officer-list');
             if (allUsersCache.length === 0) refreshAllUsersCache();
             
-            const officers = allUsersCache.filter(u => u.affiliations && u.affiliations.includes('urakata'));
+            const officers = allUsersCache.filter(u => checkAdminRole(u.roll));
             container.innerHTML = "";
             
             if (officers.length === 0) {
@@ -1012,6 +1100,9 @@
             }
 
             officers.forEach(u => {
+                const details = getAdminRoleDetails(u.roll);
+                if (!details) return; // 念のため
+
                 const div = document.createElement('div');
                 div.className = 'officer-item';
                 div.innerHTML = `
@@ -1019,7 +1110,9 @@
                         <img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" style="width:36px; height:36px; border-radius:50%; margin-right:12px; object-fit:cover;">
                         <div>
                             <div style="font-size:15px; font-weight:bold; color:#1f1f1f;">${u.name}</div>
-                            <div style="font-size:11px; color:#5f6368; margin-top:2px;">${u.role || '役職なし'}</div>
+                            <div style="font-size:11px; color:${details.type === '臨時' ? '#b06000' : '#0b57d0'}; margin-top:2px;">
+                                ${details.text}
+                            </div>
                         </div>
                     </div>
                     <button class="btn-remove-member" onclick="removeOfficer('${u.id}', '${u.name}')">解除</button>
@@ -1058,13 +1151,13 @@
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = 'user-list-item';
-                const isOfficer = u.affiliations && u.affiliations.includes('urakata');
+                const isAdmin = checkAdminRole(u.roll);
                 
                 div.innerHTML = `
                     <img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon">
                     <div class="user-info-main">
                         <div class="user-name">${u.name}</div>
-                        <div class="user-sub" style="margin-top:4px;">${u.year||'-'}年 ${isOfficer ? '<span style="color:#d93025; font-weight:bold; font-size:10px; background:#fce8e6; padding:2px 6px; border-radius:10px; margin-left:4px;">幹部</span>' : ''}</div>
+                        <div class="user-sub" style="margin-top:4px;">${u.year||'-'}年 ${isAdmin ? '<span style="color:#d93025; font-weight:bold; font-size:10px; background:#fce8e6; padding:2px 6px; border-radius:10px; margin-left:4px;">管理者</span>' : ''}</div>
                     </div>
                     <button class="btn-outline" style="border-radius:999px; padding:6px 16px;" onclick="selectUserForOfficer('${u.id}', '${u.name}')">選択</button>
                 `;
@@ -1073,32 +1166,63 @@
         }
 
         // 6. Add/Remove Officer Logic
-        window.selectUserForOfficer = async (uid, name) => {
-            debugLog("Action: Add Officer - " + name);
-            if (await showCustomConfirm(`${name} さんに幹部権限（裏方）を付与しますか？`, "権限付与")) {
-                try {
-                    const u = allUsersCache.find(x => x.id === uid);
-                    if (u) {
-                        if (!u.affiliations) u.affiliations = [];
-                        if (!u.affiliations.includes('urakata')) u.affiliations.push('urakata');
-                    }
+        window.selectUserForOfficer = (uid, name) => {
+            debugLog("Action: Open Officer Role Select - " + name);
+            document.getElementById('officerTargetUid').value = uid;
+            document.getElementById('officerTargetName').innerText = name;
+            document.querySelector('input[name="officerRoleType"][value="all"]').checked = true;
+            closeModal('modal-user-picker');
+            openModal('modal-officer-role');
+        };
+
+        window.confirmAddOfficer = async () => {
+            const uid = document.getElementById('officerTargetUid').value;
+            const name = document.getElementById('officerTargetName').innerText;
+            const type = document.querySelector('input[name="officerRoleType"]:checked').value;
+            
+            let newRoll = 'lmc_all';
+            let msg = '永続的な幹部権限';
+            if (type === 'limit_1d') {
+                const limitTime = Date.now() + (24 * 60 * 60 * 1000);
+                newRoll = `lmc_limit_${limitTime}`;
+                msg = '24時間の臨時権限';
+            } else if (type === 'limit_7d') {
+                const limitTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
+                newRoll = `lmc_limit_${limitTime}`;
+                msg = '1週間の臨時権限';
+            }
+
+            try {
+                const u = allUsersCache.find(x => x.id === uid);
+                if (u) {
+                    let rolls = Array.isArray(u.roll) ? u.roll : (u.roll ? [u.roll] : ['lmc_normal']);
+                    // 古い権限を一旦掃除する
+                    rolls = rolls.filter(r => r !== 'lmc_all' && !r.startsWith('lmc_limit_'));
+                    rolls.push(newRoll);
+                    u.roll = rolls; 
                     
-                    await showCustomAlert(`${name} さんを幹部に追加しました。`);
-                    closeModal('modal-user-picker');
-                    renderOfficerList();
-                } catch(e) {
-                    await showCustomAlert("エラー: " + e.message);
+                    await updateDoc(doc(db, "users", uid), { roll: rolls });
                 }
+                
+                await showCustomAlert(`${name} さんに ${msg} を付与しました。`);
+                closeModal('modal-officer-role');
+                renderOfficerList();
+            } catch(e) {
+                await showCustomAlert("エラー: " + e.message);
             }
         };
 
         window.removeOfficer = async (uid, name) => {
             debugLog("Action: Remove Officer - " + name);
-            if (await showCustomConfirm(`${name} さんの幹部権限を解除しますか？`, "権限解除")) {
+            if (await showCustomConfirm(`${name} さんの管理権限を解除しますか？`, "権限解除")) {
                 try {
                     const u = allUsersCache.find(x => x.id === uid);
-                    if (u && u.affiliations) {
-                        u.affiliations = u.affiliations.filter(a => a !== 'urakata');
+                    if (u && u.roll) {
+                        let rolls = Array.isArray(u.roll) ? u.roll : [u.roll];
+                        rolls = rolls.filter(r => r !== 'lmc_all' && !r.startsWith('lmc_limit_'));
+                        if (rolls.length === 0) rolls.push('lmc_normal');
+                        u.roll = rolls;
+                        await updateDoc(doc(db, "users", uid), { roll: rolls });
                     }
                     
                     renderOfficerList();
@@ -1144,7 +1268,7 @@
                     debugLog("App Initialized (Online)");
                 }
 
-                const hasAdminRole = currentUserData.roll && (Array.isArray(currentUserData.roll) ? (currentUserData.roll.includes('lmc_all') || currentUserData.roll.includes('admin')) : (currentUserData.roll === 'lmc_all' || currentUserData.roll === 'admin'));
+                const hasAdminRole = checkAdminRole(currentUserData.roll);
                 if(!hasAdminRole){
                     document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>'; 
                 }
