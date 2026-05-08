@@ -430,13 +430,12 @@
                 content.innerHTML = `
                     <div class="h-32 w-full relative overflow-hidden" style="${headerBackground}">
                         ${!user.headerImage ? `<div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]"></div>` : `<div class="absolute inset-0 bg-black/10"></div>`}
-                        <div class="absolute bottom-4 right-8 text-white/20 text-6xl font-black italic select-none">LMC MEMBER</div>
                     </div>
                     <div class="px-8 pb-8 -mt-14 relative">
                         <div class="mb-4 flex justify-between items-end">
                             ${iconLarge}
                             <button onclick="window.toggleEditMode('${user.id}')" class="px-5 py-2 bg-gray-900 text-white text-xs font-black rounded-2xl shadow-xl hover:bg-gray-800 transition-all active:scale-95 flex items-center gap-2">
-                                <i class="fa-solid fa-pen text-[10px]"></i> EDIT INFO
+                                <i class="fa-solid fa-pen text-[10px]"></i> 編集
                             </button>
                         </div>
                         
@@ -446,7 +445,7 @@
                                 <button onclick="window.copyInfo('${user.name}', this)" class="copy-btn"><i class="fa-regular fa-copy text-sm"></i></button>
                             </div>
                             <div class="flex items-center gap-2 mt-0.5">
-                                <p class="text-indigo-500 font-bold text-xs tracking-widest uppercase">${user.kana || 'NAME KANA'}</p>
+                                <p class="text-indigo-500 font-bold text-xs tracking-widest uppercase">${user.kana || ''}</p>
                                 ${user.kana ? `<button onclick="window.copyInfo('${user.kana}', this)" class="copy-btn text-indigo-200 hover:text-indigo-400"><i class="fa-regular fa-copy text-[10px]"></i></button>` : ''}
                             </div>
                         </div>
@@ -455,7 +454,7 @@
                             <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.1s">
                                 <div class="flex items-center gap-2 mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <i class="fa-solid fa-graduation-cap text-xs"></i>
-                                    <span class="text-[9px] font-black uppercase tracking-widest">Year / Faculty</span>
+                                    <span class="text-[9px] font-black uppercase tracking-widest">学年 / 学部</span>
                                 </div>
                                 <div class="font-bold text-gray-800 text-sm leading-tight">${user.year ? user.year + '年' : ''}<br><span class="text-[11px] text-gray-500">${user.faculty || '学部未設定'}</span></div>
                             </div>
@@ -464,18 +463,18 @@
                                 <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <div class="flex items-center gap-2">
                                         <i class="fa-solid fa-id-card text-xs"></i>
-                                        <span class="text-[9px] font-black uppercase tracking-widest">Student ID</span>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">学籍番号</span>
                                     </div>
                                     <button onclick="window.copyInfo('${user.studentId}', this)" class="copy-btn"><i class="fa-regular fa-copy text-[10px]"></i></button>
                                 </div>
-                                <div class="font-mono font-bold text-gray-800 text-sm">${user.studentId || 'NOT SET'}</div>
+                                <div class="font-mono font-bold text-gray-800 text-sm">${user.studentId || '未設定'}</div>
                             </div>
 
                             <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.3s">
                                 <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <div class="flex items-center gap-2">
                                         <i class="fa-solid fa-guitar text-xs"></i>
-                                        <span class="text-[9px] font-black uppercase tracking-widest">Part</span>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">パート</span>
                                     </div>
                                     <button onclick="window.copyInfo('${getPartName(user.part)}', this)" class="copy-btn"><i class="fa-regular fa-copy text-[10px]"></i></button>
                                 </div>
@@ -485,14 +484,14 @@
                             <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.4s">
                                 <div class="flex items-center gap-2 mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <i class="fa-solid fa-cake-candles text-xs"></i>
-                                    <span class="text-[9px] font-black uppercase tracking-widest">Birthday</span>
+                                    <span class="text-[9px] font-black uppercase tracking-widest">誕生日</span>
                                 </div>
                                 <div class="font-bold text-gray-800 text-sm">${birthStr}</div>
                             </div>
 
                             <div class="animate-item bg-gray-50/50 p-3 rounded-2xl col-span-full flex items-center justify-between group mt-2" style="animation-delay: 0.5s">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-[8px] font-black text-gray-300 uppercase tracking-tighter">System UID:</span>
+                                    <span class="text-[8px] font-black text-gray-300 uppercase tracking-tighter">システムID:</span>
                                     <span class="font-mono text-[9px] text-gray-400">${user.id}</span>
                                 </div>
                                 <button onclick="window.copyInfo('${user.id}', this)" class="copy-btn text-gray-200"><i class="fa-regular fa-copy text-[9px]"></i></button>
@@ -510,14 +509,14 @@
                                 ${(user.name||"?")[0]}
                              </div>
                              <div class="flex gap-2 mt-12">
-                                <button onclick="window.toggleEditMode('${user.id}')" class="px-4 py-2 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-all text-xs">CANCEL</button>
-                                <button id="save-user-btn" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all text-xs uppercase tracking-widest">Save Changes</button>
+                                <button onclick="window.toggleEditMode('${user.id}')" class="px-4 py-2 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-all text-xs">キャンセル</button>
+                                <button id="save-user-btn" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all text-xs uppercase tracking-widest">保存する</button>
                              </div>
                         </div>
 
                         <div class="space-y-4">
                             <div>
-                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Name / Kana</label>
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">氏名 / かな</label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <input type="text" id="edit-name" value="${user.name || ''}" class="edit-input" placeholder="氏名">
                                     <input type="text" id="edit-kana" value="${user.kana || ''}" class="edit-input" placeholder="かな">
@@ -525,7 +524,7 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Grade</label>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">学年</label>
                                     <select id="edit-year" class="edit-input">
                                         <option value="">選択してください</option>
                                         <option value="1" ${user.year == '1' ? 'selected' : ''}>1年</option>
@@ -536,17 +535,17 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Faculty</label>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">学部</label>
                                     <input type="text" id="edit-faculty" value="${user.faculty || ''}" class="edit-input" placeholder="学部名">
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Student ID</label>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">学籍番号</label>
                                     <input type="text" id="edit-studentId" value="${user.studentId || ''}" class="edit-input font-mono" placeholder="Student ID">
                                 </div>
                                 <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Part</label>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">パート</label>
                                     <select id="edit-part" class="edit-input">
                                         <option value="">選択してください</option>
                                         <option value="vocal" ${user.part?.toLowerCase() == 'vocal' ? 'selected' : ''}>ボーカル</option>
@@ -558,11 +557,11 @@
                                 </div>
                             </div>
                             <div>
-                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Birthday</label>
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
                                 <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
                             </div>
                             <div>
-                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">Header Image URL</label>
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
                                 <input type="text" id="edit-headerImage" value="${user.headerImage || ''}" class="edit-input font-mono text-[10px]" placeholder="https://...">
                             </div>
                         </div>
@@ -584,7 +583,7 @@
             const saveBtn = document.getElementById('save-user-btn');
             if (saveBtn) {
                 saveBtn.disabled = true;
-                saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> SAVING...';
+                saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> 保存中...';
             }
             const name = document.getElementById('edit-name')?.value;
             const kana = document.getElementById('edit-kana')?.value;
@@ -610,7 +609,7 @@
                 alert("保存に失敗しました。");
                 if (saveBtn) {
                     saveBtn.disabled = false;
-                    saveBtn.innerText = "SAVE CHANGES";
+                    saveBtn.innerText = "保存する";
                 }
             }
         }
