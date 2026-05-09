@@ -527,10 +527,6 @@
             } else {
                 headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
             }
-            
-            // キャッシュがあれば即時表示、なければ '-'
-            document.getElementById('profileModalBandCount').innerText = u.cachedBandCount !== undefined ? u.cachedBandCount : "-";
-            document.getElementById('profileModalLikeCount').innerText = "0";
 
             let subText = "";
             if(u.year) subText += `${u.year}年`;
@@ -543,6 +539,10 @@
             if(u.role) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:12px;">${u.role}</div>`;
             if(u.affiliations?.includes('urakata')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#fce8e6; color:#d93025; padding:4px 10px; border-radius:12px;">裏方</div>`;
             if(u.affiliations?.includes('lmc')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#f1f3f4; color:#5f6368; padding:4px 10px; border-radius:12px;">LMC</div>`;
+
+            // キャッシュがあれば即時表示、なければ '-'
+            document.getElementById('profileModalBandCount').innerText = u.cachedBandCount !== undefined ? u.cachedBandCount : "-";
+            document.getElementById('profileModalLikeCount').innerText = "0";
 
             openModal('modal-member-profile');
 
@@ -667,7 +667,7 @@
             document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
             document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
             
-            // バンド数といいね数の反映
+            // バンド数といいね数の反映 (自分の場合)
             const allBandsCount = myBandsAll.length; // アーカイブ含むすべて
             const elBandCount = document.getElementById('modalUserBandCount');
             if(elBandCount) elBandCount.innerText = allBandsCount;
@@ -991,21 +991,21 @@
             
             (data.memberIds || []).forEach(uid => {
                 const u = allUsersCache.find(x => x.id === uid);
-                const div = document.createElement('div'); 
-                div.className = 'member-row-rich';
-                
-                if (u) {
-                    div.onclick = () => showMemberProfile(uid);
-                    const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="event.stopPropagation(); removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
-                    div.innerHTML = `<img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${u.name}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${delBtn}`;
-                } else {
-                    div.innerHTML = `<div class="member-avatar-small" style="background:#f1f3f4; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:16px; color:#9aa0a6; animation: spin 1s linear infinite;">sync</span></div><div class="member-info-rich" style="flex:1;"><div class="member-name-rich" style="color:#9aa0a6;">読み込み中...</div><div style="font-size:10px; color:#ccc;">${uid.substring(0,8)}...</div></div>`;
-                }
-                mList.appendChild(div);
-            });
-        }
-
-        // --- バンド操作 ---
+        async function refreshAllUsersCache(){ const qs=await getDocs(collection(db,"users")); allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); }
+        
+        window.openEventRegisterModal = () => {
+            closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
+            targetEvents.forEach(ev => { const opt = document.createElement('option'); opt.value = ev.id; opt.innerText = ev.name; eSel.appendChild(opt); });
+            const bSel = document.getElementById('selectRegisterBand'); bSel.innerHTML = "";
+            const archivedBands = myBandsAll.filter(b=>b.isArchived);
+            if(archivedBands.length === 0) {
+                bSel.innerHTML = "<option value=''>アーカイブされたバンドがありません</option>";
+            } else {
+                archivedBands.forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.innerText = b.name; bSel.appendChild(opt); });
+            }
+            openModal('modal-event-register');
+        };
+        
         window.openBandModal = () => {
             closeFabMenu(); 
             document.getElementById('inputBandName').value = "";
@@ -1028,335 +1028,12 @@
 
             openModal('modal-band');
         };
-
-        window.saveBand = async () => {
-            const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
-            const eventId = document.getElementById('selectNewBandEvent').value;
-            
-            const mIds = [currentUser], mNames = [currentProfile.displayName];
-            const initialEvents = eventId ? [eventId] : [];
-
-            try {
-                const docRef = await addDoc(collection(db, "bands"), { 
-                    name: name, 
-                    memberIds: mIds, 
-                    memberNames: mNames, 
-                    events: initialEvents, 
-                    creatorId: currentUser, 
-                    isArchived: false, 
-                    createdAt: serverTimestamp() 
-                });
-                
-                if (tempBandIconBlob) { 
-                    const url = await uploadImageToExternal(tempBandIconBlob); 
-                    await updateDoc(docRef, { icon: url }); 
-                }
-                closeModal('modal-band'); 
-                
-                if (!eventId) {
-                    await showCustomAlert("イベントが指定されていないため、このバンドは「アーカイブ」タブに保存されました。");
-                }
-                
-                shareBandInvite(docRef.id, name);
-            } catch(e) { showCustomAlert(e.message); }
-        };
-        
-        window.updateBandName = async () => {
-            const bid = document.getElementById('detailBandId').value, name = document.getElementById('detailBandName').value.trim();
-            if(!name) return;
-            try { await updateDoc(doc(db, "bands", bid), { name: name }); showCustomAlert("更新しました。"); } catch(e) { showCustomAlert(e.message); }
-        };
-
-        window.archiveBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            if(await showCustomConfirm("アーカイブしますか？")) { await updateDoc(doc(db, "bands", bid), { isArchived: true }); closeModal('modal-band-detail'); }
-        };
-        window.restoreBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            await updateDoc(doc(db, "bands", bid), { isArchived: false }); closeModal('modal-band-detail');
-        };
-        window.deleteBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            if(await showCustomConfirm("本当に解散（削除）しますか？")) { await deleteDoc(doc(db, "bands", bid)); closeModal('modal-band-detail'); }
-        };
-        window.leaveBand = async () => {
-            const bid = document.getElementById('detailBandId').value;
-            if(await showCustomConfirm("脱退しますか？")) { 
-                await updateDoc(doc(db, "bands", bid), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); 
-                closeModal('modal-band-detail'); 
-            }
-        };
-        window.removeMember = async (bid, uid, name) => {
-            if(await showCustomConfirm(name + " さんを削除しますか？")) {
-                await updateDoc(doc(db, "bands", bid), { memberIds: arrayRemove(uid) });
-                showCustomAlert("削除しました。再度開くと反映されます。");
-            }
-        };
-
-        // --- 曲・履歴・メンバー追加 ---
-        window.addSongToBand = async () => {
-            const song = document.getElementById('inputNewSong').value.trim(); if(!song) return;
-            const bid = document.getElementById('detailBandId').value;
-            await updateDoc(doc(db, "bands", bid), { songs: arrayUnion({ title: song }) });
-            document.getElementById('inputNewSong').value = ""; showCustomAlert("追加しました。");
-        };
-        window.removeSongFromBand = async (title) => {
-            const bid = document.getElementById('detailBandId').value;
-            const bSnap = await getDoc(doc(db, "bands", bid));
-            const newSongs = (bSnap.data().songs || []).filter(s => (s.title || s) !== title);
-            await updateDoc(doc(db, "bands", bid), { songs: newSongs });
-            showCustomAlert("削除しました。");
-        };
-        async function loadBandBookings(bid){
-            const list = document.getElementById('adminBandBookingsList'); list.innerHTML = "<div style='padding:10px; color:#999; font-size:12px;'>読み込み中...</div>";
-            const qs = await getDocs(query(collection(db, "bookings"), where("bandId", "==", bid)));
-            if(qs.empty) { list.innerHTML = "<div style='padding:12px; font-size:12px; color:#999;'>履歴はありません</div>"; return; }
-            let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:12px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
-            list.innerHTML = h;
-        }
-        window.openAddMemberModal = () => { loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); };
-        window.saveAddedMembers = async () => {
-            const sel = document.querySelectorAll('#addMemberSelectList .member-option.selected');
-            const ids = [], nms = []; sel.forEach(el => { ids.push(el.dataset.uid); nms.push(el.dataset.uname); });
-            if(!ids.length) return;
-            await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...ids), memberNames: arrayUnion(...nms) });
-            showCustomAlert("追加完了！"); closeModal('modal-add-member');
-        };
-
-        // --- 招待ロジック ---
-        window.shareBandInvite = async (bid, bn) => {
-            const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`;
-            if (liff.isApiAvailable('shareTargetPicker')) {
-                await liff.shareTargetPicker([{ type: "flex", altText: bn + "への招待", contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [{ type: "text", text: "バンド招待", weight: "bold", color: "#1DB446" }, { type: "text", text: bn, weight: "bold", size: "xl" }] }, footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", action: { type: "uri", label: "参加する", uri: u } }] } } }]);
-            } else { await showCustomAlert("招待URL: " + u); }
-        };
-
-        window.handleInviteLink = async (bid) => {
-            try {
-                const bandSnap = await getDoc(doc(db, "bands", bid));
-                if (!bandSnap.exists()) {
-                    showCustomAlert("このバンドは存在しないか、削除されています。");
-                    return;
-                }
-                const bandData = bandSnap.data();
-                
-                if (bandData.memberIds && bandData.memberIds.includes(currentUser)) {
-                    showCustomAlert("すでにこのバンドに参加しています。");
-                    return;
-                }
-
-                document.getElementById('inviteBandNameTitle').innerText = bandData.name;
-                document.getElementById('btnAcceptInvite').onclick = () => acceptInvite(bid, bandData.name);
-                document.getElementById('btnHoldInvite').onclick = () => holdInvite(bid);
-
-                openModal('modal-invite-confirm');
-                
-                window.history.replaceState(null, null, window.location.pathname);
-            } catch (e) { console.error(e); }
-        };
-
-        window.acceptInvite = async (bid, bName) => {
-            try {
-                await updateDoc(doc(db, "bands", bid), {
-                    memberIds: arrayUnion(currentUser),
-                    memberNames: arrayUnion(currentProfile.displayName)
-                });
-                
-                if (currentUserData.pendingInvites && currentUserData.pendingInvites.includes(bid)) {
-                    await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
-                    currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
-                }
-                
-                showCustomAlert(`${bName} に参加しました！`);
-                closeModal('modal-invite-confirm');
-                checkNotifications();
-            } catch(e) { showCustomAlert("参加処理に失敗しました。"); }
-        };
-
-        window.holdInvite = async (bid) => {
-            try {
-                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayUnion(bid) });
-                if (!currentUserData.pendingInvites) currentUserData.pendingInvites = [];
-                if (!currentUserData.pendingInvites.includes(bid)) {
-                    currentUserData.pendingInvites.push(bid);
-                }
-                showCustomAlert("保留しました。右上の通知アイコンからいつでも確認・参加できます。");
-                closeModal('modal-invite-confirm');
-                checkNotifications();
-            } catch(e) { showCustomAlert("保留処理に失敗しました。"); }
-        };
-        
-        window.acceptInviteFromNotif = async (bid, bName) => {
-            await window.acceptInvite(bid, bName);
-            openNotificationModal();
-        };
-
-        window.rejectInvite = async (bid) => {
-            try {
-                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
-                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
-                openNotificationModal();
-                checkNotifications();
-            } catch(e) { console.error(e); }
-        };
-
-        // --- メール・通知ロジック ---
-        function checkNotifications() { 
-            let hasNotification = false;
-            if(!(currentUserData?.Email || currentUserData?.email)) {
-                hasNotification = true;
-            }
-            if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
-                hasNotification = true;
-            }
-            
-            if (hasNotification) {
-                document.getElementById('headerNotifBadge').classList.add('show'); 
-            } else {
-                document.getElementById('headerNotifBadge').classList.remove('show'); 
-            }
-        }
-
-        window.openNotificationModal = async () => {
-            const list = document.getElementById('notificationList'); 
-            list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>読み込み中...</div>";
-            openModal('modal-notification');
-
-            let html = "";
-            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
-            if (!hasEmail) {
-                html += `
-                <div class="notification-item clickable" onclick="openEmailRegisterModal()">
-                    <div class="notif-icon-box warning"><span class="material-icons">warning</span></div>
-                    <div class="notif-content">
-                        <div class="notif-text" style="font-weight:bold;">重要: メールアドレスを登録してください</div>
-                    </div>
-                </div>`;
-            }
-
-            if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
-                for (const bid of currentUserData.pendingInvites) {
-                    try {
-                        const bSnap = await getDoc(doc(db, "bands", bid));
-                        if (bSnap.exists()) {
-                            const bData = bSnap.data();
-                            if(bData.memberIds && bData.memberIds.includes(currentUser)){
-                                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
-                                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
-                                continue;
-                            }
-
-                            html += `
-                            <div class="notification-item" style="flex-direction:column; gap:12px; padding: 20px 16px; border-bottom: 1px solid #f0f0f0;">
-                                <div style="display:flex; align-items:center; gap:16px;">
-                                    <div class="notif-icon-box" style="background:#e8f0fe; color:#0b57d0; width: 40px; height: 40px;">
-                                        <span class="material-icons" style="font-size: 20px;">group_add</span>
-                                    </div>
-                                    <div class="notif-content" style="flex:1;">
-                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${bData.name}</strong> からの招待</div>
-                                        <div style="font-size:12px; color:#536471; margin-top:2px;">バンドへ参加しますか？</div>
-                                    </div>
-                                </div>
-                                <div style="display:flex; gap:8px; width:100%; padding-left: 56px; box-sizing: border-box;">
-                                    <button class="btn-secondary" style="margin:0; flex:1; padding:8px 0; font-size:13px; background:#f1f3f4; color:#1f1f1f;" onclick="rejectInvite('${bid}')">削除</button>
-                                    <button class="btn-primary" style="margin:0; flex:1; padding:8px 0; font-size:13px;" onclick="acceptInviteFromNotif('${bid}', '${bData.name}')">参加する</button>
-                                </div>
-                            </div>`;
-                        } else {
-                            await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
-                            currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
-                        }
-                    } catch(e) { console.error(e); }
-                }
-            }
-
-            if(html === "") {
-                html = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
-            }
-            
-            list.innerHTML = html;
-            checkNotifications(); 
-        };
-
-        window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
-        window.sendAuthCode = async () => {
-            const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-            try {
-                await updateDoc(doc(db, "users", currentUser), { tempEmail: email, authCode: code });
-                await addDoc(collection(db, "mail_queue"), { to: email, subject: "認証コード", body: `コード: ${code}`, userId: currentUser, createdAt: serverTimestamp() });
-                showCustomAlert("コードを送信しました。");
-                document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
-            } catch(e) { showCustomAlert(e.message); }
-        };
-        window.verifyAuthCode = async () => {
-            const input = document.getElementById('inputAuthCode').value.trim();
-            const userData = (await getDoc(doc(db, "users", currentUser))).data();
-            if (userData.authCode === input) {
-                await updateDoc(doc(db, "users", currentUser), { Email: userData.tempEmail, tempEmail: deleteField(), authCode: deleteField() });
-                showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
-            } else { showCustomAlert("コードが正しくありません。"); }
-        };
-
-        // --- その他UIロジック ---
-        async function loadUserList(id, exclude=[]) {
-            const list = document.getElementById(id); list.innerHTML = "読込中...";
-            const snap = await getDocs(collection(db, "users")); list.innerHTML = "";
-            snap.forEach(d => {
-                if(d.id === currentUser || exclude.includes(d.id)) return;
-                const u = d.data();
-                const div = document.createElement('div'); div.className = 'member-option';
-                div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; };
-                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${u.icon||''}" style="width:28px;height:28px;border-radius:50%;margin:0 10px;">${u.name}`;
-                div.dataset.uid = d.id; div.dataset.uname = u.name;
-                list.appendChild(div);
-            });
-        }
-
-        async function loadSystemSettings() {
-            const s = await getDoc(doc(db, "system", "settings"));
-            if(s.exists() && s.data().activeEventId) {
-                const ev = await getDoc(doc(db, "events", s.data().activeEventId));
-                if(ev.exists()) {
-                    const el = document.getElementById('displayActiveEvent');
-                    let name = ev.data().event || ev.data().name || "";
-                    let shortName = formatEventName(name);
-                    el.innerText = shortName;
-                    el.style.display = "inline-block";
-                    localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
-                }
-            } else {
-                document.getElementById('displayActiveEvent').style.display = "none";
-                localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
-            }
-        }
-
-        async function refreshAllUsersCache(){ 
-            const qs=await getDocs(collection(db,"users")); 
-            allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); 
-            localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
-            
-            // バンド詳細モーダルが開かれていればメンバーリストを自動再描画
-            const detailModal = document.getElementById('modal-band-detail');
-            if (detailModal && detailModal.classList.contains('open') && currentEditingBandId) {
-                const band = myBandsAll.find(b => b.id === currentEditingBandId);
-                if (band) renderBandMembersInModal(band);
-            }
-        }
-        
-        window.openEventRegisterModal = () => {
-            closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
-            targetEvents.forEach(ev => { const opt = document.createElement('option'); opt.value = ev.id; opt.innerText = ev.name; eSel.appendChild(opt); });
-            const bSel = document.getElementById('selectRegisterBand'); bSel.innerHTML = "";
-            myBandsAll.filter(b=>!b.isArchived).forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.innerText = b.name; bSel.appendChild(opt); });
-            openModal('modal-event-register');
-        };
         
         window.saveEventRegistration = async () => {
             const eid = document.getElementById('selectRegisterEvent').value, bid = document.getElementById('selectRegisterBand').value;
             if(!eid || !bid) return;
-            await updateDoc(doc(db, "bands", bid), { events: arrayUnion(eid) });
-            showCustomAlert("登録しました。"); closeModal('modal-event-register');
+            await updateDoc(doc(db, "bands", bid), { events: arrayUnion(eid), isArchived: false });
+            showCustomAlert("イベントに登録し、アーカイブから復元しました。"); closeModal('modal-event-register');
         };
 
         main();
