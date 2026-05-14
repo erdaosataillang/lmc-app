@@ -1193,6 +1193,29 @@
                 const textEl = document.getElementById('currentTimeText'); if(textEl) { textEl.innerText = `${h}:${String(m).padStart(2, '0')}`; }
             }
         }
+
+        // アニメーションの起点を設定する関数（復活）
+        function setModalOrigin(modalId, e) {
+            const overlay = document.getElementById(modalId);
+            if (!overlay) return;
+            let x = '50%', y = '50%';
+            if (e) {
+                if (e.clientX !== undefined && e.clientY !== undefined) {
+                    x = `${e.clientX}px`; y = `${e.clientY}px`;
+                } else if (e.changedTouches && e.changedTouches.length > 0) {
+                    x = `${e.changedTouches[0].clientX}px`; y = `${e.changedTouches[0].clientY}px`;
+                } else if (e.target && e.target.getBoundingClientRect) {
+                    const el = e.target.closest('.header-icon-btn, .event-block, .card, .time-content, .day-cell');
+                    if (el) {
+                        const rect = el.getBoundingClientRect();
+                        x = `${rect.left + rect.width / 2}px`;
+                        y = `${rect.top + rect.height / 2}px`;
+                    }
+                }
+            }
+            overlay.style.setProperty('--origin-x', x);
+            overlay.style.setProperty('--origin-y', y);
+        }
         
         function handleTouchStart(e){ 
             if(isPastDate(displayDate)) return; // 過去日はブロック
