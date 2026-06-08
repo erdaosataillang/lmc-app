@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MY PRIVATE APP</title>
   
+  <!-- iOS PWA (ホーム画面追加時) メタタグ -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PRIVATE APP">
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -112,16 +117,16 @@
   <!-- モバイルメインコンテナ (モバイル時は全画面に完全追従、PC時はデバイス型コンテナ) -->
   <div class="w-full h-[100dvh] md:w-md md:max-w-md md:h-[850px] md:rounded-3xl bg-gray-50 shadow-2xl relative flex flex-col overflow-hidden fixed inset-0 md:relative md:inset-auto">
 
-    <!-- カスタムトースト通知 (Push通知が許可されない場合のフォールバック用) -->
-    <div id="toast-notification" class="absolute top-4 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3">
+    <!-- カスタムトースト通知 -->
+    <div id="toast-notification" class="absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-28 opacity-0 transition-all duration-300 flex items-center gap-3">
       <div class="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-gray-950 flex-shrink-0">
         <i data-lucide="bell" class="w-4 h-4"></i>
       </div>
       <span id="toast-message" class="text-xs font-bold"></span>
     </div>
 
-    <!-- アプリ画面メインエリア (内部のみ縦スクロールを許可) -->
-    <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-36 no-scrollbar scrollable-area">
+    <!-- アプリ画面メインエリア (内部のみ縦スクロールを許可、下部セーフエリア余白追加) -->
+    <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-40 pb-[calc(10rem+env(safe-area-inset-bottom))] no-scrollbar scrollable-area">
 
       <!-- ====================================================================
            [HOME SCREEN]
@@ -189,54 +194,55 @@
           </div>
         </div>
 
-        <!-- リアルタイムステータス -->
+        <!-- SNS & 外部連携 -->
         <section class="mt-6 px-4">
           <div class="flex justify-between items-center mb-3">
-            <h2 class="text-lg font-bold text-gray-900 tracking-tight">リアルタイムステータス</h2>
-            <button onclick="openFullscreen('info')" class="text-xs text-gray-500 font-medium hover:text-gray-900">すべて見る</button>
+            <h2 class="text-lg font-bold text-gray-900 tracking-tight">SNS & 公式連携</h2>
+            <span class="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded-full">タップで外部起動</span>
           </div>
 
           <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4">
             <h3 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-1.5">
-              <span class="w-1.5 h-3 bg-yellow-400 rounded-full"></span>
-              プラットフォーム稼働状況
+              <span class="w-1.5 h-3 bg-indigo-500 rounded-full"></span>
+              公式アカウント ＆ 予定表
             </h3>
             <!-- 横スクロールコンテナ -->
             <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2" style="touch-action: pan-x;">
               <!-- インスタ -->
               <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 border border-pink-100 mb-1.5">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center border border-pink-100 mb-1.5 shadow-sm">
                   <i data-lucide="instagram" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[8px] font-bold text-gray-700 text-center uppercase tracking-tighter leading-tight">インスタ</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">Instagram</span>
               </div>
-              <!-- Twitter -->
+              <!-- Twitter / X -->
               <div onclick="showPlatformDetail('Twitter', 'TWITTER')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 border border-blue-100 mb-1.5">
+                <div class="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center border border-gray-800 mb-1.5 shadow-sm">
+                  <!-- Xを模したSVG、もしくはtwitterアイコン -->
                   <i data-lucide="twitter" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[8px] font-bold text-gray-700 text-center uppercase tracking-tighter leading-tight">Twitter</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">X (Twitter)</span>
               </div>
               <!-- Youtube -->
               <div onclick="showPlatformDetail('Youtube', 'YOUTUBE')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-500 border border-red-100 mb-1.5">
+                <div class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center border border-red-500 mb-1.5 shadow-sm">
                   <i data-lucide="youtube" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[8px] font-bold text-gray-700 text-center uppercase tracking-tighter leading-tight">Youtube</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">YouTube</span>
               </div>
               <!-- 年間予定表 -->
               <div onclick="showPlatformDetail('年間予定表', 'YEARLY')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-yellow-50 flex items-center justify-center text-yellow-600 border border-yellow-100 mb-1.5">
+                <div class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center border border-emerald-400 mb-1.5 shadow-sm">
                   <i data-lucide="calendar-days" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[8px] font-bold text-gray-700 text-center uppercase tracking-tighter leading-tight">年間予定表</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">年間予定表</span>
               </div>
               <!-- 裏方アプリ -->
               <div onclick="showPlatformDetail('裏方アプリ', 'BACKSTAGE')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-gray-900 text-white flex items-center justify-center border border-gray-800 mb-1.5">
+                <div class="w-12 h-12 rounded-full bg-slate-800 text-white flex items-center justify-center border border-slate-700 mb-1.5 shadow-sm">
                   <i data-lucide="terminal" class="w-5 h-5"></i>
                 </div>
-                <span class="text-[8px] font-bold text-gray-700 text-center uppercase tracking-tighter leading-tight">裏方アプリ</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">裏方アプリ</span>
               </div>
             </div>
           </div>
@@ -381,9 +387,9 @@
     </div>
 
     <!-- ====================================================================
-         [FLOATING BOTTOM NAVIGATION]
+         [FLOATING BOTTOM NAVIGATION] - iOSセーフエリア考慮
          ==================================================================== -->
-    <nav class="absolute bottom-6 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-100 rounded-[32px] py-2 px-3 shadow-xl flex justify-around items-center z-50">
+    <nav class="absolute bottom-6 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-100 rounded-[32px] py-2 px-3 shadow-xl flex justify-around items-center z-50 mb-[env(safe-area-inset-bottom)]">
       <button onclick="switchScreen('home')" id="nav-home" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 bg-gray-100 font-bold text-gray-900">
         <i data-lucide="home" class="w-5 h-5"></i>
         <span class="text-xs uppercase tracking-wide">HOME</span>
@@ -409,7 +415,7 @@
       <div id="fullscreen-pages-wrapper" class="w-full h-full bg-gray-50 pointer-events-auto translate-y-full screen-transition flex flex-col relative md:rounded-3xl overflow-hidden">
         
         <!-- 固定ナビゲーションヘッダー -->
-        <header class="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between flex-shrink-0 z-10 shadow-sm">
+        <header class="bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between flex-shrink-0 z-10 shadow-sm pt-[calc(1rem+env(safe-area-inset-top))]">
           <button onclick="closeFullscreen()" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-800 hover:bg-gray-200 active:scale-95 transition-all" aria-label="戻る">
             <i data-lucide="arrow-left" class="w-5 h-5"></i>
           </button>
@@ -417,7 +423,7 @@
         </header>
 
         <!-- スクロール可能なコンテンツエリア -->
-        <div class="flex-1 overflow-y-auto p-5 pb-24 no-scrollbar bg-gray-50 scrollable-area">
+        <div class="flex-1 overflow-y-auto p-5 pb-24 pb-[calc(6rem+env(safe-area-inset-bottom))] no-scrollbar bg-gray-50 scrollable-area">
           
           <!-- [INFO] -->
           <div id="full-content-info" class="full-subcontent hidden">
@@ -799,7 +805,7 @@
       "others": "OTHERS",
       "notifications": "通知一覧",
       "settings": "アプリ設定",
-      "platform": "プラットフォームステータス",
+      "platform": "SNS & 公式連携",
       "news": "ニュース詳細"
     };
 
@@ -919,6 +925,12 @@
       if (!document.getElementById('screen-timetable').classList.contains('hidden')) {
         renderTimetable();
       }
+    }
+
+    // 会場詳細モーダルの中だけでお気に入り状態をトグルする制御用
+    function toggleFavoriteInVenue(artistId, venueName, statusKey) {
+      toggleFavorite(artistId);
+      updateVenueDetailOnly(venueName, statusKey);
     }
 
     // ==================== [ARTIST COMPONENT CONTROLS] ====================
@@ -1126,7 +1138,7 @@
         return;
       }
       if (statusKey === 'TWITTER') {
-        showToast("X(Twitter)を開きます...");
+        showToast("X (Twitter) を開きます...");
         setTimeout(() => { window.open('https://x.com/LMC_105', '_blank'); }, 600);
         return;
       }
@@ -1137,7 +1149,7 @@
       }
       if (statusKey === 'BACKSTAGE') {
         showToast("裏方システムに接続中...");
-        setTimeout(() => { window.open('https://myapge.sorairosystem.com', '_blank'); }, 600);
+        setTimeout(() => { window.open('https://mypage.sorairosystem.com', '_blank'); }, 600);
         return;
       }
 
@@ -1172,10 +1184,10 @@
       const msgSpan = document.getElementById('toast-message');
       
       msgSpan.textContent = message;
-      toast.className = "absolute top-4 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3";
+      toast.className = "absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3";
       
       setTimeout(() => {
-        toast.className = "absolute top-4 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3";
+        toast.className = "absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-28 opacity-0 transition-all duration-300 flex items-center gap-3";
       }, 3000);
     }
 
@@ -1238,6 +1250,18 @@
         targetContent.classList.remove('hidden');
       }
 
+      // 値の設定＆レンダリング
+      updateVenueDetailOnly(venueName, statusKey);
+
+      titleElement.textContent = venueName;
+      overlay.classList.remove('hidden');
+      setTimeout(() => {
+        wrapper.classList.remove('translate-y-full');
+      }, 50);
+    }
+
+    // お気に入りトグル時、画面スクロールを保護するための部分再描画
+    function updateVenueDetailOnly(venueName, statusKey) {
       const badge = document.getElementById('venue-status-badge');
       const capacity = document.getElementById('venue-capacity');
       const container = document.getElementById('venue-artists-today');
@@ -1266,19 +1290,13 @@
                 <span class="text-[9px] font-bold text-gray-400 block">${a.time}</span>
                 <span class="text-xs font-black text-gray-800">${a.name}</span>
               </div>
-              <button onclick="toggleFavorite('${a.id}'); showVenueDetail('${venueName}', '${statusKey}');" class="w-8 h-8 rounded-full flex items-center justify-center border ${isFav ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-gray-200 text-gray-400'}">
+              <button onclick="toggleFavoriteInVenue('${a.id}', '${venueName}', '${statusKey}')" class="w-8 h-8 rounded-full flex items-center justify-center border ${isFav ? 'bg-red-50 border-red-100 text-red-500' : 'bg-white border-gray-200 text-gray-400'}">
                 <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'fill-current' : ''}"></i>
               </button>
             </div>
           `;
         });
       }
-
-      titleElement.textContent = venueName;
-      overlay.classList.remove('hidden');
-      setTimeout(() => {
-        wrapper.classList.remove('translate-y-full');
-      }, 50);
       lucide.createIcons();
     }
 
