@@ -389,7 +389,7 @@
     </nav>
 
     <!-- ==================== [FULLSCREEN PAGES CONTAINER] ==================== -->
-    <div id="fullscreen-container-overlay" class="absolute inset-0 bg-transparent z-[100] hidden pointer-events-none">
+    <div id="fullscreen-container-overlay" class="absolute inset-0 bg-transparent z-[100] hidden">
       
       <!-- 全画面表示される各ページ (下部から綺麗にスライドアップしてくる) -->
       <div id="fullscreen-pages-wrapper" class="w-full h-full bg-gray-50 pointer-events-auto translate-y-full screen-transition flex flex-col relative md:rounded-3xl overflow-hidden">
@@ -1211,6 +1211,17 @@
         wrapper.classList.remove('translate-y-full');
       }, 50);
       lucide.createIcons();
+    }
+
+    // ==================== [CLOSE FULLSCREEN] ====================
+    function closeFullscreen() {
+      const overlay = document.getElementById('fullscreen-container-overlay');
+      const wrapper = document.getElementById('fullscreen-pages-wrapper');
+
+      wrapper.classList.add('translate-y-full');
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+      }, 300);
     }
 
     // ==================== [INITIALIZATION] ====================
