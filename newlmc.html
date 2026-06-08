@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full overflow-hidden">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MY PRIVATE APP</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,10 +13,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <style>
+    html, body {
+      overflow: hidden;
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      position: fixed; /* iOSでのバウンススクロールを強力に防止 */
+      background-color: #121212;
+    }
     body {
       font-family: 'Noto Sans JP', sans-serif;
-      background-color: #121212;
       -webkit-tap-highlight-color: transparent;
+      touch-action: none; /* 外側の不要なジェスチャーを抑制 */
+    }
+    /* 内部のスクロール可能なエリアのみタッチ操作を許可 */
+    .scrollable-area {
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
     }
     /* スクロールバー非表示 */
     .no-scrollbar::-webkit-scrollbar {
@@ -32,10 +46,10 @@
     }
   </style>
 </head>
-<body class="flex justify-center items-center min-h-screen text-gray-800">
+<body class="md:flex md:justify-center md:items-center min-h-full text-gray-800">
 
-  <!-- モバイルコンテナ (実機アプリのような比率と操作感) -->
-  <div class="w-full max-w-md h-[100vh] md:h-[850px] md:rounded-3xl bg-gray-50 shadow-2xl relative flex flex-col overflow-hidden">
+  <!-- モバイルコンテナ (モバイル時は全画面に完全追従、PC時はデバイス型コンテナ) -->
+  <div class="w-full h-[100dvh] md:w-md md:max-w-md md:h-[850px] md:rounded-3xl bg-gray-50 shadow-2xl relative flex flex-col overflow-hidden fixed inset-0 md:relative md:inset-auto">
 
     <!-- カスタムトースト通知 -->
     <div id="toast-notification" class="absolute top-4 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3">
@@ -45,13 +59,13 @@
       <span id="toast-message" class="text-xs font-bold">通知メッセージ</span>
     </div>
 
-    <!-- アプリ画面メインエリア (pb-36を設定しボトムナビでの見切れを完全に防止) -->
-    <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-36 no-scrollbar">
+    <!-- アプリ画面メインエリア (pb-36を設定しボトムナビでの見切れを完全に防止、内部のみ縦スクロールを許可) -->
+    <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-36 no-scrollbar scrollable-area">
 
       <!-- ==================== [HOME SCREEN] ==================== -->
       <div id="screen-home" class="screen-content">
         <!-- ヘッダービジュアル -->
-        <div class="relative w-full aspect-[16/10] bg-black">
+        <div class="relative w-full aspect-[16/10] bg-black flex-shrink-0">
           <img src="https://ul.h3z.jp/Fx4Jk0Dq.png" alt="HEADER VISUAL" class="w-full h-full object-cover">
           <!-- 上部アクションボタン -->
           <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
@@ -109,14 +123,14 @@
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">OTHERS</span>
           </button>
           
-          <!-- クローク予約があった枠 ➔ 美しい空白(プレースホルダー) -->
+          <!-- 空白プレースホルダー 1 -->
           <div class="flex flex-col items-center opacity-25">
             <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300 bg-transparent">
               <i data-lucide="minus" class="w-4 h-4"></i>
             </div>
             <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
           </div>
-          <!-- サカスプクエストがあった枠 ➔ 美しい空白(プレースホルダー) -->
+          <!-- 空白プレースホルダー 2 -->
           <div class="flex flex-col items-center opacity-25">
             <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300 bg-transparent">
               <i data-lucide="minus" class="w-4 h-4"></i>
@@ -137,8 +151,8 @@
               <span class="w-1.5 h-3 bg-yellow-400 rounded-full"></span>
               プラットフォーム稼働状況
             </h3>
-            <!-- 横スクロールコンテナ -->
-            <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+            <!-- 横スクロールコンテナ (pan-xで横スワイプ可能) -->
+            <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2" style="touch-action: pan-x;">
               <!-- インスタ -->
               <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
                 <div class="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center text-pink-500 border border-pink-100 mb-1.5">
@@ -185,7 +199,7 @@
             <button onclick="openFullscreen('info')" class="text-xs text-gray-500 font-medium hover:text-gray-900">すべて見る</button>
           </div>
           <div class="space-y-3">
-            <div class="p-3 bg-white rounded-xl border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" onclick="showNewsDetail('今後の予定をアップデートしました！', '来月開催予定 of ファンイベント、およびPococha配信スケジュールの最新版を「今後の予定」に掲載しました。詳細はカレンダーよりご確認ください。')">
+            <div class="p-3 bg-white rounded-xl border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" onclick="showNewsDetail('今後の予定をアップデートしました！', '来月開催予定のファンイベント、およびPococha配信スケジュールの最新版を「今後の予定」に掲載しました。詳細はカレンダーよりご確認ください。')">
               <div class="flex-1 pr-4">
                 <div class="text-[10px] font-bold text-yellow-600 mb-1">2026.06.08</div>
                 <p class="text-xs font-bold text-gray-800 leading-snug">今後の予定をアップデートしました！</p>
@@ -205,9 +219,8 @@
 
       <!-- ==================== [ARTIST SCREEN] ==================== -->
       <div id="screen-artist" class="screen-content hidden">
-        
         <!-- 固定ヘッダー (中央にARTIST、右にフィルタと検索) -->
-        <header class="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+        <header class="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm flex-shrink-0">
           <div class="w-8"></div>
           <h2 class="text-sm font-black text-gray-900 tracking-wider">ARTIST</h2>
           <div class="flex items-center gap-2">
@@ -221,7 +234,7 @@
         </header>
 
         <!-- 日付/お気に入り選択タブバー -->
-        <div class="bg-white border-b border-gray-200 sticky top-[53px] z-30 flex justify-between items-center px-2">
+        <div class="bg-white border-b border-gray-200 sticky top-[53px] z-30 flex justify-between items-center px-2 flex-shrink-0">
           <button onclick="setArtistFilterTab('all')" id="tab-art-all" class="flex-1 py-3 text-xs font-black tracking-wide border-b-2 border-gray-900 text-gray-900 transition-all text-center">
             ALL
           </button>
@@ -237,7 +250,7 @@
         </div>
 
         <!-- 隠し検索バー -->
-        <div id="artist-search-bar" class="p-3 bg-white border-b border-gray-100 hidden">
+        <div id="artist-search-bar" class="p-3 bg-white border-b border-gray-100 hidden flex-shrink-0">
           <div class="relative">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
             <input type="text" id="artist-input-search" oninput="filterArtists()" placeholder="アーティスト名で検索..." class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-9 pr-4 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
@@ -245,7 +258,7 @@
         </div>
 
         <!-- インデックスヘッダー -->
-        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20">
+        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">
           あ
         </div>
 
@@ -253,12 +266,11 @@
         <div id="artist-grid-container" class="grid grid-cols-2 gap-x-2 gap-y-4 p-2 bg-white">
           <!-- JSで動的に追加 -->
         </div>
-
       </div>
 
       <!-- ==================== [TIMETABLE SCREEN] ==================== -->
       <div id="screen-timetable" class="screen-content hidden p-4">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-4 flex-shrink-0">
           <h2 class="text-xl font-bold text-gray-900 tracking-tight">タイムテーブル</h2>
           <!-- 日付選択 -->
           <div class="inline-flex bg-gray-200 p-0.5 rounded-lg">
@@ -268,7 +280,7 @@
         </div>
 
         <!-- マイタイムテーブル切り替え -->
-        <div class="flex gap-2 mb-4">
+        <div class="flex gap-2 mb-4 flex-shrink-0">
           <button onclick="setTimetableMode('all')" id="btn-tt-all" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-gray-900 text-white">全会場</button>
           <button onclick="setTimetableMode('my')" id="btn-tt-my" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700 flex items-center justify-center gap-1.5">
             <i data-lucide="heart" class="w-3.5 h-3.5 text-red-500"></i>
@@ -277,7 +289,7 @@
         </div>
 
         <!-- 横スクロールタイムテーブルボード -->
-        <div id="timetable-board-container" class="overflow-x-auto no-scrollbar border border-gray-100 rounded-2xl bg-white shadow-sm">
+        <div id="timetable-board-container" class="overflow-x-auto no-scrollbar border border-gray-100 rounded-2xl bg-white shadow-sm" style="touch-action: pan-x;">
           <div class="inline-flex min-w-full" id="timetable-stages-row">
             <!-- タイムテーブルが動的にレンダリングされるエリア -->
           </div>
@@ -291,7 +303,6 @@
 
         <!-- マップSVG -->
         <div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-4 overflow-hidden aspect-[4/5] flex flex-col justify-between">
-          
           <!-- 地図簡易グラフィックス -->
           <svg viewBox="0 0 300 400" class="w-full h-full absolute inset-0 text-gray-200" style="z-index: 1;">
             <line x1="40" y1="0" x2="40" y2="400" stroke="#f1f5f9" stroke-width="20" />
@@ -391,8 +402,8 @@
           <h3 id="fullscreen-header-title" class="text-sm font-black text-gray-900 tracking-wide text-center flex-1 pr-10">タイトル</h3>
         </header>
 
-        <!-- スクロール可能なコンテンツエリア -->
-        <div class="flex-1 overflow-y-auto p-5 pb-20 no-scrollbar bg-gray-50">
+        <!-- スクロール可能なコンテンツエリア (内部のみスクロール、タッチアクション pan-y を指定) -->
+        <div class="flex-1 overflow-y-auto p-5 pb-24 no-scrollbar bg-gray-50 scrollable-area">
           
           <!-- [INFO] -->
           <div id="full-content-info" class="full-subcontent hidden">
@@ -571,7 +582,7 @@
             </div>
           </div>
 
-          <!-- [PLATFORM DETAIL] (稼働状況および各種SNSステータスの詳細表示) -->
+          <!-- [PLATFORM DETAIL] -->
           <div id="full-content-platform" class="full-subcontent hidden">
             <div class="flex items-center gap-2.5 mb-4">
               <span id="platform-status-badge" class="px-2.5 py-1 text-[10px] font-black rounded-lg">稼働状況</span>
@@ -672,6 +683,24 @@
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>ライセンス</span>
                 <span class="text-gray-400">MIT License</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- [VENUE DETAIL] -->
+          <div id="full-content-venue" class="full-subcontent hidden">
+            <div class="flex items-center gap-2.5 mb-4">
+              <span id="venue-status-badge" class="px-2.5 py-1 text-[10px] font-black rounded-lg">混雑状態</span>
+              <span id="venue-capacity" class="text-xs font-bold text-gray-400">キャパシティ: --人</span>
+            </div>
+            
+            <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <h4 class="text-xs font-black text-gray-400 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i>
+                本日のタイムテーブル
+              </h4>
+              <div id="venue-artists-today" class="space-y-2">
+                <!-- 会場に属するアーティストを動的に挿入 -->
               </div>
             </div>
           </div>
