@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MY PRIVATE APP</title>
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
@@ -12,7 +13,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  
   <style>
+    /* ==========================================================================
+       [基本CSS] 共通スタイル定義・バウンススクロール防止・iOS対応
+       ========================================================================== */
     html, body {
       overflow: hidden;
       height: 100%;
@@ -27,6 +32,7 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: none; /* 外側の不要なジェスチャーを抑制 */
     }
+    
     /* 内部のスクロール可能なエリアのみタッチ操作を許可 */
     .scrollable-area {
       touch-action: pan-y;
@@ -40,99 +46,143 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-    /* スライド遷移アニメーション */
+
+    /* ==========================================================================
+       [UI/UX スタイル] 画面遷移アニメーション・共通パーツ
+       ========================================================================== */
     .screen-transition {
       transition: transform 0.3s cubic-bezier(0.32, 0.94, 0.6, 1);
+    }
+
+    /* 共通ユーティリティクラス（丸型アイコンボタン） */
+    .btn-icon-round {
+      width: 40px;
+      height: 40px;
+      border-radius: 9999px;
+      background-color: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      transition: transform 0.1s ease;
+    }
+    .btn-icon-round:active {
+      transform: scale(0.95);
+    }
+
+    /* グリッドメニューの共通アイテム */
+    .grid-menu-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.1s ease;
+    }
+    .grid-menu-item:active {
+      transform: scale(0.95);
+    }
+    .grid-menu-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 9999px;
+      border: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #374151;
+      background-color: #f9fafb;
+      transition: background-color 0.2s;
+    }
+    .grid-menu-item:hover .grid-menu-icon {
+      background-color: #f3f4f6;
+    }
+
+    /* 共通カード定義 */
+    .standard-card {
+      background-color: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #f3f4f6;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transition: background-color 0.2s;
     }
   </style>
 </head>
 <body class="md:flex md:justify-center md:items-center min-h-full text-gray-800">
 
-  <!-- モバイルコンテナ (モバイル時は全画面に完全追従、PC時はデバイス型コンテナ) -->
+  <!-- モバイルメインコンテナ (モバイル時は全画面に完全追従、PC時はデバイス型コンテナ) -->
   <div class="w-full h-[100dvh] md:w-md md:max-w-md md:h-[850px] md:rounded-3xl bg-gray-50 shadow-2xl relative flex flex-col overflow-hidden fixed inset-0 md:relative md:inset-auto">
 
-    <!-- カスタムトースト通知 -->
+    <!-- カスタムトースト通知 (Push通知が許可されない場合のフォールバック用) -->
     <div id="toast-notification" class="absolute top-4 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3">
       <div class="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-gray-950 flex-shrink-0">
-        <i data-lucide="check" class="w-4 h-4"></i>
+        <i data-lucide="bell" class="w-4 h-4"></i>
       </div>
-      <span id="toast-message" class="text-xs font-bold">通知メッセージ</span>
+      <span id="toast-message" class="text-xs font-bold"></span>
     </div>
 
-    <!-- アプリ画面メインエリア (pb-36を設定しボトムナビでの見切れを完全に防止、内部のみ縦スクロールを許可) -->
+    <!-- アプリ画面メインエリア (内部のみ縦スクロールを許可) -->
     <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-36 no-scrollbar scrollable-area">
 
-      <!-- ==================== [HOME SCREEN] ==================== -->
+      <!-- ====================================================================
+           [HOME SCREEN]
+           ==================================================================== -->
       <div id="screen-home" class="screen-content">
-        <!-- ヘッダービジュアル -->
+        <!-- ヘッダーイメージ & アクションボタン -->
         <div class="relative w-full aspect-[16/10] bg-black flex-shrink-0">
           <img src="https://ul.h3z.jp/Fx4Jk0Dq.png" alt="HEADER VISUAL" class="w-full h-full object-cover">
-          <!-- 上部アクションボタン -->
           <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-            <button onclick="openFullscreen('notifications')" class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition-transform" aria-label="お知らせ">
+            <button onclick="openFullscreen('notifications')" class="btn-icon-round" aria-label="お知らせ">
               <i data-lucide="bell" class="w-5 h-5"></i>
             </button>
-            <button onclick="openFullscreen('settings')" class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition-transform" aria-label="設定">
+            <button onclick="openFullscreen('settings')" class="btn-icon-round" aria-label="設定">
               <i data-lucide="settings" class="w-5 h-5"></i>
             </button>
           </div>
         </div>
 
-        <!-- メイングリッドメニュー (ヘッダーに少し重ねる配置) -->
+        <!-- メイングリッドメニュー -->
         <div class="mx-4 -mt-10 bg-white rounded-2xl shadow-xl p-4 grid grid-cols-4 gap-x-2 gap-y-5 relative z-20 border border-gray-100">
           <!-- インフォ -->
-          <button onclick="openFullscreen('info')" class="flex flex-col items-center group active:scale-95 transition-transform">
-            <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 bg-gray-50 group-hover:bg-gray-100 transition-colors">
-              <i data-lucide="info" class="w-5 h-5"></i>
-            </div>
+          <button onclick="openFullscreen('info')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="info" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">インフォ</span>
           </button>
           <!-- 今後の予定 -->
-          <button onclick="openFullscreen('schedule')" class="flex flex-col items-center group active:scale-95 transition-transform">
-            <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 bg-gray-50 group-hover:bg-gray-100 transition-colors">
-              <i data-lucide="calendar" class="w-5 h-5"></i>
-            </div>
+          <button onclick="openFullscreen('schedule')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="calendar" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">今後の予定</span>
           </button>
           <!-- ランク -->
-          <button onclick="openFullscreen('rank')" class="flex flex-col items-center group active:scale-95 transition-transform">
-            <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 bg-gray-50 group-hover:bg-gray-100 transition-colors">
-              <i data-lucide="trending-up" class="w-5 h-5"></i>
-            </div>
+          <button onclick="openFullscreen('rank')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="trending-up" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">ランク</span>
           </button>
           <!-- プレイリスト -->
-          <button onclick="openFullscreen('playlist')" class="flex flex-col items-center group active:scale-95 transition-transform">
-            <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 bg-gray-50 group-hover:bg-gray-100 transition-colors">
-              <i data-lucide="music" class="w-5 h-5"></i>
-            </div>
+          <button onclick="openFullscreen('playlist')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="music" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">プレイリスト作成</span>
           </button>
           <!-- FAQ -->
-          <button onclick="openFullscreen('faq')" class="flex flex-col items-center group active:scale-95 transition-transform">
-            <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 bg-gray-50 group-hover:bg-gray-100 transition-colors">
-              <i data-lucide="help-circle" class="w-5 h-5"></i>
-            </div>
+          <button onclick="openFullscreen('faq')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="help-circle" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">FAQ<br>よくある質問</span>
           </button>
           <!-- OTHERS -->
-          <button onclick="openFullscreen('others')" class="flex flex-col items-center group active:scale-95 transition-transform">
-            <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center text-gray-700 bg-gray-50 group-hover:bg-gray-100 transition-colors">
-              <i data-lucide="file-text" class="w-5 h-5"></i>
-            </div>
+          <button onclick="openFullscreen('others')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="file-text" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">OTHERS</span>
           </button>
           
           <!-- 空白プレースホルダー 1 -->
           <div class="flex flex-col items-center opacity-25">
-            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300 bg-transparent">
+            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300">
               <i data-lucide="minus" class="w-4 h-4"></i>
             </div>
             <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
           </div>
           <!-- 空白プレースホルダー 2 -->
           <div class="flex flex-col items-center opacity-25">
-            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300 bg-transparent">
+            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300">
               <i data-lucide="minus" class="w-4 h-4"></i>
             </div>
             <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
@@ -151,7 +201,7 @@
               <span class="w-1.5 h-3 bg-yellow-400 rounded-full"></span>
               プラットフォーム稼働状況
             </h3>
-            <!-- 横スクロールコンテナ (pan-xで横スワイプ可能) -->
+            <!-- 横スクロールコンテナ -->
             <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2" style="touch-action: pan-x;">
               <!-- インスタ -->
               <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
@@ -199,14 +249,14 @@
             <button onclick="openFullscreen('info')" class="text-xs text-gray-500 font-medium hover:text-gray-900">すべて見る</button>
           </div>
           <div class="space-y-3">
-            <div class="p-3 bg-white rounded-xl border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" onclick="showNewsDetail('今後の予定をアップデートしました！', '来月開催予定のファンイベント、およびPococha配信スケジュールの最新版を「今後の予定」に掲載しました。詳細はカレンダーよりご確認ください。')">
+            <div class="p-3 standard-card flex justify-between items-center cursor-pointer hover:bg-gray-50" onclick="showNewsDetail('今後の予定をアップデートしました！', '来月開催予定のファンイベント、およびPococha配信スケジュールの最新版を「今後の予定」に掲載しました。詳細はカレンダーよりご確認ください。')">
               <div class="flex-1 pr-4">
                 <div class="text-[10px] font-bold text-yellow-600 mb-1">2026.06.08</div>
                 <p class="text-xs font-bold text-gray-800 leading-snug">今後の予定をアップデートしました！</p>
               </div>
               <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
             </div>
-            <div class="p-3 bg-white rounded-xl border border-gray-100 shadow-sm flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" onclick="showNewsDetail('今月のコアファン特典について', '現在のランクに基づいた限定配信アーカイブおよびデジタルコンテンツを公開しました。「ランク」ページより到達特典の確認・受取を行ってください。')">
+            <div class="p-3 standard-card flex justify-between items-center cursor-pointer hover:bg-gray-50" onclick="showNewsDetail('今月のコアファン特典について', '現在のランクに基づいた限定配信アーカイブおよびデジタルコンテンツを公開しました。「ランク」ページより到達特典の確認・受取を行ってください。')">
               <div class="flex-1 pr-4">
                 <div class="text-[10px] font-bold text-yellow-600 mb-1">2026.06.05</div>
                 <p class="text-xs font-bold text-gray-800 leading-snug">今月のコアファン特典について</p>
@@ -217,9 +267,11 @@
         </section>
       </div>
 
-      <!-- ==================== [ARTIST SCREEN] ==================== -->
+      <!-- ====================================================================
+           [ARTIST SCREEN]
+           ==================================================================== -->
       <div id="screen-artist" class="screen-content hidden">
-        <!-- 固定ヘッダー (中央にARTIST、右にフィルタと検索) -->
+        <!-- 固定ヘッダー -->
         <header class="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-30 shadow-sm flex-shrink-0">
           <div class="w-8"></div>
           <h2 class="text-sm font-black text-gray-900 tracking-wider">ARTIST</h2>
@@ -235,21 +287,13 @@
 
         <!-- 日付/お気に入り選択タブバー -->
         <div class="bg-white border-b border-gray-200 sticky top-[53px] z-30 flex justify-between items-center px-2 flex-shrink-0">
-          <button onclick="setArtistFilterTab('all')" id="tab-art-all" class="flex-1 py-3 text-xs font-black tracking-wide border-b-2 border-gray-900 text-gray-900 transition-all text-center">
-            ALL
-          </button>
-          <button onclick="setArtistFilterTab('day1')" id="tab-art-day1" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">
-            6.6 土
-          </button>
-          <button onclick="setArtistFilterTab('day2')" id="tab-art-day2" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">
-            6.7 日
-          </button>
-          <button onclick="setArtistFilterTab('favorites')" id="tab-art-favorites" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">
-            お気に入り
-          </button>
+          <button onclick="setArtistFilterTab('all')" id="tab-art-all" class="flex-1 py-3 text-xs font-black tracking-wide border-b-2 border-gray-900 text-gray-900 transition-all text-center">ALL</button>
+          <button onclick="setArtistFilterTab('day1')" id="tab-art-day1" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">6.6 土</button>
+          <button onclick="setArtistFilterTab('day2')" id="tab-art-day2" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">6.7 日</button>
+          <button onclick="setArtistFilterTab('favorites')" id="tab-art-favorites" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">お気に入り</button>
         </div>
 
-        <!-- 隠し検索バー -->
+        <!-- 検索バー -->
         <div id="artist-search-bar" class="p-3 bg-white border-b border-gray-100 hidden flex-shrink-0">
           <div class="relative">
             <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
@@ -257,29 +301,22 @@
           </div>
         </div>
 
-        <!-- インデックスヘッダー -->
-        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">
-          あ
-        </div>
-
-        <!-- アーティストフォトグリッド -->
-        <div id="artist-grid-container" class="grid grid-cols-2 gap-x-2 gap-y-4 p-2 bg-white">
-          <!-- JSで動的に追加 -->
-        </div>
+        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">あ</div>
+        <div id="artist-grid-container" class="grid grid-cols-2 gap-x-2 gap-y-4 p-2 bg-white"></div>
       </div>
 
-      <!-- ==================== [TIMETABLE SCREEN] ==================== -->
+      <!-- ====================================================================
+           [TIMETABLE SCREEN]
+           ==================================================================== -->
       <div id="screen-timetable" class="screen-content hidden p-4">
         <div class="flex justify-between items-center mb-4 flex-shrink-0">
           <h2 class="text-xl font-bold text-gray-900 tracking-tight">タイムテーブル</h2>
-          <!-- 日付選択 -->
           <div class="inline-flex bg-gray-200 p-0.5 rounded-lg">
             <button onclick="setTimetableDate(1)" id="btn-tt-day1" class="px-3 py-1 rounded-md text-xs font-bold bg-white text-gray-900 shadow-sm">6/6</button>
             <button onclick="setTimetableDate(2)" id="btn-tt-day2" class="px-3 py-1 rounded-md text-xs font-bold text-gray-600">6/7</button>
           </div>
         </div>
 
-        <!-- マイタイムテーブル切り替え -->
         <div class="flex gap-2 mb-4 flex-shrink-0">
           <button onclick="setTimetableMode('all')" id="btn-tt-all" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-gray-900 text-white">全会場</button>
           <button onclick="setTimetableMode('my')" id="btn-tt-my" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700 flex items-center justify-center gap-1.5">
@@ -288,22 +325,19 @@
           </button>
         </div>
 
-        <!-- 横スクロールタイムテーブルボード -->
         <div id="timetable-board-container" class="overflow-x-auto no-scrollbar border border-gray-100 rounded-2xl bg-white shadow-sm" style="touch-action: pan-x;">
-          <div class="inline-flex min-w-full" id="timetable-stages-row">
-            <!-- タイムテーブルが動的にレンダリングされるエリア -->
-          </div>
+          <div class="inline-flex min-w-full" id="timetable-stages-row"></div>
         </div>
       </div>
 
-      <!-- ==================== [MAP SCREEN] ==================== -->
+      <!-- ====================================================================
+           [MAP SCREEN]
+           ==================================================================== -->
       <div id="screen-map" class="screen-content hidden p-4">
         <h2 class="text-xl font-bold text-gray-900 tracking-tight mb-2">会場マップ</h2>
         <p class="text-xs text-gray-500 mb-4">栄地区の各ライブハウス。ピンをタップすると詳細情報が表示されます。</p>
 
-        <!-- マップSVG -->
         <div class="relative bg-white rounded-2xl border border-gray-100 shadow-sm p-4 overflow-hidden aspect-[4/5] flex flex-col justify-between">
-          <!-- 地図簡易グラフィックス -->
           <svg viewBox="0 0 300 400" class="w-full h-full absolute inset-0 text-gray-200" style="z-index: 1;">
             <line x1="40" y1="0" x2="40" y2="400" stroke="#f1f5f9" stroke-width="20" />
             <line x1="150" y1="0" x2="150" y2="400" stroke="#f1f5f9" stroke-width="32" />
@@ -315,60 +349,40 @@
             <ellipse cx="150" cy="100" rx="40" ry="25" fill="#e2f5ff" stroke="#cbd5e1" stroke-width="2" />
           </svg>
 
-          <!-- ピンオブジェクト -->
           <div style="z-index: 2;" class="absolute inset-0">
-            <!-- CLUB QUATTRO -->
             <button onclick="showVenueDetail('NAGOYA CLUB QUATTRO', 'RELIABLE')" class="absolute top-16 left-1/4 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group">
-              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform">
-                <i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i>
-              </div>
+              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform"><i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i></div>
               <span class="text-[8px] font-bold bg-white/90 backdrop-blur-sm px-1 rounded border border-gray-200 mt-1 shadow-sm whitespace-nowrap">CLUB QUATTRO</span>
             </button>
-
-            <!-- HOLIDAY NEXT -->
             <button onclick="showVenueDetail('HOLIDAY NEXT NAGOYA', 'REGULATED')" class="absolute top-44 right-12 -translate-y-1/2 flex flex-col items-center group">
-              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform">
-                <i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i>
-              </div>
+              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform"><i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i></div>
               <span class="text-[8px] font-bold bg-white/90 backdrop-blur-sm px-1 rounded border border-gray-200 mt-1 shadow-sm whitespace-nowrap">HOLIDAY NEXT</span>
             </button>
-
-            <!-- ReNY limited -->
             <button onclick="showVenueDetail('NAGOYA ReNY limited', 'SMOOTH')" class="absolute top-64 right-12 -translate-y-1/2 flex flex-col items-center group">
-              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform">
-                <i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i>
-              </div>
+              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform"><i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i></div>
               <span class="text-[8px] font-bold bg-white/90 backdrop-blur-sm px-1 rounded border border-gray-200 mt-1 shadow-sm whitespace-nowrap">ReNY limited</span>
             </button>
-
-            <!-- NSM EVENT HALL -->
             <button onclick="showVenueDetail('NSM EVENT HALL', 'CROWDED')" class="absolute top-48 left-16 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group">
-              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform">
-                <i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i>
-              </div>
+              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform"><i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i></div>
               <span class="text-[8px] font-bold bg-white/90 backdrop-blur-sm px-1 rounded border border-gray-200 mt-1 shadow-sm whitespace-nowrap">NSM HALL</span>
             </button>
-
-            <!-- RAD HALL -->
             <button onclick="showVenueDetail('RAD HALL', 'REGULATED')" class="absolute bottom-20 left-1/3 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center group">
-              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform">
-                <i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i>
-              </div>
+              <div class="bg-gray-900 text-white p-1.5 rounded-full shadow-lg group-hover:scale-110 transition-transform"><i data-lucide="map-pin" class="w-4 h-4 text-yellow-300"></i></div>
               <span class="text-[8px] font-bold bg-white/90 backdrop-blur-sm px-1 rounded border border-gray-200 mt-1 shadow-sm whitespace-nowrap">RAD HALL</span>
             </button>
           </div>
 
-          <!-- マップのガイド情報 -->
           <div class="mt-auto bg-black/80 backdrop-blur-md p-3 rounded-xl text-white relative z-10">
             <div class="text-[10px] font-bold uppercase tracking-wider text-yellow-400 mb-1">MAP INFO</div>
             <p class="text-xs leading-normal">各アイコンをタップすると会場ごとの混雑度合いと、現在の演奏アーティスト情報を確認できます。</p>
           </div>
         </div>
       </div>
-
     </div>
 
-    <!-- ==================== [FLOATING BOTTOM NAVIGATION] ==================== -->
+    <!-- ====================================================================
+         [FLOATING BOTTOM NAVIGATION]
+         ==================================================================== -->
     <nav class="absolute bottom-6 left-4 right-4 bg-white/95 backdrop-blur-md border border-gray-100 rounded-[32px] py-2 px-3 shadow-xl flex justify-around items-center z-50">
       <button onclick="switchScreen('home')" id="nav-home" class="flex items-center gap-1.5 py-2 px-4 rounded-full transition-all duration-300 bg-gray-100 font-bold text-gray-900">
         <i data-lucide="home" class="w-5 h-5"></i>
@@ -388,10 +402,10 @@
       </button>
     </nav>
 
-    <!-- ==================== [FULLSCREEN PAGES CONTAINER] ==================== -->
+    <!-- ====================================================================
+         [FULLSCREEN PAGES CONTAINER]
+         ==================================================================== -->
     <div id="fullscreen-container-overlay" class="absolute inset-0 bg-transparent z-[100] hidden">
-      
-      <!-- 全画面表示される各ページ (下部から綺麗にスライドアップしてくる) -->
       <div id="fullscreen-pages-wrapper" class="w-full h-full bg-gray-50 pointer-events-auto translate-y-full screen-transition flex flex-col relative md:rounded-3xl overflow-hidden">
         
         <!-- 固定ナビゲーションヘッダー -->
@@ -402,7 +416,7 @@
           <h3 id="fullscreen-header-title" class="text-sm font-black text-gray-900 tracking-wide text-center flex-1 pr-10">タイトル</h3>
         </header>
 
-        <!-- スクロール可能なコンテンツエリア (内部のみスクロール、タッチアクション pan-y を指定) -->
+        <!-- スクロール可能なコンテンツエリア -->
         <div class="flex-1 overflow-y-auto p-5 pb-24 no-scrollbar bg-gray-50 scrollable-area">
           
           <!-- [INFO] -->
@@ -427,8 +441,6 @@
           <div id="full-content-schedule" class="full-subcontent hidden">
             <div class="space-y-4 max-w-sm mx-auto">
               <p class="text-xs text-gray-500 mb-2">直近に控えているライブイベントや、配信スケジュールです。</p>
-              
-              <!-- 予定カード1 -->
               <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4">
                 <div class="w-12 h-12 rounded-xl bg-yellow-50 flex flex-col items-center justify-center text-yellow-600 flex-shrink-0 border border-yellow-100">
                   <span class="text-[8px] font-black leading-none">JUN</span>
@@ -440,8 +452,6 @@
                   <p class="text-[10px] text-gray-400 mt-1">21:00~ / コアファンルーム内にて配信</p>
                 </div>
               </div>
-
-              <!-- 予定カード2 -->
               <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4">
                 <div class="w-12 h-12 rounded-xl bg-gray-100 flex flex-col items-center justify-center text-gray-500 flex-shrink-0 border border-gray-200">
                   <span class="text-[8px] font-black leading-none">JUN</span>
@@ -453,8 +463,6 @@
                   <p class="text-[10px] text-gray-400 mt-1">20:00~ / YouTubeメインチャンネル</p>
                 </div>
               </div>
-
-              <!-- 予定カード3 -->
               <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4">
                 <div class="w-12 h-12 rounded-xl bg-blue-50 flex flex-col items-center justify-center text-blue-500 flex-shrink-0 border border-blue-100">
                   <span class="text-[8px] font-black leading-none">JUL</span>
@@ -478,8 +486,6 @@
               <div class="text-[10px] font-black text-yellow-600 tracking-widest uppercase mb-1">CURRENT RANK</div>
               <div class="text-lg font-black text-gray-900 mb-2">プラチナ・コアメンバー</div>
               <p class="text-[10px] text-gray-400 font-bold mb-6">現在のファンランク：Lv.24</p>
-              
-              <!-- 次のランクへのゲージ表示 -->
               <div class="space-y-1.5 text-left mb-6">
                 <div class="flex justify-between text-[10px] font-black text-gray-400 uppercase">
                   <span>NEXT LEVEL (Lv.25)</span>
@@ -490,8 +496,6 @@
                 </div>
                 <p class="text-[9px] text-gray-400 text-right font-medium">次のレベルまで残り 2,500 pts</p>
               </div>
-
-              <!-- 獲得済みランク特典 -->
               <div class="text-left bg-gray-50 border border-gray-100 p-4 rounded-xl space-y-2">
                 <h4 class="text-xs font-black text-gray-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                   <i data-lucide="gift" class="w-4 h-4 text-gray-500"></i>
@@ -512,7 +516,6 @@
           <!-- [PLAYLIST] -->
           <div id="full-content-playlist" class="full-subcontent hidden">
             <p class="text-xs text-gray-500 mb-4">お気に入り登録（ハートボタン）をしたアーティストを解析し、体験型スマートプレイリストを自動構成します。</p>
-            
             <div class="bg-yellow-50 rounded-2xl p-4 border border-yellow-100 mb-5">
               <div class="text-xs font-bold text-yellow-800 mb-1 flex items-center gap-1.5">
                 <i data-lucide="info" class="w-3.5 h-3.5"></i>
@@ -520,15 +523,11 @@
               </div>
               <p class="text-xs text-yellow-700 leading-relaxed">登録アーティストのジャンル、出演順から快適な試聴プレイリストを作成します。</p>
             </div>
-
             <button onclick="generatePlaylistMock()" class="w-full py-4 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl text-xs font-black active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
               <i data-lucide="sparkles" class="w-4 h-4 text-yellow-400"></i>
               <span>プレイリストを自動生成する</span>
             </button>
-
-            <div id="playlist-result" class="mt-5 space-y-2 hidden">
-              <!-- JSで動的に追加 -->
-            </div>
+            <div id="playlist-result" class="mt-5 space-y-2 hidden"></div>
           </div>
 
           <!-- [FAQ] -->
@@ -550,15 +549,6 @@
                 </div>
                 <div class="text-xs text-gray-500 mt-2 pl-6 leading-relaxed border-t border-gray-50 pt-2">
                   A. 基本的に毎週火・木・土曜の21:00開始ですが、突発の配信やコラボイベント等が生じる場合がございます。最新スケジュールは「今後の予定」ページにて常時更新されます。
-                </div>
-              </div>
-              <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                <div class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                  <span class="text-xs font-extrabold text-yellow-500 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-200">Q</span>
-                  <span>アーカイブ映像はどこで見れますか？</span>
-                </div>
-                <div class="text-xs text-gray-500 mt-2 pl-6 leading-relaxed border-t border-gray-50 pt-2">
-                  A. YouTubeのアーカイブ欄、またはPocochaのプロフィール画面（お忍び配信等の一部を除く）にて無料公開しております。限定アーカイブは「ランク」特典 of 特典のページよりログインしてご視聴ください。
                 </div>
               </div>
             </div>
@@ -588,15 +578,12 @@
               <span id="platform-status-badge" class="px-2.5 py-1 text-[10px] font-black rounded-lg">稼働状況</span>
               <span id="platform-desc" class="text-xs font-bold text-gray-400">最終更新: 本日12:00</span>
             </div>
-            
             <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
               <h4 class="text-xs font-black text-gray-400 mb-3 uppercase tracking-wider flex items-center gap-1.5">
                 <i data-lucide="activity" class="w-4 h-4 text-gray-400"></i>
                 詳細ログ ＆ アプリ連携
               </h4>
-              <div id="platform-details-container" class="space-y-3">
-                <!-- 動的に詳細を表示 -->
-              </div>
+              <div id="platform-details-container" class="space-y-3"></div>
             </div>
           </div>
 
@@ -634,9 +621,20 @@
 
           <!-- [SETTINGS] -->
           <div id="full-content-settings" class="full-subcontent hidden">
+            
+            <!-- ローカルプッシュ通知制御デモ -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2.5">システムプッシュ通知設定</h4>
+              <button onclick="requestNotificationPermission()" class="w-full py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-sm">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                <span>通知許可を申請する</span>
+              </button>
+              <p class="text-[9px] text-gray-400 mt-2 font-medium leading-relaxed">許可すると、タイムテーブル公開や抽選結果のPush通知が直接端末に届くようになります。</p>
+            </div>
+
             <!-- 通知設定グループ -->
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4 mb-4">
-              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">通知設定</h4>
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">通知スイッチ</h4>
               
               <!-- 部室抽選通知 -->
               <div class="flex justify-between items-center pb-3 border-b border-gray-50">
@@ -644,7 +642,7 @@
                   <div class="text-xs font-bold text-gray-800">部室抽選通知</div>
                   <div class="text-[9px] text-gray-400 mt-0.5">部室の抽選結果や新規スケジュール確定時にリアルタイムでお知らせします。</div>
                 </div>
-                <input type="checkbox" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
+                <input type="checkbox" onchange="toggleNotificationConfig('部室抽選通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
               </div>
               
               <!-- タイムテーブル公開通知 -->
@@ -653,7 +651,7 @@
                   <div class="text-xs font-bold text-gray-800">タイムテーブル公開通知</div>
                   <div class="text-[9px] text-gray-400 mt-0.5">新シーズンのタイムテーブル公開や編集が行われた際にお知らせします。</div>
                 </div>
-                <input type="checkbox" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
+                <input type="checkbox" onchange="toggleNotificationConfig('タイムテーブル公開通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
               </div>
               
               <!-- その他の通知 -->
@@ -662,24 +660,30 @@
                   <div class="text-xs font-bold text-gray-800">その他の通知</div>
                   <div class="text-[9px] text-gray-400 mt-0.5">臨時メンテナンス、アップデート、イベント詳細等の情報を受け取ります。</div>
                 </div>
-                <input type="checkbox" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
+                <input type="checkbox" onchange="toggleNotificationConfig('その他の通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
               </div>
             </div>
 
-            <!-- アプリ情報グループ -->
+            <!-- テスト送信ボタン -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
+              <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2.5">デバッグツール</h4>
+              <button onclick="sendTestPushNotification()" class="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md">
+                <i data-lucide="send" class="w-4 h-4"></i>
+                <span>テストPush通知を即時送信</span>
+              </button>
+            </div>
+
+            <!-- アプリ情報 -->
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3.5">
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
-              
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.1.0</span>
+                <span class="text-gray-400 font-mono">v2.2.0</span>
               </div>
-              
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
                 <span class="text-gray-400">プライベート開発チーム</span>
               </div>
-              
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>ライセンス</span>
                 <span class="text-gray-400">MIT License</span>
@@ -693,15 +697,12 @@
               <span id="venue-status-badge" class="px-2.5 py-1 text-[10px] font-black rounded-lg">混雑状態</span>
               <span id="venue-capacity" class="text-xs font-bold text-gray-400">キャパシティ: --人</span>
             </div>
-            
             <div class="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
               <h4 class="text-xs font-black text-gray-400 mb-3 uppercase tracking-wider flex items-center gap-1.5">
                 <i data-lucide="calendar" class="w-4 h-4 text-gray-400"></i>
                 本日のタイムテーブル
               </h4>
-              <div id="venue-artists-today" class="space-y-2">
-                <!-- 会場に属するアーティストを動的に挿入 -->
-              </div>
+              <div id="venue-artists-today" class="space-y-2"></div>
             </div>
           </div>
 
@@ -712,12 +713,14 @@
   </div>
 
   <script>
-    // ==================== [DATA SEED] ====================
+    // ==========================================================================
+    // [DATA SEED] アプリケーション固有のマスターデータ
+    // ==========================================================================
     const ARTISTS_DATA = [
       {
         id: "art-ivy",
         name: "Ivy to Fraudulent Game",
-        day: 2, // 6/7
+        day: 2,
         time: "20:30~",
         stage: "SPADE BOX",
         badge: "",
@@ -726,7 +729,7 @@
       {
         id: "art-iris",
         name: "IRIS MONDO",
-        day: 1, // 6/6
+        day: 1,
         time: "19:00~",
         stage: "R.A.D",
         badge: "",
@@ -735,16 +738,16 @@
       {
         id: "art-ayllton",
         name: "Ayllton",
-        day: 2, // 6/7
+        day: 2,
         time: "12:20~",
-        stage: "オアシス２１ (フリーラ...",
+        stage: "オアシス21 (フリーライブ)",
         badge: "",
         image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80"
       },
       {
         id: "art-garnet",
         name: "青いガーネット",
-        day: 1, // 6/6
+        day: 1,
         time: "20:00~",
         stage: "RAD NINE",
         badge: "",
@@ -753,7 +756,7 @@
       {
         id: "art-ao",
         name: "あお",
-        day: 1, // 6/6
+        day: 1,
         time: "18:30~",
         stage: "sunset Stage",
         badge: "ポコチャライバー",
@@ -800,13 +803,79 @@
       "news": "ニュース詳細"
     };
 
-    // ==================== [APP STATE] ====================
+    // ==========================================================================
+    // [STATE] アプリケーションの状態管理
+    // ==========================================================================
     let favorites = JSON.parse(localStorage.getItem('sakae_favs') || '[]');
-    let artistFilterTab = 'all'; // 'all', 'day1', 'day2', 'favorites'
+    let artistFilterTab = 'all';
     let currentTimetableDay = 1;
-    let timetableMode = 'all'; // 'all' or 'my'
+    let timetableMode = 'all';
 
-    // ==================== [SCREEN SYSTEM] ====================
+    // ==========================================================================
+    // [PUSH NOTIFICATION ENGINE] Web Notification API による端末連携プッシュ通知
+    // ==========================================================================
+    
+    // ユーザーにプッシュ通知の許可を求める関数
+    function requestNotificationPermission() {
+      if (!("Notification" in window)) {
+        showToast("この端末のブラウザはプッシュ通知に対応していません。");
+        return;
+      }
+      
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          sendLocalNotification("通知がオンになりました", "今後の最新スケジュールやお知らせが端末に届くようになります。");
+        } else if (permission === "denied") {
+          showToast("通知がブロックされました。設定から通知を許可してください。");
+        }
+      });
+    }
+
+    // 実際に端末の通知機能を叩いてローカルPushを発行する共通関数
+    function sendLocalNotification(title, body) {
+      // 1. Notification API がそもそも対応しているか ＆ 許可済みか
+      if ("Notification" in window && Notification.permission === "granted") {
+        try {
+          const options = {
+            body: body,
+            icon: "https://ul.h3z.jp/Fx4Jk0Dq.png"
+          };
+          new Notification(title, options);
+        } catch (e) {
+          // iOS Safariのスタンドアロン（ホーム画面追加前）などのエラー対応フォールバック
+          showToast(title + ": " + body);
+        }
+      } else {
+        // 2. プッシュ通知が使えない・拒否されている場合はカスタムトーストで代替（UX向上）
+        showToast(title + ": " + body);
+      }
+    }
+
+    // デバッグ用：テスト通知をその場で即座に送信
+    function sendTestPushNotification() {
+      if (!("Notification" in window)) {
+        showToast("通知機能非サポート：デモ通知をお送りします。");
+        return;
+      }
+      
+      if (Notification.permission === "default") {
+        requestNotificationPermission();
+      } else if (Notification.permission === "denied") {
+        showToast("ブラウザ設定で通知がブロックされています。アプリ内トーストで代用します。");
+        sendLocalNotification("テスト通知（代替トースト）", "通知ブロック時のテストテキストです。");
+      } else {
+        sendLocalNotification("テストプッシュ通知", "アプリ設定からのテスト発信です。正常に動作しています。");
+      }
+    }
+
+    // スイッチコントロール変更時のアクション通知
+    function toggleNotificationConfig(configName) {
+      sendLocalNotification("設定変更", configName + "の通知設定を変更しました。");
+    }
+
+    // ==========================================================================
+    // [SCREEN SYSTEM] メイン画面表示の切り替え
+    // ==========================================================================
     function switchScreen(screenId) {
       closeFullscreen();
 
@@ -835,7 +904,7 @@
       }
     }
 
-    // ==================== [FAVORITE MANAGEMENT] ====================
+    // ==================== [FAVORITE SYSTEM] ====================
     function toggleFavorite(artistId) {
       if (favorites.includes(artistId)) {
         favorites = favorites.filter(id => id !== artistId);
@@ -852,10 +921,9 @@
       }
     }
 
-    // ==================== [ARTIST SCREEN CONTROLS] ====================
+    // ==================== [ARTIST COMPONENT CONTROLS] ====================
     function setArtistFilterTab(tabType) {
       artistFilterTab = tabType;
-      
       const tabs = ['all', 'day1', 'day2', 'favorites'];
       tabs.forEach(t => {
         const btn = document.getElementById(`tab-art-${t}`);
@@ -865,11 +933,9 @@
           btn.className = "flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center";
         }
       });
-
       renderArtists();
     }
 
-    // ==================== [SEARCH CONTROLLER] ====================
     function focusSearch() {
       const searchBar = document.getElementById('artist-search-bar');
       searchBar.classList.toggle('hidden');
@@ -903,9 +969,7 @@
 
       if (filtered.length === 0) {
         container.innerHTML = `
-          <div class="col-span-2 p-12 text-center text-gray-400 text-xs font-medium">
-            該当するアーティストがいません
-          </div>
+          <div class="col-span-2 p-12 text-center text-gray-400 text-xs font-medium">該当するアーティストがいません</div>
         `;
         return;
       }
@@ -940,7 +1004,7 @@
       lucide.createIcons();
     }
 
-    // ==================== [TIMETABLE SCREEN CONTROLS] ====================
+    // ==================== [TIMETABLE COMPONENT CONTROLS] ====================
     function setTimetableDate(day) {
       currentTimetableDay = day;
       const b1 = document.getElementById('btn-tt-day1');
@@ -955,7 +1019,6 @@
       renderTimetable();
     }
 
-    // ==================== [TIMETABLE RENDER] ====================
     function setTimetableMode(mode) {
       timetableMode = mode;
       const bAll = document.getElementById('btn-tt-all');
@@ -981,9 +1044,7 @@
           stageArtists = stageArtists.filter(a => favorites.includes(a.id));
         }
 
-        if (timetableMode === 'my' && stageArtists.length === 0) {
-          return;
-        }
+        if (timetableMode === 'my' && stageArtists.length === 0) return;
 
         const column = document.createElement('div');
         column.className = "w-64 border-r border-gray-100 flex-shrink-0 p-3";
@@ -1017,15 +1078,13 @@
 
       if (row.innerHTML === '') {
         row.innerHTML = `
-          <div class="w-full text-center py-12 text-gray-400 text-xs px-4">
-            マイタイムテーブルに登録されたアーティストはいません。
-          </div>
+          <div class="w-full text-center py-12 text-gray-400 text-xs px-4">マイタイムテーブルに登録されたアーティストはいません。</div>
         `;
       }
       lucide.createIcons();
     }
 
-    // ==================== [FULLSCREEN SYSTEM] ====================
+    // ==================== [FULLSCREEN PAGE NAVIGATION] ====================
     function openFullscreen(key) {
       const overlay = document.getElementById('fullscreen-container-overlay');
       const wrapper = document.getElementById('fullscreen-pages-wrapper');
@@ -1047,9 +1106,20 @@
       }, 50);
     }
 
-    // 配信・SNSステータス詳細（指定の5項目に合わせて進化 ＆ 外部リンクターゲットを設定）
+    function closeFullscreen() {
+      const overlay = document.getElementById('fullscreen-container-overlay');
+      const wrapper = document.getElementById('fullscreen-pages-wrapper');
+
+      wrapper.classList.add('translate-y-full');
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+      }, 300);
+    }
+
+    // ==========================================================================
+    // [PLATFORM EXTERNAL ACTIONS] 稼働状況に応じた外部・動的遷移処理
+    // ==========================================================================
     function showPlatformDetail(platformName, statusKey) {
-      // 外部リンクが存在する各項目の処理
       if (statusKey === 'INSTAGRAM') {
         showToast("Instagramを開きます...");
         setTimeout(() => { window.open('https://www.instagram.com/c105_lmc/', '_blank'); }, 600);
@@ -1071,13 +1141,11 @@
         return;
       }
 
-      // 「年間予定表」を現在の年度(4/1基準)で動的リンク生成して展開
+      // 4/1年度自動判定付き年間予定表 PDFロード
       if (statusKey === 'YEARLY') {
         const currentDate = new Date();
         const currentYear = currentDate.getFullYear();
-        const currentMonth = currentDate.getMonth() + 1; // 1-12
-        
-        // 4月1日より前であれば前年の年度として扱う
+        const currentMonth = currentDate.getMonth() + 1;
         const academicYear = (currentMonth >= 4) ? currentYear : (currentYear - 1);
         
         showToast("年間予定表を開きます...");
@@ -1091,12 +1159,11 @@
       lucide.createIcons();
     }
 
+    // ==================== [NEWS & UTILITIES] ====================
     function showNewsDetail(title, body) {
-      DISPLAY_NAMES['news'] = "NEWS DETAIL";
+      DISPLAY_NAMES['news'] = title;
       document.getElementById('news-date').textContent = "PUBLISHED: 2026.06.08";
       document.getElementById('news-body').textContent = body;
-      
-      DISPLAY_NAMES['news'] = title;
       openFullscreen('news');
     }
 
@@ -1112,7 +1179,7 @@
       }, 3000);
     }
 
-    // ==================== [PLAYLIST GENERATION MOCK] ====================
+    // ==================== [PLAYLIST MOCK GENERATOR] ====================
     function generatePlaylistMock() {
       const resultDiv = document.getElementById('playlist-result');
       resultDiv.innerHTML = '';
@@ -1153,10 +1220,12 @@
             `).join('')}
           </div>
         `;
+        // スマートプレイリストの作成完了を、端末のシステム通知で知らせる
+        sendLocalNotification("プレイリスト作成完了", "お気に入りアーティストに基づくセットリストが構築されました。");
       }, 1000);
     }
 
-    // 会場詳細(MAP連動)
+    // ==================== [VENUE DETAIL MAP LINK] ====================
     function showVenueDetail(venueName, statusKey) {
       const overlay = document.getElementById('fullscreen-container-overlay');
       const wrapper = document.getElementById('fullscreen-pages-wrapper');
@@ -1211,17 +1280,6 @@
         wrapper.classList.remove('translate-y-full');
       }, 50);
       lucide.createIcons();
-    }
-
-    // ==================== [CLOSE FULLSCREEN] ====================
-    function closeFullscreen() {
-      const overlay = document.getElementById('fullscreen-container-overlay');
-      const wrapper = document.getElementById('fullscreen-pages-wrapper');
-
-      wrapper.classList.add('translate-y-full');
-      setTimeout(() => {
-        overlay.classList.add('hidden');
-      }, 300);
     }
 
     // ==================== [INITIALIZATION] ====================
