@@ -20,9 +20,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap" rel="stylesheet">
   
   <style>
-    /* ==========================================================================
-       [基本CSS] 共通スタイル定義・バウンススクロール防止・iOS対応
-       ========================================================================== */
     html, body {
       overflow: hidden;
       height: 100%;
@@ -114,7 +111,6 @@
 </head>
 <body class="md:flex md:justify-center md:items-center min-h-full text-gray-800">
 
-  <!-- モバイルメインコンテナ (モバイル時は全画面に完全追従、PC時はデバイス型コンテナ) -->
   <div class="w-full h-[100dvh] md:w-md md:max-w-md md:h-[850px] md:rounded-3xl bg-gray-50 shadow-2xl relative flex flex-col overflow-hidden fixed inset-0 md:relative md:inset-auto">
 
     <!-- カスタムトースト通知 -->
@@ -132,7 +128,6 @@
            [HOME SCREEN]
            ==================================================================== -->
       <div id="screen-home" class="screen-content">
-        <!-- ヘッダーイメージ & アクションボタン -->
         <div class="relative w-full aspect-[16/10] bg-black flex-shrink-0">
           <img src="https://ul.h3z.jp/yJrIE3x8.jpg" alt="HEADER VISUAL" class="w-full h-full object-cover">
           <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
@@ -145,7 +140,6 @@
           </div>
         </div>
 
-        <!-- メイングリッドメニュー -->
         <div class="mx-4 -mt-10 bg-white rounded-2xl shadow-xl p-4 grid grid-cols-4 gap-x-2 gap-y-5 relative z-20 border border-gray-100">
           <!-- インフォ -->
           <button onclick="openFullscreen('info')" class="grid-menu-item">
@@ -177,6 +171,11 @@
             <div class="grid-menu-icon"><i data-lucide="file-text" class="w-5 h-5"></i></div>
             <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">OTHERS</span>
           </button>
+          <!-- アカウント -->
+          <button onclick="openFullscreen('account')" class="grid-menu-item">
+            <div class="grid-menu-icon"><i data-lucide="user" class="w-5 h-5"></i></div>
+            <span class="text-[10px] font-bold text-gray-700 mt-2 text-center leading-tight">アカウント</span>
+          </button>
           
           <!-- 空白プレースホルダー 1 -->
           <div class="flex flex-col items-center opacity-25">
@@ -185,20 +184,12 @@
             </div>
             <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
           </div>
-          <!-- 空白プレースホルダー 2 -->
-          <div class="flex flex-col items-center opacity-25">
-            <div class="w-12 h-12 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-300">
-              <i data-lucide="minus" class="w-4 h-4"></i>
-            </div>
-            <span class="text-[10px] font-bold text-gray-300 mt-2 text-center leading-tight">-</span>
-          </div>
         </div>
 
-        <!-- SNS & 外部連携 -->
         <section class="mt-6 px-4">
           <div class="flex justify-between items-center mb-3">
-            <h2 class="text-lg font-bold text-gray-900 tracking-tight">SNS & 公式連携</h2>
-            <span class="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded-full">タップで外部起動</span>
+            <h2 class="text-lg font-bold text-gray-900 tracking-tight">SNS</h2>
+            <span class="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded-full">タップで起動</span>
           </div>
 
           <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4">
@@ -206,42 +197,42 @@
               <span class="w-1.5 h-3 bg-indigo-500 rounded-full"></span>
               公式アカウント ＆ 予定表
             </h3>
-            <!-- 横スクロールコンテナ -->
-            <div class="flex gap-4 overflow-x-auto no-scrollbar pb-2" style="touch-action: pan-x;">
+            <!-- 横スクロールコンテナ: モバイルで見切れてスクロールを促すコンパクトな余白構成 -->
+            <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-2" style="touch-action: pan-x;">
               <!-- インスタ -->
-              <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center border border-pink-100 mb-1.5 shadow-sm">
-                  <i data-lucide="instagram" class="w-5 h-5"></i>
+              <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center border border-pink-100 mb-1.5 shadow-sm">
+                  <i data-lucide="instagram" class="w-4.5 h-4.5"></i>
                 </div>
                 <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">Instagram</span>
               </div>
               <!-- Twitter / X -->
-              <div onclick="showPlatformDetail('Twitter', 'TWITTER')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center border border-gray-800 mb-1.5 shadow-sm">
-                  <i data-lucide="twitter" class="w-5 h-5"></i>
+              <div onclick="showPlatformDetail('Twitter', 'TWITTER')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-black text-white flex items-center justify-center border border-gray-800 mb-1.5 shadow-sm">
+                  <i data-lucide="twitter" class="w-4.5 h-4.5"></i>
                 </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">X (Twitter)</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">X</span>
               </div>
               <!-- Youtube -->
-              <div onclick="showPlatformDetail('Youtube', 'YOUTUBE')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center border border-red-500 mb-1.5 shadow-sm">
-                  <i data-lucide="youtube" class="w-5 h-5"></i>
+              <div onclick="showPlatformDetail('Youtube', 'YOUTUBE')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-red-600 text-white flex items-center justify-center border border-red-500 mb-1.5 shadow-sm">
+                  <i data-lucide="youtube" class="w-4.5 h-4.5"></i>
                 </div>
                 <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">YouTube</span>
               </div>
               <!-- 年間予定表 -->
-              <div onclick="showPlatformDetail('年間予定表', 'YEARLY')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center border border-emerald-400 mb-1.5 shadow-sm">
-                  <i data-lucide="calendar-days" class="w-5 h-5"></i>
+              <div onclick="showPlatformDetail('年間予定表', 'YEARLY')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-emerald-500 text-white flex items-center justify-center border border-emerald-400 mb-1.5 shadow-sm">
+                  <i data-lucide="calendar-days" class="w-4.5 h-4.5"></i>
                 </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">年間予定表</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">予定表</span>
               </div>
               <!-- 裏方アプリ -->
-              <div onclick="showPlatformDetail('裏方アプリ', 'BACKSTAGE')" class="flex flex-col items-center flex-shrink-0 w-24 cursor-pointer active:scale-95 transition-transform">
-                <div class="w-12 h-12 rounded-full bg-slate-800 text-white flex items-center justify-center border border-slate-700 mb-1.5 shadow-sm">
-                  <i data-lucide="terminal" class="w-5 h-5"></i>
+              <div onclick="showPlatformDetail('裏方アプリ', 'BACKSTAGE')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
+                <div class="w-11 h-11 rounded-full bg-slate-800 text-white flex items-center justify-center border border-slate-700 mb-1.5 shadow-sm">
+                  <i data-lucide="terminal" class="w-4.5 h-4.5"></i>
                 </div>
-                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">裏方アプリ</span>
+                <span class="text-[10px] font-bold text-gray-700 text-center uppercase tracking-tight leading-tight">裏方</span>
               </div>
             </div>
           </div>
@@ -644,6 +635,37 @@
             </div>
           </div>
 
+          <!-- [ACCOUNT] -->
+          <div id="full-content-account" class="full-subcontent hidden">
+            <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-lg text-center max-w-sm mx-auto">
+              <div class="w-16 h-16 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mx-auto mb-3 shadow-inner">
+                <i data-lucide="user" class="w-8 h-8"></i>
+              </div>
+              <div class="text-[10px] font-black text-indigo-600 tracking-widest uppercase mb-1">MEMBER PROFILE</div>
+              <div class="text-lg font-black text-gray-900 mb-1">ゲスト ユーザー</div>
+              <p class="text-[10px] text-gray-400 font-bold mb-6">ID: private_user_105</p>
+              
+              <div class="space-y-3.5 text-left bg-gray-50 border border-gray-100 p-4 rounded-xl">
+                <div class="flex justify-between items-center text-xs font-bold text-gray-700">
+                  <span>会員ステータス</span>
+                  <span class="text-indigo-600">一般会員</span>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2 border-t border-gray-200/50">
+                  <span>メールアドレス</span>
+                  <span class="text-gray-500">未設定</span>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2 border-t border-gray-200/50">
+                  <span>連携ログイン</span>
+                  <span class="text-gray-500">未連携</span>
+                </div>
+              </div>
+              
+              <button onclick="showToast('アカウント設定機能は現在準備中です。')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs mt-6 active:scale-95 transition-all shadow-md">
+                プロフィールの編集
+              </button>
+            </div>
+          </div>
+
           <!-- [SETTINGS] -->
           <div id="full-content-settings" class="full-subcontent hidden">
             
@@ -679,7 +701,7 @@
                 <input type="checkbox" onchange="toggleNotificationConfig('タイムテーブル公開通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
               </div>
               
-              <!-- その他の通知 -->
+              <!-- そのactions通知 -->
               <div class="flex justify-between items-center">
                 <div class="pr-4">
                   <div class="text-xs font-bold text-gray-800">その他の通知</div>
@@ -810,6 +832,7 @@
       "notifications": "通知一覧",
       "settings": "アプリ設定",
       "platform": "SNS & 公式連携",
+      "account": "アカウント情報",
       "news": "ニュース詳細"
     };
 
