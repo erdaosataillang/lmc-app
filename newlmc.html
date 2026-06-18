@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MY PRIVATE APP</title>
   
-  <!-- iOS PWA メタタグ -->
+  <!-- iOS PWA (ホーム画面追加時) メタタグ -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PRIVATE APP">
@@ -284,6 +284,10 @@
             <p id="artist-header-event-sub" class="text-[9px] font-bold text-indigo-600 truncate mt-0.5">最新イベント読込中...</p>
           </div>
           <div class="flex items-center gap-2">
+            <!-- 新規作成登録ボタンを絞り込みの左隣に設置 -->
+            <button onclick="openFullscreen('create-band')" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform" aria-label="新規登録">
+              <i data-lucide="plus" class="w-4.5 h-4.5"></i>
+            </button>
             <button onclick="toggleFavoriteFilter()" id="header-art-fav" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform">
               <i data-lucide="sliders-horizontal" class="w-4.5 h-4.5"></i>
             </button>
@@ -737,7 +741,7 @@
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.3.0</span>
+                <span class="text-gray-400 font-mono">v2.4.0</span>
               </div>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
@@ -746,6 +750,42 @@
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>ライセンス</span>
                 <span class="text-gray-400">Sorairostudio By Urakata app</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- [CREATE BAND] -->
+          <div id="full-content-create-band" class="full-subcontent hidden">
+            <div class="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm max-w-sm mx-auto space-y-4">
+              <h4 class="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">バンド情報を入力</h4>
+              
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">バンド名 <span class="text-red-500">*</span></label>
+                <input type="text" id="new-band-name" placeholder="例: エレファントカシマシ" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">アイコン画像URL (任意)</label>
+                <input type="text" id="new-band-icon" placeholder="https://..." class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+                <p class="text-[9px] text-gray-400 mt-1">空欄の場合はランダムなアーティスト画像が自動設定されます。</p>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">メンバーID (カンマ区切り、任意)</label>
+                <input type="text" id="new-band-members" placeholder="例: U086300, U2f915a" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400 font-mono">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">持ち曲・代表曲 (任意)</label>
+                <input type="text" id="new-band-song" placeholder="例: 今宵の月のように" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+              </div>
+
+              <div class="pt-2">
+                <button onclick="submitNewBand()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-md">
+                  <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                  <span>Firestoreに新規登録する</span>
+                </button>
+                <p id="create-band-target-event" class="text-[9px] text-center text-gray-400 mt-2 font-medium">現在選択されている最新イベントへ自動登録されます。</p>
               </div>
             </div>
           </div>
@@ -770,77 +810,11 @@
       measurementId: "G-9ZRMD26XNJ"
     };
 
-    // ==========================================================================
-    // [DATA SEED] アプリケーション固有のマスターデータ (静的モック)
-    // ==========================================================================
-    const STATIC_ARTISTS_DATA = [
-      {
-        id: "art-ivy",
-        name: "Ivy to Fraudulent Game",
-        day: 2,
-        time: "20:30~",
-        stage: "SPADE BOX",
-        badge: "",
-        image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80"
-      },
-      {
-        id: "art-iris",
-        name: "IRIS MONDO",
-        day: 1,
-        time: "19:00~",
-        stage: "R.A.D",
-        badge: "",
-        image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80"
-      },
-      {
-        id: "art-ayllton",
-        name: "Ayllton",
-        day: 2,
-        time: "12:20~",
-        stage: "オアシス21 (フリーライブ)",
-        badge: "",
-        image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80"
-      },
-      {
-        id: "art-garnet",
-        name: "青いガーネット",
-        day: 1,
-        time: "20:00~",
-        stage: "RAD NINE",
-        badge: "",
-        image: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80"
-      },
-      {
-        id: "art-ao",
-        name: "あお",
-        day: 1,
-        time: "18:30~",
-        stage: "sunset Stage",
-        badge: "ポコチャライバー",
-        image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80"
-      },
-      {
-        id: "art-haruka",
-        name: "ハルカミライ",
-        day: 1,
-        time: "12:30~",
-        stage: "NAGOYA CLUB QUATTRO",
-        badge: "",
-        image: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&auto=format&fit=crop&q=80"
-      },
-      {
-        id: "art-creep",
-        name: "クリープハイプ",
-        day: 1,
-        time: "14:00~",
-        stage: "NAGOYA CLUB QUATTRO",
-        badge: "",
-        image: "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&auto=format&fit=crop&q=80"
-      }
-    ];
+    // デフォルトで最初に入っていたバンド（静的モックデータ）をすべて削除し、クリーンな配列に変更
+    const STATIC_ARTISTS_DATA = [];
 
-    // 動的にマージされたアーティスト一覧
-    let allArtists = [...STATIC_ARTISTS_DATA];
+    // 動的にマージされるアーティスト一覧
+    let allArtists = [];
     let firebaseBandsList = [];
 
     const STAGES = [
@@ -862,7 +836,8 @@
       "settings": "アプリ設定",
       "platform": "SNS & 公式連携",
       "account": "アカウント情報",
-      "news": "ニュース詳細"
+      "news": "ニュース詳細",
+      "create-band": "新規バンド登録"
     };
 
     // ==========================================================================
@@ -985,14 +960,14 @@
             return;
           }
 
-          // データ取得が成功したものをリストに追加
+          // データ取得が成功したものをリストに追加 (URAKATA BANDなどの不要なバッジ文字列は空にします)
           firebaseBandsList.push({
             id: doc.id,
             name: data.name || "名称未設定バンド",
             day: 1, // 日付選択は1日目を規定
             time: latestEventName, // 最新イベント名を配置
             stage: isArchived ? "アーカイブ保管中" : "アクティブ活動中",
-            badge: "Urakata Band",
+            badge: "", // バッジ表示を完全に排除しました
             image: data.icon || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400&auto=format&fit=crop&q=80",
             isFromFirestore: true,
             isArchived: isArchived,
@@ -1001,7 +976,7 @@
           });
         });
 
-        // 静的データとマージして統合更新
+        // 静的データ（空）とマージして統合更新
         mergeArtistsMaster();
         showToast(`「${latestEventName}」登録バンド ${firebaseBandsList.length} 件を読み込みました！`);
       }, error => {
@@ -1195,10 +1170,8 @@
         const card = document.createElement('div');
         card.className = "flex flex-col relative group overflow-hidden bg-white rounded-lg shadow-sm border border-gray-100/60";
         
-        const badgeColor = a.badge === "Urakata Band" ? "bg-indigo-600 text-white" : "bg-teal-600 text-white";
-        const badgeHtml = a.badge 
-          ? `<div class="absolute bottom-2 left-2 z-10 ${badgeColor} text-[8px] font-black px-2 py-0.5 rounded-md shadow-sm uppercase tracking-wide">${a.badge}</div>` 
-          : '';
+        // バッジ生成ロジックは表記不要になったため省略します。
+        const badgeHtml = '';
 
         const dayLabel = a.isFromFirestore ? a.time : (a.day === 1 ? "6.6 土" : "6.7 日");
         const secondaryLabel = a.isFromFirestore ? `${a.memberCount} メンバー` : a.time;
@@ -1442,6 +1415,14 @@
 
       titleElement.textContent = DISPLAY_NAMES[key] || "詳細情報";
 
+      // 新規作成画面用に最新イベントの説明文を動的に描写
+      if (key === 'create-band') {
+        const targetEventEl = document.getElementById('create-band-target-event');
+        if (targetEventEl) {
+          targetEventEl.textContent = `特定された最新イベント「${latestEventName || '最新イベント'}」へ自動追加されます。`;
+        }
+      }
+
       overlay.classList.remove('hidden');
       setTimeout(() => {
         wrapper.classList.remove('translate-y-full');
@@ -1456,6 +1437,79 @@
       setTimeout(() => {
         overlay.classList.add('hidden');
       }, 300);
+    }
+
+    // ==================== [BAND CREATOR Engine] ====================
+    function submitNewBand() {
+      const nameInput = document.getElementById('new-band-name');
+      const iconInput = document.getElementById('new-band-icon');
+      const membersInput = document.getElementById('new-band-members');
+      const songInput = document.getElementById('new-band-song');
+
+      const name = nameInput.value.trim();
+      if (!name) {
+        showToast("バンド名を入力してください。");
+        return;
+      }
+
+      // アイコンが未入力の際のランダムデフォルト画像選出
+      const defaultImages = [
+        "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&auto=format&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&auto=format&fit=crop&q=80"
+      ];
+      const randomIcon = defaultImages[Math.floor(Math.random() * defaultImages.length)];
+      const icon = iconInput.value.trim() || randomIcon;
+
+      const memberIds = membersInput.value.split(',')
+        .map(id => id.trim())
+        .filter(Boolean);
+
+      const songs = [];
+      const songTitle = songInput.value.trim();
+      if (songTitle) {
+        songs.push({
+          title: songTitle,
+          duration: "3:30",
+          eventId: latestEventId,
+          id: "song_" + Date.now()
+        });
+      }
+
+      try {
+        const db = firebase.firestore();
+        showToast("Firestoreに保存中...");
+
+        // バンドデータの書き込み
+        db.collection("bands").add({
+          name: name,
+          icon: icon,
+          events: [latestEventId],
+          isArchived: false,
+          memberIds: memberIds,
+          songs: songs,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+          showToast("新しいバンドをFirestoreに登録しました！");
+          // フォームリセット
+          nameInput.value = '';
+          iconInput.value = '';
+          membersInput.value = '';
+          songInput.value = '';
+          closeFullscreen();
+        })
+        .catch(err => {
+          console.error("Firestore submit error:", err);
+          showToast("保存に失敗しました。データベース権限を確認してください。");
+        });
+      } catch (err) {
+        console.error("Firebase runtime error:", err);
+        showToast("Firebase接続がオフラインです。");
+      }
     }
 
     // ==========================================================================
@@ -1584,7 +1638,7 @@
       lucide.createIcons();
       switchScreen('home');
       
-      // Firebaseの非同期初期化、及びイベント読み込み後のフィルタリング連携をスタート
+      // Firebase及びFirestoreの非同期初期化＆リアルタイム監視スタート
       initFirebaseAndLoadBands();
     });
   </script>
