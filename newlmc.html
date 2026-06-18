@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>MY PRIVATE APP</title>
   
-  <!-- iOS PWA (ホーム画面追加時) メタタグ -->
+  <!-- iOS PWA メタタグ -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PRIVATE APP">
@@ -111,6 +111,7 @@
 </head>
 <body class="md:flex md:justify-center md:items-center min-h-full text-gray-800">
 
+  <!-- モバイルメインコンテナ (モバイル時は全画面に完全追従、PC時はデバイス型コンテナ) -->
   <div class="w-full h-[100dvh] md:w-md md:max-w-md md:h-[850px] md:rounded-3xl bg-gray-50 shadow-2xl relative flex flex-col overflow-hidden fixed inset-0 md:relative md:inset-auto">
 
     <!-- カスタムトースト通知 -->
@@ -128,6 +129,7 @@
            [HOME SCREEN]
            ==================================================================== -->
       <div id="screen-home" class="screen-content">
+        <!-- ヘッダーイメージ & アクションボタン -->
         <div class="relative w-full aspect-[16/10] bg-black flex-shrink-0">
           <img src="https://ul.h3z.jp/yJrIE3x8.jpg" alt="HEADER VISUAL" class="w-full h-full object-cover">
           <div class="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
@@ -140,6 +142,7 @@
           </div>
         </div>
 
+        <!-- メイングリッドメニュー -->
         <div class="mx-4 -mt-10 bg-white rounded-2xl shadow-xl p-4 grid grid-cols-4 gap-x-2 gap-y-5 relative z-20 border border-gray-100">
           <!-- インフォ -->
           <button onclick="openFullscreen('info')" class="grid-menu-item">
@@ -186,10 +189,11 @@
           </div>
         </div>
 
+        <!-- SNS & 外部連携 -->
         <section class="mt-6 px-4">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-gray-900 tracking-tight">SNS</h2>
-            <span class="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded-full">タップで起動</span>
+            <span class="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-0.5 rounded-full">タップで外部起動</span>
           </div>
 
           <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4">
@@ -197,7 +201,7 @@
               <span class="w-1.5 h-3 bg-indigo-500 rounded-full"></span>
               公式アカウント ＆ 予定表
             </h3>
-            <!-- 横スクロールコンテナ: モバイルで見切れてスクロールを促すコンパクトな余白構成 -->
+            <!-- 横スクロールコンテナ: モバイルで見切れてスクロールを促すコンパクトな構成 -->
             <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-2" style="touch-action: pan-x;">
               <!-- インスタ -->
               <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
@@ -264,7 +268,7 @@
       </div>
 
       <!-- ====================================================================
-           [ARTIST SCREEN]
+           [ARTIST SCREEN] (マイバンド機能搭載)
            ==================================================================== -->
       <div id="screen-artist" class="screen-content hidden">
         <!-- 固定ヘッダー -->
@@ -281,12 +285,12 @@
           </div>
         </header>
 
-        <!-- 日付/お気に入り選択タブバー -->
+        <!-- 日付/マイバンド選択タブバー -->
         <div class="bg-white border-b border-gray-200 sticky top-[53px] z-30 flex justify-between items-center px-2 flex-shrink-0">
           <button onclick="setArtistFilterTab('all')" id="tab-art-all" class="flex-1 py-3 text-xs font-black tracking-wide border-b-2 border-gray-900 text-gray-900 transition-all text-center">ALL</button>
           <button onclick="setArtistFilterTab('day1')" id="tab-art-day1" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">6.6 土</button>
           <button onclick="setArtistFilterTab('day2')" id="tab-art-day2" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">6.7 日</button>
-          <button onclick="setArtistFilterTab('favorites')" id="tab-art-favorites" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">お気に入り</button>
+          <button onclick="setArtistFilterTab('favorites')" id="tab-art-favorites" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">マイバンド</button>
         </div>
 
         <!-- 検索バー -->
@@ -317,7 +321,7 @@
           <button onclick="setTimetableMode('all')" id="btn-tt-all" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-gray-900 text-white">全会場</button>
           <button onclick="setTimetableMode('my')" id="btn-tt-my" class="flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700 flex items-center justify-center gap-1.5">
             <i data-lucide="heart" class="w-3.5 h-3.5 text-red-500"></i>
-            <span>マイタイムテーブル</span>
+            <span>マイバンド タイムテーブル</span>
           </button>
         </div>
 
@@ -531,13 +535,13 @@
 
           <!-- [PLAYLIST] -->
           <div id="full-content-playlist" class="full-subcontent hidden">
-            <p class="text-xs text-gray-500 mb-4">お気に入り登録（ハートボタン）をしたアーティストを解析し、体験型スマートプレイリストを自動構成します。</p>
+            <p class="text-xs text-gray-500 mb-4">マイバンド（ハートボタン）に登録したアーティストを解析し、体験型スマートプレイリストを自動構成します。</p>
             <div class="bg-yellow-50 rounded-2xl p-4 border border-yellow-100 mb-5">
               <div class="text-xs font-bold text-yellow-800 mb-1 flex items-center gap-1.5">
                 <i data-lucide="info" class="w-3.5 h-3.5"></i>
                 マッチング情報
               </div>
-              <p class="text-xs text-yellow-700 leading-relaxed">登録アーティストのジャンル、出演順から快適な試聴プレイリストを作成します。</p>
+              <p class="text-xs text-yellow-700 leading-relaxed">マイバンド登録されたアーティストのジャンル、出演順から快適な試聴プレイリストを作成します。</p>
             </div>
             <button onclick="generatePlaylistMock()" class="w-full py-4 bg-gray-900 hover:bg-gray-800 text-white rounded-2xl text-xs font-black active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-md">
               <i data-lucide="sparkles" class="w-4 h-4 text-yellow-400"></i>
@@ -701,7 +705,7 @@
                 <input type="checkbox" onchange="toggleNotificationConfig('タイムテーブル公開通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
               </div>
               
-              <!-- そのactions通知 -->
+              <!-- その他の通知 -->
               <div class="flex justify-between items-center">
                 <div class="pr-4">
                   <div class="text-xs font-bold text-gray-800">その他の通知</div>
@@ -837,7 +841,7 @@
     };
 
     // ==========================================================================
-    // [STATE] アプリケーションの状態管理
+    // [STATE] アプリケーションの状態管理 (マイバンド管理対応)
     // ==========================================================================
     let favorites = JSON.parse(localStorage.getItem('sakae_favs') || '[]');
     let artistFilterTab = 'all';
@@ -848,7 +852,7 @@
     let reservationDate = 1; // 1: 6/6, 2: 6/7
     let userReservations = [false, false, false, false]; // 自分の希望スロット [10時, 13時, 16時, 19時]
     
-    // 友達のシミュレート希望データ（これに自分の予定が合わさる）
+    // 友達のシミュレート希望データ
     const friendsReservations = {
       day1: {
         friendA: [true, false, true, false],
@@ -871,7 +875,6 @@
     // [PUSH NOTIFICATION ENGINE] Web Notification API による端末連携プッシュ通知
     // ==========================================================================
     
-    // ユーザーにプッシュ通知の許可を求める関数
     function requestNotificationPermission() {
       if (!("Notification" in window)) {
         showToast("この端末のブラウザはプッシュ通知に対応していません。");
@@ -889,7 +892,6 @@
 
     // 実際に端末の通知機能を叩いてローカルPushを発行する共通関数
     function sendLocalNotification(title, body) {
-      // 1. Notification API がそもそも対応しているか ＆ 許可済みか
       if ("Notification" in window && Notification.permission === "granted") {
         try {
           const options = {
@@ -901,7 +903,6 @@
           showToast(title + ": " + body);
         }
       } else {
-        // 2. プッシュ通知が使えない・拒否されている場合はカスタムトーストで代替（UX向上）
         showToast(title + ": " + body);
       }
     }
@@ -962,7 +963,7 @@
       }
     }
 
-    // ==================== [FAVORITE SYSTEM] ====================
+    // ==================== [MY BAND SYSTEM] ====================
     function toggleFavorite(artistId) {
       if (favorites.includes(artistId)) {
         favorites = favorites.filter(id => id !== artistId);
@@ -1136,7 +1137,7 @@
 
       if (row.innerHTML === '') {
         row.innerHTML = `
-          <div class="w-full text-center py-12 text-gray-400 text-xs px-4">マイタイムテーブルに登録されたアーティストはいません。</div>
+          <div class="w-full text-center py-12 text-gray-400 text-xs px-4">マイバンドに登録されたアーティストはいません。</div>
         `;
       }
       lucide.createIcons();
@@ -1227,7 +1228,6 @@
     function copyGroupCode() {
       const code = document.getElementById('active-group-code').textContent;
       
-      // クリップボード複製フォールバック対応
       const tempInput = document.createElement("input");
       tempInput.value = code;
       document.body.appendChild(tempInput);
@@ -1262,7 +1262,6 @@
       const successTitle = "合わせ予約の確定完了";
       const successMessage = `${dayLabel} ${reservationDetails.join('・')} にて同時予約が確定しました！`;
 
-      // プッシュ通知またはトーストを発行
       sendLocalNotification(successTitle, successMessage);
       showToast("同時予約が正常に確定されました。同期システムに登録完了です。");
     }
@@ -1372,7 +1371,7 @@
       if (favArtists.length === 0) {
         resultDiv.innerHTML = `
           <div class="p-4 bg-red-50 border border-red-100 rounded-xl text-center text-xs font-bold text-red-600 shadow-sm">
-            お気に入り登録したアーティストがまだありません。アーティスト一覧画面から追加してお試しください。
+            マイバンドに登録したアーティストがまだありません。アーティスト一覧画面から追加してお試しください。
           </div>
         `;
         return;
@@ -1403,8 +1402,7 @@
             `).join('')}
           </div>
         `;
-        // スマートプレイリストの作成完了を、端末のシステム通知で知らせる
-        sendLocalNotification("プレイリスト作成完了", "お気に入りアーティストに基づくセットリストが構築されました。");
+        sendLocalNotification("プレイリスト作成完了", "マイバンド登録アーティストに基づくセットリストが構築されました。");
       }, 1000);
     }
 
@@ -1416,3 +1414,4 @@
   </script>
 </body>
 </html>
+`
