@@ -313,7 +313,7 @@
           </div>
         </div>
 
-        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">登録アーティスト一覧</div>
+        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">登録アーティスト一覧 (タップで詳細)</div>
         <div id="artist-grid-container" class="grid grid-cols-2 gap-x-2 gap-y-4 p-2 bg-white"></div>
       </div>
 
@@ -469,41 +469,16 @@
             </div>
           </div>
 
-          <!-- [SCHEDULE] -->
+          <!-- [SCHEDULE] - Firestoreのイベント情報からリアルタイムに構築される動的コンテンツ -->
           <div id="full-content-schedule" class="full-subcontent hidden">
             <div class="space-y-4 max-w-sm mx-auto">
-              <p class="text-xs text-gray-500 mb-2">直近に控えているライブイベントや、配信スケジュールです。</p>
-              <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4">
-                <div class="w-12 h-12 rounded-xl bg-yellow-50 flex flex-col items-center justify-center text-yellow-600 flex-shrink-0 border border-yellow-100">
-                  <span class="text-[8px] font-black leading-none">JUN</span>
-                  <span class="text-base font-black leading-none mt-1">15</span>
-                </div>
-                <div>
-                  <div class="text-[9px] font-black text-indigo-600 uppercase">POCOCHA SPECIAL</div>
-                  <h4 class="text-xs font-bold text-gray-800 mt-0.5">コアファン感謝デー限定ライブ配信</h4>
-                  <p class="text-[10px] text-gray-400 mt-1">21:00~ / コアファンルーム内にて配信</p>
-                </div>
-              </div>
-              <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4">
-                <div class="w-12 h-12 rounded-xl bg-gray-100 flex flex-col items-center justify-center text-gray-500 flex-shrink-0 border border-gray-200">
-                  <span class="text-[8px] font-black leading-none">JUN</span>
-                  <span class="text-base font-black leading-none mt-1">20</span>
-                </div>
-                <div>
-                  <div class="text-[9px] font-black text-red-600 uppercase">YOUTUBE LIVE</div>
-                  <h4 class="text-xs font-bold text-gray-800 mt-0.5">登録者数2万人突破記念・生歌カバー歌枠</h4>
-                  <p class="text-[10px] text-gray-400 mt-1">20:00~ / YouTubeメインチャンネル</p>
-                </div>
-              </div>
-              <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4">
-                <div class="w-12 h-12 rounded-xl bg-blue-50 flex flex-col items-center justify-center text-blue-500 flex-shrink-0 border border-blue-100">
-                  <span class="text-[8px] font-black leading-none">JUL</span>
-                  <span class="text-base font-black leading-none mt-1">05</span>
-                </div>
-                <div>
-                  <div class="text-[9px] font-black text-blue-600 uppercase">OFFLINE EVENT</div>
-                  <h4 class="text-xs font-bold text-gray-800 mt-0.5">ファンミーティング in NAGOYA 栄</h4>
-                  <p class="text-[10px] text-gray-400 mt-1">15:00~ / 会場：栄エリア特設ホール</p>
+              <p class="text-xs text-gray-500 mb-2">Firestore（events コレクション）から自動取得された最新のイベント予定一覧です。</p>
+              
+              <!-- イベント表示用コンテナ -->
+              <div id="dynamic-events-list-container" class="space-y-3.5">
+                <div class="text-center py-12 text-gray-400 text-xs">
+                  <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  予定情報を同期中...
                 </div>
               </div>
             </div>
@@ -692,7 +667,7 @@
                 <i data-lucide="shield-alert" class="w-4 h-4"></i>
                 <span>通知許可を申請する</span>
               </button>
-              <p class="text-[9px] text-gray-400 mt-2 font-medium leading-relaxed">許可すると、タイムテーブル公開や抽選結果のPush通知が直接端末に届くようになります。</p>
+              <p class="text-[9px] text-gray-400 mt-2 font-medium leading-relaxed">許可すると、タイムテーブル公開や抽選結果 of Push通知が直接端末に届くようになります。</p>
             </div>
 
             <!-- 通知設定グループ -->
@@ -717,7 +692,7 @@
                 <input type="checkbox" onchange="toggleNotificationConfig('タイムテーブル公開通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
               </div>
               
-              <!-- そのactionsの通知 -->
+              <!-- その他通知 -->
               <div class="flex justify-between items-center">
                 <div class="pr-4">
                   <div class="text-xs font-bold text-gray-800">その他の通知</div>
@@ -741,7 +716,7 @@
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.5.0</span>
+                <span class="text-gray-400 font-mono">v2.6.0</span>
               </div>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
@@ -797,6 +772,51 @@
             </div>
           </div>
 
+          <!-- [BAND DETAIL] - バンドタップ時に動的に構築される詳細画面 -->
+          <div id="full-content-band-detail" class="full-subcontent hidden">
+            <div class="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl max-w-sm mx-auto">
+              <!-- カバー・アイコンエリア -->
+              <div class="relative aspect-[16/10] bg-gray-900">
+                <img id="band-detail-img" src="" alt="BAND VISUAL" class="w-full h-full object-cover opacity-90">
+                
+                <!-- ハートトグルボタン -->
+                <button id="band-detail-fav-btn" onclick="" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform">
+                  <i data-lucide="heart" class="w-5 h-5"></i>
+                </button>
+              </div>
+
+              <div class="p-5 space-y-4">
+                <div>
+                  <span id="band-detail-status" class="px-2.5 py-0.5 text-[9px] font-black rounded bg-indigo-50 text-indigo-600 border border-indigo-100 uppercase tracking-wide">アクティブ</span>
+                  <h3 id="band-detail-name" class="text-lg font-black text-gray-900 mt-1 leading-tight">バンド名</h3>
+                  <p id="band-detail-date" class="text-xs font-bold text-gray-400 mt-0.5">出演日時:</p>
+                </div>
+
+                <!-- メンバーリスト -->
+                <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100/50">
+                  <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                    所属メンバーID
+                  </h4>
+                  <ul id="band-detail-members-list" class="space-y-1.5 text-xs font-mono text-gray-600">
+                    <!-- 動的にリスト挿入 -->
+                  </ul>
+                </div>
+
+                <!-- 持ち曲・楽曲一覧 -->
+                <div>
+                  <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <i data-lucide="music-2" class="w-3.5 h-3.5"></i>
+                    登録曲・演奏予定
+                  </h4>
+                  <div id="band-detail-songs-list" class="space-y-2">
+                    <!-- 動的に挿入 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -844,7 +864,8 @@
       "platform": "SNS & 公式連携",
       "account": "アカウント情報",
       "news": "ニュース詳細",
-      "create-band": "新規バンド登録"
+      "create-band": "新規バンド登録",
+      "band-detail": "バンド詳細情報"
     };
 
     // ==========================================================================
@@ -884,6 +905,8 @@
     let eventDates = []; // イベント開催日（Dateオブジェクト配列）をFirestoreから動的にパースして保持
     let bandsUnsubscribe = null;
 
+    // 英語月変換用マッピング
+    const MONTHS_EN = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
     // 日本語曜日ラベル定義
     const WEEKDAYS_JP = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -998,7 +1021,7 @@
         // 匿名ログインを実行（セキュリティルールの読込要件を通過するため）
         auth.signInAnonymously()
           .then(() => {
-            // events コレクションから最新のイベントをリアルタイムにスキャンする
+            // events コレクションからイベント予定一覧をリアルタイムに同期取得する
             db.collection("events").onSnapshot(eventSnapshot => {
               let eventsList = [];
               eventSnapshot.forEach(doc => {
@@ -1027,7 +1050,6 @@
                 // イベント情報から、実際の開催日程リスト（Date配列）を算出
                 eventDates = getDatesBetween(latestEvent.startDate, latestEvent.endDate);
                 if (eventDates.length === 0) {
-                  // フォールバック：もしDBのstartDateが空の場合は現在日時にする
                   eventDates = [new Date(), new Date(Date.now() + 86400000)];
                 }
 
@@ -1039,6 +1061,9 @@
                 if (subHeader) {
                   subHeader.textContent = `対象: ${latestEventName}`;
                 }
+
+                // 「今後の予定」のHTMLコンテナを同期更新
+                renderFutureEventsList(eventsList);
 
                 // 最新イベントに基づいて、bands データの読み込み監視をスタート
                 loadBandsWithFilter(db);
@@ -1057,6 +1082,43 @@
       } catch (err) {
         console.error("Firebase Initialization Error:", err);
       }
+    }
+
+    // 最新のイベントをカレンダー風リストにレンダリングする
+    function renderFutureEventsList(eventsList) {
+      const container = document.getElementById('dynamic-events-list-container');
+      if (!container) return;
+
+      container.innerHTML = '';
+
+      if (eventsList.length === 0) {
+        container.innerHTML = `<div class="text-xs text-gray-400 p-8 text-center">開催予定のイベントはありません</div>`;
+        return;
+      }
+
+      eventsList.forEach(ev => {
+        const parsedDate = ev.startDate ? new Date(ev.startDate) : new Date();
+        const monthLabel = MONTHS_EN[parsedDate.getMonth()] || "EVENT";
+        const dayNum = parsedDate.getDate() || "--";
+
+        container.innerHTML += `
+          <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex gap-4 hover:border-indigo-100 transition-colors">
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 flex flex-col items-center justify-center text-indigo-600 flex-shrink-0 border border-indigo-100/50">
+              <span class="text-[8px] font-black leading-none">${monthLabel}</span>
+              <span class="text-lg font-black leading-none mt-1">${dayNum}</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[9px] font-black text-indigo-600 uppercase tracking-wide">UPCOMING SHOW</div>
+              <h4 class="text-xs font-black text-gray-800 mt-0.5 truncate">${ev.eventName}</h4>
+              <p class="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                <i data-lucide="clock" class="w-3 h-3"></i>
+                <span>期間: ${ev.startDate} 〜 ${ev.endDate || '当日限り'}</span>
+              </p>
+            </div>
+          </div>
+        `;
+      });
+      lucide.createIcons();
     }
 
     // 特定された最新イベントに登録されているバンドのみをFirestoreから抽出・表示
@@ -1093,11 +1155,11 @@
             day: assignedDay,
             time: dateStrLabel, // 実際の日時テキスト
             stage: isArchived ? "アーカイブ保管中" : "アクティブ活動中",
-            badge: "", // バッジ表示は非表示
+            badge: "", 
             image: data.icon || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400&auto=format&fit=crop&q=80",
             isFromFirestore: true,
             isArchived: isArchived,
-            memberCount: data.memberIds ? data.memberIds.length : 0,
+            memberIds: data.memberIds || [],
             songs: data.songs || []
           });
         });
@@ -1123,6 +1185,85 @@
       if (!document.getElementById('screen-timetable').classList.contains('hidden')) {
         renderTimetable();
       }
+    }
+
+    // ==================== [BAND DETAIL POPUP] ====================
+    function showBandDetail(artistId) {
+      const a = allArtists.find(artist => artist.id === artistId);
+      if (!a) return;
+
+      const img = document.getElementById('band-detail-img');
+      const name = document.getElementById('band-detail-name');
+      const status = document.getElementById('band-detail-status');
+      const dateLabel = document.getElementById('band-detail-date');
+      const membersList = document.getElementById('band-detail-members-list');
+      const songsList = document.getElementById('band-detail-songs-list');
+      const favBtn = document.getElementById('band-detail-fav-btn');
+
+      // 基本情報適用
+      img.src = a.image;
+      name.textContent = a.name;
+      dateLabel.textContent = `出演スケジュール: Day ${a.day} (${a.time})`;
+      
+      if (a.isArchived) {
+        status.textContent = "アーカイブ保管中";
+        status.className = "px-2.5 py-0.5 text-[9px] font-black rounded bg-gray-100 text-gray-500 border border-gray-200 uppercase tracking-wide";
+      } else {
+        status.textContent = "アクティブ";
+        status.className = "px-2.5 py-0.5 text-[9px] font-black rounded bg-emerald-50 text-emerald-600 border border-emerald-100 uppercase tracking-wide";
+      }
+
+      // ハートボタンの設定
+      const isFav = favorites.includes(a.id);
+      favBtn.onclick = () => {
+        toggleFavorite(a.id);
+        // トグル後にモーダル内のハート状態も更新
+        const updatedIsFav = favorites.includes(a.id);
+        favBtn.className = `absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform ${updatedIsFav ? 'text-red-500' : 'text-white'}`;
+        favBtn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${updatedIsFav ? 'fill-current' : ''}"></i>`;
+        lucide.createIcons();
+      };
+      favBtn.className = `absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform ${isFav ? 'text-red-500' : 'text-white'}`;
+      favBtn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-current' : ''}"></i>`;
+
+      // メンバーリストの構築
+      membersList.innerHTML = '';
+      if (a.memberIds && a.memberIds.length > 0) {
+        a.memberIds.forEach((mem, index) => {
+          membersList.innerHTML += `
+            <li class="flex items-center gap-1.5 py-0.5">
+              <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+              <span>メンバー ${index + 1}: <span class="font-bold text-gray-800">${mem}</span></span>
+            </li>
+          `;
+        });
+      } else {
+        membersList.innerHTML = `<li class="text-gray-400 italic">登録メンバー情報はありません</li>`;
+      }
+
+      // 楽曲予定リストの構築
+      songsList.innerHTML = '';
+      if (a.songs && a.songs.length > 0) {
+        a.songs.forEach(song => {
+          let sTitle = typeof song === 'object' ? song.title : song;
+          let sDuration = typeof song === 'object' ? (song.duration || "3:30") : "3:30";
+          songsList.innerHTML += `
+            <div class="p-2.5 bg-gray-50 border border-gray-100 rounded-lg flex justify-between items-center text-xs">
+              <div class="flex items-center gap-2">
+                <div class="w-6 h-6 bg-gray-200 rounded flex items-center justify-center text-[10px] font-black text-gray-500">TRACK</div>
+                <span class="font-bold text-gray-800">${sTitle}</span>
+              </div>
+              <span class="text-[10px] text-gray-400 font-mono">${sDuration}</span>
+            </div>
+          `;
+        });
+      } else {
+        songsList.innerHTML = `<div class="p-3 bg-gray-50 rounded-xl text-center text-xs text-gray-400 border border-dashed border-gray-200">登録曲はありません</div>`;
+      }
+
+      // フルスクリーンオープン
+      openFullscreen('band-detail');
+      lucide.createIcons();
     }
 
     // ==========================================================================
@@ -1216,23 +1357,6 @@
       }
     }
 
-    // ==================== [MY BAND SYSTEM] ====================
-    function toggleFavorite(artistId) {
-      if (favorites.includes(artistId)) {
-        favorites = favorites.filter(id => id !== artistId);
-      } else {
-        favorites.push(artistId);
-      }
-      localStorage.setItem('sakae_favs', JSON.stringify(favorites));
-      
-      if (!document.getElementById('screen-artist').classList.contains('hidden')) {
-        renderArtists();
-      }
-      if (!document.getElementById('screen-timetable').classList.contains('hidden')) {
-        renderTimetable();
-      }
-    }
-
     // ==================== [ARTIST COMPONENT CONTROLS] ====================
     function setArtistFilterTab(tabType) {
       artistFilterTab = tabType;
@@ -1290,16 +1414,20 @@
       filtered.forEach(a => {
         const isFav = favorites.includes(a.id);
         const card = document.createElement('div');
-        card.className = "flex flex-col relative group overflow-hidden bg-white rounded-lg shadow-sm border border-gray-100/60";
+        card.className = "flex flex-col relative group overflow-hidden bg-white rounded-lg shadow-sm border border-gray-100/60 cursor-pointer active:scale-[0.98] transition-all";
         
-        const badgeHtml = '';
+        // カードタップ時に詳細モーダルを展開、ハートボタンはバブリングさせない
+        card.onclick = (e) => {
+          if (e.target.closest('button')) return;
+          showBandDetail(a.id);
+        };
+
         const dayLabel = a.isFromFirestore ? a.time : (a.day === 1 ? "Day 1" : "Day 2");
 
         card.innerHTML = `
           <div class="relative aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg">
             <img src="${a.image}" alt="${a.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-            ${badgeHtml}
-            <button onclick="toggleFavorite('${a.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform">
+            <button onclick="toggleFavorite('${a.id}')" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/30 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform z-20">
               <i data-lucide="heart" class="w-4.5 h-4.5 ${isFav ? 'text-red-500 fill-current' : 'text-white'}"></i>
             </button>
           </div>
@@ -1329,6 +1457,7 @@
       renderTimetable();
     }
 
+    // タイムテーブル表示切り替え
     function setTimetableMode(mode) {
       timetableMode = mode;
       const bAll = document.getElementById('btn-tt-all');
@@ -1364,10 +1493,10 @@
           const isFav = favorites.includes(a.id);
           const timeLabel = a.isFromFirestore ? "出演日: " + a.time : a.time;
           artistCardsHtml += `
-            <div class="p-3 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'} shadow-sm relative">
+            <div class="p-3 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'} shadow-sm relative cursor-pointer hover:border-gray-300" onclick="showBandDetail('${a.id}')">
               <div class="flex justify-between items-start mb-1">
                 <span class="text-[9px] font-bold text-gray-400">${timeLabel}</span>
-                <button onclick="toggleFavorite('${a.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
+                <button onclick="event.stopPropagation(); toggleFavorite('${a.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
                   <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-red-500 fill-current' : ''}"></i>
                 </button>
               </div>
@@ -1522,46 +1651,6 @@
       showToast("同時予約が正常に確定されました。同期システムに登録完了です。");
     }
 
-    // ==================== [FULLSCREEN PAGE NAVIGATION] ====================
-    function openFullscreen(key) {
-      const overlay = document.getElementById('fullscreen-container-overlay');
-      const wrapper = document.getElementById('fullscreen-pages-wrapper');
-      const titleElement = document.getElementById('fullscreen-header-title');
-
-      document.querySelectorAll('.full-subcontent').forEach(el => el.classList.add('hidden'));
-
-      const contentId = `full-content-${key}`;
-      const targetContent = document.getElementById(contentId);
-      if (targetContent) {
-        targetContent.classList.remove('hidden');
-      }
-
-      titleElement.textContent = DISPLAY_NAMES[key] || "詳細情報";
-
-      // 新規作成画面用に最新イベントの説明文を動的に描写
-      if (key === 'create-band') {
-        const targetEventEl = document.getElementById('create-band-target-event');
-        if (targetEventEl) {
-          targetEventEl.textContent = `特定された最新イベント「${latestEventName || '最新イベント'}」へ自動追加されます。`;
-        }
-      }
-
-      overlay.classList.remove('hidden');
-      setTimeout(() => {
-        wrapper.classList.remove('translate-y-full');
-      }, 50);
-    }
-
-    function closeFullscreen() {
-      const overlay = document.getElementById('fullscreen-container-overlay');
-      const wrapper = document.getElementById('fullscreen-pages-wrapper');
-
-      wrapper.classList.add('translate-y-full');
-      setTimeout(() => {
-        overlay.classList.add('hidden');
-      }, 300);
-    }
-
     // ==================== [BAND CREATOR Engine] ====================
     function submitNewBand() {
       const nameInput = document.getElementById('new-band-name');
@@ -1576,10 +1665,8 @@
         return;
       }
 
-      // 出演希望の選択日
       const chosenDay = parseInt(daySelect.value, 10) || 1;
 
-      // アイコン未設定時フォールバック
       const defaultImages = [
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80",
         "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80",
@@ -1608,7 +1695,6 @@
         const db = firebase.firestore();
         showToast("Firestoreに保存中...");
 
-        // バンドデータの書き込み（出演日程 day を選んだ日数で登録）
         db.collection("bands").add({
           name: name,
           icon: icon,
