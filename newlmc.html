@@ -300,8 +300,8 @@
         <!-- 日付/マイバンド選択タブバー -->
         <div class="bg-white border-b border-gray-200 sticky top-[53px] z-30 flex justify-between items-center px-2 flex-shrink-0">
           <button onclick="setArtistFilterTab('all')" id="tab-art-all" class="flex-1 py-3 text-xs font-black tracking-wide border-b-2 border-gray-900 text-gray-900 transition-all text-center">ALL</button>
-          <button onclick="setArtistFilterTab('day1')" id="tab-art-day1" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">6.6 土</button>
-          <button onclick="setArtistFilterTab('day2')" id="tab-art-day2" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">6.7 日</button>
+          <button onclick="setArtistFilterTab('day1')" id="tab-art-day1" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">Day 1</button>
+          <button onclick="setArtistFilterTab('day2')" id="tab-art-day2" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">Day 2</button>
           <button onclick="setArtistFilterTab('favorites')" id="tab-art-favorites" class="flex-1 py-3 text-xs font-bold tracking-wide border-b-2 border-transparent text-gray-400 hover:text-gray-600 transition-all text-center">マイバンド</button>
         </div>
 
@@ -313,7 +313,7 @@
           </div>
         </div>
 
-        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">あ</div>
+        <div class="px-4 py-1 bg-gray-100 text-xs font-bold text-gray-800 border-b border-gray-200 sticky top-[95px] z-20 flex-shrink-0">登録アーティスト一覧</div>
         <div id="artist-grid-container" class="grid grid-cols-2 gap-x-2 gap-y-4 p-2 bg-white"></div>
       </div>
 
@@ -324,8 +324,8 @@
         <div class="flex justify-between items-center mb-4 flex-shrink-0">
           <h2 class="text-xl font-bold text-gray-900 tracking-tight">タイムテーブル</h2>
           <div class="inline-flex bg-gray-200 p-0.5 rounded-lg">
-            <button onclick="setTimetableDate(1)" id="btn-tt-day1" class="px-3 py-1 rounded-md text-xs font-bold bg-white text-gray-900 shadow-sm">6/6</button>
-            <button onclick="setTimetableDate(2)" id="btn-tt-day2" class="px-3 py-1 rounded-md text-xs font-bold text-gray-600">6/7</button>
+            <button onclick="setTimetableDate(1)" id="btn-tt-day1" class="px-3 py-1 rounded-md text-xs font-bold bg-white text-gray-900 shadow-sm">Day 1</button>
+            <button onclick="setTimetableDate(2)" id="btn-tt-day2" class="px-3 py-1 rounded-md text-xs font-bold text-gray-600">Day 2</button>
           </div>
         </div>
 
@@ -392,8 +392,8 @@
               候補日程を選択
             </h3>
             <div class="inline-flex bg-gray-100 p-0.5 rounded-lg">
-              <button onclick="setReservationDate(1)" id="btn-res-day1" class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm">6/6 土</button>
-              <button onclick="setReservationDate(2)" id="btn-res-day2" class="px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600">6/7 日</button>
+              <button onclick="setReservationDate(1)" id="btn-res-day1" class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm">Day 1</button>
+              <button onclick="setReservationDate(2)" id="btn-res-day2" class="px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600">Day 2</button>
             </div>
           </div>
 
@@ -717,7 +717,7 @@
                 <input type="checkbox" onchange="toggleNotificationConfig('タイムテーブル公開通知')" checked class="w-9 h-5 bg-gray-200 checked:bg-yellow-400 rounded-full cursor-pointer appearance-none relative transition-colors before:content-[''] before:absolute before:w-4 before:h-4 before:rounded-full before:bg-white before:top-0.5 before:left-0.5 checked:before:translate-x-4 before:transition-transform">
               </div>
               
-              <!-- その他の通知 -->
+              <!-- そのactionsの通知 -->
               <div class="flex justify-between items-center">
                 <div class="pr-4">
                   <div class="text-xs font-bold text-gray-800">その他の通知</div>
@@ -741,7 +741,7 @@
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.4.0</span>
+                <span class="text-gray-400 font-mono">v2.5.0</span>
               </div>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
@@ -762,6 +762,13 @@
               <div>
                 <label class="block text-[11px] font-bold text-gray-500 mb-1">バンド名 <span class="text-red-500">*</span></label>
                 <input type="text" id="new-band-name" placeholder="例: エレファントカシマシ" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-bold text-gray-500 mb-1">出演日程 <span class="text-red-500">*</span></label>
+                <select id="new-band-day-select" class="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-gray-400">
+                  <!-- JSにより最新イベント開催日に基づいて動的に生成されます -->
+                </select>
               </div>
 
               <div>
@@ -810,7 +817,7 @@
       measurementId: "G-9ZRMD26XNJ"
     };
 
-    // デフォルトで最初に入っていたバンド（静的モックデータ）をすべて削除し、クリーンな配列に変更
+    // デフォルトの静的モックは削除済、Firestoreから全ロード
     const STATIC_ARTISTS_DATA = [];
 
     // 動的にマージされるアーティスト一覧
@@ -849,7 +856,7 @@
     let timetableMode = 'all';
 
     // 合わせ予約用のシミュレートステート
-    let reservationDate = 1; // 1: 6/6, 2: 6/7
+    let reservationDate = 1; // 1: Day 1, 2: Day 2
     let userReservations = [false, false, false, false]; // 自分の希望スロット [10時, 13時, 16時, 19時]
     
     // 友達のシミュレート希望データ
@@ -871,10 +878,112 @@
       { id: 3, label: "19:00 - 21:00", name: "夜間練習枠" }
     ];
 
-    // 最新イベント情報ステート
+    // 最新イベント情報 ＆ 開催日程算出用ステート
     let latestEventId = "";
     let latestEventName = "最新イベント";
+    let eventDates = []; // イベント開催日（Dateオブジェクト配列）をFirestoreから動的にパースして保持
     let bandsUnsubscribe = null;
+
+    // 日本語曜日ラベル定義
+    const WEEKDAYS_JP = ["日", "月", "火", "水", "木", "金", "土"];
+
+    // 日付指定用の期間全日程配列作成ヘルパー
+    function getDatesBetween(startDateStr, endDateStr) {
+      const dates = [];
+      if (!startDateStr) return dates;
+      
+      let current = new Date(startDateStr);
+      const end = endDateStr ? new Date(endDateStr) : new Date(startDateStr);
+      
+      // 安全のため、不整合による無限ループ防止制限（最大7日間）
+      let limit = 0;
+      while (current <= end && limit < 7) {
+        dates.push(new Date(current));
+        current.setDate(current.getDate() + 1);
+        limit++;
+      }
+      return dates;
+    }
+
+    // 日程表現フォーマットヘルパー
+    function formatDateLabel(date, formatType) {
+      if (!date || isNaN(date.getTime())) return "日程未設定";
+      const m = date.getMonth() + 1;
+      const d = date.getDate();
+      const w = WEEKDAYS_JP[date.getDay()];
+      
+      if (formatType === 'dot') {
+        return `${m}.${d} ${w}`; // 例: "7.11 土"
+      } else if (formatType === 'slash') {
+        return `${m}/${d}`; // 例: "7/11"
+      } else if (formatType === 'slash_week') {
+        return `${m}/${d} (${w})`; // 例: "7/11 (土)"
+      }
+      return `${m}/${d}`;
+    }
+
+    // 動的にUIの日付ラベルをすべて書き換えるエンジン
+    function updateUIDateLabels() {
+      if (eventDates.length < 1) return;
+
+      // 1. ARTIST画面のフィルタータブ
+      const tabDay1 = document.getElementById("tab-art-day1");
+      const tabDay2 = document.getElementById("tab-art-day2");
+      if (tabDay1) {
+        tabDay1.textContent = formatDateLabel(eventDates[0], 'dot');
+      }
+      if (tabDay2) {
+        if (eventDates[1]) {
+          tabDay2.textContent = formatDateLabel(eventDates[1], 'dot');
+          tabDay2.style.display = "";
+        } else {
+          // 1日限定イベントの場合は非表示にする
+          tabDay2.style.display = "none";
+        }
+      }
+
+      // 2. TIMETABLE画面の日程選択
+      const btnTt1 = document.getElementById("btn-tt-day1");
+      const btnTt2 = document.getElementById("btn-tt-day2");
+      if (btnTt1) {
+        btnTt1.textContent = formatDateLabel(eventDates[0], 'slash');
+      }
+      if (btnTt2) {
+        if (eventDates[1]) {
+          btnTt2.textContent = formatDateLabel(eventDates[1], 'slash');
+          btnTt2.style.display = "";
+        } else {
+          btnTt2.style.display = "none";
+        }
+      }
+
+      // 3. 合わせ予約画面の選択
+      const btnRes1 = document.getElementById("btn-res-day1");
+      const btnRes2 = document.getElementById("btn-res-day2");
+      if (btnRes1) {
+        btnRes1.textContent = formatDateLabel(eventDates[0], 'slash_week');
+      }
+      if (btnRes2) {
+        if (eventDates[1]) {
+          btnRes2.textContent = formatDateLabel(eventDates[1], 'slash_week');
+          btnRes2.style.display = "";
+        } else {
+          btnRes2.style.display = "none";
+        }
+      }
+
+      // 4. 新規バンド登録画面の日程プルダウンを最新状態に合わせて再描写
+      const daySelect = document.getElementById("new-band-day-select");
+      if (daySelect) {
+        daySelect.innerHTML = '';
+        eventDates.forEach((date, index) => {
+          const opt = document.createElement("option");
+          opt.value = index + 1; // dayフィールド(1, 2など)
+          opt.textContent = `イベント ${index + 1}日目: ${formatDateLabel(date, 'slash_week')}`;
+          daySelect.appendChild(opt);
+        });
+      }
+    }
 
     // ==========================================================================
     // [FIREBASE REAL-TIME CONNECTOR] Firestore "bands" ＆ "events" 同期処理
@@ -895,14 +1004,15 @@
               eventSnapshot.forEach(doc => {
                 const data = doc.data();
                 eventsList.push({
-                  id: doc.id, // e20260407 など
+                  id: doc.id, // e20260407, e20260711 など
                   startDate: data.startDate || "",
+                  endDate: data.endDate || "",
                   eventName: data.event || "名称未設定イベント"
                 });
               });
 
               if (eventsList.length > 0) {
-                // ドキュメントID（eYYYYMMDD）の日付部分を抽出して最新（数値が大きい順）に降順ソート
+                // ドキュメントIDの日付数値部分（e20260711 -> 20260711）で降順ソート、最新を決定
                 eventsList.sort((a, b) => {
                   const numA = parseInt(a.id.replace(/\D/g, ''), 10) || 0;
                   const numB = parseInt(b.id.replace(/\D/g, ''), 10) || 0;
@@ -910,8 +1020,19 @@
                 });
 
                 // 最新イベントを特定
-                latestEventId = eventsList[0].id;
-                latestEventName = eventsList[0].eventName;
+                const latestEvent = eventsList[0];
+                latestEventId = latestEvent.id;
+                latestEventName = latestEvent.eventName;
+
+                // イベント情報から、実際の開催日程リスト（Date配列）を算出
+                eventDates = getDatesBetween(latestEvent.startDate, latestEvent.endDate);
+                if (eventDates.length === 0) {
+                  // フォールバック：もしDBのstartDateが空の場合は現在日時にする
+                  eventDates = [new Date(), new Date(Date.now() + 86400000)];
+                }
+
+                // UI側の日程表示をすべて書き換え
+                updateUIDateLabels();
 
                 // UIのイベント名を更新
                 const subHeader = document.getElementById("artist-header-event-sub");
@@ -944,7 +1065,6 @@
         bandsUnsubscribe();
       }
 
-      // bands コレクションをリアルタイムに監視
       bandsUnsubscribe = db.collection("bands").onSnapshot(snapshot => {
         firebaseBandsList = [];
         
@@ -952,22 +1072,28 @@
           const data = doc.data();
           const isArchived = data.isArchived || false;
           
-          // バンドの events 配列に、最新のイベントID（例: e20260407）が含まれているか判定
+          // バンドの events 配列に、最新のイベントIDが含まれているか判定
           const isRegisteredToLatest = data.events && data.events.includes(latestEventId);
-          
-          // 含まれていない場合はフィルタリング（表示させない）
           if (!isRegisteredToLatest) {
             return;
           }
 
-          // データ取得が成功したものをリストに追加 (URAKATA BANDなどの不要なバッジ文字列は空にします)
+          // バンドに出演日(day=1 or 2)が設定されていればパース、無ければデフォルト1日目
+          const assignedDay = parseInt(data.day, 10) || 1;
+
+          // 最新イベント日程配列から実際の曜日ラベルを取得
+          let dateStrLabel = latestEventName;
+          if (eventDates[assignedDay - 1]) {
+            dateStrLabel = formatDateLabel(eventDates[assignedDay - 1], 'dot');
+          }
+
           firebaseBandsList.push({
             id: doc.id,
             name: data.name || "名称未設定バンド",
-            day: 1, // 日付選択は1日目を規定
-            time: latestEventName, // 最新イベント名を配置
+            day: assignedDay,
+            time: dateStrLabel, // 実際の日時テキスト
             stage: isArchived ? "アーカイブ保管中" : "アクティブ活動中",
-            badge: "", // バッジ表示を完全に排除しました
+            badge: "", // バッジ表示は非表示
             image: data.icon || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400&auto=format&fit=crop&q=80",
             isFromFirestore: true,
             isArchived: isArchived,
@@ -976,7 +1102,7 @@
           });
         });
 
-        // 静的データ（空）とマージして統合更新
+        // 描画マージ
         mergeArtistsMaster();
         showToast(`「${latestEventName}」登録バンド ${firebaseBandsList.length} 件を読み込みました！`);
       }, error => {
@@ -985,17 +1111,12 @@
       });
     }
 
-    // 静的データとFirebaseから同期されたバンドリストを重複を排除してマージ
+    // 結合マスター更新
     function mergeArtistsMaster() {
       const firebaseIds = firebaseBandsList.map(b => b.id);
-      
-      // 重複するID（Firestoreデータ側を最優先）を静的モックから除外
       const filteredStatic = STATIC_ARTISTS_DATA.filter(a => !firebaseIds.includes(a.id));
-      
-      // 結合した最終的なアーティストリストを生成
       allArtists = [...filteredStatic, ...firebaseBandsList];
 
-      // 該当スクリーンのコンテンツを安全に再描画
       if (!document.getElementById('screen-artist').classList.contains('hidden')) {
         renderArtists();
       }
@@ -1127,6 +1248,7 @@
       renderArtists();
     }
 
+    // 検索バー
     function focusSearch() {
       const searchBar = document.getElementById('artist-search-bar');
       searchBar.classList.toggle('hidden');
@@ -1170,11 +1292,8 @@
         const card = document.createElement('div');
         card.className = "flex flex-col relative group overflow-hidden bg-white rounded-lg shadow-sm border border-gray-100/60";
         
-        // バッジ生成ロジックは表記不要になったため省略します。
         const badgeHtml = '';
-
-        const dayLabel = a.isFromFirestore ? a.time : (a.day === 1 ? "6.6 土" : "6.7 日");
-        const secondaryLabel = a.isFromFirestore ? `${a.memberCount} メンバー` : a.time;
+        const dayLabel = a.isFromFirestore ? a.time : (a.day === 1 ? "Day 1" : "Day 2");
 
         card.innerHTML = `
           <div class="relative aspect-[4/3] bg-gray-100 overflow-hidden rounded-lg">
@@ -1243,7 +1362,7 @@
         let artistCardsHtml = '';
         stageArtists.forEach(a => {
           const isFav = favorites.includes(a.id);
-          const timeLabel = a.isFromFirestore ? "Firestore登録枠" : a.time;
+          const timeLabel = a.isFromFirestore ? "出演日: " + a.time : a.time;
           artistCardsHtml += `
             <div class="p-3 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'} shadow-sm relative">
               <div class="flex justify-between items-start mb-1">
@@ -1309,7 +1428,6 @@
         const choiceA = friendA[slot.id];
         const choiceB = friendB[slot.id];
 
-        // 全員マッチしているか判定
         const isAllMatched = myChoice && choiceA && choiceB;
 
         const slotCard = document.createElement('div');
@@ -1375,7 +1493,12 @@
       const dayKey = (reservationDate === 1) ? 'day1' : 'day2';
       const friendA = friendsReservations[dayKey].friendA;
       const friendB = friendsReservations[dayKey].friendB;
-      const dayLabel = (reservationDate === 1) ? '6/6(土)' : '6/7(日)';
+      
+      // 確定時の最新イベントの曜日ラベル
+      let dayLabel = `Day ${reservationDate}`;
+      if (eventDates[reservationDate - 1]) {
+        dayLabel = formatDateLabel(eventDates[reservationDate - 1], 'slash_week');
+      }
 
       let matchCount = 0;
       let reservationDetails = [];
@@ -1442,6 +1565,7 @@
     // ==================== [BAND CREATOR Engine] ====================
     function submitNewBand() {
       const nameInput = document.getElementById('new-band-name');
+      const daySelect = document.getElementById('new-band-day-select');
       const iconInput = document.getElementById('new-band-icon');
       const membersInput = document.getElementById('new-band-members');
       const songInput = document.getElementById('new-band-song');
@@ -1452,14 +1576,15 @@
         return;
       }
 
-      // アイコンが未入力の際のランダムデフォルト画像選出
+      // 出演希望の選択日
+      const chosenDay = parseInt(daySelect.value, 10) || 1;
+
+      // アイコン未設定時フォールバック
       const defaultImages = [
         "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80",
         "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80",
         "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=400&auto=format&fit=crop&q=80",
-        "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=400&auto=format&fit=crop&q=80"
+        "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80"
       ];
       const randomIcon = defaultImages[Math.floor(Math.random() * defaultImages.length)];
       const icon = iconInput.value.trim() || randomIcon;
@@ -1483,10 +1608,11 @@
         const db = firebase.firestore();
         showToast("Firestoreに保存中...");
 
-        // バンドデータの書き込み
+        // バンドデータの書き込み（出演日程 day を選んだ日数で登録）
         db.collection("bands").add({
           name: name,
           icon: icon,
+          day: chosenDay,
           events: [latestEventId],
           isArchived: false,
           memberIds: memberIds,
@@ -1495,7 +1621,6 @@
         })
         .then(() => {
           showToast("新しいバンドをFirestoreに登録しました！");
-          // フォームリセット
           nameInput.value = '';
           iconInput.value = '';
           membersInput.value = '';
@@ -1603,7 +1728,6 @@
           <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">GENERATED SOUND TRACKS</div>
           <div class="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
             ${favArtists.map(a => {
-              // Firebaseのバンドに曲配列 (songs) が存在する場合、その1曲目を連動させる
               let songName = "LIVE TRACK";
               if (a.isFromFirestore && a.songs && a.songs.length > 0) {
                 const firstSong = a.songs[0];
@@ -1638,7 +1762,7 @@
       lucide.createIcons();
       switchScreen('home');
       
-      // Firebase及びFirestoreの非同期初期化＆リアルタイム監視スタート
+      // Firebase初期化 ＆ リアルタイム監視
       initFirebaseAndLoadBands();
     });
   </script>
