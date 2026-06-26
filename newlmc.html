@@ -716,7 +716,7 @@
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.7.0</span>
+                <span class="text-gray-400 font-mono">v2.7.2</span>
               </div>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
@@ -837,6 +837,19 @@
 
   <script>
     // ==========================================================================
+    // [FIREBASE CONFIGURATION] Firebase構成 - 起動時マウント用の変数定義を先頭に固定化
+    // ==========================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+      authDomain: "urakata-app.firebaseapp.com",
+      projectId: "urakata-app",
+      storageBucket: "urakata-app.firebasestorage.app",
+      messagingSenderId: "407777765696",
+      appId: "1:407777765696:web:045c2d94729022b4eab2a5",
+      measurementId: "G-9ZRMD26XNJ"
+    };
+
+    // ==========================================================================
     // [STATE] アプリケーションの状態管理 (マイバンド管理対応)
     // ==========================================================================
     let allArtists = []; // リアルタイム読込バンドデータ保持
@@ -882,7 +895,6 @@
 
     // ==================== [LUCIDE ICON LOADER PROTECTION] ====================
     function safeCreateIcons() {
-      // DOMレンダリング後のアイコン作成の失敗によるフリーズを完全に保護
       try {
         setTimeout(() => {
           if (typeof lucide !== 'undefined') {
