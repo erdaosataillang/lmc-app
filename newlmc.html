@@ -46,10 +46,10 @@
       -webkit-overflow-scrolling: touch;
     }
     /* スクロールバー非表示 */
-    .no-scrollbar::-webkit-scrollbar {
+    .dynamic-scroll-area::-webkit-scrollbar {
       display: none;
     }
-    .no-scrollbar {
+    .dynamic-scroll-area {
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
@@ -128,7 +128,7 @@
     </div>
 
     <!-- アプリ画面メインエリア (内部のみ縦スクロールを許可、下部セーフエリア余白追加) -->
-    <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-40 pb-[calc(10rem+env(safe-area-inset-bottom))] no-scrollbar scrollable-area">
+    <div id="main-scroll-area" class="flex-1 overflow-y-auto pb-40 pb-[calc(10rem+env(safe-area-inset-bottom))] dynamic-scroll-area scrollable-area">
 
       <!-- ====================================================================
            [HOME SCREEN]
@@ -207,7 +207,7 @@
               公式アカウント ＆ 予定表
             </h3>
             <!-- 横スクロールコンテナ: モバイルで見切れてスクロールを促すコンパクトな構成 -->
-            <div class="flex gap-2.5 overflow-x-auto no-scrollbar pb-2" style="touch-action: pan-x;">
+            <div class="flex gap-2.5 overflow-x-auto dynamic-scroll-area pb-2" style="touch-action: pan-x;">
               <!-- インスタ -->
               <div onclick="showPlatformDetail('Instagram', 'INSTAGRAM')" class="flex flex-col items-center flex-shrink-0 w-20 cursor-pointer active:scale-95 transition-transform">
                 <div class="w-11 h-11 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 text-white flex items-center justify-center border border-pink-100 mb-1.5 shadow-sm">
@@ -337,7 +337,7 @@
           </button>
         </div>
 
-        <div id="timetable-board-container" class="overflow-x-auto no-scrollbar border border-gray-100 rounded-2xl bg-white shadow-sm" style="touch-action: pan-x;">
+        <div id="timetable-board-container" class="overflow-x-auto dynamic-scroll-area border border-gray-100 rounded-2xl bg-white shadow-sm" style="touch-action: pan-x;">
           <div class="inline-flex min-w-full" id="timetable-stages-row"></div>
         </div>
       </div>
@@ -368,7 +368,7 @@
             </button>
           </div>
           <!-- メンバーリスト -->
-          <div class="border-t border-gray-50 pt-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <div class="border-t border-gray-50 pt-3 flex items-center gap-2 overflow-x-auto dynamic-scroll-area">
             <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100/50 rounded-full px-2.5 py-1 text-xs font-black text-indigo-700 flex-shrink-0">
               <div class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping"></div>
               <span>あなた</span>
@@ -705,7 +705,7 @@
             <!-- テスト送信ボタン -->
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-4">
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2.5">デバッグツール</h4>
-              <button onclick="sendTestPushNotification()" class="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md">
+              <button onclick="sendTestPushNotification()" class="w-full py-3 bg-yellow-400 hover:bg-yellow-500 text-gray-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md">
                 <i data-lucide="send" class="w-4 h-4"></i>
                 <span>テストPush通知を即時送信</span>
               </button>
@@ -716,7 +716,7 @@
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.7.2</span>
+                <span class="text-gray-400 font-mono">v2.7.3</span>
               </div>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
@@ -836,19 +836,6 @@
   </div>
 
   <script>
-    // ==========================================================================
-    // [FIREBASE CONFIGURATION] Firebase構成 - 起動時マウント用の変数定義を先頭に固定化
-    // ==========================================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
-      authDomain: "urakata-app.firebaseapp.com",
-      projectId: "urakata-app",
-      storageBucket: "urakata-app.firebasestorage.app",
-      messagingSenderId: "407777765696",
-      appId: "1:407777765696:web:045c2d94729022b4eab2a5",
-      measurementId: "G-9ZRMD26XNJ"
-    };
-
     // ==========================================================================
     // [STATE] アプリケーションの状態管理 (マイバンド管理対応)
     // ==========================================================================
@@ -1038,10 +1025,11 @@
                 });
 
                 if (eventsList.length > 0) {
+                  // startDateフィールド基準で正確にソート（最新の日付が最初になるように）
                   eventsList.sort((a, b) => {
-                    const numA = parseInt(a.id.replace(/\D/g, ''), 10) || 0;
-                    const numB = parseInt(b.id.replace(/\D/g, ''), 10) || 0;
-                    return numB - numA; 
+                    const dateA = new Date(a.startDate || 0).getTime();
+                    const dateB = new Date(b.startDate || 0).getTime();
+                    return dateB - dateA; 
                   });
 
                   const latestEvent = eventsList[0];
@@ -1132,38 +1120,65 @@
 
         bandsUnsubscribe = db.collection("bands").onSnapshot(snapshot => {
           try {
-            firebaseBandsList = [];
+            // 一時的にすべてのバンドを格納する
+            let tempAllBands = [];
+            let latestBands = [];
             
             snapshot.forEach(doc => {
               const data = doc.data();
               const isArchived = data.isArchived || false;
               
-              const isRegisteredToLatest = data.events && data.events.includes(latestEventId);
-              if (!isRegisteredToLatest) {
-                return;
+              // eventsフィールドが配列または文字列であってもエラーを出さずに判定する
+              let isRegisteredToLatest = false;
+              if (Array.isArray(data.events)) {
+                isRegisteredToLatest = data.events.includes(latestEventId);
+              } else if (typeof data.events === 'string') {
+                isRegisteredToLatest = (data.events === latestEventId);
               }
 
               const assignedDay = parseInt(data.day, 10) || 1;
 
+              // 日付表現ラベル
               let dateStrLabel = latestEventName;
               if (eventDates[assignedDay - 1]) {
                 dateStrLabel = formatDateLabel(eventDates[assignedDay - 1], 'dot');
               }
 
-              firebaseBandsList.push({
+              const bandItem = {
                 id: doc.id,
                 name: data.name || "名称未設定バンド",
                 day: assignedDay,
                 time: dateStrLabel, 
-                stage: data.stage || "RAD HALL", // ステージ不整合バグをガード
+                stage: data.stage || "RAD HALL", 
                 badge: "", 
                 image: data.icon || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=400&auto=format&fit=crop&q=80",
                 isFromFirestore: true,
                 isArchived: isArchived,
                 memberIds: data.memberIds || [],
                 songs: data.songs || []
-              });
+              };
+
+              tempAllBands.push(bandItem);
+              if (isRegisteredToLatest) {
+                latestBands.push(bandItem);
+              }
             });
+
+            // 【重要フォールバックロジック】
+            // 最新イベントに所属するバンドが1件もない場合は、登録されているすべてのバンドを代わりに表示して救済する
+            if (latestBands.length > 0) {
+              firebaseBandsList = latestBands;
+              const subHeader = document.getElementById("artist-header-event-sub");
+              if (subHeader) {
+                subHeader.textContent = `対象: ${latestEventName}`;
+              }
+            } else {
+              firebaseBandsList = tempAllBands;
+              const subHeader = document.getElementById("artist-header-event-sub");
+              if (subHeader && tempAllBands.length > 0) {
+                subHeader.textContent = `全表示 (最新イベントにバンド未登録のため)`;
+              }
+            }
 
             mergeArtistsMaster();
           } catch (e) {
@@ -1521,501 +1536,4 @@
         timetableMode = mode;
         const bAll = document.getElementById('btn-tt-all');
         const bMy = document.getElementById('btn-tt-my');
-        if (!bAll || !bMy) return;
-        if (mode === 'all') {
-          bAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-gray-900 text-white";
-          bMy.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700 flex items-center justify-center gap-1.5";
-        } else {
-          bMy.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-red-500 text-white flex items-center justify-center gap-1.5";
-          bAll.className = "flex-1 py-2 text-xs font-bold rounded-xl transition-all bg-white border border-gray-200 text-gray-700";
-        }
-        renderTimetable();
-      } catch (e) {
-        console.error("Set timetable mode error:", e);
-      }
-    }
-
-    function renderTimetable() {
-      try {
-        const row = document.getElementById('timetable-stages-row');
-        if (!row) return;
-        row.innerHTML = '';
-
-        STAGES.forEach(stage => {
-          let stageArtists = allArtists.filter(a => a.stage === stage && a.day === currentTimetableDay);
-          
-          if (timetableMode === 'my') {
-            stageArtists = stageArtists.filter(a => favorites.includes(a.id));
-          }
-
-          if (timetableMode === 'my' && stageArtists.length === 0) return;
-
-          const column = document.createElement('div');
-          column.className = "w-64 border-r border-gray-100 flex-shrink-0 p-3";
-          
-          let artistCardsHtml = '';
-          stageArtists.forEach(a => {
-            const isFav = favorites.includes(a.id);
-            const timeLabel = a.isFromFirestore ? "出演日: " + a.time : a.time;
-            artistCardsHtml += `
-              <div class="p-3 rounded-xl border ${isFav ? 'bg-red-50/50 border-red-100' : 'bg-gray-50 border-gray-100'} shadow-sm relative cursor-pointer hover:border-gray-300" onclick="showBandDetail('${a.id}')">
-                <div class="flex justify-between items-start mb-1">
-                  <span class="text-[9px] font-bold text-gray-400">${timeLabel}</span>
-                  <button onclick="event.stopPropagation(); toggleFavorite('${a.id}')" class="text-gray-400 hover:text-red-500 transition-colors">
-                    <i data-lucide="heart" class="w-3.5 h-3.5 ${isFav ? 'text-red-500 fill-current' : ''}"></i>
-                  </button>
-                </div>
-                <p class="text-xs font-bold text-gray-800 leading-tight pr-4">${a.name}</p>
-              </div>
-            `;
-          });
-
-          column.innerHTML = `
-            <div class="text-[10px] font-bold text-gray-800 uppercase tracking-tighter bg-gray-100 rounded-lg p-2 text-center mb-3 sticky top-0 z-10 border border-gray-200/50">
-              ${stage}
-            </div>
-            <div class="space-y-3">
-              ${artistCardsHtml || '<div class="text-[10px] text-gray-300 text-center py-8">演奏予定なし</div>'}
-            </div>
-          `;
-          row.appendChild(column);
-        });
-
-        if (row.innerHTML === '') {
-          row.innerHTML = `
-            <div class="w-full text-center py-12 text-gray-400 text-xs px-4">マイバンドに登録されたアーティストはいません。</div>
-          `;
-        }
-        safeCreateIcons();
-      } catch (e) {
-        console.error("Render timetable error:", e);
-      }
-    }
-
-    // ==================== [RESERVATION SYSTEM (合わせ予約)] ====================
-    function setReservationDate(day) {
-      try {
-        reservationDate = day;
-        const b1 = document.getElementById('btn-res-day1');
-        const b2 = document.getElementById('btn-res-day2');
-        if (!b1 || !b2) return;
-        if (day === 1) {
-          b1.className = "px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm";
-          b2.className = "px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600";
-        } else {
-          b2.className = "px-2.5 py-1 rounded-md text-[10px] font-bold bg-white text-gray-900 shadow-sm";
-          b1.className = "px-2.5 py-1 rounded-md text-[10px] font-bold text-gray-600";
-        }
-        renderReservationSlots();
-      } catch (e) {
-        console.error("Set reservation date error:", e);
-      }
-    }
-
-    function toggleUserSlotChoice(slotId) {
-      try {
-        userReservations[slotId] = !userReservations[slotId];
-        renderReservationSlots();
-      } catch (e) {
-        console.error("Toggle user slot choice error:", e);
-      }
-    }
-
-    function renderReservationSlots() {
-      try {
-        const container = document.getElementById('reservation-slots-container');
-        if (!container) return;
-        container.innerHTML = '';
-
-        const dayKey = (reservationDate === 1) ? 'day1' : 'day2';
-        
-        // 配列不整合（Day2が存在しないイベント等）によるJSフリーズエラーを安全にガード
-        const matchedConfig = friendsReservations[dayKey] || { friendA: [false, false, false, false], friendB: [false, false, false, false] };
-        const friendA = matchedConfig.friendA;
-        const friendB = matchedConfig.friendB;
-
-        reservationSlotsConfig.forEach(slot => {
-          const myChoice = userReservations[slot.id] || false;
-          const choiceA = friendA[slot.id] || false;
-          const choiceB = friendB[slot.id] || false;
-
-          const isAllMatched = myChoice && choiceA && choiceB;
-
-          const slotCard = document.createElement('div');
-          slotCard.className = `p-3 rounded-xl border transition-all flex items-center justify-between ${
-            isAllMatched 
-              ? 'bg-emerald-50 border-emerald-200 shadow-inner' 
-              : myChoice 
-                ? 'bg-indigo-50/60 border-indigo-100' 
-                : 'bg-slate-50/50 border-slate-100 hover:bg-slate-100/30'
-          }`;
-
-          slotCard.innerHTML = `
-            <div class="flex-1 cursor-pointer select-none" onclick="toggleUserSlotChoice(${slot.id})">
-              <div class="text-[10px] font-bold text-gray-400 leading-none">${slot.label}</div>
-              <div class="text-xs font-black text-gray-800 mt-1">${slot.name}</div>
-              
-              <div class="flex gap-2 items-center mt-2 pt-1 border-t border-gray-100/30">
-                <span class="text-[8px] font-bold text-gray-400">希望状況:</span>
-                <span class="inline-flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full ${myChoice ? 'bg-indigo-500' : 'bg-gray-200'}"></span>
-                  <span class="text-[8px] font-semibold text-gray-500">自分</span>
-                </span>
-                <span class="inline-flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full ${choiceA ? 'bg-emerald-500' : 'bg-gray-200'}"></span>
-                  <span class="text-[8px] font-semibold text-gray-500">A</span>
-                </span>
-                <span class="inline-flex items-center gap-1">
-                  <span class="w-2 h-2 rounded-full ${choiceB ? 'bg-emerald-500' : 'bg-gray-200'}"></span>
-                  <span class="text-[8px] font-semibold text-gray-500">B</span>
-                </span>
-              </div>
-            </div>
-
-            <div class="flex flex-col items-end justify-center pl-3">
-              ${isAllMatched 
-                ? `<div class="bg-emerald-500 text-white font-black text-[8px] rounded px-1.5 py-0.5 animate-bounce uppercase tracking-wide">全員マッチ!</div>`
-                : myChoice 
-                  ? `<button onclick="toggleUserSlotChoice(${slot.id})" class="text-indigo-600 hover:text-indigo-800 text-[10px] font-black">選択中</button>`
-                  : `<button onclick="toggleUserSlotChoice(${slot.id})" class="text-slate-400 hover:text-slate-700 text-[10px] font-medium">希望する</button>`
-              }
-            </div>
-          `;
-          container.appendChild(slotCard);
-        });
-        safeCreateIcons();
-      } catch (e) {
-        console.error("Render reservation slots error:", e);
-      }
-    }
-
-    function copyGroupCode() {
-      try {
-        const code = document.getElementById('active-group-code').textContent;
-        const tempInput = document.createElement("input");
-        tempInput.value = code;
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand('copy');
-        document.body.removeChild(tempInput);
-
-        showToast("グループコードをクリップボードにコピーしました！");
-      } catch (e) {
-        console.error("Clipboard copy error:", e);
-      }
-    }
-
-    function confirmReservation() {
-      try {
-        const dayKey = (reservationDate === 1) ? 'day1' : 'day2';
-        const matchedConfig = friendsReservations[dayKey] || { friendA: [false, false, false, false], friendB: [false, false, false, false] };
-        const friendA = matchedConfig.friendA;
-        const friendB = matchedConfig.friendB;
-
-        let dayLabel = `Day ${reservationDate}`;
-        if (eventDates[reservationDate - 1]) {
-          dayLabel = formatDateLabel(eventDates[reservationDate - 1], 'slash_week');
-        }
-
-        let matchCount = 0;
-        let reservationDetails = [];
-
-        reservationSlotsConfig.forEach(slot => {
-          if (userReservations[slot.id] && friendA[slot.id] && friendB[slot.id]) {
-            matchCount++;
-            reservationDetails.push(slot.name);
-          }
-        });
-
-        if (matchCount === 0) {
-          showToast("友達とマッチ(全員が◯を選択)している時間枠がありません。別の時間帯を希望してみてください！");
-          return;
-        }
-
-        const successTitle = "合わせ予約の確定完了";
-        const successMessage = `${dayLabel} ${reservationDetails.join('・')} にて同時予約が確定しました！`;
-
-        sendLocalNotification(successTitle, successMessage);
-        showToast("同時予約が正常に確定されました。同期システムに登録完了です。");
-      } catch (e) {
-        console.error("Reservation confirm error:", e);
-      }
-    }
-
-    // ==================== [BAND CREATOR Engine] ====================
-    function submitNewBand() {
-      try {
-        const nameInput = document.getElementById('new-band-name');
-        const daySelect = document.getElementById('new-band-day-select');
-        const stageSelect = document.getElementById('new-band-stage-select'); // 会場セレクトを取得
-        const iconInput = document.getElementById('new-band-icon');
-        const membersInput = document.getElementById('new-band-members');
-        const songInput = document.getElementById('new-band-song');
-
-        if (!nameInput || !daySelect || !stageSelect) return;
-
-        const name = nameInput.value.trim();
-        if (!name) {
-          showToast("バンド名を入力してください。");
-          return;
-        }
-
-        const chosenDay = parseInt(daySelect.value, 10) || 1;
-        const chosenStage = stageSelect.value || "RAD HALL"; // 割り当てられた会場
-
-        const defaultImages = [
-          "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80",
-          "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&auto=format&fit=crop&q=80",
-          "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80",
-          "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&auto=format&fit=crop&q=80"
-        ];
-        const randomIcon = defaultImages[Math.floor(Math.random() * defaultImages.length)];
-        const icon = iconInput.value.trim() || randomIcon;
-
-        const memberIds = membersInput.value.split(',')
-          .map(id => id.trim())
-          .filter(Boolean);
-
-        const songs = [];
-        const songTitle = songInput.value.trim();
-        if (songTitle) {
-          songs.push({
-            title: songTitle,
-            duration: "3:30",
-            eventId: latestEventId,
-            id: "song_" + Date.now()
-          });
-        }
-
-        const db = firebase.firestore();
-        showToast("Firestoreに保存中...");
-
-        db.collection("bands").add({
-          name: name,
-          icon: icon,
-          day: chosenDay,
-          stage: chosenStage, // 会場ステージの追加
-          events: [latestEventId],
-          isArchived: false,
-          memberIds: memberIds,
-          songs: songs,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        })
-        .then(() => {
-          showToast("新しいバンドをFirestoreに登録しました！");
-          nameInput.value = '';
-          iconInput.value = '';
-          membersInput.value = '';
-          songInput.value = '';
-          closeFullscreen();
-        })
-        .catch(err => {
-          console.error("Firestore submit error:", err);
-          showToast("保存に失敗しました。データベース権限を確認してください。");
-        });
-      } catch (err) {
-        console.error("Firebase runtime error:", err);
-        showToast("Firebase接続がオフラインです。");
-      }
-    }
-
-    // ==================== [FULLSCREEN PAGE NAVIGATION] ====================
-    function openFullscreen(key) {
-      try {
-        const overlay = document.getElementById('fullscreen-container-overlay');
-        const wrapper = document.getElementById('fullscreen-pages-wrapper');
-        const titleElement = document.getElementById('fullscreen-header-title');
-
-        if (!overlay || !wrapper) return;
-
-        document.querySelectorAll('.full-subcontent').forEach(el => el.classList.add('hidden'));
-
-        const contentId = `full-content-${key}`;
-        const targetContent = document.getElementById(contentId);
-        if (targetContent) {
-          targetContent.classList.remove('hidden');
-        }
-
-        titleElement.textContent = DISPLAY_NAMES[key] || "詳細情報";
-
-        if (key === 'create-band') {
-          const targetEventEl = document.getElementById('create-band-target-event');
-          if (targetEventEl) {
-            targetEventEl.textContent = `特定された最新イベント「${latestEventName || '最新イベント'}」へ自動追加されます。`;
-          }
-        }
-
-        overlay.classList.remove('hidden');
-        setTimeout(() => {
-          wrapper.classList.remove('translate-y-full');
-        }, 50);
-      } catch (e) {
-        console.error("Open fullscreen page error:", e);
-      }
-    }
-
-    function closeFullscreen() {
-      try {
-        const overlay = document.getElementById('fullscreen-container-overlay');
-        const wrapper = document.getElementById('fullscreen-pages-wrapper');
-
-        if (!overlay || !wrapper) return;
-
-        wrapper.classList.add('translate-y-full');
-        setTimeout(() => {
-          overlay.classList.add('hidden');
-        }, 300);
-      } catch (e) {
-        console.error("Close fullscreen page error:", e);
-      }
-    }
-
-    // ==========================================================================
-    // [PLATFORM EXTERNAL ACTIONS] 稼働状況に応じた外部・動的遷移処理
-    // ==========================================================================
-    function showPlatformDetail(platformName, statusKey) {
-      try {
-        if (statusKey === 'INSTAGRAM') {
-          showToast("Instagramを開きます...");
-          setTimeout(() => { window.open('https://www.instagram.com/c105_lmc/', '_blank'); }, 600);
-          return;
-        }
-        if (statusKey === 'TWITTER') {
-          showToast("X (Twitter) を開きます...");
-          setTimeout(() => { window.open('https://x.com/LMC_105', '_blank'); }, 600);
-          return;
-        }
-        if (statusKey === 'YOUTUBE') {
-          showToast("YouTubeを開きます...");
-          setTimeout(() => { window.open('https://www.youtube.com/@lmc1468', '_blank'); }, 600);
-          return;
-        }
-        if (statusKey === 'BACKSTAGE') {
-          showToast("裏方システムに接続中...");
-          setTimeout(() => { window.open('https://mypage.sorairosystem.com', '_blank'); }, 600);
-          return;
-        }
-
-        // 4/1年度自動判定付き年間予定表 PDFロード
-        if (statusKey === 'YEARLY') {
-          const currentDate = new Date();
-          const currentYear = currentDate.getFullYear();
-          const currentMonth = currentDate.getMonth() + 1;
-          const academicYear = (currentMonth >= 4) ? currentYear : (currentYear - 1);
-          
-          showToast("年間予定表を開きます...");
-          setTimeout(() => { 
-            window.open(`https://www.agu.ac.jp/pdf/graduate/graduate_class_schedule${academicYear}.pdf`, '_blank'); 
-          }, 600);
-          return;
-        }
-
-        openFullscreen('platform');
-        safeCreateIcons();
-      } catch (e) {
-        console.error("External navigation trigger error:", e);
-      }
-    }
-
-    // ==================== [NEWS & UTILITIES] ====================
-    function showNewsDetail(title, body) {
-      try {
-        DISPLAY_NAMES['news'] = title;
-        document.getElementById('news-date').textContent = "PUBLISHED: 2026.06.08";
-        document.getElementById('news-body').textContent = body;
-        openFullscreen('news');
-      } catch (e) {
-        console.error("Show news detail error:", e);
-      }
-    }
-
-    function showToast(message) {
-      try {
-        const toast = document.getElementById('toast-notification');
-        const msgSpan = document.getElementById('toast-message');
-        if (!toast || !msgSpan) return;
-        
-        msgSpan.textContent = message;
-        toast.className = "absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform translate-y-0 opacity-100 transition-all duration-300 flex items-center gap-3";
-        
-        setTimeout(() => {
-          toast.className = "absolute top-12 left-4 right-4 bg-gray-900/95 backdrop-blur-md text-white px-4 py-3 rounded-xl shadow-xl z-[200] transform -translate-y-28 opacity-0 transition-all duration-300 flex items-center gap-3";
-        }, 3000);
-      } catch (e) {
-        console.error("Toast notification error:", e);
-      }
-    }
-
-    // ==================== [PLAYLIST MOCK GENERATOR] ====================
-    function generatePlaylistMock() {
-      try {
-        const resultDiv = document.getElementById('playlist-result');
-        if (!resultDiv) return;
-        resultDiv.innerHTML = '';
-        resultDiv.classList.remove('hidden');
-
-        const favArtists = allArtists.filter(a => favorites.includes(a.id));
-        if (favArtists.length === 0) {
-          resultDiv.innerHTML = `
-            <div class="p-4 bg-red-50 border border-red-100 rounded-xl text-center text-xs font-bold text-red-600 shadow-sm">
-              マイバンドに登録したアーティストがまだありません。アーティスト一覧画面から追加してお試しください。
-            </div>
-          `;
-          return;
-        }
-
-        resultDiv.innerHTML = `
-          <div class="flex items-center justify-center gap-2 py-8 text-xs font-bold text-gray-400">
-            <div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-            <span>あなただけのセットリストを構築中...</span>
-          </div>
-        `;
-
-        setTimeout(() => {
-          resultDiv.innerHTML = `
-            <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2.5">GENERATED SOUND TRACKS</div>
-            <div class="space-y-2 max-h-60 overflow-y-auto no-scrollbar">
-              ${favArtists.map(a => {
-                let songName = "LIVE TRACK";
-                if (a.isFromFirestore && a.songs && a.songs.length > 0) {
-                  const firstSong = a.songs[0];
-                  if (typeof firstSong === 'object' && firstSong.title) {
-                    songName = firstSong.title;
-                  } else if (typeof firstSong === 'string') {
-                    songName = firstSong;
-                  }
-                }
-
-                return `
-                  <div class="p-3 bg-white rounded-xl flex items-center justify-between border border-gray-100 shadow-sm">
-                    <div class="flex items-center gap-3">
-                      <div class="w-8 h-8 rounded-lg bg-gray-900 text-[10px] text-yellow-400 flex items-center justify-center font-black shadow-sm">SP</div>
-                      <div>
-                        <div class="text-xs font-black text-gray-800">${a.name} - ${songName}</div>
-                        <div class="text-[9px] text-gray-400 uppercase font-bold tracking-tight">${a.stage}</div>
-                      </div>
-                    </div>
-                    <span class="text-[9px] text-gray-400 font-mono">03:45</span>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          `;
-          sendLocalNotification("プレイリスト作成完了", "マイバンド登録アーティストに基づくセットリストが構築されました。");
-        }, 1000);
-      } catch (e) {
-        console.error("Smart playlist engine error:", e);
-      }
-    }
-
-    // ==================== [INITIALIZATION] ====================
-    window.addEventListener('DOMContentLoaded', () => {
-      safeCreateIcons();
-      switchScreen('home');
-      
-      // Firebase初期化 ＆ リアルタイム監視
-      initFirebaseAndLoadBands();
-    });
-  </script>
-</body>
-</html>
+        if (!
