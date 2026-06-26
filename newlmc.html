@@ -17,7 +17,7 @@
   <!-- Google Fonts (Noto Sans JP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   
   <!-- Firebase Compat SDK (ブラウザ動作最適化) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -247,7 +247,7 @@
           </div>
         </section>
 
-        <!-- ニュースセクション -->
+        <!-- ニュースニュース -->
         <section class="mt-4 px-4">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-gray-900 tracking-tight">ニュース</h2>
@@ -556,7 +556,7 @@
                   <span>配信スケジュールは固定ですか？</span>
                 </div>
                 <div class="text-xs text-gray-500 mt-2 pl-6 leading-relaxed border-t border-gray-50 pt-2">
-                  A. 基本的に毎週火・木・土曜の21:00開始ですが、突発の配信やコラボイベント等が生じる場合がございます。最新スケジュールは「今後の予定」ページにて常時更新されます。
+                  A. ベーシックに毎週火・木・土曜の21:00開始ですが、突発の配信やコラボイベント等が生じる場合がございます。最新スケジュールは「今後の予定」ページにて常時更新されます。
                 </div>
               </div>
             </div>
@@ -717,7 +717,7 @@
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.8.0</span>
+                <span class="text-gray-400 font-mono">v2.8.1</span>
               </div>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
@@ -845,7 +845,7 @@
       "info": "インフォメーション",
       "schedule": "今後の予定",
       "rank": "ランク・特典",
-      "playlist": "プレイリストジェネレータ",
+      "playlist": "プレイリスト作成",
       "faq": "よくある質問",
       "others": "OTHERS",
       "notifications": "通知一覧",
@@ -1141,8 +1141,7 @@
 
         bandsUnsubscribe = db.collection("bands").onSnapshot(snapshot => {
           try {
-            let tempAllBands = [];
-            let latestBands = [];
+            firebaseBandsList = [];
             
             snapshot.forEach(doc => {
               const data = doc.data();
@@ -1242,7 +1241,6 @@
 
         img.src = a.image;
         name.textContent = a.name;
-        // 会場不問のため、ステージ名の記述は省く
         dateLabel.textContent = `出演日程: Day ${a.day} (${a.time})`;
         
         if (a.isArchived) {
@@ -1264,19 +1262,60 @@
         favBtn.className = `absolute top-4 right-4 w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center active:scale-90 transition-transform ${isFav ? 'text-red-500' : 'text-white'}`;
         favBtn.innerHTML = `<i data-lucide="heart" class="w-5 h-5 ${isFav ? 'fill-current' : ''}"></i>`;
 
-        membersList.innerHTML = '';
-        if (a.memberIds && a.memberIds.length > 0) {
-          a.memberIds.forEach((mem, index) => {
-            membersList.innerHTML += `
-              <li class="flex items-center gap-1.5 py-0.5">
-                <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                <span>メンバー ${index + 1}: <span class="font-bold text-gray-800">${mem}</span></span>
-              </li>
-            `;
-          });
-        } else {
-          membersList.innerHTML = `<li class="text-gray-400 italic text-[11px]">登録メンバー情報はありません</li>`;
-        }
+        // メンバーリストの非同期フェッチ処理（usersコレクションから本名とふりがなを引っ張る）
+        membersList.innerHTML = `
+          <li class="text-gray-400 py-2 flex items-center gap-2 text-xs font-bold animate-pulse">
+            <div class="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <span>メンバーの個人情報を同期中...</span>
+          </li>
+        `;
+
+        const db = firebase.firestore();
+        const memberFetchPromises = (a.memberIds || []).map(memberId => {
+          return db.collection("users").doc(memberId).get()
+            .then(doc => {
+              if (doc.exists) {
+                const data = doc.data();
+                return {
+                  id: memberId,
+                  name: data.name || "名前未設定",
+                  kana: data.kana || "",
+                  part: data.part || ""
+                };
+              } else {
+                // データベースにいない、またはドキュメントキーが異なる場合はIDをフォールバック
+                return { id: memberId, name: memberId, kana: "", part: "" };
+              }
+            })
+            .catch(err => {
+              console.error("Member fetch error:", memberId, err);
+              return { id: memberId, name: memberId, kana: "", part: "" };
+            });
+        });
+
+        Promise.all(memberFetchPromises).then(fetchedMembers => {
+          membersList.innerHTML = '';
+          if (fetchedMembers.length > 0) {
+            fetchedMembers.forEach((mem, index) => {
+              const kanaLabel = mem.kana ? `<span class="text-[9px] text-gray-400 font-normal">(${mem.kana})</span>` : '';
+              const partBadge = mem.part ? `<span class="ml-auto text-[8px] font-black bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded uppercase tracking-wider">${mem.part}</span>` : '';
+              
+              membersList.innerHTML += `
+                <li class="flex items-center gap-2 py-2 border-b border-gray-100/50 last:border-0 text-xs">
+                  <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full flex-shrink-0"></span>
+                  <div class="flex flex-col">
+                    <span class="font-bold text-gray-800">${mem.name} ${kanaLabel}</span>
+                    <span class="text-[8px] text-gray-400 font-mono mt-0.5">ID: ${mem.id}</span>
+                  </div>
+                  ${partBadge}
+                </li>
+              `;
+            });
+          } else {
+            membersList.innerHTML = `<li class="text-gray-400 italic text-xs">登録メンバー情報はありません</li>`;
+          }
+          safeCreateIcons();
+        });
 
         songsList.innerHTML = '';
         if (a.songs && a.songs.length > 0) {
@@ -1310,7 +1349,7 @@
     function requestNotificationPermission() {
       try {
         if (!("Notification" in window)) {
-          showToast("この端末 of ブラウザはプッシュ通知に対応していません。");
+          showToast("この端末のブラウザはプッシュ通知に対応していません。");
           return;
         }
         
@@ -1367,7 +1406,7 @@
     }
 
     // ==========================================================================
-    // [SCREEN SYSTEM] メイン画面表示の切り替え
+    // [SCREEN SYSTEM] メイン画面表示 of 切り替え
     // ==========================================================================
     function switchScreen(screenId) {
       try {
