@@ -17,7 +17,7 @@
   <!-- Google Fonts (Noto Sans JP) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap" rel="stylesheet">
   
   <!-- Firebase Compat SDK (ブラウザ動作最適化) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -288,7 +288,7 @@
             <button onclick="openFullscreen('create-band')" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform" aria-label="新規登録">
               <i data-lucide="plus" class="w-4.5 h-4.5"></i>
             </button>
-            <button onclick="toggleFavoriteFilter()" id="header-art-fav" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform">
+            <button onclick="setArtistFilterTab('favorites')" id="header-art-fav" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform">
               <i data-lucide="sliders-horizontal" class="w-4.5 h-4.5"></i>
             </button>
             <button onclick="focusSearch()" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-90 transition-transform">
@@ -717,7 +717,7 @@
               <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-1">アプリ情報</h4>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700">
                 <span>バージョン</span>
-                <span class="text-gray-400 font-mono">v2.8.1</span>
+                <span class="text-gray-400 font-mono">v2.8.2</span>
               </div>
               <div class="flex justify-between items-center text-xs font-bold text-gray-700 pt-2.5 border-t border-gray-50">
                 <span>デベロッパー</span>
@@ -797,7 +797,7 @@
                 <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100/50">
                   <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
                     <i data-lucide="users" class="w-3.5 h-3.5"></i>
-                    所属メンバーID
+                    所属メンバー
                   </h4>
                   <ul id="band-detail-members-list" class="space-y-1.5 text-xs font-mono text-gray-600">
                     <!-- 動的にリスト挿入 -->
@@ -825,38 +825,6 @@
   </div>
 
   <script>
-    // ==========================================================================
-    // [FIREBASE CONFIGURATION] Firebase構成 - 起動時マウント用の変数定義を先頭に固定化
-    // ==========================================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
-      authDomain: "urakata-app.firebaseapp.com",
-      projectId: "urakata-app",
-      storageBucket: "urakata-app.firebasestorage.app",
-      messagingSenderId: "407777765696",
-      appId: "1:407777765696:web:045c2d94729022b4eab2a5",
-      measurementId: "G-9ZRMD26XNJ"
-    };
-
-    // ==========================================================================
-    // [UI CONFIGURATION] UI表示名マッピング
-    // ==========================================================================
-    const DISPLAY_NAMES = {
-      "info": "インフォメーション",
-      "schedule": "今後の予定",
-      "rank": "ランク・特典",
-      "playlist": "プレイリスト作成",
-      "faq": "よくある質問",
-      "others": "OTHERS",
-      "notifications": "通知一覧",
-      "settings": "アプリ設定",
-      "platform": "SNS",
-      "account": "アカウント情報",
-      "news": "ニュース詳細",
-      "create-band": "新規バンド登録",
-      "band-detail": "バンド詳細情報"
-    };
-
     // ==========================================================================
     // [STATE] アプリケーションの状態管理 (マイバンド管理対応)
     // ==========================================================================
@@ -1141,6 +1109,9 @@
 
         bandsUnsubscribe = db.collection("bands").onSnapshot(snapshot => {
           try {
+            // 変数宣言の漏れを完璧に修復
+            let tempAllBands = [];
+            let latestBands = [];
             firebaseBandsList = [];
             
             snapshot.forEach(doc => {
@@ -1156,7 +1127,6 @@
 
               const assignedDay = parseInt(data.day, 10) || 1;
 
-              // 日付表現ラベル
               let dateStrLabel = latestEventName;
               if (eventDates[assignedDay - 1]) {
                 dateStrLabel = formatDateLabel(eventDates[assignedDay - 1], 'dot');
@@ -1182,7 +1152,7 @@
               }
             });
 
-            // フォールバック
+            // フォールバック救済処理
             if (latestBands.length > 0) {
               firebaseBandsList = latestBands;
               const subHeader = document.getElementById("artist-header-event-sub");
@@ -1283,7 +1253,6 @@
                   part: data.part || ""
                 };
               } else {
-                // データベースにいない、またはドキュメントキーが異なる場合はIDをフォールバック
                 return { id: memberId, name: memberId, kana: "", part: "" };
               }
             })
@@ -1399,10 +1368,6 @@
       } catch (e) {
         console.error("Debug push trigger error:", e);
       }
-    }
-
-    function toggleNotificationConfig(configName) {
-      sendLocalNotification("設定変更", configName + "の通知設定を変更しました。");
     }
 
     // ==========================================================================
