@@ -547,7 +547,7 @@
                   <span>ファンクラブに入会するには？</span>
                 </div>
                 <div class="text-xs text-gray-500 mt-2 pl-6 leading-relaxed border-t border-gray-50 pt-2">
-                  A. リンク集（OTHERS）にある公式オンラインサロン、またはPocochaのアプリ内にてコアメンバー登録をしていただくことで入会が完了します。
+                  A. リンク集（OTHERS）にある公式オンラインサロン、またはPococha of アプリ内にてコアメンバー登録をしていただくことで入会が完了します。
                 </div>
               </div>
               <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
@@ -794,14 +794,14 @@
                 </div>
 
                 <!-- メンバーリスト -->
-                <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100/50">
-                  <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <div class="space-y-2.5">
+                  <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5 pl-1">
                     <i data-lucide="users" class="w-3.5 h-3.5"></i>
                     所属メンバー
                   </h4>
-                  <ul id="band-detail-members-list" class="space-y-1.5 text-xs font-mono text-gray-600">
-                    <!-- 動的にリスト挿入 -->
-                  </ul>
+                  <div id="band-detail-members-list" class="space-y-2">
+                    <!-- 動的にカード挿入 -->
+                  </div>
                 </div>
 
                 <!-- 持ち曲・楽曲一覧 -->
@@ -1266,10 +1266,10 @@
 
         // メンバーリストの非同期フェッチ処理（usersコレクションから本名とふりがなを引っ張る）
         membersList.innerHTML = `
-          <li class="text-gray-400 py-2 flex items-center gap-2 text-xs font-bold animate-pulse">
+          <div class="text-gray-400 py-4 flex items-center gap-2 text-xs font-bold animate-pulse pl-1">
             <div class="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
             <span>メンバーの個人情報を同期中...</span>
-          </li>
+          </div>
         `;
 
         const db = firebase.firestore();
@@ -1282,38 +1282,57 @@
                   id: memberId,
                   name: data.name || "名前未設定",
                   kana: data.kana || "",
-                  part: data.part || ""
+                  part: data.part || "",
+                  icon: data.icon || "",
+                  faculty: data.faculty || "",
+                  year: data.year || ""
                 };
               } else {
-                return { id: memberId, name: memberId, kana: "", part: "" };
+                return { id: memberId, name: memberId, kana: "", part: "", icon: "", faculty: "", year: "" };
               }
             })
             .catch(err => {
               console.error("Member fetch error:", memberId, err);
-              return { id: memberId, name: memberId, kana: "", part: "" };
+              return { id: memberId, name: memberId, kana: "", part: "", icon: "", faculty: "", year: "" };
             });
         });
 
         Promise.all(memberFetchPromises).then(fetchedMembers => {
           membersList.innerHTML = '';
           if (fetchedMembers.length > 0) {
-            fetchedMembers.forEach((mem, index) => {
-              const kanaLabel = mem.kana ? `<span class="text-[9px] text-gray-400 font-normal">(${mem.kana})</span>` : '';
-              const partBadge = mem.part ? `<span class="ml-auto text-[8px] font-black bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded uppercase tracking-wider">${mem.part}</span>` : '';
+            fetchedMembers.forEach((mem) => {
+              // アバターの取得（存在しなければデフォルトプレースホルダーアイコンを表示）
+              const avatarHtml = mem.icon 
+                ? `<img src="${mem.icon}" class="w-10 h-10 rounded-full object-cover flex-shrink-0 border border-gray-100 shadow-sm" alt="AVATAR">`
+                : `<div class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 flex-shrink-0 shadow-sm"><i data-lucide="user" class="w-5 h-5"></i></div>`;
+
+              const kanaLabel = mem.kana ? `<span class="text-[9px] text-gray-400 font-medium leading-none mt-1 block">${mem.kana}</span>` : '';
               
+              const partBadge = mem.part 
+                ? `<span class="text-[9px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-full uppercase tracking-wider flex-shrink-0">${mem.part}</span>` 
+                : '';
+
+              const schoolInfo = (mem.faculty || mem.year)
+                ? `<p class="text-[9px] text-gray-400 font-bold mt-1 tracking-tight leading-none">${mem.year ? mem.year + '年 / ' : ''}${mem.faculty || ''}</p>`
+                : '';
+
+              // IDテキストは排除し、ホーム画面のカードデザイン（standard-card）に寄せる
               membersList.innerHTML += `
-                <li class="flex items-center gap-2 py-2 border-b border-gray-100/50 last:border-0 text-xs">
-                  <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full flex-shrink-0"></span>
-                  <div class="flex flex-col">
-                    <span class="font-bold text-gray-800">${mem.name} ${kanaLabel}</span>
-                    <span class="text-[8px] text-gray-400 font-mono mt-0.5">ID: ${mem.id}</span>
+                <div class="p-3 standard-card flex items-center gap-3 hover:bg-gray-50/50 transition-colors">
+                  ${avatarHtml}
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-1.5 flex-wrap">
+                      <span class="text-xs font-black text-gray-800 leading-none">${mem.name}</span>
+                    </div>
+                    ${kanaLabel}
+                    ${schoolInfo}
                   </div>
                   ${partBadge}
-                </li>
+                </div>
               `;
             });
           } else {
-            membersList.innerHTML = `<li class="text-gray-400 italic text-xs">登録メンバー情報はありません</li>`;
+            membersList.innerHTML = `<div class="p-4 bg-white border border-gray-100 rounded-2xl text-center text-xs text-gray-400">登録メンバー情報はありません</div>`;
           }
           safeCreateIcons();
         });
@@ -1407,7 +1426,7 @@
     }
 
     // ==========================================================================
-    // [SCREEN SYSTEM] メイン画面表示 of 切り替え
+    // [SCREEN SYSTEM] メイン画面表示の切り替え
     // ==========================================================================
     function switchScreen(screenId) {
       try {
@@ -1558,7 +1577,7 @@
             </div>
             <div class="py-2.5 px-2">
               <h3 class="text-xs font-black text-gray-900 leading-tight mb-1 line-clamp-1">${a.name}</h3>
-              <p class="text-[9px] font-bold text-indigo-500 leading-none mb-1">${dayLabel}</p>
+              <p class="text-[9px] font-bold text-gray-400 leading-none mb-1">${dayLabel}</p>
             </div>
           `;
           container.appendChild(card);
