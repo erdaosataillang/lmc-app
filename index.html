@@ -1207,6 +1207,19 @@
             let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:12px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
             list.innerHTML = h;
         }
+        async function loadUserList(id, exclude=[]) {
+            const list = document.getElementById(id); list.innerHTML = "読込中...";
+            const snap = await getDocs(collection(db, "users")); list.innerHTML = "";
+            snap.forEach(d => {
+                if(d.id === currentUser || exclude.includes(d.id)) return;
+                const u = d.data();
+                const div = document.createElement('div'); div.className = 'member-option';
+                div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; };
+                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${u.icon||''}" style="width:28px;height:28px;border-radius:50%;margin:0 10px;">${u.name}`;
+                div.dataset.uid = d.id; div.dataset.uname = u.name;
+                list.appendChild(div);
+            });
+        }
     
         // --- 招待ロジック ---
         window.shareBandInvite = async (bid, bn) => {
