@@ -5,26 +5,40 @@
     <title>LMC Mobile - マイバンド</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Cropper.js (画像切り抜き用) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
+        /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
         body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        
+        /* ボトムナビの分だけpaddingをあけてかぶらないようにする */
         .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; } 
         .hidden { display: none !important; }
         
+        /* ヘッダー */
         .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
         .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         
+        /* 役職リング演出 */
+        .ring-sound { background: #1a73e8; box-shadow: 0 0 5px rgba(26,115,232,0.5); } 
+        .ring-light { background: #fa7b17; box-shadow: 0 0 5px rgba(250,123,23,0.5); }
+        .ring-stage { background: #34A853; box-shadow: 0 0 5px rgba(52,168,83,0.5); } 
+        .ring-video { background: #EA4335; box-shadow: 0 0 5px rgba(234,67,53,0.5); }
+        .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); }
+        .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
+
+        /* スライダー・リスト領域 */
         .scroll-content { flex-grow: 1; overflow: hidden; position: relative; display: flex; flex-direction: column; }
         .band-slider { display: flex; width: 100%; transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); height: 100%; }
         
-        /* 2カラムグリッド・スクロール設定 */
-        .band-slide { width: 100%; height: 100%; padding: 12px 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 120px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start; -webkit-overflow-scrolling: touch; }
+        /* 2カラムグリッドに変更 */
+        .band-slide { width: 100%; height: 100%; padding: 12px 16px; box-sizing: border-box; flex-shrink: 0; overflow-y: auto; padding-bottom: 120px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start; }
 
-        /* カードデザイン (画像重視・2カラム用) */
-        .card.band-card { background: white; border-radius: 20px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); position: relative; overflow: hidden; display: flex; flex-direction: column; height: fit-content; } 
+        /* カードデザイン (画像重視のグリッド用) */
+        .card.band-card { background: white; border-radius: 20px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 0; position: relative; overflow: hidden; display: flex; flex-direction: column; } 
         .card.band-card:active { filter: brightness(0.95); }
         .band-card-img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: #f1f3f4; }
         .band-card-content { padding: 10px; }
@@ -32,21 +46,90 @@
         .band-date { font-size: 12px; color: #5f6368; }
         .like-icon { position: absolute; top: 8px; right: 8px; color: white; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3)); font-size: 24px; z-index: 5; }
 
-        .band-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: absolute; bottom: 12px; left: 16px; overflow-x: auto; max-width: calc(100% - 100px); } 
-        .band-tab { flex: 0 0 auto; min-width: 60px; text-align: center; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; } 
+        /* イベント選択タブ */
+        .band-tabs { display: inline-flex; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 24px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); flex-shrink: 0; z-index: 10; position: absolute; bottom: 12px; left: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: calc(100% - 100px); } 
+        .band-tab { flex: 0 0 auto; min-width: 60px; text-align: center; padding: 8px 16px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; color: #5f6368; transition: all 0.3s ease; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } 
         .band-tab.active { background: #ffffff; color: #0b57d0; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
 
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; }
-        .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s; background-color: transparent; } 
+        /* ナビゲーション */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
         .nav-item.active { color: #1f1f1f; transform: translateY(-4px); }
-        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; padding: 4px 20px; box-shadow: 0 4px 12px rgba(194, 231, 255, 0.6); } 
+        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; padding: 4px 20px; box-shadow: 0 4px 12px rgba(194, 231, 255, 0.6); transform: scale(1.05); margin-bottom: 0; } 
+        .nav-item#nav-admin.active .nav-icon { background-color: #ffd8e4; color: #31111d; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); } 
+        .nav-item.active span:not(.nav-icon) { font-weight: bold; }
 
-        .fab-container { position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; }
-        .fab { width: 52px; height: 52px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; z-index: 902; }
+        /* FAB コンテナとスピードダイヤル */
+        .fab-container { position: absolute; bottom: calc(120px + env(safe-area-inset-bottom, 0px)); right: 20px; z-index: 901; display: flex; flex-direction: column; align-items: flex-end; pointer-events: none; }
+        .fab-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); z-index: 900; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+        .fab-overlay.open { opacity: 1; visibility: visible; }
+        
+        .fab { width: 52px; height: 52px; border-radius: 50%; background: #c2e7ff; color: #001d35; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.3s; z-index: 902; pointer-events: auto; }
+        .fab.open { transform: rotate(135deg); background: white; color: #d93025; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+        .fab-menu { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; margin-bottom: 16px; pointer-events: none; }
+        .fab-menu-item { display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(20px) scale(0.8); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+        .fab-menu.open .fab-menu-item { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        .fab-menu.open .fab-menu-item:nth-child(2) { transition-delay: 0.05s; }
+        .fab-menu.open .fab-menu-item:nth-child(1) { transition-delay: 0.1s; }
+
+        .fab-menu-label { background: white; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: bold; color: #1f1f1f; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; }
+        .fab-menu-btn { width: 44px; height: 44px; border-radius: 50%; background: white; color: #0b57d0; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer; }
+        .fab-menu-btn:active { background: #f0f0f0; }
+
+        /* ボタン・フォーム系 */
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
+        .btn-secondary { background: #f1f3f4; color: #1f1f1f; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-danger { background: #fee2e2; color: #d93025; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; margin-top: 8px; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-weight: bold; }
+        
+        .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
+        .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; animation: zoomIn 0.2s ease; margin: auto; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #1f1f1f; }
+        .dialog-message { font-size: 13px; color: #444746; margin-bottom: 24px; line-height: 1.5; white-space: pre-wrap; }
+        .dialog-buttons { display: flex; gap: 12px; }
+        
+        .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
+
+        /* メンバー・通知リスト */
+        .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
+        .member-option.selected { background: #e8f0fe; }
+        .member-row-rich { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f0f0f0; transition: background-color 0.2s; cursor: pointer; } 
+        .member-row-rich:active { background-color: #f8f9fa; }
+        .member-avatar-small { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; }
+        .member-name-rich { font-size: 14px; font-weight: bold; color: #1f1f1f; } .member-role-badge { font-size: 9px; background: #e8f0fe; color: #0b57d0; padding: 2px 6px; border-radius: 8px; margin-left: 6px; }
+        .stat-badge { background: #f8f9fa; padding: 6px 12px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; border: 1px solid #eee; flex: 1; }
+        .stat-value { font-size: 14px; font-weight: bold; color: #0b57d0; } .stat-label { font-size: 9px; color: #5f6368; font-weight: bold; }
+        
+        .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
+        .notification-badge { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background: #d93025; border-radius: 50%; border: 2px solid white; display: none; }
+        .notification-badge.show { display: block; }
+        .notif-icon-box { width: 40px; height: 40px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
+        .notif-icon-box.warning { background: #fce8e6; color: #d93025; }
+        .notification-item { padding: 20px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
+        .notification-item.clickable { cursor: pointer; }
+        .auth-code-input { letter-spacing: 4px; text-align: center; font-size: 24px; font-weight: bold; }
+        .fee-status-badge { flex: 1; padding: 10px; border-radius: 12px; font-size: 13px; font-weight: bold; text-align: center; } .fee-paid { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; } .fee-unpaid { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* 全画面画像ビューア */
+        #fullscreen-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
+        #fullscreen-viewer.open { display: flex; opacity: 1; }
+        #fullscreen-img { max-width: 100%; max-height: 80vh; object-fit: contain; }
+        .viewer-close-btn { position: absolute; top: env(safe-area-inset-top, 20px); right: 20px; color: white; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
     </style>
 </head>
 <body>
+    <!-- カスタムダイアログ -->
     <div id="modal-custom-dialog" class="modal-overlay" style="align-items: center; z-index: 10000;">
         <div class="dialog-content" style="background:white; width:85%; max-width:320px; border-radius:24px; padding:24px; text-align:center;">
             <div id="dialogTitle" style="font-weight:bold; font-size:16px; margin-bottom:12px;">確認</div>
@@ -58,52 +141,1330 @@
         </div>
     </div>
 
+    <!-- メンバープロフィールポップアップ -->
+    <div id="modal-member-profile" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-member-profile')" style="z-index: 9500; align-items: center;">
+        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff; max-width: 320px; border-radius: 24px; margin: auto; animation: zoomIn 0.2s ease;">
+            <!-- ヘッダー画像 -->
+            <div id="profileModalHeaderBg" style="height: 100px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
+                <button onclick="closeModal('modal-member-profile')" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 16px;">close</span></button>
+            </div>
+            
+            <div style="padding: 0 20px 24px;">
+                <!-- インスタ風レイアウト -->
+                <div style="display: flex; margin-top: -30px; position: relative; z-index: 2;">
+                    <!-- 左側：アイコン -->
+                    <div style="flex-shrink: 0;">
+                        <img id="profileModalIcon" src="" style="width: 76px; height: 76px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    </div>
+                    
+                    <!-- 右側：名前とスタッツ -->
+                    <div style="flex: 1; padding-left: 16px; padding-top: 36px; display: flex; flex-direction: column; justify-content: flex-start;">
+                        <!-- 名前 -->
+                        <div id="profileModalName" style="font-weight: 800; font-size: 18px; color: #1f1f1f; margin-bottom: 2px;"></div>
+                        <div id="profileModalSub" style="font-size: 12px; color: #5f6368; margin-bottom: 12px;"></div>
+                        
+                        <!-- スタッツ（バンド数・いいね） -->
+                        <div style="display: flex; gap: 20px;">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div id="profileModalBandCount" style="font-weight: 800; font-size: 16px; color: #1f1f1f;">-</div>
+                                <div style="font-size: 11px; color: #536471;">バンド</div>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <div id="profileModalLikeCount" style="font-weight: 800; font-size: 16px; color: #1f1f1f;">0</div>
+                                <div style="font-size: 11px; color: #536471;">いいね</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display:flex; gap: 8px; flex-wrap: wrap; margin-top: 16px;" id="profileModalBadges">
+                    <!-- バッジ領域 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 画像切り抜きモーダル -->
+    <div id="modal-crop" class="modal-overlay" style="z-index: 9500;">
+        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column; padding: 16px;">
+            <h3 style="margin-top:0; font-size:18px; margin-bottom: 16px;">画像の切り抜き</h3>
+            <div style="font-size:12px; color:#5f6368; margin-bottom:8px; text-align:center;">ピンチイン・ピンチアウトで拡大縮小や移動ができます</div>
+            <div style="flex-grow: 1; min-height: 300px; max-height: 50vh; background: #000; border-radius: 12px; overflow: hidden; position: relative;">
+                <img id="crop-image-target" src="" style="display: block; max-width: 100%;">
+            </div>
+            <div style="display:flex; gap:12px; margin-top: 16px;">
+                <button class="btn-secondary" style="margin:0; flex:1;" onclick="cancelCrop()">キャンセル</button>
+                <button class="btn-primary" id="btn-confirm-crop" style="margin:0; flex:1;" onclick="confirmCrop()">決定</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
+        <!-- ヘッダー -->
         <div class="app-header">
-            <div class="header-title">マイバンド <span id="displayActiveEvent" style="display:none; font-size:10px; font-weight:bold; background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; margin-left:4px;"></span></div>
-            <div class="header-avatar" id="headerIconBands"></div>
+            <div class="header-title">
+                マイバンド
+                <span id="displayActiveEvent" style="display:none; font-size:10px; font-weight:bold; background:#fff3e0; color:#e65100; padding:2px 8px; border-radius:12px; margin-left:4px;"></span>
+            </div>
+            <div class="header-right" style="display:flex; align-items:center; gap:16px;">
+                <div class="notification-btn" onclick="openNotificationModal()">
+                    <span class="material-icons" style="color:#5f6368;">notifications</span>
+                    <span class="notification-badge" id="headerNotifBadge"></span>
+                </div>
+                <div class="header-avatar" id="headerIconBands"></div>
+            </div>
         </div>
 
+        <!-- メインコンテンツ（スライダー） -->
         <div class="scroll-content">
-            <div id="bandSlider" class="band-slider"></div>
-            <div class="band-tabs" id="bandTabs"></div>
+            <div id="bandSlider" class="band-slider">
+                <!-- JSで動的に生成 -->
+            </div>
+            
+            <!-- イベント選択タブ -->
+            <div class="band-tabs" id="bandTabs">
+                <div class="band-tab active">読み込み中...</div>
+            </div>
         </div>
         
+        <!-- アニメーション付き FAB -->
+        <div id="fab-overlay" class="fab-overlay" onclick="toggleFabMenu()"></div>
         <div class="fab-container">
+            <div class="fab-menu" id="fabMenu">
+                <div class="fab-menu-item" onclick="openEventRegisterModal()">
+                    <span class="fab-menu-label">既存バンドをイベントに登録</span>
+                    <div class="fab-menu-btn"><span class="material-icons">event_available</span></div>
+                </div>
+                <div class="fab-menu-item" onclick="openBandModal()">
+                    <span class="fab-menu-label">新しいバンドを結成</span>
+                    <div class="fab-menu-btn"><span class="material-icons">group_add</span></div>
+                </div>
+            </div>
             <div class="fab" id="mainFab" onclick="toggleFabMenu()">
                 <span class="material-icons">add</span>
             </div>
         </div>
     </div>
 
-    <!-- 必要最低限のスクリプト構造 (動的なバンドレンダリング部) -->
+    <!-- ボトムナビゲーション -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
+        <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
+        <div class="nav-item hidden" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
+        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
+        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
+    </div>
+
+    <!-- モーダル群 -->
+    <!-- 出演登録 -->
+    <div id="modal-event-register" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-event-register')">
+        <div class="modal-content" style="padding: 24px;">
+            <h3 style="margin-top:0; font-size: 18px;">イベントに出演登録</h3>
+            <div class="form-group">
+                <label class="form-label">出演するイベント</label>
+                <select id="selectRegisterEvent" class="form-input"></select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">登録するバンド</label>
+                <select id="selectRegisterBand" class="form-input"></select>
+            </div>
+            <button class="btn-primary" onclick="saveEventRegistration()">登録する</button>
+            <button class="btn-secondary" onclick="closeModal('modal-event-register')">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- バンド作成 -->
+    <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
+        <div class="modal-content" style="padding: 24px;">
+            <h3 style="margin-top:0; font-size: 18px;">バンド結成</h3>
+            <div class="image-picker-area">
+                <div class="image-picker" onclick="document.getElementById('bandIconInput').click()">
+                    <span class="material-icons">add_a_photo</span>
+                    <img id="previewBandIcon" class="hidden" src="">
+                </div>
+                <input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')">
+            </div>
+            <div class="form-group">
+                <label class="form-label">バンド名</label>
+                <input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム">
+            </div>
+            <div class="form-group">
+                <label class="form-label">出演するイベント</label>
+                <select id="selectNewBandEvent" class="form-input"></select>
+                <div id="newBandEventHelp" style="font-size:11px; color:#d93025; margin-top:8px; display:none;">※イベントを指定しない場合、このバンドは「アーカイブ」タブに表示されます。</div>
+            </div>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px; text-align:center;">バンドを作成し、メンバーに招待リンクを送信します。</p>
+            <button class="btn-primary" onclick="saveBand()">作成して招待リンクを発行</button>
+            <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- 招待確認モーダル -->
+    <div id="modal-invite-confirm" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-invite-confirm')">
+        <div class="modal-content" style="padding: 32px 24px; text-align: center;">
+            <div style="width: 72px; height: 72px; border-radius: 50%; background: #e8f0fe; display: flex; justify-content: center; align-items: center; margin: 0 auto 16px; box-shadow: 0 4px 12px rgba(11, 87, 208, 0.1);">
+                <span class="material-icons" style="font-size: 36px; color: #0b57d0;">group_add</span>
+            </div>
+            <h3 style="margin-top:0; margin-bottom: 8px; font-size: 20px; font-weight: 800; color: #1f1f1f;" id="inviteBandNameTitle"></h3>
+            <p style="font-size:14px; color:#536471; margin-bottom:32px; line-height: 1.5;">このバンドから招待が届いています。<br>参加しますか？</p>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <button class="btn-primary" id="btnAcceptInvite" style="padding: 14px;">参加する</button>
+                <button class="btn-secondary" id="btnHoldInvite" style="margin-top:0; padding: 14px; background: #f1f3f4; color: #536471;">保留</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- バンド詳細 -->
+    <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
+        <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
+            <div class="band-detail-header" style="background: white; padding: 20px; border-bottom: 1px solid #f0f0f0; position: relative; text-align:center;">
+                <button onclick="closeModal('modal-band-detail')" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.05); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px; color: #5f6368;">close</span></button>
+                <div style="margin: 16px auto 8px; position: relative; width: 80px; height: 80px;">
+                    <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0;">
+                        <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                    </div>
+                    <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><span class="material-icons" style="font-size: 14px;">edit</span></div>
+                    <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
+                </div>
+                <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 18px; font-weight: bold; border: none; background: transparent; width: 100%; text-align:center; color: #1f1f1f;">
+                <div style="display: flex; gap: 8px; justify-content:center; margin-top:12px;">
+                    <div class="stat-badge"><span class="stat-value" id="stat-booking-count">--</span><span class="stat-label">演奏回数</span></div>
+                    <div class="stat-badge"><span class="stat-value" id="stat-song-count">--</span><span class="stat-label">演奏曲数</span></div>
+                </div>
+                <button class="btn-outline" id="btnInviteInModal" style="margin-top:16px;"><span class="material-icons" style="font-size:14px;">share</span> 招待リンクを送信</button>
+            </div>
+            <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
+                <input type="hidden" id="detailBandId">
+                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top: 0;">メンバー</h4>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div id="detailMemberList"></div>
+                    <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:13px; padding:12px; border-top:1px solid #f0f0f0; margin-top:0;" onclick="openAddMemberModal()">＋ メンバーを追加</button>
+                </div>
+                
+                <!-- 統合されたCueシートセクション -->
+                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">Cueシート</h4>
+                <div class="card" style="padding: 16px; text-align: center; overflow: hidden;">
+                    <div id="detailCuesheetContent" class="hidden">
+                        <img id="detailCuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; max-height: 200px; object-fit: contain; border-radius:12px; border: 1px solid #f0f0f0; cursor: pointer;" onclick="openFullscreenViewer(this.src)">
+                        <div style="margin-top:8px; font-size:11px; color:#5f6368; font-weight:bold; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                            <span class="material-icons" style="font-size:14px;">zoom_in</span> タップで全画面表示
+                        </div>
+                    </div>
+                    <div id="detailCuesheetEmpty" style="padding: 12px 0;">
+                        <div style="font-size:13px; color:#999; margin-bottom:8px;">Cueシートは未登録です</div>
+                    </div>
+                    <div id="cueUploadArea" class="hidden">
+                        <input type="file" id="detailCueUploadInput" accept="image/*" hidden onchange="handleCueImageUpload(this)">
+                        <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="margin-top: 8px; border: 1px solid #dadce0; background: white;">
+                            <span class="material-icons" style="font-size: 16px; margin-right: 4px;">upload_file</span> 画像を登録・更新
+                        </button>
+                    </div>
+                </div>
+
+                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">演奏曲</h4>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div id="bandSongsList"></div>
+                    <div id="bandSongAddArea" class="hidden" style="display:flex; padding:8px; gap:8px; background:#fff; border-top:1px solid #f0f0f0;">
+                        <input type="text" id="inputNewSong" class="form-input" style="padding:8px; font-size:13px; flex:1;" placeholder="曲名を入力...">
+                        <button class="btn-primary" style="width:auto; padding:0 16px; font-size:12px;" onclick="addSongToBand()">追加</button>
+                    </div>
+                </div>
+
+                <div id="bandBookingsArea" style="margin-top:16px;">
+                    <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px;">直近の履歴</h4>
+                    <div class="card" style="padding:0;"><div id="adminBandBookingsList"></div></div>
+                </div>
+
+                <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
+                    <button class="btn-primary" onclick="updateBandName()">バンド名を保存</button>
+                    <div style="display:flex; gap:8px;">
+                        <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0;" onclick="archiveBand()">アーカイブ</button>
+                        <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0;" onclick="restoreBand()">復元</button>
+                        <button class="btn-danger" style="flex:1; margin:0;" onclick="deleteBand()">解散</button>
+                    </div>
+                </div>
+                <div id="bandMemberActions" class="hidden" style="margin-top:16px;"><button class="btn-danger" onclick="leaveBand()" style="width:100%;">バンドを脱退する</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知モーダル -->
+    <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
+        <div class="modal-content" style="padding: 0;">
+            <h3 style="margin-top:0; padding: 24px 24px 10px; font-size: 18px; border-bottom: 1px solid #f0f0f0;">通知</h3>
+            <div id="notificationList" style="max-height:60vh; overflow-y:auto; padding-bottom: 20px;"></div>
+            <div style="padding: 16px 24px;">
+                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-notification')">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Twitter(X)風 マイステータスモーダル -->
+    <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
+        <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
+            <!-- ヘッダー画像 -->
+            <div id="modalHeaderBg" style="height: 120px; background: linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%); background-size: cover; background-position: center; position: relative;">
+                <!-- ヘッダー画像変更ボタン -->
+                <button onclick="document.getElementById('headerImageInput').click()" style="position: absolute; top: 16px; left: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;">
+                    <span class="material-icons" style="font-size: 16px;">add_a_photo</span>
+                </button>
+                <input type="file" id="headerImageInput" accept="image/*" hidden onchange="handleHeaderImageEdit(this)">
+
+                <button onclick="closeModal('modal-user-status')" style="position: absolute; top: 16px; right: 16px; background: rgba(0,0,0,0.4); color: white; border: none; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10;"><span class="material-icons" style="font-size: 18px;">close</span></button>
+            </div>
+            
+            <div style="padding: 0 16px 20px;">
+                <!-- アイコン -->
+                <div style="display: flex; margin-top: -40px; margin-bottom: 12px;">
+                    <img id="modalUserIcon" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid white; background: white; object-fit: cover; position: relative; z-index: 2;">
+                </div>
+                
+                <!-- 名前と @ID (アイコンの下) -->
+                <div>
+                    <div id="modalUserName" style="font-weight: 800; font-size: 22px; color: #0f1419; line-height: 1.2; word-wrap: break-word;"></div>
+                    <div id="modalUserLineName" style="font-size: 15px; color: #536471; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+                </div>
+
+                <!-- バンド数といいね -->
+                <div style="display: flex; gap: 24px; margin-top: 16px;">
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <div id="modalUserBandCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
+                        <div style="font-size: 12px; color: #536471;">バンド</div>
+                    </div>
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <div id="modalUserLikeCount" style="font-weight: 800; font-size: 18px; color: #1f1f1f;">0</div>
+                        <div style="font-size: 12px; color: #536471;">いいね</div>
+                    </div>
+                </div>
+
+                <!-- 部費状況 -->
+                <div style="background:#f9f9f9; padding:16px; border-radius:16px; margin-top: 24px;">
+                    <div style="font-size:12px; color:#536471; margin-bottom:8px; font-weight:bold;">2026年度 部費状況</div>
+                    <div style="display:flex; gap:10px;">
+                        <div id="statusFeeTerm1" class="fee-status-badge">前期: -</div>
+                        <div id="statusFeeTerm2" class="fee-status-badge">後期: -</div>
+                    </div>
+                </div>
+                
+                <!-- QRコード -->
+                <div style="margin-top: 24px; text-align: center;">
+                    <div style="font-size: 13px; color: #536471; margin-bottom: 12px; font-weight: bold;">会員QRコード</div>
+                    <div id="myQRCodeArea" style="width:120px; height:120px; margin:0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- メール認証 -->
+    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
+        <div class="modal-content" style="padding: 24px;">
+            <div id="email-step-1">
+                <h3 style="font-size: 18px; margin-top:0;">メールアドレス登録</h3>
+                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
+                <div class="form-group">
+                    <label class="form-label">アドレス</label>
+                    <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
+                </div>
+                <button class="btn-primary" onclick="sendAuthCode()">認証コード送信</button>
+                <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
+            </div>
+            <div id="email-step-2" class="hidden">
+                <h3 style="font-size: 18px; margin-top:0;">認証コード入力</h3>
+                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">メールの6桁の数字を入力してください。</p>
+                <div class="form-group">
+                    <input type="number" id="inputAuthCode" class="form-input auth-code-input" placeholder="000000" maxlength="6">
+                </div>
+                <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
+                <button class="btn-secondary" onclick="backToEmailInput()">戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メンバー追加モーダル -->
+    <div id="modal-add-member" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-add-member')">
+        <div class="modal-content" style="padding: 24px;">
+            <h3 style="margin-top:0; font-size: 18px;">メンバーを追加</h3>
+            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">追加したいメンバーを選択してください。</p>
+            <div class="form-group">
+                <div class="member-select-list" id="addMemberSelectList"></div>
+            </div>
+            <button class="btn-primary" onclick="saveAddedMembers()">追加する</button>
+            <button class="btn-secondary" onclick="closeModal('modal-add-member')">キャンセル</button>
+        </div>
+    </div>
+
+    <!-- 全画面画像ビューア -->
+    <div id="fullscreen-viewer">
+        <button class="viewer-close-btn" onclick="closeFullscreenViewer()"><span class="material-icons">close</span></button>
+        <img id="fullscreen-img" src="">
+        <div style="color: white; margin-top: 20px; font-size: 14px; font-weight: bold;">
+            ピンチアウトで拡大できます
+        </div>
+    </div>
+
     <script type="module">
-        // ...既存のFirestore設定等のコードは維持...
-        // 重要なのは renderBandList の createCard 部分
-        
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, limit, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, updateProfile, updateEmail } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
+        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+
+        // キャッシュキー
+        const CACHE_KEY_USER = 'lmc_user_cache';
+        const CACHE_KEY_BANDS = 'lmc_bands_cache';
+        const CACHE_KEY_EVENTS = 'lmc_events_cache';
+        const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
+        const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache';
+
+        // グローバルステート
+        let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
+        let tempBandIconBlob=null, currentEditingBandId=null, currentEditingBandMembers=[];
+        let cropper = null;
+        let currentCropResolver = null;
+
+        // --- ユーティリティ ---
+        window.showCustomAlert = (msg, title="通知") => new Promise(res => {
+            const m = document.getElementById('modal-custom-dialog');
+            document.getElementById('dialogTitle').innerText = title;
+            document.getElementById('dialogMessage').innerText = msg;
+            document.getElementById('dialogBtnCancel').classList.add('hidden');
+            document.getElementById('dialogBtnOk').onclick = () => { m.classList.remove('open'); res(); };
+            m.classList.add('open');
+        });
+        window.showCustomConfirm = (msg, title="確認") => new Promise(res => {
+            const m = document.getElementById('modal-custom-dialog');
+            document.getElementById('dialogTitle').innerText = title;
+            document.getElementById('dialogMessage').innerText = msg;
+            document.getElementById('dialogBtnCancel').classList.remove('hidden');
+            document.getElementById('dialogBtnOk').onclick = () => { m.classList.remove('open'); res(true); };
+            document.getElementById('dialogBtnCancel').onclick = () => { m.classList.remove('open'); res(false); };
+            m.classList.add('open');
+        });
+        window.openModal = (id) => document.getElementById(id).classList.add('open');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('open');
+        window.goToMyPage = () => location.href = MY_PAGE_URL;
+        function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
+        function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
+
+        // --- メンバープロフィールポップアップ表示 ---
+        window.showMemberProfile = async (uid) => {
+            const u = allUsersCache.find(x => x.id === uid);
+            if(!u) return;
+
+            document.getElementById('profileModalIcon').src = u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('profileModalName').innerText = u.name;
+            
+            // ヘッダー背景
+            const headerBg = document.getElementById('profileModalHeaderBg');
+            if(u.headerImage) {
+                headerBg.style.background = `url(${u.headerImage}) center/cover no-repeat`;
+            } else {
+                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
+            }
+            
+            // キャッシュがあれば即時表示、なければ '-'
+            document.getElementById('profileModalBandCount').innerText = u.cachedBandCount !== undefined ? u.cachedBandCount : "-";
+            document.getElementById('profileModalLikeCount').innerText = "0";
+
+            let subText = "";
+            if(u.year) subText += `${u.year}年`;
+            if(u.part) subText += (subText ? ` | ` : ``) + `${getPartLabel(u.part)}`;
+            if(u.lineDisplayName) subText += (subText ? ` | ` : ``) + `@${u.lineDisplayName}`;
+            document.getElementById('profileModalSub').innerText = subText;
+
+            const badges = document.getElementById('profileModalBadges');
+            badges.innerHTML = "";
+            if(u.role) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:12px;">${u.role}</div>`;
+            if(u.affiliations?.includes('urakata')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#fce8e6; color:#d93025; padding:4px 10px; border-radius:12px;">裏方</div>`;
+            if(u.affiliations?.includes('lmc')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#f1f3f4; color:#5f6368; padding:4px 10px; border-radius:12px;">LMC</div>`;
+
+            openModal('modal-member-profile');
+
+            try {
+                // タップされたユーザーが所属するバンドを取得し、アーカイブ済みも含めてすべてカウントする
+                const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid));
+                const snap = await getDocs(q);
+                const totalBands = snap.size;
+                
+                document.getElementById('profileModalBandCount').innerText = totalBands;
+                
+                // キャッシュに保存して次回高速化
+                u.cachedBandCount = totalBands;
+                localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
+                
+            } catch(e) {
+                console.error(e);
+                document.getElementById('profileModalBandCount').innerText = "?";
+            }
+        };
+
+        // --- スピードダイヤルの制御 ---
+        window.toggleFabMenu = () => {
+            document.getElementById('mainFab').classList.toggle('open');
+            document.getElementById('fabMenu').classList.toggle('open');
+            document.getElementById('fab-overlay').classList.toggle('open');
+        };
+        window.closeFabMenu = () => {
+            document.getElementById('mainFab').classList.remove('open');
+            document.getElementById('fabMenu').classList.remove('open');
+            document.getElementById('fab-overlay').classList.remove('open');
+        };
+
+        // --- 初期化 ---
+        async function main(){ 
+            try{ 
+                // 1. キャッシュから最速でUIを構築
+                const cachedUser = localStorage.getItem(CACHE_KEY_USER);
+                if (cachedUser) { 
+                    currentUserData = JSON.parse(cachedUser); 
+                    renderHeaderIcons(currentUserData); 
+                }
+                
+                const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
+                if (cachedActiveEvent) {
+                    const el = document.getElementById('displayActiveEvent');
+                    if (el) {
+                        el.innerText = cachedActiveEvent;
+                        el.style.display = "inline-block";
+                    }
+                }
+
+                const cachedEvents = localStorage.getItem(CACHE_KEY_EVENTS);
+                if (cachedEvents) { targetEvents = JSON.parse(cachedEvents); }
+                
+                const cachedBands = localStorage.getItem(CACHE_KEY_BANDS);
+                if (cachedBands) { myBandsAll = JSON.parse(cachedBands); }
+
+                const cachedAllUsers = localStorage.getItem(CACHE_KEY_ALL_USERS);
+                if (cachedAllUsers) { allUsersCache = JSON.parse(cachedAllUsers); }
+
+                if (targetEvents.length > 0) { renderBandTabs(); } else { renderBandTabsFallback(); }
+                
+                // 2. LIFF初期化と認証
+                await liff.init({liffId: MY_LIFF_ID}); 
+                if(!liff.isLoggedIn()){liff.login(); return;} 
+                const profile = await liff.getProfile(); 
+                currentUser = profile.userId; currentProfile = profile;
+
+                if(typeof __initial_auth_token!=='undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
+                else await signInAnonymously(auth); 
+                
+                // 3. 最新データを取得
+                const userSnap = await getDoc(doc(db, "users", currentUser));
+                if(!userSnap.exists()){ location.href=MY_PAGE_URL; return; }
+                currentUserData = userSnap.data();
+                localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                renderHeaderIcons(currentUserData); 
+                
+                await loadTargetEvents();
+                loadMyBands();
+                refreshAllUsersCache();
+                loadSystemSettings();
+                checkNotifications();
+                
+                // 4. URLパラメータのチェック（招待リンクからのアクセス判定）
+                const urlParams = new URLSearchParams(window.location.search);
+                const action = urlParams.get('action');
+                const inviteBandId = urlParams.get('bandId');
+                
+                if (action === 'invite' && inviteBandId) {
+                    handleInviteLink(inviteBandId);
+                }
+            } catch(e) { console.error(e); } 
+        }
+
+        // --- ヘッダー・アイコン制御 ---
+        function renderHeaderIcons(d){
+            if(!d) return;
+            let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
+            if(d.birthday){
+                const t=new Date(), b=new Date(d.birthday);
+                if(t.getMonth()===b.getMonth() && t.getDate()===b.getDate()) r="ring-birthday";
+            }
+            if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
+            const el = document.getElementById('headerIconBands');
+            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
+            
+            // 管理者タブ表示制御
+            const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
+            if(isU && (d.role || hasLmcAll)) {
+                document.getElementById('nav-admin').classList.remove('hidden');
+            } else {
+                document.getElementById('nav-admin').classList.add('hidden');
+            }
+        }
+
+        // --- ステータスモーダル (Twitter風) ---
+        window.openUserStatusModal = async () => {
+            const year=2026; const status=currentUserData.feeStatus||{};
+            document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
+            document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
+            
+            // バンド数といいね数の反映
+            const allBandsCount = myBandsAll.length; // アーカイブ含むすべて
+            const elBandCount = document.getElementById('modalUserBandCount');
+            if(elBandCount) elBandCount.innerText = allBandsCount;
+            const elLikeCount = document.getElementById('modalUserLikeCount');
+            if(elLikeCount) elLikeCount.innerText = "0";
+
+            // ヘッダー背景画像の設定
+            const headerBg = document.getElementById('modalHeaderBg');
+            if(currentUserData.headerImage) {
+                headerBg.style.background = `url(${currentUserData.headerImage}) center/cover no-repeat`;
+            } else {
+                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
+                headerBg.style.backgroundSize = `cover`;
+                headerBg.style.backgroundPosition = `center`;
+            }
+
+            const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
+            t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
+            t2.innerText=`後期: ${status[`${year}_2`]?'済':'未納'}`; t2.className=`fee-status-badge ${status[`${year}_2`]?'fee-paid':'fee-unpaid'}`;
+            document.getElementById('myQRCodeArea').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:100%;height:100%;">`;
+            openModal('modal-user-status');
+        };
+
+        // --- Cropper.js による切り抜き処理 ---
+        window.openCropModal = (file, aspectRatio) => {
+            return new Promise((resolve, reject) => {
+                const image = document.getElementById('crop-image-target');
+                image.src = URL.createObjectURL(file);
+                openModal('modal-crop');
+                
+                if (cropper) cropper.destroy();
+                
+                image.onload = () => {
+                    cropper = new Cropper(image, {
+                        aspectRatio: aspectRatio,
+                        viewMode: 1,
+                        dragMode: 'move', // ピンチイン・アウト、スワイプ移動に対応
+                        autoCropArea: 1,
+                        restore: false,
+                        modal: true,
+                        guides: true,
+                        highlight: false,
+                        cropBoxMovable: false,
+                        cropBoxResizable: false,
+                        toggleDragModeOnDblclick: false,
+                    });
+                };
+                
+                currentCropResolver = { resolve, reject };
+            });
+        };
+
+        window.confirmCrop = () => {
+            if (!cropper || !currentCropResolver) return;
+            const btn = document.getElementById('btn-confirm-crop');
+            const originalText = btn.innerText;
+            btn.innerText = "処理中...";
+            btn.disabled = true;
+            
+            // 少しディレイを入れてUIを更新
+            setTimeout(() => {
+                const canvas = cropper.getCroppedCanvas({
+                    maxWidth: 1200,
+                    maxHeight: 1200,
+                    fillColor: '#fff',
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: 'high',
+                });
+                canvas.toBlob((blob) => {
+                    currentCropResolver.resolve(blob);
+                    closeCropModal();
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }, 'image/jpeg', 0.85);
+            }, 50);
+        };
+
+        window.cancelCrop = () => {
+            if (currentCropResolver) currentCropResolver.reject(new Error("Canceled"));
+            closeCropModal();
+        };
+
+        window.closeCropModal = () => {
+            closeModal('modal-crop');
+            if (cropper) { cropper.destroy(); cropper = null; }
+            currentCropResolver = null;
+            document.getElementById('crop-image-target').src = "";
+        };
+
+        async function uploadImageToExternal(blob){
+            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
+            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
+            const json = await res.json(); return json.files[0].url;
+        }
+
+        window.handleImageSelect = async (inp, pid) => {
+            if(inp.files && inp.files[0]) {
+                try {
+                    const file = inp.files[0];
+                    inp.value = "";
+                    // バンドアイコンは 1:1
+                    const b = await openCropModal(file, 1);
+                    tempBandIconBlob = b;
+                    const i = document.getElementById(pid); 
+                    i.src = URL.createObjectURL(b); 
+                    i.classList.remove('hidden');
+                } catch(e) { /* Canceled */ }
+            }
+        };
+
+        window.handleImageEdit = async (inp) => {
+            if(inp.files && inp.files[0]) {
+                try {
+                    const file = inp.files[0];
+                    inp.value = "";
+                    const b = await openCropModal(file, 1);
+                    if (await showCustomConfirm("アイコンを変更しますか？")) {
+                        const url = await uploadImageToExternal(b);
+                        await updateDoc(doc(db, "bands", document.getElementById('detailBandId').value), { icon: url });
+                        document.getElementById('detailBandIcon').src = url;
+                        showCustomAlert("アイコンを変更しました。");
+                    }
+                } catch(e) { /* Canceled */ }
+            }
+        };
+
+        window.handleHeaderImageEdit = async (inp) => {
+            if(inp.files && inp.files[0]) {
+                try {
+                    const file = inp.files[0];
+                    inp.value = "";
+                    // ヘッダーは 3:1
+                    const b = await openCropModal(file, 3);
+                    const url = await uploadImageToExternal(b);
+                    await updateDoc(doc(db, "users", currentUser), { headerImage: url });
+                    
+                    currentUserData.headerImage = url;
+                    localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                    
+                    document.getElementById('modalHeaderBg').style.background = `url(${url}) center/cover no-repeat`;
+                    showCustomAlert("ヘッダー画像を変更しました！");
+                } catch(e) {
+                    if (e.message !== "Canceled") showCustomAlert("エラーが発生しました: " + e.message);
+                }
+            }
+        };
+
+        // --- イベント・タブ・スライダー ---
+        async function loadTargetEvents() {
+            const q = query(collection(db, "events"), orderBy("startDate", "desc"));
+            const snap = await getDocs(q);
+            
+            // 日本時間での今日の日付文字列を取得 (YYYY-MM-DD)
+            const now = new Date();
+            const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+            const todayStr = jstNow.toISOString().split('T')[0];
+            
+            const upcomingEvents = [];
+            
+            snap.docs.forEach(d => {
+                const data = d.data();
+                const endDateStr = data.endDate || data.startDate || "0000-00-00";
+                // 終了日が今日以降のイベントのみを抽出（過去のイベントは除外）
+                if (endDateStr >= todayStr) {
+                    let rawName = data.event || data.name || "";
+                    let shortName = formatEventName(rawName);
+                    upcomingEvents.push({ 
+                        id: d.id, 
+                        name: shortName, 
+                        originalName: rawName,
+                        startDate: data.startDate || "9999-99-99"
+                    });
+                }
+            });
+            
+            // 開始日が近い順（未来の直近）に並び替え、最大2件を表示
+            upcomingEvents.sort((a, b) => a.startDate.localeCompare(b.startDate));
+            targetEvents = upcomingEvents.slice(0, 2);
+            
+            localStorage.setItem(CACHE_KEY_EVENTS, JSON.stringify(targetEvents));
+            renderBandTabs();
+        }
+
+        function renderBandTabsFallback() {
+            const tabs = document.getElementById('bandTabs');
+            const slider = document.getElementById('bandSlider');
+            tabs.innerHTML = '<div class="band-tab active">読み込み中...</div>';
+            slider.innerHTML = '<div class="band-slide"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>';
+        }
+
+        function renderBandTabs() {
+            const tabs = document.getElementById('bandTabs');
+            const slider = document.getElementById('bandSlider');
+            
+            if (targetEvents.length === 0) {
+                renderBandTabsFallback();
+                return;
+            }
+
+            tabs.innerHTML = ""; slider.innerHTML = "";
+
+            targetEvents.forEach((ev, i) => {
+                const tab = document.createElement('div');
+                tab.className = `band-tab ${i === currentBandTab ? 'active' : ''}`;
+                tab.innerText = ev.name; tab.onclick = () => switchBandTab(i);
+                tabs.appendChild(tab);
+
+                const slide = document.createElement('div');
+                slide.id = `bandList-${ev.id}`; slide.className = 'band-slide';
+                slider.appendChild(slide);
+            });
+
+            const arcIndex = targetEvents.length;
+            const arcTab = document.createElement('div');
+            arcTab.className = `band-tab ${arcIndex === currentBandTab ? 'active' : ''}`;
+            arcTab.innerText = "アーカイブ"; arcTab.onclick = () => switchBandTab(arcIndex);
+            tabs.appendChild(arcTab);
+
+            const arcSlide = document.createElement('div');
+            arcSlide.id = 'bandList-archive'; arcSlide.className = 'band-slide';
+            slider.appendChild(arcSlide);
+
+            const total = targetEvents.length + 1;
+            slider.style.width = `${total * 100}%`;
+            Array.from(slider.children).forEach(child => { child.style.width = `${100 / total}%`; });
+            
+            if(currentBandTab >= total) currentBandTab = total - 1;
+            switchBandTab(currentBandTab);
+            
+            if(myBandsAll.length > 0) renderBandList();
+        }
+
+        window.switchBandTab = (index) => {
+            currentBandTab = index;
+            document.querySelectorAll('.band-tab').forEach((t, i) => t.classList.toggle('active', i === index));
+            const total = targetEvents.length + 1;
+            document.getElementById('bandSlider').style.transform = `translateX(${-(100 / total) * index}%)`;
+        };
+
         // --- バンドリスト取得・描画 ---
+        function loadMyBands(){ 
+            onSnapshot(query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)), (snap) => {
+                myBandsAll = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
+                renderBandList();
+            });
+        }
+
         function renderBandList(){
-            // ... (省略) ...
+            if(targetEvents.length === 0) return; 
+            
+            targetEvents.forEach(ev => { const el = document.getElementById(`bandList-${ev.id}`); if(el) el.innerHTML = ""; });
+            const arcEl = document.getElementById('bandList-archive'); if(arcEl) arcEl.innerHTML = "";
+
             const createCard = (b) => {
                 const card = document.createElement('div'); 
                 card.className = 'card band-card';
                 card.onclick = () => openBandDetail(b.id, b); 
                 
+                // 画像表示 (iconがあれば表示)
                 const img = b.icon ? `<img src="${b.icon}" class="band-card-img">` : `<div class="band-card-img" style="display:flex; justify-content:center; align-items:center; color:#ccc; font-size:40px;">${(b.name||"?")[0]}</div>`;
                 
-                // 画像下のテキスト表示
+                // 日付表示の仮ロジック (イベントがある場合はその日付、なければ「-」)
+                const dateText = "7.11 土"; // ※現在は仮。必要に応じて日付データを結合してください
+
                 card.innerHTML = `
                     ${img}
                     <span class="material-icons like-icon">favorite_border</span>
                     <div class="band-card-content">
                         <div class="band-name">${b.name}</div>
-                        <div class="band-date">7.11 土</div>
+                        <div class="band-date">${dateText}</div>
                     </div>
                 `;
                 return card;
             };
-            // ... (各スライドへの追加処理) ...
+
+            myBandsAll.forEach(b => {
+                if(b.isArchived) { 
+                    arcEl?.appendChild(createCard(b)); 
+                } else {
+                    const eIds = new Set(b.events || []); 
+                    (b.songs||[]).forEach(s => { if(s.eventId) eIds.add(s.eventId); });
+                    let assigned = false;
+                    targetEvents.forEach(ev => { 
+                        if(eIds.has(ev.id)) { 
+                            document.getElementById(`bandList-${ev.id}`)?.appendChild(createCard(b)); 
+                            assigned = true; 
+                        } 
+                    });
+                    if(!assigned) arcEl?.appendChild(createCard(b));
+                }
+            });
+            
+            // 空の時の処理
+            document.querySelectorAll('.band-slide').forEach(s => { 
+                if(!s.children.length) {
+                    s.innerHTML = `
+                        <div style="grid-column: span 2; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding-bottom:80px; opacity:0.6;">
+                            <img src="https://file.sorairosystem.com/images/hiyokoGuitar.png" style="width:100px; height:auto; margin-bottom:16px;">
+                            <div style="color:#5f6368; font-size:14px; font-weight:bold;">表示するバンドがありません</div>
+                        </div>
+                    `;
+                }
+            });
         }
+
+        // --- バンド詳細ロジック ---
+        window.openBandDetail = async (bid, data) => {
+            currentEditingBandId = bid; currentEditingBandMembers = data.memberIds;
+            document.getElementById('detailBandId').value = bid; document.getElementById('detailBandName').value = data.name;
+            document.getElementById('detailBandIcon').src = data.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
+            const canE = (data.creatorId === currentUser) || isAdmin;
+            
+            document.getElementById('bandCreatorActions').classList.toggle('hidden', !canE);
+            document.getElementById('bandMemberActions').classList.toggle('hidden', canE);
+            document.getElementById('btnAddMemberToBand').classList.toggle('hidden', !canE);
+            document.getElementById('btnArchive').classList.toggle('hidden', data.isArchived);
+            document.getElementById('btnRestore').classList.toggle('hidden', !data.isArchived);
+            document.getElementById('detailBandName').readOnly = !canE;
+            
+            const editBadge = document.getElementById('detailIconEditBadge');
+            if (editBadge) editBadge.style.display = canE ? 'flex' : 'none';
+            const iconPicker = document.getElementById('detailIconPicker');
+            if (iconPicker) {
+                iconPicker.onclick = canE ? () => document.getElementById('editBandIconInput').click() : null;
+                iconPicker.style.cursor = canE ? 'pointer' : 'default';
+            }
+            
+            document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bid, data.name);
+
+            renderBandMembersInModal(data);
+
+            const songs = data.songs || []; document.getElementById('stat-song-count').innerText = songs.length;
+            const songList = document.getElementById('bandSongsList'); songList.innerHTML = "";
+            songs.forEach(s => {
+                const div = document.createElement('div'); div.className = 'member-row-rich';
+                const sTitle = s.title || s;
+                div.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:8px; color:#0b57d0;">music_note</span><div style="flex:1; font-size:13px;">${sTitle}</div>${canE?`<button class="btn-outline" style="padding:2px 8px; font-size:10px;" onclick="removeSongFromBand('${sTitle}')">削除</button>`:''}`;
+                songList.appendChild(div);
+            });
+            document.getElementById('bandSongAddArea').classList.toggle('hidden', !canE);
+
+            // Cueシートの表示設定
+            const cueContent = document.getElementById('detailCuesheetContent');
+            const cueEmpty = document.getElementById('detailCuesheetEmpty');
+            const cueImage = document.getElementById('detailCuesheetImage');
+            const cueUploadArea = document.getElementById('cueUploadArea');
+            
+            if (data.latestCuesheetUrl) {
+                cueImage.src = data.latestCuesheetUrl;
+                cueContent.classList.remove('hidden');
+                cueEmpty.classList.add('hidden');
+            } else {
+                cueImage.src = "";
+                cueContent.classList.add('hidden');
+                cueEmpty.classList.remove('hidden');
+            }
+            cueUploadArea.classList.toggle('hidden', !canE);
+
+            loadBandBookings(bid); openModal('modal-band-detail');
+        };
+
+        function renderBandMembersInModal(data) {
+            const bid = data.id || document.getElementById('detailBandId').value;
+            const isAdmin = currentUserData?.affiliations?.includes('urakata') && (currentUserData.role || currentUserData.roll);
+            const canE = (data.creatorId === currentUser) || isAdmin;
+            const mList = document.getElementById('detailMemberList'); 
+            mList.innerHTML = "";
+            
+            (data.memberIds || []).forEach(uid => {
+                const u = allUsersCache.find(x => x.id === uid);
+                const div = document.createElement('div'); 
+                div.className = 'member-row-rich';
+                
+                if (u) {
+                    div.onclick = () => showMemberProfile(uid);
+                    const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="event.stopPropagation(); removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
+                    div.innerHTML = `<img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${u.name}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${delBtn}`;
+                } else {
+                    div.innerHTML = `<div class="member-avatar-small" style="background:#f1f3f4; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:16px; color:#9aa0a6; animation: spin 1s linear infinite;">sync</span></div><div class="member-info-rich" style="flex:1;"><div class="member-name-rich" style="color:#9aa0a6;">読み込み中...</div><div style="font-size:10px; color:#ccc;">${uid.substring(0,8)}...</div></div>`;
+                }
+                mList.appendChild(div);
+            });
+        }
+
+        // --- バンド操作 ---
+        window.openBandModal = () => {
+            closeFabMenu(); 
+            document.getElementById('inputBandName').value = "";
+            document.getElementById('previewBandIcon').classList.add('hidden');
+            tempBandIconBlob = null;
+            
+            const eSel = document.getElementById('selectNewBandEvent');
+            eSel.innerHTML = '<option value="">指定しない（アーカイブタブに保存）</option>';
+            targetEvents.forEach(ev => {
+                const opt = document.createElement('option');
+                opt.value = ev.id;
+                opt.innerText = ev.name;
+                eSel.appendChild(opt);
+            });
+            if(targetEvents.length > 0) eSel.value = targetEvents[0].id;
+            
+            const helpText = document.getElementById('newBandEventHelp');
+            helpText.style.display = eSel.value === "" ? "block" : "none";
+            eSel.onchange = (e) => { helpText.style.display = e.target.value === "" ? "block" : "none"; };
+
+            openModal('modal-band');
+        };
+
+        window.saveBand = async () => {
+            const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
+            const eventId = document.getElementById('selectNewBandEvent').value;
+            
+            const mIds = [currentUser], mNames = [currentProfile.displayName];
+            const initialEvents = eventId ? [eventId] : [];
+
+            try {
+                const docRef = await addDoc(collection(db, "bands"), { 
+                    name: name, 
+                    memberIds: mIds, 
+                    memberNames: mNames, 
+                    events: initialEvents, 
+                    creatorId: currentUser, 
+                    isArchived: false, 
+                    createdAt: serverTimestamp() 
+                });
+                
+                if (tempBandIconBlob) { 
+                    const url = await uploadImageToExternal(tempBandIconBlob); 
+                    await updateDoc(docRef, { icon: url }); 
+                }
+                closeModal('modal-band'); 
+                
+                if (!eventId) {
+                    await showCustomAlert("イベントが指定されていないため、このバンドは「アーカイブ」タブに保存されました。");
+                }
+                
+                shareBandInvite(docRef.id, name);
+            } catch(e) { showCustomAlert(e.message); }
+        };
+        
+        window.updateBandName = async () => {
+            const bid = document.getElementById('detailBandId').value, name = document.getElementById('detailBandName').value.trim();
+            if(!name) return;
+            try { await updateDoc(doc(db, "bands", bid), { name: name }); showCustomAlert("更新しました。"); } catch(e) { showCustomAlert(e.message); }
+        };
+
+        window.archiveBand = async () => {
+            const bid = document.getElementById('detailBandId').value;
+            if(await showCustomConfirm("アーカイブしますか？")) { await updateDoc(doc(db, "bands", bid), { isArchived: true }); closeModal('modal-band-detail'); }
+        };
+        window.restoreBand = async () => {
+            const bid = document.getElementById('detailBandId').value;
+            await updateDoc(doc(db, "bands", bid), { isArchived: false }); closeModal('modal-band-detail');
+        };
+        window.deleteBand = async () => {
+            const bid = document.getElementById('detailBandId').value;
+            if(await showCustomConfirm("本当に解散（削除）しますか？")) { await deleteDoc(doc(db, "bands", bid)); closeModal('modal-band-detail'); }
+        };
+        window.leaveBand = async () => {
+            const bid = document.getElementById('detailBandId').value;
+            if(await showCustomConfirm("脱退しますか？")) { 
+                await updateDoc(doc(db, "bands", bid), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); 
+                closeModal('modal-band-detail'); 
+            }
+        };
+        window.removeMember = async (bid, uid, name) => {
+            if(await showCustomConfirm(name + " さんを削除しますか？")) {
+                await updateDoc(doc(db, "bands", bid), { memberIds: arrayRemove(uid) });
+                showCustomAlert("削除しました。再度開くと反映されます。");
+            }
+        };
+
+        // --- 曲・履歴・メンバー追加 ---
+        window.addSongToBand = async () => {
+            const song = document.getElementById('inputNewSong').value.trim(); if(!song) return;
+            const bid = document.getElementById('detailBandId').value;
+            await updateDoc(doc(db, "bands", bid), { songs: arrayUnion({ title: song }) });
+            document.getElementById('inputNewSong').value = ""; showCustomAlert("追加しました。");
+        };
+        window.removeSongFromBand = async (title) => {
+            const bid = document.getElementById('detailBandId').value;
+            const bSnap = await getDoc(doc(db, "bands", bid));
+            const newSongs = (bSnap.data().songs || []).filter(s => (s.title || s) !== title);
+            await updateDoc(doc(db, "bands", bid), { songs: newSongs });
+            showCustomAlert("削除しました。");
+        };
+        async function loadBandBookings(bid){
+            const list = document.getElementById('adminBandBookingsList'); list.innerHTML = "<div style='padding:10px; color:#999; font-size:12px;'>読み込み中...</div>";
+            const qs = await getDocs(query(collection(db, "bookings"), where("bandId", "==", bid)));
+            if(qs.empty) { list.innerHTML = "<div style='padding:12px; font-size:12px; color:#999;'>履歴はありません</div>"; return; }
+            let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:12px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
+            list.innerHTML = h;
+        }
+        window.openAddMemberModal = () => { loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); };
+        window.saveAddedMembers = async () => {
+            const sel = document.querySelectorAll('#addMemberSelectList .member-option.selected');
+            const ids = [], nms = []; sel.forEach(el => { ids.push(el.dataset.uid); nms.push(el.dataset.uname); });
+            if(!ids.length) return;
+            await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...ids), memberNames: arrayUnion(...nms) });
+            showCustomAlert("追加完了！"); closeModal('modal-add-member');
+        };
+
+        // --- 招待ロジック ---
+        window.shareBandInvite = async (bid, bn) => {
+            const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`;
+            if (liff.isApiAvailable('shareTargetPicker')) {
+                await liff.shareTargetPicker([{ type: "flex", altText: bn + "への招待", contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [{ type: "text", text: "バンド招待", weight: "bold", color: "#1DB446" }, { type: "text", text: bn, weight: "bold", size: "xl" }] }, footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", action: { type: "uri", label: "参加する", uri: u } }] } } }]);
+            } else { await showCustomAlert("招待URL: " + u); }
+        };
+
+        window.handleInviteLink = async (bid) => {
+            try {
+                const bandSnap = await getDoc(doc(db, "bands", bid));
+                if (!bandSnap.exists()) {
+                    showCustomAlert("このバンドは存在しないか、削除されています。");
+                    return;
+                }
+                const bandData = bandSnap.data();
+                
+                if (bandData.memberIds && bandData.memberIds.includes(currentUser)) {
+                    showCustomAlert("すでにこのバンドに参加しています。");
+                    return;
+                }
+
+                document.getElementById('inviteBandNameTitle').innerText = bandData.name;
+                document.getElementById('btnAcceptInvite').onclick = () => acceptInvite(bid, bandData.name);
+                document.getElementById('btnHoldInvite').onclick = () => holdInvite(bid);
+
+                openModal('modal-invite-confirm');
+                
+                window.history.replaceState(null, null, window.location.pathname);
+            } catch (e) { console.error(e); }
+        };
+
+        window.acceptInvite = async (bid, bName) => {
+            try {
+                await updateDoc(doc(db, "bands", bid), {
+                    memberIds: arrayUnion(currentUser),
+                    memberNames: arrayUnion(currentProfile.displayName)
+                });
+                
+                if (currentUserData.pendingInvites && currentUserData.pendingInvites.includes(bid)) {
+                    await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                    currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                }
+                
+                showCustomAlert(`${bName} に参加しました！`);
+                closeModal('modal-invite-confirm');
+                checkNotifications();
+            } catch(e) { showCustomAlert("参加処理に失敗しました。"); }
+        };
+
+        window.holdInvite = async (bid) => {
+            try {
+                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayUnion(bid) });
+                if (!currentUserData.pendingInvites) currentUserData.pendingInvites = [];
+                if (!currentUserData.pendingInvites.includes(bid)) {
+                    currentUserData.pendingInvites.push(bid);
+                }
+                showCustomAlert("保留しました。右上の通知アイコンからいつでも確認・参加できます。");
+                closeModal('modal-invite-confirm');
+                checkNotifications();
+            } catch(e) { showCustomAlert("保留処理に失敗しました。"); }
+        };
+        
+        window.acceptInviteFromNotif = async (bid, bName) => {
+            await window.acceptInvite(bid, bName);
+            openNotificationModal();
+        };
+
+        window.rejectInvite = async (bid) => {
+            try {
+                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                openNotificationModal();
+                checkNotifications();
+            } catch(e) { console.error(e); }
+        };
+
+        // --- メール・通知ロジック ---
+        function checkNotifications() { 
+            let hasNotification = false;
+            if(!(currentUserData?.Email || currentUserData?.email)) {
+                hasNotification = true;
+            }
+            if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
+                hasNotification = true;
+            }
+            
+            if (hasNotification) {
+                document.getElementById('headerNotifBadge').classList.add('show'); 
+            } else {
+                document.getElementById('headerNotifBadge').classList.remove('show'); 
+            }
+        }
+
+        window.openNotificationModal = async () => {
+            const list = document.getElementById('notificationList'); 
+            list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>読み込み中...</div>";
+            openModal('modal-notification');
+
+            let html = "";
+            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
+            if (!hasEmail) {
+                html += `
+                <div class="notification-item clickable" onclick="openEmailRegisterModal()">
+                    <div class="notif-icon-box warning"><span class="material-icons">warning</span></div>
+                    <div class="notif-content">
+                        <div class="notif-text" style="font-weight:bold;">重要: メールアドレスを登録してください</div>
+                    </div>
+                </div>`;
+            }
+
+            if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
+                for (const bid of currentUserData.pendingInvites) {
+                    try {
+                        const bSnap = await getDoc(doc(db, "bands", bid));
+                        if (bSnap.exists()) {
+                            const bData = bSnap.data();
+                            if(bData.memberIds && bData.memberIds.includes(currentUser)){
+                                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                                continue;
+                            }
+
+                            html += `
+                            <div class="notification-item" style="flex-direction:column; gap:12px; padding: 20px 16px; border-bottom: 1px solid #f0f0f0;">
+                                <div style="display:flex; align-items:center; gap:16px;">
+                                    <div class="notif-icon-box" style="background:#e8f0fe; color:#0b57d0; width: 40px; height: 40px;">
+                                        <span class="material-icons" style="font-size: 20px;">group_add</span>
+                                    </div>
+                                    <div class="notif-content" style="flex:1;">
+                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${bData.name}</strong> からの招待</div>
+                                        <div style="font-size:12px; color:#536471; margin-top:2px;">バンドへ参加しますか？</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px; width:100%; padding-left: 56px; box-sizing: border-box;">
+                                    <button class="btn-secondary" style="margin:0; flex:1; padding:8px 0; font-size:13px; background:#f1f3f4; color:#1f1f1f;" onclick="rejectInvite('${bid}')">削除</button>
+                                    <button class="btn-primary" style="margin:0; flex:1; padding:8px 0; font-size:13px;" onclick="acceptInviteFromNotif('${bid}', '${bData.name}')">参加する</button>
+                                </div>
+                            </div>`;
+                        } else {
+                            await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                            currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                        }
+                    } catch(e) { console.error(e); }
+                }
+            }
+
+            if(html === "") {
+                html = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
+            }
+            
+            list.innerHTML = html;
+            checkNotifications(); 
+        };
+
+        window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
+        window.sendAuthCode = async () => {
+            const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            try {
+                await updateDoc(doc(db, "users", currentUser), { tempEmail: email, authCode: code });
+                await addDoc(collection(db, "mail_queue"), { to: email, subject: "認証コード", body: `コード: ${code}`, userId: currentUser, createdAt: serverTimestamp() });
+                showCustomAlert("コードを送信しました。");
+                document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
+            } catch(e) { showCustomAlert(e.message); }
+        };
+        window.verifyAuthCode = async () => {
+            const input = document.getElementById('inputAuthCode').value.trim();
+            const userData = (await getDoc(doc(db, "users", currentUser))).data();
+            if (userData.authCode === input) {
+                await updateDoc(doc(db, "users", currentUser), { Email: userData.tempEmail, tempEmail: deleteField(), authCode: deleteField() });
+                showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
+            } else { showCustomAlert("コードが正しくありません。"); }
+        };
+        window.backToEmailInput = () => {
+            document.getElementById('email-step-2').classList.add('hidden');
+            document.getElementById('email-step-1').classList.remove('hidden');
+        };
+
+        // --- その他UIロジック ---
+        async function loadUserList(id, exclude=[]) {
+            const list = document.getElementById(id); list.innerHTML = "読込中...";
+            const snap = await getDocs(collection(db, "users")); list.innerHTML = "";
+            snap.forEach(d => {
+                if(d.id === currentUser || exclude.includes(d.id)) return;
+                const u = d.data();
+                const div = document.createElement('div'); div.className = 'member-option';
+                div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; };
+                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${u.icon||''}" style="width:28px;height:28px;border-radius:50%;margin:0 10px;">${u.name}`;
+                div.dataset.uid = d.id; div.dataset.uname = u.name;
+                list.appendChild(div);
+            });
+        }
+
+        async function loadSystemSettings() {
+            const s = await getDoc(doc(db, "system", "settings"));
+            if(s.exists() && s.data().activeEventId) {
+                const ev = await getDoc(doc(db, "events", s.data().activeEventId));
+                if(ev.exists()) {
+                    const el = document.getElementById('displayActiveEvent');
+                    let name = ev.data().event || ev.data().name || "";
+                    let shortName = formatEventName(name);
+                    el.innerText = shortName;
+                    el.style.display = "inline-block";
+                    localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
+                }
+            } else {
+                document.getElementById('displayActiveEvent').style.display = "none";
+                localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
+            }
+        }
+
+        async function refreshAllUsersCache(){ 
+            const qs=await getDocs(collection(db,"users")); 
+            allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); 
+            localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
+            
+            // バンド詳細モーダルが開かれていればメンバーリストを自動再描画
+            const detailModal = document.getElementById('modal-band-detail');
+            if (detailModal && detailModal.classList.contains('open') && currentEditingBandId) {
+                const band = myBandsAll.find(b => b.id === currentEditingBandId);
+                if (band) renderBandMembersInModal(band);
+            }
+        }
+        
+        window.openEventRegisterModal = () => {
+            closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
+            targetEvents.forEach(ev => { const opt = document.createElement('option'); opt.value = ev.id; opt.innerText = ev.name; eSel.appendChild(opt); });
+            
+            const bSel = document.getElementById('selectRegisterBand'); bSel.innerHTML = "";
+            // アーカイブ済みのバンドも含めてすべて選択可能にする
+            myBandsAll.forEach(b => { 
+                const opt = document.createElement('option'); 
+                opt.value = b.id; 
+                opt.innerText = b.name + (b.isArchived ? " (アーカイブ)" : ""); 
+                bSel.appendChild(opt); 
+            });
+            openModal('modal-event-register');
+        };
+        
+        window.saveEventRegistration = async () => {
+            const eid = document.getElementById('selectRegisterEvent').value, bid = document.getElementById('selectRegisterBand').value;
+            if(!eid || !bid) return;
+            
+            const band = myBandsAll.find(b => b.id === bid);
+            const updates = { events: arrayUnion(eid) };
+            
+            // アーカイブされているバンドをイベントに登録した場合は、アーカイブを解除（復元）する
+            if (band && band.isArchived) {
+                updates.isArchived = false;
+            }
+            
+            await updateDoc(doc(db, "bands", bid), updates);
+            showCustomAlert("登録しました。"); closeModal('modal-event-register');
+        };
+
+        main();
     </script>
 </body>
 </html>
