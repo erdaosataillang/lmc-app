@@ -337,7 +337,7 @@
                 <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top: 0;">メンバー</h4>
                 <div class="card" style="padding: 0; overflow: hidden;">
                     <div id="detailMemberList"></div>
-                    <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:13px; padding:12px; border-top:1px solid #f0f0f0; margin-top:0;" onclick="shareBandInvite(currentEditingBandId, document.getElementById('detailBandName').value)">＋ メンバーを招待</button>
+                    <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:13px; padding:12px; border-top:1px solid #f0f0f0; margin-top:0;" onclick="shareBandInvite(document.getElementById('detailBandId').value, document.getElementById('detailBandName').value)">＋ メンバーを招待</button>
                 </div>
                 
                 <!-- 統合されたCueシートセクション -->
@@ -476,19 +476,6 @@
                 <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
                 <button class="btn-secondary" onclick="backToEmailInput()">戻る</button>
             </div>
-        </div>
-    </div>
-
-    <!-- メンバー追加モーダル -->
-    <div id="modal-add-member" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-add-member')">
-        <div class="modal-content" style="padding: 24px;">
-            <h3 style="margin-top:0; font-size: 18px;">メンバーを追加</h3>
-            <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">追加したいメンバーを選択してください。</p>
-            <div class="form-group">
-                <div class="member-select-list" id="addMemberSelectList"></div>
-            </div>
-            <button class="btn-primary" onclick="saveAddedMembers()">追加する</button>
-            <button class="btn-secondary" onclick="closeModal('modal-add-member')">キャンセル</button>
         </div>
     </div>
 
