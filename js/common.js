@@ -48,6 +48,17 @@ window.renderHeaderIcons = (d) => {
         el.className = "header-avatar " + r;
         el.onclick = () => window.openUserStatusModal(d);
     }
+    
+    // 管理者タブ表示制御
+    const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
+    const navAdminEl = document.getElementById('nav-admin');
+    if (navAdminEl) {
+        if (isU && (d.role || hasLmcAll)) {
+            navAdminEl.classList.remove('hidden');
+        } else {
+            navAdminEl.classList.add('hidden');
+        }
+    }
 };
 
 window.openUserStatusModal = async (userData) => {
