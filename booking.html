@@ -250,14 +250,8 @@
         </div>
     </div>
 
-    <!-- ボトムナビゲーション -->
-    <div class="bottom-nav">
-        <div class="nav-item" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
-        <div class="nav-item active" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
-        <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
-        <div class="nav-item" onclick="window.location.href='/mypage.html'"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
-    </div>
+    <!-- ナビゲーション格納用コンテナ -->
+    <div id="nav-container"></div>
 
     <!-- 新規予約・編集 フルスクリーンオーバーレイ -->
     <div id="modal-booking" class="pop-overlay">
@@ -470,6 +464,41 @@
                 }
             });
         })();
+        // 管理者権限判定関数
+        function checkIsAdmin(roleData) {
+            return Array.isArray(roleData) ? (roleData.includes('lmc_all') || roleData.includes('admin')) : false;
+        }
+
+        // ナビゲーションの即時描画
+        function renderNav() {
+            const container = document.getElementById('nav-container');
+            if(!container) return;
+            const path = window.location.pathname;
+            const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
+            
+            const items = [
+                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
+                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
+                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html' },
+                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !isAdmin },
+                { id: 'mypage', label: 'マイページ', icon: 'account_circle', href: '/mypage.html' }
+            ];
+
+            let html = '<div class="bottom-nav">';
+            items.forEach(item => {
+                const isActive = path.includes(item.id) || (path === '/' && item.id === 'index');
+                const hiddenClass = item.hidden ? 'hidden' : '';
+                html += `
+                    <div class="nav-item ${isActive ? 'active' : ''} ${hiddenClass}" ${item.id ? `id="nav-${item.id}"` : ''} onclick="window.location.href='${item.href}'">
+                        <span class="material-icons nav-icon">${item.icon}</span>
+                        <span>${item.label}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        renderNav();
     </script>
 
     <script type="module">
@@ -710,6 +739,15 @@
                     currentUserData=userSnap.data(); 
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                     renderHeaderIcons(currentUserData);
+                    // 管理者権限のキャッシュ更新
+                    const isAdmin = checkIsAdmin(currentUserData?.role);
+                    localStorage.setItem('lmc_is_admin', isAdmin ? 'true' : 'false');
+                    // ナビゲーションの管理タブ表示更新
+                    const adminNav = document.getElementById('nav-admin');
+                    if(adminNav) {
+                        if(isAdmin) adminNav.classList.remove('hidden');
+                        else adminNav.classList.add('hidden');
+                    }
                 } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
                 
                 await loadAllUsers(); // 最新のユーザーリストを取得
