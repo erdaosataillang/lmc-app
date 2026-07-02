@@ -974,17 +974,7 @@
                 // 画像表示 (iconがあれば表示)
                 const img = b.icon ? `<img src="${b.icon}" class="band-card-img">` : `<div class="band-card-img" style="display:flex; justify-content:center; align-items:center; color:#ccc; font-size:40px;">${(b.name||"?")[0]}</div>`;
                 
-                // 日付表示の仮ロジック (イベントがある場合はその日付、なければ「-」)
-                const dateText = "7.11 土"; // ※現在は仮。必要に応じて日付データを結合してください
-
-                card.innerHTML = `
-                    ${img}
-                    <span class="material-icons like-icon">favorite_border</span>
-                    <div class="band-card-content">
-                        <div class="band-name">${b.name}</div>
-                        <div class="band-date">${dateText}</div>
-                    </div>
-                `;
+                
                 return card;
             };
 
