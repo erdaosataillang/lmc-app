@@ -340,15 +340,6 @@
                     <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:13px; padding:12px; border-top:1px solid #f0f0f0; margin-top:0;" onclick="openAddMemberModal()">＋ メンバーを追加</button>
                 </div>
                 
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">演奏曲</h4>
-                <div class="card" style="padding: 0; overflow: hidden;">
-                    <div id="bandSongsList"></div>
-                    <div id="bandSongAddArea" class="hidden" style="display:flex; padding:8px; gap:8px; background:#fff; border-top:1px solid #f0f0f0;">
-                        <input type="text" id="inputNewSong" class="form-input" style="padding:8px; font-size:13px; flex:1;" placeholder="曲名を入力...">
-                        <button class="btn-primary" style="width:auto; padding:0 16px; font-size:12px;" onclick="addSongToBand()">追加</button>
-                    </div>
-                </div>
-
                 <!-- 統合されたCueシートセクション -->
                 <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">Cueシート</h4>
                 <div class="card" style="padding: 16px; text-align: center; overflow: hidden;">
@@ -366,6 +357,15 @@
                         <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="margin-top: 8px; border: 1px solid #dadce0; background: white;">
                             <span class="material-icons" style="font-size: 16px; margin-right: 4px;">upload_file</span> 画像を登録・更新
                         </button>
+                    </div>
+                </div>
+
+                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">演奏曲</h4>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div id="bandSongsList"></div>
+                    <div id="bandSongAddArea" class="hidden" style="display:flex; padding:8px; gap:8px; background:#fff; border-top:1px solid #f0f0f0;">
+                        <input type="text" id="inputNewSong" class="form-input" style="padding:8px; font-size:13px; flex:1;" placeholder="曲名を入力...">
+                        <button class="btn-primary" style="width:auto; padding:0 16px; font-size:12px;" onclick="addSongToBand()">追加</button>
                     </div>
                 </div>
 
