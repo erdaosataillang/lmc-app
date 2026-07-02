@@ -474,13 +474,17 @@
             const container = document.getElementById('nav-container');
             if(!container) return;
             const path = window.location.pathname;
-            const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
             
+            // ローカルストレージから権限と設定を取得
+            const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
+            const sys = JSON.parse(localStorage.getItem(CACHE_KEY_SYSTEM_SETTINGS) || '{}');
+            const showAdminTab = (sys.showAdminTab !== false); // デフォルト表示
+
             const items = [
                 { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
                 { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
-                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html' },
-                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !isAdmin },
+                // { id: 'cue', ... } を削除
+                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !(isAdmin && showAdminTab) },
                 { id: 'mypage', label: 'マイページ', icon: 'account_circle', href: '/mypage.html' }
             ];
 
@@ -535,12 +539,14 @@
         
         async function loadSystemConfig(){ 
             try{ 
-                const snap=await getDoc(doc(db,"system","settings")); 
+                const snap = await getDoc(doc(db, "system", "settings")); 
                 if(snap.exists()) {
-                    currentSystemSettings=snap.data(); 
-                    localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
+                    const settings = snap.data();
+                    localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(settings));
+                    // 必要であればここで即時再描画
+                    renderNav(); 
                 }
-            }catch(e){} 
+            }catch(e){ console.error(e); } 
         }
 
         // ユーザー情報を取得してフルネーム解決用にキャッシュする
