@@ -669,13 +669,15 @@
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
             // 管理者タブ表示制御
-            const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
-            if(isU && (d.role || hasLmcAll)) {
-                document.getElementById('nav-admin').classList.remove('hidden');
-            } else {
-                document.getElementById('nav-admin').classList.add('hidden');
-            }
-        }
+const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
+const navAdminEl = document.getElementById('nav-admin');
+if (navAdminEl) {
+    if (isU && (d.role || hasLmcAll)) {
+        navAdminEl.classList.remove('hidden');
+    } else {
+        navAdminEl.classList.add('hidden');
+    }
+}
         function renderNav() {
             const container = document.getElementById('nav-container');
             // 現在のページ名判定（必要に応じて微調整してください）
