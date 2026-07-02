@@ -469,21 +469,33 @@
             return Array.isArray(roleData) ? (roleData.includes('lmc_all') || roleData.includes('admin')) : false;
         }
 
-        // ナビゲーションの即時描画
-        function renderNav() {
+       
+        renderNav();
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
+        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+
+        // 修正版：windowオブジェクトに付与して、どこからでも呼べるようにします
+        window.renderNav = function() {
             const container = document.getElementById('nav-container');
             if(!container) return;
             const path = window.location.pathname;
-            
-            // ローカルストレージから権限と設定を取得
             const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
+            
+            // CACHE_KEY_SYSTEM_SETTINGS もこのスコープならアクセス可能です
             const sys = JSON.parse(localStorage.getItem(CACHE_KEY_SYSTEM_SETTINGS) || '{}');
-            const showAdminTab = (sys.showAdminTab !== false); // デフォルト表示
+            const showAdminTab = (sys.showAdminTab !== false);
 
             const items = [
                 { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
                 { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
-                // { id: 'cue', ... } を削除
                 { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !(isAdmin && showAdminTab) },
                 { id: 'mypage', label: 'マイページ', icon: 'account_circle', href: '/mypage.html' }
             ];
@@ -501,18 +513,10 @@
             });
             html += '</div>';
             container.innerHTML = html;
-        }
-        renderNav();
-    </script>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        };
         
-        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
-        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
-        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        // ページロード時に即時実行
+        renderNav();
         
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
