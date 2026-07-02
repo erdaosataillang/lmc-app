@@ -1207,15 +1207,7 @@
             let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:12px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
             list.innerHTML = h;
         }
-        window.openAddMemberModal = () => { loadUserList('addMemberSelectList', currentEditingBandMembers); openModal('modal-add-member'); };
-        window.saveAddedMembers = async () => {
-            const sel = document.querySelectorAll('#addMemberSelectList .member-option.selected');
-            const ids = [], nms = []; sel.forEach(el => { ids.push(el.dataset.uid); nms.push(el.dataset.uname); });
-            if(!ids.length) return;
-            await updateDoc(doc(db, "bands", currentEditingBandId), { memberIds: arrayUnion(...ids), memberNames: arrayUnion(...nms) });
-            showCustomAlert("追加完了！"); closeModal('modal-add-member');
-        };
-
+    
         // --- 招待ロジック ---
         window.shareBandInvite = async (bid, bn) => {
             const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`;
