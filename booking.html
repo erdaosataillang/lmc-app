@@ -477,6 +477,16 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+
+        // キャッシュキー
+        const CACHE_KEY_USER = 'lmc_user_cache';
+        const CACHE_KEY_BANDS = 'lmc_bands_cache';
+        const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
+        const CACHE_KEY_SYSTEM_SETTINGS = 'lmc_system_settings_cache';
+        const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache'; // ユーザー本名動的取得用
+        // ...（以下、全てのCACHE_KEYをここに集約）
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
@@ -518,11 +528,7 @@
         // ページロード時に即時実行
         renderNav();
         
-        const CACHE_KEY_USER = 'lmc_user_cache';
-        const CACHE_KEY_BANDS = 'lmc_bands_cache';
-        const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
-        const CACHE_KEY_SYSTEM_SETTINGS = 'lmc_system_settings_cache';
-        const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache'; // ユーザー本名動的取得用
+       
 
         let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date(), selectedTimeSlot=null, selectionStartHour=null, selectionEndHour=null;
         let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
@@ -572,14 +578,11 @@
         // ヘッダーアイコン制御 (管理者タブ表示制御を含む)
         function renderHeaderIcons(d){
             if(!d) return;
-            let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
-            if(d.birthday){
-                const t=new Date(), b=new Date(d.birthday);
-                if(t.getMonth()===b.getMonth() && t.getDate()===b.getDate()) r="ring-birthday";
-            }
-            if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
             const el = document.getElementById('headerIconCal');
-            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
+            // DOMが存在しない場合は即座に終了（これがクラッシュの原因でした）
+            if(!el) return; 
+            
+            let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
             
             // 管理者タブ表示制御
             const hasAdminRole = d.roll && (Array.isArray(d.roll) ? (d.roll.includes('lmc_all') || d.roll.includes('admin')) : (d.roll === 'lmc_all' || d.roll === 'admin'));
