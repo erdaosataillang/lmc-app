@@ -792,6 +792,15 @@
             document.getElementById('crop-image-target').src = "";
         };
 
+        window.openFullscreenViewer = (src) => {
+            const viewer = document.getElementById('fullscreen-viewer');
+            const img = document.getElementById('fullscreen-img');
+            img.src = src;
+            viewer.classList.add('open');
+        };
+        window.closeFullscreenViewer = () => {
+            document.getElementById('fullscreen-viewer').classList.remove('open');
+        };
         async function uploadImageToExternal(blob){
             const fd = new FormData(); fd.append('files', blob, 'image.jpg');
             const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
