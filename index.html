@@ -685,35 +685,6 @@ if (navAdminEl) {
     }
 }
         }
-        function renderNav() {
-            const container = document.getElementById('nav-container');
-            // 現在のページ名判定（必要に応じて微調整してください）
-            const path = window.location.pathname;
-            
-            const items = [
-                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
-                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
-                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html', hidden: true },
-                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: true },
-                { id: 'mypage', label: 'マイページ', icon: 'account_circle', onClick: 'goToMyPage()' }
-            ];
-
-            let html = '<div class="bottom-nav">';
-            items.forEach(item => {
-                const isActive = path.includes(item.id) || (path === '/' && item.id === 'index');
-                const hiddenClass = item.hidden ? 'hidden' : '';
-                const clickAction = item.onClick ? `onclick="${item.onClick}"` : `onclick="window.location.href='${item.href}'"`;
-                
-                html += `
-                    <div class="nav-item ${isActive ? 'active' : ''} ${hiddenClass}" ${item.id ? `id="nav-${item.id}"` : ''} ${clickAction}>
-                        <span class="material-icons nav-icon">${item.icon}</span>
-                        <span>${item.label}</span>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        }
 
         // --- ステータスモーダル (Twitter風) ---
         window.openUserStatusModal = async () => {
