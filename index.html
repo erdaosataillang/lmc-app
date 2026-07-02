@@ -245,14 +245,8 @@
         </div>
     </div>
 
-    <!-- ボトムナビゲーション -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
-        <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
-        <div class="nav-item hidden" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <div class="nav-item hidden" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
-        <div class="nav-item" onclick="goToMyPage()"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
-    </div>
+   <!-- ナビゲーション格納用コンテナ -->
+    <div id="nav-container"></div>
 
     <!-- モーダル群 -->
     <!-- 出演登録 -->
@@ -649,6 +643,7 @@
                 refreshAllUsersCache();
                 loadSystemSettings();
                 checkNotifications();
+                renderNav();
                 
                 // 4. URLパラメータのチェック（招待リンクからのアクセス判定）
                 const urlParams = new URLSearchParams(window.location.search);
@@ -680,6 +675,35 @@
             } else {
                 document.getElementById('nav-admin').classList.add('hidden');
             }
+        }
+        function renderNav() {
+            const container = document.getElementById('nav-container');
+            // 現在のページ名判定（必要に応じて微調整してください）
+            const path = window.location.pathname;
+            
+            const items = [
+                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
+                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
+                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html', hidden: true },
+                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: true },
+                { id: 'mypage', label: 'マイページ', icon: 'account_circle', onClick: 'goToMyPage()' }
+            ];
+
+            let html = '<div class="bottom-nav">';
+            items.forEach(item => {
+                const isActive = path.includes(item.id) || (path === '/' && item.id === 'index');
+                const hiddenClass = item.hidden ? 'hidden' : '';
+                const clickAction = item.onClick ? `onclick="${item.onClick}"` : `onclick="window.location.href='${item.href}'"`;
+                
+                html += `
+                    <div class="nav-item ${isActive ? 'active' : ''} ${hiddenClass}" ${item.id ? `id="nav-${item.id}"` : ''} ${clickAction}>
+                        <span class="material-icons nav-icon">${item.icon}</span>
+                        <span>${item.label}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         // --- ステータスモーダル (Twitter風) ---
