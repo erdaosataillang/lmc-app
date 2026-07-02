@@ -688,60 +688,6 @@
             } catch(e) { console.error(e); } 
         }
 
-        // --- ヘッダー・アイコン制御 ---
-        function renderHeaderIcons(d){
-            if(!d) return;
-            let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
-            if(d.birthday){
-                const t=new Date(), b=new Date(d.birthday);
-                if(t.getMonth()===b.getMonth() && t.getDate()===b.getDate()) r="ring-birthday";
-            }
-            if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
-            const el = document.getElementById('headerIconBands');
-            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
-            
-            // 管理者タブ表示制御
-const hasLmcAll = d.roll && (Array.isArray(d.roll) ? d.roll.includes('lmc_all') : d.roll === 'lmc_all');
-const navAdminEl = document.getElementById('nav-admin');
-if (navAdminEl) {
-    if (isU && (d.role || hasLmcAll)) {
-        navAdminEl.classList.remove('hidden');
-    } else {
-        navAdminEl.classList.add('hidden');
-    }
-}
-        }
-
-        // --- ステータスモーダル (Twitter風) ---
-        window.openUserStatusModal = async () => {
-            const year=2026; const status=currentUserData.feeStatus||{};
-            document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
-            document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
-            document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
-            
-            // バンド数といいね数の反映
-            const allBandsCount = myBandsAll.length; // アーカイブ含むすべて
-            const elBandCount = document.getElementById('modalUserBandCount');
-            if(elBandCount) elBandCount.innerText = allBandsCount;
-            const elLikeCount = document.getElementById('modalUserLikeCount');
-            if(elLikeCount) elLikeCount.innerText = "0";
-
-            // ヘッダー背景画像の設定
-            const headerBg = document.getElementById('modalHeaderBg');
-            if(currentUserData.headerImage) {
-                headerBg.style.background = `url(${currentUserData.headerImage}) center/cover no-repeat`;
-            } else {
-                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
-                headerBg.style.backgroundSize = `cover`;
-                headerBg.style.backgroundPosition = `center`;
-            }
-
-            const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
-            t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
-            t2.innerText=`後期: ${status[`${year}_2`]?'済':'未納'}`; t2.className=`fee-status-badge ${status[`${year}_2`]?'fee-paid':'fee-unpaid'}`;
-            document.getElementById('myQRCodeArea').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:100%;height:100%;">`;
-            openModal('modal-user-status');
-        };
 
         // --- Cropper.js による切り抜き処理 ---
         window.openCropModal = (file, aspectRatio) => {
