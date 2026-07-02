@@ -1196,11 +1196,23 @@
         }
        
         // --- 招待ロジック ---
-        window.shareBandInvite = async (bid, bn) => {
+       window.shareBandInvite = async (bid, bn) => {
             const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`;
-            if (liff.isApiAvailable('shareTargetPicker')) {
-                await liff.shareTargetPicker([{ type: "flex", altText: bn + "への招待", contents: { type: "bubble", body: { type: "box", layout: "vertical", contents: [{ type: "text", text: "バンド招待", weight: "bold", color: "#1DB446" }, { type: "text", text: bn, weight: "bold", size: "xl" }] }, footer: { type: "box", layout: "vertical", contents: [{ type: "button", style: "primary", action: { type: "uri", label: "参加する", uri: u } }] } } }]);
-            } else { await showCustomAlert("招待URL: " + u); }
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'バンド招待',
+                        text: `${bn} へ招待されました。以下から参加してください。`,
+                        url: u
+                    });
+                } catch (err) {
+                    console.error('共有エラー:', err);
+                }
+            } else {
+                // 非対応ブラウザ用フォールバック（クリップボードコピー）
+                navigator.clipboard.writeText(u);
+                showCustomAlert("招待リンクをコピーしました: " + u);
+            }
         };
 
         window.handleInviteLink = async (bid) => {
