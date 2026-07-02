@@ -852,13 +852,36 @@
 
         // --- イベント・タブ・スライダー ---
         async function loadTargetEvents() {
-            const q = query(collection(db, "events"), orderBy("startDate", "desc"), limit(2));
+            const q = query(collection(db, "events"), orderBy("startDate", "desc"));
             const snap = await getDocs(q);
-            targetEvents = snap.docs.map(d => {
-                let rawName = d.data().event || d.data().name || "";
-                let shortName = formatEventName(rawName);
-                return { id: d.id, name: shortName, originalName: rawName };
+            
+            // 日本時間での今日の日付文字列を取得 (YYYY-MM-DD)
+            const now = new Date();
+            const jstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+            const todayStr = jstNow.toISOString().split('T')[0];
+            
+            const upcomingEvents = [];
+            
+            snap.docs.forEach(d => {
+                const data = d.data();
+                const endDateStr = data.endDate || data.startDate || "0000-00-00";
+                // 終了日が今日以降のイベントのみを抽出（過去のイベントは除外）
+                if (endDateStr >= todayStr) {
+                    let rawName = data.event || data.name || "";
+                    let shortName = formatEventName(rawName);
+                    upcomingEvents.push({ 
+                        id: d.id, 
+                        name: shortName, 
+                        originalName: rawName,
+                        startDate: data.startDate || "9999-99-99"
+                    });
+                }
             });
+            
+            // 開始日が近い順（未来の直近）に並び替え、最大2件を表示
+            upcomingEvents.sort((a, b) => a.startDate.localeCompare(b.startDate));
+            targetEvents = upcomingEvents.slice(0, 2);
+            
             localStorage.setItem(CACHE_KEY_EVENTS, JSON.stringify(targetEvents));
             renderBandTabs();
         }
@@ -1404,86 +1427,32 @@
         window.openEventRegisterModal = () => {
             closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
             targetEvents.forEach(ev => { const opt = document.createElement('option'); opt.value = ev.id; opt.innerText = ev.name; eSel.appendChild(opt); });
+            
             const bSel = document.getElementById('selectRegisterBand'); bSel.innerHTML = "";
-            myBandsAll.filter(b=>!b.isArchived).forEach(b => { const opt = document.createElement('option'); opt.value = b.id; opt.innerText = b.name; bSel.appendChild(opt); });
+            // アーカイブ済みのバンドも含めてすべて選択可能にする
+            myBandsAll.forEach(b => { 
+                const opt = document.createElement('option'); 
+                opt.value = b.id; 
+                opt.innerText = b.name + (b.isArchived ? " (アーカイブ)" : ""); 
+                bSel.appendChild(opt); 
+            });
             openModal('modal-event-register');
         };
         
         window.saveEventRegistration = async () => {
             const eid = document.getElementById('selectRegisterEvent').value, bid = document.getElementById('selectRegisterBand').value;
             if(!eid || !bid) return;
-            await updateDoc(doc(db, "bands", bid), { events: arrayUnion(eid) });
-            showCustomAlert("登録しました。"); closeModal('modal-event-register');
-        };
-
-        // --- Cueシート関連の関数群 ---
-        const compressImage = (f, maxWidth = 800, isSquare = false) => new Promise(res => {
-            const i = new Image(); i.src = URL.createObjectURL(f);
-            i.onload = () => {
-                const c = document.createElement('canvas'); const ctx = c.getContext('2d');
-                if (isSquare) {
-                    const s = 200;
-                    c.width = s; c.height = s; 
-                    const minDim = Math.min(i.width, i.height);
-                    const sx = (i.width - minDim) / 2;
-                    const sy = (i.height - minDim) / 2;
-                    ctx.drawImage(i, sx, sy, minDim, minDim, 0, 0, s, s);
-                } else {
-                    let scaleSize = maxWidth / i.width;
-                    if (scaleSize > 1) scaleSize = 1;
-                    c.width = i.width * scaleSize;
-                    c.height = i.height * scaleSize;
-                    ctx.fillStyle = "#FFFFFF";
-                    ctx.fillRect(0, 0, c.width, c.height);
-                    ctx.drawImage(i, 0, 0, c.width, c.height);
-                }
-                c.toBlob(b => res(b), 'image/jpeg', 0.85);
-            };
-        });
-
-        window.handleCueImageUpload = async (input) => {
-            if(!input.files || !input.files[0] || !currentEditingBandId) return;
             
-            const btn = document.getElementById('btnUploadCue');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = `<span class="material-icons" style="animation: spin 1s linear infinite;">sync</span> アップロード中...`;
-            btn.disabled = true;
-
-            try {
-                const compressedBlob = await compressImage(input.files[0], 1200, false);
-                const url = await uploadImageToExternal(compressedBlob);
-                
-                await updateDoc(doc(db, "bands", currentEditingBandId), {
-                    latestCuesheetUrl: url
-                });
-                
-                // UIの即時反映
-                document.getElementById('detailCuesheetImage').src = url;
-                document.getElementById('detailCuesheetContent').classList.remove('hidden');
-                document.getElementById('detailCuesheetEmpty').classList.add('hidden');
-
-                // キャッシュの更新
-                const bIndex = myBandsAll.findIndex(b => b.id === currentEditingBandId);
-                if (bIndex > -1) myBandsAll[bIndex].latestCuesheetUrl = url;
-                localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
-                
-                showCustomAlert("Cueシートを新しく登録しました！", "アップロード完了");
-            } catch (e) {
-                showCustomAlert("アップロードに失敗しました: " + e.message, "エラー");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                input.value = ""; 
+            const band = myBandsAll.find(b => b.id === bid);
+            const updates = { events: arrayUnion(eid) };
+            
+            // アーカイブされているバンドをイベントに登録した場合は、アーカイブを解除（復元）する
+            if (band && band.isArchived) {
+                updates.isArchived = false;
             }
-        };
-
-        window.openFullscreenViewer = (src) => {
-            const viewer = document.getElementById('fullscreen-viewer');
-            document.getElementById('fullscreen-img').src = src;
-            viewer.classList.add('open');
-        };
-        window.closeFullscreenViewer = () => {
-            document.getElementById('fullscreen-viewer').classList.remove('open');
+            
+            await updateDoc(doc(db, "bands", bid), updates);
+            showCustomAlert("登録しました。"); closeModal('modal-event-register');
         };
 
         main();
