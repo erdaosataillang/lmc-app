@@ -497,6 +497,8 @@
         const CACHE_KEY_EVENTS = 'lmc_events_cache';
         const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
         const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache';
+        const CACHE_KEY_ADMIN = 'lmc_is_admin';
+        
 
         // グローバルステート
         let currentUser=null, currentProfile=null, currentUserData=null, myBandsAll=[], currentBandTab=0, targetEvents=[], allUsersCache=[];
@@ -600,6 +602,13 @@
                 if (cachedUser) { 
                     currentUserData = JSON.parse(cachedUser); 
                     renderHeaderIcons(currentUserData); 
+                    // 管理者権限を判定してキャッシュ
+                const role = currentUserData?.role || "";
+                const isAdmin = (role === 'lmc_all' || role === 'admin');
+                localStorage.setItem(CACHE_KEY_ADMIN, isAdmin ? 'true' : 'false');
+                
+                // 必要であればナビゲーションの表示を動的に更新（初回表示後）
+                if(isAdmin) document.getElementById('nav-admin')?.classList.remove('hidden');
                 }
                 
                 const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
@@ -1470,12 +1479,14 @@ if (navAdminEl) {
         // ナビゲーションを即時描画
         function renderNav() {
             const container = document.getElementById('nav-container');
-            const path = window.location.pathname;
+            const path = window.location.pathname
+            // 管理者かどうかの即時判定
+            const isAdmin = localStorage.getItem(CACHE_KEY_ADMIN) === 'true';    
             const items = [
                 { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
                 { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
                 { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html', hidden: true },
-                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: true },
+                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !isAdmin },
                 { id: 'mypage', label: 'マイページ', icon: 'account_circle', onClick: 'goToMyPage()' }
             ];
 
