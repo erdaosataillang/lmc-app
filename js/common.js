@@ -17,20 +17,37 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const MY_LIFF_ID = "2008162165-vVODNp12";
 
-window.showCustomAlert = (msg, title = "通知") => {
-    const m = document.getElementById('modal-custom-dialog');
-    if (!m) return;
-    const t = document.getElementById('dialogTitle');
-    const b = document.getElementById('dialogMessage');
-    const c = document.getElementById('dialogBtnCancel');
-    const ok = document.getElementById('dialogBtnOk');
-    
-    if(t) t.innerText = title;
-    if(b) b.innerText = msg;
-    if(c) c.classList.add('hidden');
-    if(ok) ok.onclick = () => { m.classList.remove('open'); };
-    m.classList.add('open');
+// 共通関数定義
+export const renderNav = () => { /* ...既存のrenderNavの中身... */ };
+
+export const renderHeaderIcons = (d, targetId = 'headerIconCal') => {
+    if (!d) return;
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    el.innerHTML = `<img src="${d.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
+    el.onclick = () => openUserStatusModal(d);
 };
+
+export const openUserStatusModal = async (userData) => {
+    const modal = document.getElementById('modal-user-status');
+    if (!modal) return;
+    
+    // バンド数取得処理など
+    const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js");
+    const q = query(collection(db, "bands"), where("memberIds", "array-contains", userData.id || auth.currentUser.uid));
+    const snap = await getDocs(q);
+    
+    document.getElementById('modalUserIcon').src = userData.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+    document.getElementById('modalUserName').innerHTML = `${userData.name} さん`;
+    document.getElementById('modalUserBandCount').innerText = snap.size;
+    
+    modal.classList.add('open');
+};
+
+// 【重要】windowオブジェクトに紐付ける（HTMLの onclick="..." で使うため）
+window.renderHeaderIcons = renderHeaderIcons;
+window.openUserStatusModal = openUserStatusModal;
+window.closeModal = (id) => document.getElementById(id).classList.remove('open');
 
 window.renderHeaderIcons = (d) => {
     if (!d) return;
