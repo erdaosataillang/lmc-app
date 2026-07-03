@@ -474,10 +474,8 @@
 
     <script type="module">
         import { db, auth, renderNav, renderHeaderIcons, openUserStatusModal } from './js/common.js';
-        import { getDoc, doc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getDoc, doc, collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        
         const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         
         const CACHE_KEY_USER = 'lmc_user_cache';
