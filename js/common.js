@@ -61,41 +61,47 @@ window.renderHeaderIcons = (d) => {
     }
 };
 
-window.openUserStatusModal = async (userData) => {
+// 【修正版】共通のステータスモーダル表示ロジック
+window.openUserStatusModal = async (userData = null) => {
+    // 引数userDataがない場合はcurrentUserDataを使う（index.html等で呼び出す用）
+    const targetUser = userData || currentUserData;
+    const uid = targetUser.id || currentUser;
+
     const modal = document.getElementById('modal-user-status');
     if (!modal) return;
 
-    const year = 2026;
-    const status = userData.feeStatus || {};
-    const icon = document.getElementById('modalUserIcon');
-    const name = document.getElementById('modalUserName');
+    // モーダルの初期表示（ローディング中など）
+    document.getElementById('modalUserIcon').src = targetUser.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+    document.getElementById('modalUserName').innerHTML = `${targetUser.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
     
-    if (icon) icon.src = userData.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
-    if (name) name.innerHTML = `${userData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
+    // バンド数を一度リセット
+    const elBandCount = document.getElementById('modalUserBandCount');
+    if (elBandCount) elBandCount.innerText = "...";
 
+    // 1. Firestoreからこのユーザーがメンバーとして含まれるバンドを取得
+    try {
+        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js");
+        
+        // memberIds 配列の中に uid が含まれているデータを検索
+        const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid));
+        const querySnapshot = await getDocs(q);
+        
+        // バンド数を表示
+        if (elBandCount) {
+            elBandCount.innerText = querySnapshot.size;
+        }
+    } catch (error) {
+        console.error("バンド数の取得に失敗しました:", error);
+        if (elBandCount) elBandCount.innerText = "0";
+    }
+
+    // ヘッダー背景画像の設定
     const headerBg = document.getElementById('modalHeaderBg');
-    if (headerBg) {
-        headerBg.style.background = userData.headerImage 
-            ? `url(${userData.headerImage}) center/cover no-repeat` 
-            : `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
-    }
+    headerBg.style.background = targetUser.headerImage 
+        ? `url(${targetUser.headerImage}) center/cover no-repeat` 
+        : `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
 
-    const t1 = document.getElementById('statusFeeTerm1');
-    const t2 = document.getElementById('statusFeeTerm2');
-    if (t1) {
-        t1.innerText = `前期: ${status[`${year}_1`] ? '済' : '未納'}`;
-        t1.className = `fee-status-badge ${status[`${year}_1`] ? 'fee-paid' : 'fee-unpaid'}`;
-    }
-    if (t2) {
-        t2.innerText = `後期: ${status[`${year}_2`] ? '済' : '未納'}`;
-        t2.className = `fee-status-badge ${status[`${year}_2`] ? 'fee-paid' : 'fee-unpaid'}`;
-    }
-    
-    const qrArea = document.getElementById('myQRCodeArea');
-    if (qrArea) {
-        qrArea.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${userData.id}" style="width:100%;height:100%;">`;
-    }
-    
+    // モーダルを開く
     modal.classList.add('open');
 };
 
