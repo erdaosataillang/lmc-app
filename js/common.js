@@ -63,45 +63,56 @@ window.renderHeaderIcons = (d) => {
 
 // 【修正版】共通のステータスモーダル表示ロジック
 window.openUserStatusModal = async (userData = null) => {
-    // 引数userDataがない場合はcurrentUserDataを使う（index.html等で呼び出す用）
-    const targetUser = userData || currentUserData;
-    const uid = targetUser.id || currentUser;
+    // 1. ユーザーIDを取得する（userDataが渡されていればそれを使用し、なければ現在のログインユーザーを使用）
+    let uid = null;
+    let targetUser = userData;
+
+    if (userData && userData.id) {
+        uid = userData.id;
+    } else if (auth.currentUser) {
+        uid = auth.currentUser.uid;
+    } else {
+        // まだユーザーがロードされていない場合、キャッシュから取得を試みる
+        const cached = localStorage.getItem('lmc_user_cache');
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            uid = parsed.id;
+            targetUser = parsed;
+        }
+    }
+
+    if (!uid) {
+        console.error("ユーザーIDが特定できませんでした");
+        return;
+    }
 
     const modal = document.getElementById('modal-user-status');
     if (!modal) return;
 
-    // モーダルの初期表示（ローディング中など）
+    // ...以降の処理は同じ...
     document.getElementById('modalUserIcon').src = targetUser.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
     document.getElementById('modalUserName').innerHTML = `${targetUser.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
     
-    // バンド数を一度リセット
+    // バンド数をリセット
     const elBandCount = document.getElementById('modalUserBandCount');
     if (elBandCount) elBandCount.innerText = "...";
 
-    // 1. Firestoreからこのユーザーがメンバーとして含まれるバンドを取得
+    // Firestoreからバンド数をカウント
     try {
         const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js");
-        
-        // memberIds 配列の中に uid が含まれているデータを検索
         const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid));
         const querySnapshot = await getDocs(q);
-        
-        // バンド数を表示
-        if (elBandCount) {
-            elBandCount.innerText = querySnapshot.size;
-        }
+        if (elBandCount) elBandCount.innerText = querySnapshot.size;
     } catch (error) {
-        console.error("バンド数の取得に失敗しました:", error);
-        if (elBandCount) elBandCount.innerText = "0";
+        console.error("バンド数取得失敗:", error);
     }
 
-    // ヘッダー背景画像の設定
+    // ヘッダー背景の設定
     const headerBg = document.getElementById('modalHeaderBg');
     headerBg.style.background = targetUser.headerImage 
         ? `url(${targetUser.headerImage}) center/cover no-repeat` 
         : `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
 
-    // モーダルを開く
     modal.classList.add('open');
 };
 
