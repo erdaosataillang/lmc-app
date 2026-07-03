@@ -473,13 +473,11 @@
     </script>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { app, db, auth, MY_LIFF_ID, renderNav, renderHeaderIcons, openUserStatusModal } from './js/common.js?v=2';
+        import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         
-        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
-        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
-        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
@@ -708,8 +706,9 @@
                     if(!userSnap.exists()){ window.location.href=MY_PAGE_URL; return; } 
                     await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
                     currentUserData=userSnap.data(); 
+                    currentUserData.id = currentUser;
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
-                    renderHeaderIcons(currentUserData);
+                    renderHeaderIcons(currentUserData, 'headerIconCal');
                 } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
                 
                 await loadAllUsers(); // 最新のユーザーリストを取得
@@ -746,6 +745,9 @@
             }
         }
 
+
+        renderNav();
+        
         function loadMyBands(){ const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); onSnapshot(q,(snapshot)=>{ myBandsAll=[]; snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll)); }); }
         
         window.switchCalendarView=(m, keepDate = false)=>{ calendarMode=m; if(m==='day'){ if(!keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } } } updateViewMenuUI(); renderCalendar(); };
