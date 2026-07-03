@@ -473,7 +473,8 @@
     </script>
 
     <script type="module">
-        import { app, db, auth, MY_LIFF_ID, renderNav, renderHeaderIcons, openUserStatusModal } from './js/common.js?v=2';
+        import { db, auth, renderNav, renderHeaderIcons, openUserStatusModal } from './js/common.js';
+        import { getDoc, doc } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         
