@@ -16,10 +16,6 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const MY_LIFF_ID = "2008162165-vVODNp12";
-
-// 共通関数定義
-export const renderNav = () => { /* ...既存のrenderNavの中身... */ };
-
 export const renderHeaderIcons = (d, targetId = 'headerIconCal') => {
     if (!d) return;
     const el = document.getElementById(targetId);
