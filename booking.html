@@ -473,10 +473,13 @@
     </script>
 
     <script type="module">
-        import { db, auth, renderNav, renderHeaderIcons, openUserStatusModal } from './js/common.js';
-        import { getDoc, doc, collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-        const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
+        const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
+        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
@@ -527,6 +530,26 @@
             return u && u.name ? u.name : fallbackName || '';
         }
         
+        // ヘッダーアイコン制御 (管理者タブ表示制御を含む)
+        function renderHeaderIcons(d){
+            if(!d) return;
+            let r=""; const aff=d.affiliations||[], isU=aff.includes("urakata");
+            if(d.birthday){
+                const t=new Date(), b=new Date(d.birthday);
+                if(t.getMonth()===b.getMonth() && t.getDate()===b.getDate()) r="ring-birthday";
+            }
+            if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
+            const el = document.getElementById('headerIconCal');
+            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
+            
+            // 管理者タブ表示制御
+            const hasAdminRole = d.roll && (Array.isArray(d.roll) ? (d.roll.includes('lmc_all') || d.roll.includes('admin')) : (d.roll === 'lmc_all' || d.roll === 'admin'));
+            if(hasAdminRole) {
+                document.getElementById('nav-admin').classList.remove('hidden');
+            } else {
+                document.getElementById('nav-admin').classList.add('hidden');
+            }
+        }
 
         // --- Cropper.js による切り抜き処理 ---
         window.openCropModal = (file, aspectRatio) => {
@@ -619,6 +642,30 @@
             }
         };
 
+        // --- ステータスモーダル (Twitter風) ---
+        window.openUserStatusModal = async () => {
+            const year=2026; const status=currentUserData.feeStatus||{};
+            document.getElementById('modalUserIcon').src=currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('modalUserName').innerHTML = `${currentUserData.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
+            // LINE名を @つきで表示
+            document.getElementById('modalUserLineName').innerText="@" + (currentProfile ? currentProfile.displayName : "LINE_User");
+
+            // ヘッダー背景画像の設定
+            const headerBg = document.getElementById('modalHeaderBg');
+            if(currentUserData.headerImage) {
+                headerBg.style.background = `url(${currentUserData.headerImage}) center/cover no-repeat`;
+            } else {
+                headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
+                headerBg.style.backgroundSize = `cover`;
+                headerBg.style.backgroundPosition = `center`;
+            }
+
+            const t1=document.getElementById('statusFeeTerm1'), t2=document.getElementById('statusFeeTerm2');
+            t1.innerText=`前期: ${status[`${year}_1`]?'済':'未納'}`; t1.className=`fee-status-badge ${status[`${year}_1`]?'fee-paid':'fee-unpaid'}`;
+            t2.innerText=`後期: ${status[`${year}_2`]?'済':'未納'}`; t2.className=`fee-status-badge ${status[`${year}_2`]?'fee-paid':'fee-unpaid'}`;
+            document.getElementById('myQRCodeArea').innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:100%;height:100%;">`;
+            openModal('modal-user-status');
+        };
 
         (function renderFromCache() {
             try {
@@ -661,9 +708,8 @@
                     if(!userSnap.exists()){ window.location.href=MY_PAGE_URL; return; } 
                     await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
                     currentUserData=userSnap.data(); 
-                    currentUserData.id = currentUser;
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
-                    renderHeaderIcons(currentUserData, 'headerIconCal');
+                    renderHeaderIcons(currentUserData);
                 } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
                 
                 await loadAllUsers(); // 最新のユーザーリストを取得
@@ -700,9 +746,6 @@
             }
         }
 
-
-        renderNav();
-        
         function loadMyBands(){ const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); onSnapshot(q,(snapshot)=>{ myBandsAll=[]; snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll)); }); }
         
         window.switchCalendarView=(m, keepDate = false)=>{ calendarMode=m; if(m==='day'){ if(!keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } } } updateViewMenuUI(); renderCalendar(); };
