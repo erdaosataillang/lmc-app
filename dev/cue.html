@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
-        // デバッグ用コンソールの初期化 (エラー特定用)
+        // デバッグ用コンソールの初期化
         var vConsole = new window.VConsole();
     </script>
     <style>
@@ -70,6 +70,7 @@
         </div>
     </div>
 
+    <!-- UI/ロジック分離 -->
     <script>
         let currentSync = null;
 
@@ -111,7 +112,7 @@
             });
         });
 
-        // 楽曲検索 (絶対失敗させない3段構えのフォールバック通信)
+        // 楽曲検索 (最強の3段構えプロキシ + 直通信)
         document.querySelectorAll('.search-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const row = this.closest('tr');
@@ -125,17 +126,19 @@
                 this.disabled = true;
 
                 const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
-                const proxy1 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+                
+                // プロキシルートの定義
+                const proxy1 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
 
                 let data = null;
                 let success = false;
 
                 try {
-                    // ルート1: CodeTabs プロキシ (高速・直接JSON)
-                    console.log("[デバッグ] ルート1 試行中...");
+                    // ルート1: corsproxy.io (現在最も安定)
+                    console.log("[デバッグ] ルート1(corsproxy) 試行中...");
                     try {
-                        const res1 = await fetch(proxy1);
+                        const res1 = await fetch(proxy1, { cache: 'no-store' });
                         if (res1.ok) {
                             data = await res1.json();
                             success = true;
@@ -143,11 +146,11 @@
                         }
                     } catch(e) { console.warn("[デバッグ] ルート1 失敗:", e); }
 
-                    // ルート2: AllOrigins プロキシ (安定・ラップされたJSON)
+                    // ルート2: AllOrigins (ラップされたJSONをパース)
                     if (!success) {
-                        console.log("[デバッグ] ルート2 試行中...");
+                        console.log("[デバッグ] ルート2(allorigins) 試行中...");
                         try {
-                            const res2 = await fetch(proxy2);
+                            const res2 = await fetch(proxy2, { cache: 'no-store' });
                             if (res2.ok) {
                                 const raw = await res2.json();
                                 data = JSON.parse(raw.contents);
@@ -157,11 +160,11 @@
                         } catch(e) { console.warn("[デバッグ] ルート2 失敗:", e); }
                     }
 
-                    // ルート3: 直通信 (念のため)
+                    // ルート3: 直通信 (Mac/PC用)
                     if (!success) {
-                        console.log("[デバッグ] ルート3 試行中...");
+                        console.log("[デバッグ] ルート3(直通信) 試行中...");
                         try {
-                            const res3 = await fetch(url, { headers: { 'Accept': 'application/json' }});
+                            const res3 = await fetch(url, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
                             if (res3.ok) {
                                 data = await res3.json();
                                 success = true;
@@ -182,7 +185,7 @@
 
                 } catch (error) {
                     console.error("[デバッグ] 最終エラー:", error);
-                    alert("通信エラーが発生しました。\nネットワーク状況を確認してください。");
+                    alert("通信エラーが発生しました。Wi-Fi環境等をご確認ください。");
                 } finally {
                     this.innerText = originalText;
                     this.disabled = false;
@@ -221,7 +224,7 @@
             const selectHandler = (e) => {
                 const item = e.target.closest('.sugg-item');
                 if (item) {
-                    e.preventDefault(); // これが重要: 入力欄からフォーカスが外れるのを防ぐ
+                    e.preventDefault(); // 入力欄からフォーカスが外れるのを防ぐ
                     titleInput.value = item.dataset.title;
                     durationInput.value = item.dataset.time;
                     box.remove();
@@ -279,6 +282,7 @@
         });
     </script>
 
+    <!-- Firebase連携 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
