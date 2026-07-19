@@ -4,50 +4,82 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cueシート・デジタルフォーム</title>
-    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+            authDomain: "urakata-app.firebaseapp.com",
+            projectId: "urakata-app",
+            storageBucket: "urakata-app.firebasestorage.app",
+            messagingSenderId: "407777765696",
+            appId: "1:407777765696:web:045c2d94729022b4eab2a5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.loadBandData = async (bandId) => {
+            try {
+                const docRef = doc(db, "home/band", bandId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    
+                    // バンド名セット
+                    document.getElementById('band-name-input').value = data.name || '';
+
+                    // メンバー表自動入力
+                    const memberRows = document.querySelectorAll('.member-row');
+                    data.memberNames.forEach((name, idx) => {
+                        if (memberRows[idx]) {
+                            memberRows[idx].querySelector('.member-name').value = name;
+                        }
+                    });
+                    
+                    console.log("Data loaded successfully");
+                }
+            } catch (e) {
+                console.error("Error loading: ", e);
+            }
+        };
+    </script>
     <style>
-        body { font-family: "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", sans-serif; }
-        .border-black { border-color: black; }
-        input, textarea { background: transparent; }
-        /* Sync toggle active state */
+        body { font-family: sans-serif; }
         .sync-active { background-color: black; color: white; }
     </style>
 </head>
 <body class="bg-gray-100 p-2 md:p-6">
-    <div id="app" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-6 shadow-xl">
+    <div id="app" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 shadow-xl">
         
-        <!-- Title Area -->
+        <!-- ボタン追加：データ読み込み -->
+        <button onclick="loadBandData('GyOs5xdbRty6xnS1pO5M')" class="mb-4 bg-black text-white px-4 py-1 text-sm rounded">データを読み込む</button>
+
         <div class="flex justify-end mb-6">
-            <div class="border-2 border-black px-8 py-1 font-bold text-2xl tracking-widest bg-gray-50">月定演</div>
+            <div class="border-2 border-black px-8 py-1 font-bold text-2xl bg-gray-50">月定演</div>
         </div>
 
-        <!-- Band Name Section -->
         <div class="border-2 border-black mb-2 flex">
-            <div class="w-24 border-r-2 border-black p-2 font-bold flex items-center bg-gray-50 text-sm">バンド名</div>
-            <div class="flex-grow flex flex-col justify-center">
-                <input type="text" class="w-full px-2 outline-none h-8 text-lg" placeholder="バンド名を入力">
-                <div class="text-[10px] text-right px-2 border-t border-gray-200">新規 or 既存（<input type="text" class="w-10 border-b border-black outline-none text-center" placeholder="回数"> 回目）</div>
+            <div class="w-24 border-r-2 border-black p-2 font-bold bg-gray-50 text-sm">バンド名</div>
+            <div class="flex-grow">
+                <input id="band-name-input" type="text" class="w-full px-2 outline-none h-8 text-lg" placeholder="バンド名">
             </div>
         </div>
 
-        <!-- NG Date Section -->
-        <div class="flex border-2 border-black mb-6">
-            <div class="w-24 border-r-2 border-black p-2 font-bold flex items-center bg-gray-50 text-sm">出演NG日</div>
-            <input type="text" class="flex-grow p-2 outline-none" placeholder="日付を入力">
-        </div>
-
-        <!-- Members Table -->
         <table class="w-full border-2 border-black mb-6 border-collapse">
             <thead>
                 <tr class="border-b-2 border-black bg-gray-50">
-                    <th class="border-r-2 border-black p-2 w-20 text-sm font-bold">学年</th>
-                    <th class="border-r-2 border-black p-2 w-24 text-sm font-bold">パート</th>
-                    <th class="p-2 text-sm font-bold">メンバー</th>
+                    <th class="border-r-2 border-black p-2 w-20 text-sm">学年</th>
+                    <th class="border-r-2 border-black p-2 w-24 text-sm">パート</th>
+                    <th class="p-2 text-sm">メンバー</th>
                 </tr>
             </thead>
             <tbody id="member-table">
-                <!-- Rows injected by JS -->
+                <!-- 8行生成 -->
             </tbody>
         </table>
 
@@ -95,39 +127,14 @@
     </div>
 
     <script>
-        // Generate rows for members
         const memberTable = document.getElementById('member-table');
         for(let i=0; i<8; i++) {
             memberTable.innerHTML += `
-                <tr class="border-b border-black h-10">
+                <tr class="member-row border-b border-black h-10">
                     <td class="border-r-2 border-black"><input class="w-full px-2 outline-none"></td>
                     <td class="border-r-2 border-black"><input class="w-full px-2 outline-none"></td>
-                    <td><input class="w-full px-2 outline-none"></td>
+                    <td><input class="w-full px-2 outline-none member-name"></td>
                 </tr>`;
-        }
-
-        // Generate rows for songs
-        const songTable = document.getElementById('song-table');
-        for(let i=0; i<5; i++) {
-            songTable.innerHTML += `
-                <tr class="border-b border-black h-12">
-                    <td class="border-r-2 border-black p-1 text-center font-bold bg-gray-50">${i + 1}</td>
-                    <td class="border-r-2 border-black"><input class="w-full px-2 outline-none"></td>
-                    <td><input class="w-full px-2 outline-none text-center font-mono" placeholder="00:00"></td>
-                </tr>`;
-        }
-
-        // Sync toggle logic
-        function toggleSync(val) {
-            const yes = document.getElementById('sync-yes');
-            const no = document.getElementById('sync-no');
-            if(val === 'yes') {
-                yes.classList.add('sync-active');
-                no.classList.remove('sync-active');
-            } else {
-                no.classList.add('sync-active');
-                yes.classList.remove('sync-active');
-            }
         }
     </script>
 </body>
