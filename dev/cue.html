@@ -6,11 +6,10 @@
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
-        // Firebase imports
+        // Firebaseの設定と読み込み
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -23,7 +22,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Helper mapping for parts
+        // パート略称変換用マップ
         const partMap = {
             "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.",
             "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho."
@@ -31,7 +30,45 @@
 
         let currentSync = null;
 
-        // Toggle Sync selection
+        // iTunes APIを使用した曲検索機能
+        window.searchSong = async (btn) => {
+            const row = btn.closest('tr');
+            const titleInput = row.querySelector('.song-title');
+            const durationInput = row.querySelector('.song-duration');
+            const query = titleInput.value.trim();
+
+            if (!query) {
+                alert("曲名を入力してください");
+                return;
+            }
+            
+            const originalText = btn.innerText;
+            btn.innerText = "検索中...";
+
+            try {
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&country=jp&limit=1`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.results.length > 0) {
+                    const song = data.results[0];
+                    const sec = Math.floor(song.trackTimeMillis / 1000);
+                    const m = Math.floor(sec / 60);
+                    const s = (sec % 60).toString().padStart(2, '0');
+                    titleInput.value = song.trackName;
+                    durationInput.value = `${m}:${s}`;
+                } else {
+                    alert("曲が見つかりませんでした");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("検索中にエラーが発生しました");
+            } finally {
+                btn.innerText = originalText;
+            }
+        };
+
+        // 同期トグル処理
         window.toggleSync = (val) => {
             currentSync = val;
             document.querySelectorAll('.sync-btn').forEach(btn => {
@@ -42,12 +79,15 @@
             document.getElementById('error-msg').classList.add('hidden');
         };
 
-        // Load data from Firebase
+        // Firebaseからデータ読み込み
         window.loadBandData = async (bandId) => {
             try {
                 const bandRef = doc(db, "bands", bandId);
                 const bandSnap = await getDoc(bandRef);
-                if (!bandSnap.exists()) return;
+                if (!bandSnap.exists()) {
+                    alert("バンドデータが見つかりません");
+                    return;
+                }
 
                 const bandData = bandSnap.data();
                 document.getElementById('band-name-input').value = bandData.name || '';
@@ -67,25 +107,27 @@
                         row.querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
                     }
                 }
-            } catch (e) { console.error("Error loading data: ", e); }
+            } catch (e) { 
+                console.error("Error: ", e); 
+                alert("データの読み込みに失敗しました");
+            }
         };
 
-        // Validate and Submit
+        // フォームバリデーションと送信処理
         window.submitData = () => {
             const errorDiv = document.getElementById('error-msg');
             let errors = [];
-
             const bandName = document.getElementById('band-name-input').value.trim();
             const count = document.getElementById('event-count-input').value.trim();
             const members = Array.from(document.querySelectorAll('.member-name')).filter(i => i.value.trim() !== "");
-            const songTitles = Array.from(document.querySelectorAll('.song-title')).filter(i => i.value.trim() !== "");
-            const songDurations = Array.from(document.querySelectorAll('.song-duration')).filter(i => i.value.trim() !== "");
+            const songs = Array.from(document.querySelectorAll('.song-title')).filter(i => i.value.trim() !== "");
+            const durations = Array.from(document.querySelectorAll('.song-duration')).filter(i => i.value.trim() !== "");
 
             if(!bandName) errors.push("バンド名が入力されていません。");
             if(!count) errors.push("出演回数が入力されていません。");
             if(members.length === 0) errors.push("メンバーを少なくとも1名入力してください。");
-            if(songTitles.length === 0) errors.push("曲名を少なくとも1曲入力してください。");
-            if(songTitles.length !== songDurations.length) errors.push("全ての曲に長さを入力してください。");
+            if(songs.length === 0) errors.push("曲名を少なくとも1曲入力してください。");
+            if(songs.length !== durations.length) errors.push("全ての曲に長さを入力してください。");
             if(!currentSync) errors.push("同期の有無を選択してください。");
 
             if(errors.length > 0) {
@@ -94,8 +136,7 @@
                 errorDiv.scrollIntoView({ behavior: 'smooth' });
             } else {
                 errorDiv.classList.add('hidden');
-                // Success logic here
-                console.log("Submit ready");
+                alert("送信準備が整いました（このデータはサーバーへ送信可能です）");
             }
         };
     </script>
@@ -106,7 +147,6 @@
             .no-print { display: none !important; }
             #print-area { border: 2px solid black !important; margin: 0 !important; width: 100% !important; max-width: none !important; box-shadow: none !important; }
         }
-        input { font-family: sans-serif; }
     </style>
 </head>
 <body class="bg-gray-100 p-2 md:p-6 text-black">
@@ -169,8 +209,14 @@
     <script>
         const memberTable = document.getElementById('member-table');
         const songTable = document.getElementById('song-table');
-        for(let i=0; i<8; i++) memberTable.innerHTML += `<tr class="member-row border-b border-black h-10"><td class="border-r-2 border-black"><input class="w-full px-2 outline-none text-center member-year"></td><td class="border-r-2 border-black"><input class="w-full px-2 outline-none text-center member-part"></td><td><input class="w-full px-2 outline-none member-name"></td></tr>`;
-        for(let i=0; i<5; i++) songTable.innerHTML += `<tr class="border-b border-black h-10"><td class="border-r-2 border-black text-center font-bold bg-gray-50">${i+1}</td><td class="border-r-2 border-black"><input class="w-full px-2 outline-none song-title"></td><td><input class="w-full px-2 outline-none text-center font-mono song-duration" placeholder="00:00"></td></tr>`;
+        // メンバー行の生成
+        for(let i=0; i<8; i++) {
+            memberTable.innerHTML += `<tr class="member-row border-b border-black h-10"><td class="border-r-2 border-black"><input class="w-full px-2 outline-none text-center member-year"></td><td class="border-r-2 border-black"><input class="w-full px-2 outline-none text-center member-part"></td><td><input class="w-full px-2 outline-none member-name"></td></tr>`;
+        }
+        // 曲行の生成
+        for(let i=0; i<5; i++) {
+            songTable.innerHTML += `<tr class="border-b border-black h-10"><td class="border-r-2 border-black text-center font-bold bg-gray-50">${i+1}</td><td class="border-r-2 border-black flex gap-1"><input class="w-full px-2 outline-none song-title"><button onclick="searchSong(this)" class="text-[10px] bg-gray-200 px-1 border-l border-black hover:bg-gray-300 transition">検索</button></td><td><input class="w-full px-2 outline-none text-center font-mono song-duration" placeholder="00:00"></td></tr>`;
+        }
     </script>
 </body>
 </html>
