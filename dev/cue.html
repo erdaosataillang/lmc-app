@@ -6,9 +6,11 @@
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
+        // Firebase imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -21,6 +23,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Helper mapping for parts
         const partMap = {
             "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.",
             "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho."
@@ -28,6 +31,7 @@
 
         let currentSync = null;
 
+        // Toggle Sync selection
         window.toggleSync = (val) => {
             currentSync = val;
             document.querySelectorAll('.sync-btn').forEach(btn => {
@@ -35,8 +39,10 @@
                 btn.classList.toggle('text-white', btn.innerText === val);
                 btn.classList.toggle('text-gray-400', btn.innerText !== val);
             });
+            document.getElementById('error-msg').classList.add('hidden');
         };
 
+        // Load data from Firebase
         window.loadBandData = async (bandId) => {
             try {
                 const bandRef = doc(db, "bands", bandId);
@@ -61,32 +67,46 @@
                         row.querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
                     }
                 }
-            } catch (e) { console.error("Error: ", e); }
+            } catch (e) { console.error("Error loading data: ", e); }
         };
 
+        // Validate and Submit
         window.submitData = () => {
-            const data = {
-                bandName: document.getElementById('band-name-input').value,
-                count: document.getElementById('event-count-input').value,
-                sync: currentSync,
-                // 他のフィールドも同様に取得
-            };
-            
-            if(!data.bandName || !data.count || !data.sync) {
-                alert("必須項目を入力してください");
-                return;
+            const errorDiv = document.getElementById('error-msg');
+            let errors = [];
+
+            const bandName = document.getElementById('band-name-input').value.trim();
+            const count = document.getElementById('event-count-input').value.trim();
+            const members = Array.from(document.querySelectorAll('.member-name')).filter(i => i.value.trim() !== "");
+            const songTitles = Array.from(document.querySelectorAll('.song-title')).filter(i => i.value.trim() !== "");
+            const songDurations = Array.from(document.querySelectorAll('.song-duration')).filter(i => i.value.trim() !== "");
+
+            if(!bandName) errors.push("バンド名が入力されていません。");
+            if(!count) errors.push("出演回数が入力されていません。");
+            if(members.length === 0) errors.push("メンバーを少なくとも1名入力してください。");
+            if(songTitles.length === 0) errors.push("曲名を少なくとも1曲入力してください。");
+            if(songTitles.length !== songDurations.length) errors.push("全ての曲に長さを入力してください。");
+            if(!currentSync) errors.push("同期の有無を選択してください。");
+
+            if(errors.length > 0) {
+                errorDiv.innerHTML = errors.map(e => `<div>・${e}</div>`).join('');
+                errorDiv.classList.remove('hidden');
+                errorDiv.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                errorDiv.classList.add('hidden');
+                // Success logic here
+                console.log("Submit ready");
             }
-            console.log("送信データ:", data);
-            alert("送信しました");
         };
     </script>
     <style>
         @media print {
-            @page { margin: 0; }
+            @page { size: A4; margin: 0; }
             body { padding: 0 !important; margin: 0 !important; background: white !important; }
             .no-print { display: none !important; }
-            #print-area { border: 2px solid black !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+            #print-area { border: 2px solid black !important; margin: 0 !important; width: 100% !important; max-width: none !important; box-shadow: none !important; }
         }
+        input { font-family: sans-serif; }
     </style>
 </head>
 <body class="bg-gray-100 p-2 md:p-6 text-black">
@@ -121,7 +141,7 @@
         </table>
         <div class="flex gap-2 mb-6">
             <table class="flex-grow border-2 border-black border-collapse">
-                <thead>z
+                <thead>
                     <tr class="border-b-2 border-black bg-gray-50">
                         <th class="border-r-2 border-black p-1 w-10 font-bold text-sm">曲</th>
                         <th class="border-r-2 border-black p-1">曲名</th>
@@ -139,10 +159,11 @@
                 </div>
             </div>
         </div>
+        <div id="error-msg" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-sm"></div>
         <div class="no-print flex gap-4 mt-4">
-            <button onclick="loadBandData('GyOs5xdbRty6xnS1pO5M')" class="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800">バンド情報読込</button>
-            <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">PDFとして出力</button>
-            <button onclick="submitData()" class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700">送信する</button>
+            <button onclick="loadBandData('GyOs5xdbRty6xnS1pO5M')" class="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800 transition">バンド情報読込</button>
+            <button onclick="window.print()" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition">PDFとして出力</button>
+            <button onclick="submitData()" class="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition">送信する</button>
         </div>
     </div>
     <script>
