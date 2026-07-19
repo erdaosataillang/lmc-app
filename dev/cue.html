@@ -7,6 +7,14 @@
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- ▼追加: スマホ用デバッグコンソール (vConsole) ▼ -->
+    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        // 画面右下に緑色の「vConsole」ボタンが表示されます
+        var vConsole = new window.VConsole();
+    </script>
+    <!-- ▲追加ここまで▲ -->
+
     <style>
         .sync-btn.active { transition: all 0.2s; }
         /* モバイルでのタップハイライトを調整 */
@@ -149,12 +157,19 @@
                 // SafariやLINEブラウザの厳しいセキュリティ(CORS)を回避するため、無料のプロキシを経由して取得する
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(itunesUrl)}`;
                 
+                console.log("[デバッグ] リクエスト開始URL:", proxyUrl);
+                
                 // 強制的にキャッシュを無効化して最新データを取得
                 const res = await fetch(proxyUrl, { cache: 'no-store' });
                 
-                if (!res.ok) throw new Error("Network Error");
+                console.log("[デバッグ] レスポンスステータス:", res.status);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
+                }
                 
                 const data = await res.json();
+                console.log("[デバッグ] 取得完了データ:", data);
 
                 if (data.results && data.results.length > 0) {
                     showSuggestions(data.results, titleInput, durationInput);
@@ -162,9 +177,11 @@
                     alert("曲が見つかりませんでした");
                 }
             } catch (e) {
-                console.error("Search API Error:", e);
+                console.error("[デバッグ] API通信エラー発生:", e);
+                console.error("[デバッグ] エラーメッセージ:", e.message);
+                console.error("[デバッグ] スタックトレース:", e.stack);
                 // エラーメッセージで違いがわかるように少し文言を変えています
-                alert("通信エラーが発生しました。\nネットワーク環境を確認し、再度お試しください。");
+                alert("通信エラーが発生しました。\n右下の「vConsole」ボタンを押して、赤字で表示されているエラー内容を確認してください。\n詳細: " + e.message);
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
