@@ -107,7 +107,7 @@
             });
         });
 
-        // 楽曲検索 (プロキシ + 直通信の冗長化フォールバック)
+        // 楽曲検索 (プロキシを廃止し、iTunes APIへ直接通信)
         document.querySelectorAll('.search-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const row = this.closest('tr');
@@ -122,49 +122,15 @@
 
                 const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
                 
-                // プロキシルートの定義
-                const proxy1 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
-
-                let data = null;
-                let success = false;
-
                 try {
-                    // ルート1: corsproxy.io
-                    try {
-                        const res1 = await fetch(proxy1, { cache: 'no-store' });
-                        if (res1.ok) {
-                            data = await res1.json();
-                            success = true;
-                        }
-                    } catch(e) { }
-
-                    // ルート2: AllOrigins (ラップされたJSONをパース)
-                    if (!success) {
-                        try {
-                            const res2 = await fetch(proxy2, { cache: 'no-store' });
-                            if (res2.ok) {
-                                const raw = await res2.json();
-                                data = JSON.parse(raw.contents);
-                                success = true;
-                            }
-                        } catch(e) { }
+                    // Appleへ直接通信（ブロッカーがオフなら最も安定します）
+                    const res = await fetch(url, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+                    
+                    if (!res.ok) {
+                        throw new Error(`HTTPエラー: ${res.status}`);
                     }
-
-                    // ルート3: 直通信 (主にPCやブロッカーなし環境用)
-                    if (!success) {
-                        try {
-                            const res3 = await fetch(url, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
-                            if (res3.ok) {
-                                data = await res3.json();
-                                success = true;
-                            }
-                        } catch(e) { }
-                    }
-
-                    if (!success || !data) {
-                        throw new Error("通信エラー");
-                    }
+                    
+                    const data = await res.json();
 
                     if (data.results && data.results.length > 0) {
                         showSuggestions(data.results, row);
@@ -173,7 +139,8 @@
                     }
 
                 } catch (error) {
-                    alert("通信エラーが発生しました。通信環境や広告ブロッカーの設定をご確認ください。");
+                    console.error("iTunes Search Error:", error);
+                    alert("通信エラーが発生しました。広告ブロッカー(280blocker等)がオンになっている場合はオフにして再度お試しください。");
                 } finally {
                     this.innerText = originalText;
                     this.disabled = false;
