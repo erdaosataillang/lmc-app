@@ -130,8 +130,7 @@
         // 楽曲検索（iOS・LINEブラウザ対応版）
         window.searchSong = async (btn) => {
             const row = btn.closest('tr');
-            const tdElement = btn.closest('td');
-            const titleInput = tdElement.querySelector('.song-title');
+            const titleInput = row.querySelector('.song-title');
             const durationInput = row.querySelector('.song-duration');
             const query = titleInput.value.trim();
 
@@ -145,23 +144,22 @@
             btn.disabled = true;
 
             try {
-                // キャッシュバスターを追加し、常に最新の検索結果を取得
-                const timestamp = new Date().getTime();
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&country=jp&limit=5&_=${timestamp}`;
+                // 余計なパラメータを外し、よりシンプルにリクエスト
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
                 
                 const res = await fetch(url);
-                if (!res.ok) throw new Error("Network response was not ok");
+                if (!res.ok) throw new Error("Network Error");
                 
                 const data = await res.json();
 
                 if (data.results && data.results.length > 0) {
-                    showSuggestions(data.results, tdElement, titleInput, durationInput);
+                    showSuggestions(data.results, titleInput, durationInput);
                 } else {
                     alert("曲が見つかりませんでした");
                 }
             } catch (e) {
                 console.error(e);
-                alert("通信エラーが発生しました。電波の良い場所でお試しください。");
+                alert("通信エラーが発生しました。時間をおいて再度お試しください。");
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
@@ -169,42 +167,53 @@
         };
 
         // サジェスト表示（スマホで確実にタップできるよう構造を変更）
-        function showSuggestions(results, tdElement, titleInput, durationInput) {
+        function showSuggestions(results, titleInput, durationInput) {
             // 古いサジェストがあれば削除
             const existing = document.getElementById('suggestion-box');
             if (existing) existing.remove();
 
             const box = document.createElement('div');
             box.id = 'suggestion-box';
-            // 親のtdに対して相対位置で表示（スクロールに強い）
-            box.className = 'absolute top-full left-0 w-[240px] md:w-[300px] bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md';
+            // テーブルの中ではなく、画面全体(body)の最前面に絶対配置
+            box.className = 'absolute bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md';
+            
+            // 入力欄の座標を取得して、画面上の正しい位置に追従させる
+            const rect = titleInput.getBoundingClientRect();
+            box.style.top = `${rect.bottom + window.scrollY}px`;
+            box.style.left = `${rect.left + window.scrollX}px`;
+            box.style.width = `${Math.max(240, rect.width * 1.5)}px`;
             
             let html = '';
             results.forEach(s => {
                 const title = s.trackName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 const time = formatTime(s.trackTimeMillis);
+                // スマホのタップ(ontouchstart)とPCのクリック(onmousedown)の両方を設定
+                // onclickを使わないことで、キーボードが閉じる挙動との競合を回避
                 html += `
-                <div class="suggestion-item p-3 border-b border-gray-200 active:bg-blue-100 bg-white cursor-pointer" 
-                     onclick="window.selectSongFromSuggest('${title}', '${time}')">
-                    <div class="font-bold text-sm truncate text-black">${s.trackName}</div>
-                    <div class="text-xs text-gray-500 truncate">${s.artistName}</div>
+                <div class="suggestion-item p-3 border-b border-gray-200 active:bg-blue-100 hover:bg-gray-50 bg-white cursor-pointer" 
+                     onmousedown="window.selectSongFromSuggest(event, '${title}', '${time}')"
+                     ontouchstart="window.selectSongFromSuggest(event, '${title}', '${time}')">
+                    <div class="font-bold text-sm truncate text-black pointer-events-none">${s.trackName}</div>
+                    <div class="text-xs text-gray-500 truncate pointer-events-none">${s.artistName}</div>
                 </div>`;
             });
             box.innerHTML = html;
-            tdElement.appendChild(box);
+            document.body.appendChild(box);
 
-            // 選択処理をグローバルに定義（スマホでのイベント喪失防止）
-            window.selectSongFromSuggest = (title, time) => {
+            // 選択処理
+            window.selectSongFromSuggest = (e, title, time) => {
+                e.preventDefault(); // タップ時の余計なイベント（フォーカス外れ等）を防止
                 titleInput.value = title;
                 durationInput.value = time;
                 box.remove();
             };
 
-            // 画面のどこかをタップしたら閉じる処理（少し遅延させて登録）
+            // 外側をタップしたら閉じる処理
             setTimeout(() => {
                 const closeHandler = (e) => {
-                    if (document.getElementById('suggestion-box') && !box.contains(e.target)) {
-                        box.remove();
+                    const currentBox = document.getElementById('suggestion-box');
+                    if (currentBox && !currentBox.contains(e.target) && e.target !== titleInput) {
+                        currentBox.remove();
                         document.removeEventListener('click', closeHandler);
                         document.removeEventListener('touchstart', closeHandler);
                     }
@@ -212,6 +221,16 @@
                 document.addEventListener('click', closeHandler);
                 document.addEventListener('touchstart', closeHandler);
             }, 50);
+            
+            // スクロール時にリストの位置を追従させる
+            window.addEventListener('scroll', () => {
+                const currentBox = document.getElementById('suggestion-box');
+                if (currentBox) {
+                    const updatedRect = titleInput.getBoundingClientRect();
+                    currentBox.style.top = `${updatedRect.bottom + window.scrollY}px`;
+                    currentBox.style.left = `${updatedRect.left + window.scrollX}px`;
+                }
+            }, { passive: true });
         }
 
         function formatTime(ms) {
