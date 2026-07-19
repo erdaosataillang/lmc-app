@@ -24,7 +24,7 @@
         const partMap = { "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.", "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho." };
         let currentSync = null;
 
-        // iTunes API Search with Cache busting for Safari
+        // iTunes API Search
         window.searchSong = async (btn) => {
             const row = btn.closest('tr');
             const titleInput = row.querySelector('.song-title');
@@ -36,18 +36,17 @@
             btn.innerText = "検索中...";
 
             try {
-                // cache: 'no-store' is vital for Safari
                 const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&country=jp&limit=5`, { cache: 'no-store' });
                 const data = await res.json();
 
-                if (data.results.length > 0) {
+                if (data.results && data.results.length > 0) {
                     showSuggestions(data.results, row);
                 } else {
                     alert("曲が見つかりませんでした");
                 }
             } catch (e) {
                 console.error(e);
-                alert("検索に失敗しました。時間をおいて試してください。");
+                alert("検索に失敗しました");
             } finally {
                 btn.innerText = originalText;
             }
@@ -64,6 +63,7 @@
             const rect = row.querySelector('.song-title').getBoundingClientRect();
             container.style.top = `${rect.bottom + window.scrollY}px`;
             container.style.left = `${rect.left + window.scrollX}px`;
+            
             container.innerHTML = results.map(s => `
                 <div class="p-2 border-b border-gray-200 hover:bg-gray-100 cursor-pointer text-sm" data-title="${s.trackName}" data-time="${formatTime(s.trackTimeMillis)}">
                     ${s.trackName} <span class="text-gray-500 text-xs">(${s.artistName})</span>
@@ -77,6 +77,7 @@
                     container.innerHTML = '';
                 };
             });
+            document.addEventListener('click', (e) => { if (container && !container.contains(e.target)) container.innerHTML = ''; }, {once: true});
         }
 
         function formatTime(ms) {
@@ -85,10 +86,13 @@
         }
 
         window.toggleSync = (btn, val) => {
-            document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('active', 'bg-black', 'text-white'));
+            document.querySelectorAll('.sync-btn').forEach(b => {
+                b.classList.remove('active', 'bg-black', 'text-white');
+                b.classList.add('text-gray-400');
+            });
             btn.classList.add('active', 'bg-black', 'text-white');
+            btn.classList.remove('text-gray-400');
             currentSync = val;
-            document.getElementById('error-msg').classList.add('hidden');
         };
 
         window.loadBandData = async (bandId) => {
@@ -138,7 +142,7 @@
     </style>
 </head>
 <body class="bg-gray-100 p-4 min-h-screen">
-    <div id="print-area" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-8 shadow-2xl">
+    <div id="print-area" class="mx-auto w-[680px] bg-white border-2 border-black p-8 shadow-2xl">
         <div class="flex justify-end mb-8"><div class="border-2 border-black px-10 py-2 font-bold text-2xl tracking-widest bg-gray-50 uppercase">月定演</div></div>
         
         <div class="border-2 border-black mb-8">
@@ -154,8 +158,8 @@
             <table class="flex-grow border-2 border-black border-collapse"><tbody id="song-table"></tbody></table>
             <div class="w-24 border-2 border-black flex flex-col items-center">
                 <div class="font-bold border-b-2 border-black w-full text-center text-sm p-3 bg-gray-50">同期</div>
-                <button onclick="toggleSync(this, '有')" class="sync-btn w-full p-4 font-bold text-gray-400 border-b border-black hover:bg-gray-100">有</button>
-                <button onclick="toggleSync(this, '無')" class="sync-btn w-full p-4 font-bold text-gray-400 hover:bg-gray-100">無</button>
+                <button onclick="toggleSync(this, '有')" class="sync-btn w-full p-4 font-bold text-gray-400 border-b border-black hover:bg-gray-100 transition">有</button>
+                <button onclick="toggleSync(this, '無')" class="sync-btn w-full p-4 font-bold text-gray-400 hover:bg-gray-100 transition">無</button>
             </div>
         </div>
 
@@ -171,7 +175,7 @@
         const mTable = document.getElementById('member-table');
         const sTable = document.getElementById('song-table');
         for(let i=0; i<8; i++) mTable.innerHTML += `<tr class="member-row border-b border-black h-12"><td class="border-r-2 border-black w-20"><input class="w-full text-center outline-none"></td><td class="border-r-2 border-black w-24"><input class="w-full text-center outline-none member-part"></td><td><input class="w-full px-4 outline-none member-name"></td></tr>`;
-        for(let i=0; i<5; i++) sTable.innerHTML += `<tr class="border-b border-black h-14"><td class="border-r-2 border-black text-center font-bold bg-gray-50 w-12">${i+1}</td><td class="border-r-2 border-black flex items-center"><input class="w-full px-4 outline-none song-title" placeholder="曲名"><button onclick="searchSong(this)" class="px-2 text-xs text-blue-600 underline">検索</button></td><td class="w-24"><input class="w-full text-center outline-none font-mono song-duration" placeholder="00:00"></td></tr>`;
+        for(let i=0; i<5; i++) sTable.innerHTML += `<tr class="border-b border-black h-14"><td class="border-r-2 border-black text-center font-bold bg-gray-50 w-12">${i+1}</td><td class="border-r-2 border-black flex items-center"><input class="w-full px-4 outline-none song-title" placeholder="曲名"><button onclick="searchSong(this)" class="px-2 text-xs text-blue-600 underline hover:text-blue-800">検索</button></td><td class="w-24"><input class="w-full text-center outline-none font-mono song-duration" placeholder="00:00"></td></tr>`;
     </script>
 </body>
 </html>
