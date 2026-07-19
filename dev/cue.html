@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-    <script>
-        // デバッグ用コンソールの初期化
-        var vConsole = new window.VConsole();
-    </script>
     <style>
         .sync-btn.active { transition: all 0.2s; }
         /* スマホでのタップ時のハイライトを消す */
@@ -112,7 +107,7 @@
             });
         });
 
-        // 楽曲検索 (最強の3段構えプロキシ + 直通信)
+        // 楽曲検索 (プロキシ + 直通信の冗長化フォールバック)
         document.querySelectorAll('.search-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const row = this.closest('tr');
@@ -135,46 +130,40 @@
                 let success = false;
 
                 try {
-                    // ルート1: corsproxy.io (現在最も安定)
-                    console.log("[デバッグ] ルート1(corsproxy) 試行中...");
+                    // ルート1: corsproxy.io
                     try {
                         const res1 = await fetch(proxy1, { cache: 'no-store' });
                         if (res1.ok) {
                             data = await res1.json();
                             success = true;
-                            console.log("[デバッグ] ルート1 成功");
                         }
-                    } catch(e) { console.warn("[デバッグ] ルート1 失敗:", e); }
+                    } catch(e) { }
 
                     // ルート2: AllOrigins (ラップされたJSONをパース)
                     if (!success) {
-                        console.log("[デバッグ] ルート2(allorigins) 試行中...");
                         try {
                             const res2 = await fetch(proxy2, { cache: 'no-store' });
                             if (res2.ok) {
                                 const raw = await res2.json();
                                 data = JSON.parse(raw.contents);
                                 success = true;
-                                console.log("[デバッグ] ルート2 成功");
                             }
-                        } catch(e) { console.warn("[デバッグ] ルート2 失敗:", e); }
+                        } catch(e) { }
                     }
 
-                    // ルート3: 直通信 (Mac/PC用)
+                    // ルート3: 直通信 (主にPCやブロッカーなし環境用)
                     if (!success) {
-                        console.log("[デバッグ] ルート3(直通信) 試行中...");
                         try {
                             const res3 = await fetch(url, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
                             if (res3.ok) {
                                 data = await res3.json();
                                 success = true;
-                                console.log("[デバッグ] ルート3 成功");
                             }
-                        } catch(e) { console.warn("[デバッグ] ルート3 失敗:", e); }
+                        } catch(e) { }
                     }
 
                     if (!success || !data) {
-                        throw new Error("全ての通信サーバーが応答しませんでした");
+                        throw new Error("通信エラー");
                     }
 
                     if (data.results && data.results.length > 0) {
@@ -184,8 +173,7 @@
                     }
 
                 } catch (error) {
-                    console.error("[デバッグ] 最終エラー:", error);
-                    alert("通信エラーが発生しました。Wi-Fi環境等をご確認ください。");
+                    alert("通信エラーが発生しました。通信環境や広告ブロッカーの設定をご確認ください。");
                 } finally {
                     this.innerText = originalText;
                     this.disabled = false;
@@ -209,7 +197,6 @@
             results.forEach(s => {
                 const sec = Math.floor(s.trackTimeMillis / 1000);
                 const time = `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
-                // HTMLを生成
                 html += `
                 <div class="sugg-item p-3 border-b border-gray-200 active:bg-blue-100 hover:bg-gray-50 bg-white cursor-pointer" 
                      data-title="${s.trackName.replace(/"/g, '&quot;')}" data-time="${time}">
@@ -224,14 +211,13 @@
             const selectHandler = (e) => {
                 const item = e.target.closest('.sugg-item');
                 if (item) {
-                    e.preventDefault(); // 入力欄からフォーカスが外れるのを防ぐ
+                    e.preventDefault();
                     titleInput.value = item.dataset.title;
                     durationInput.value = item.dataset.time;
                     box.remove();
                 }
             };
             
-            // touchstartとclickの両方で検知
             box.addEventListener('touchstart', selectHandler, {passive: false});
             box.addEventListener('click', selectHandler);
 
