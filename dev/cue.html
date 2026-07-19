@@ -5,112 +5,173 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+            authDomain: "urakata-app.firebaseapp.com",
+            projectId: "urakata-app",
+            storageBucket: "urakata-app.firebasestorage.app",
+            messagingSenderId: "407777765696",
+            appId: "1:407777765696:web:045c2d94729022b4eab2a5"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const partMap = { "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.", "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho." };
+        let currentSync = null;
+
+        // iTunes API Search with Cache busting for Safari
+        window.searchSong = async (btn) => {
+            const row = btn.closest('tr');
+            const titleInput = row.querySelector('.song-title');
+            const durationInput = row.querySelector('.song-duration');
+            const query = titleInput.value.trim();
+
+            if (!query) return;
+            const originalText = btn.innerText;
+            btn.innerText = "検索中...";
+
+            try {
+                // cache: 'no-store' is vital for Safari
+                const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&country=jp&limit=5`, { cache: 'no-store' });
+                const data = await res.json();
+
+                if (data.results.length > 0) {
+                    showSuggestions(data.results, row);
+                } else {
+                    alert("曲が見つかりませんでした");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("検索に失敗しました。時間をおいて試してください。");
+            } finally {
+                btn.innerText = originalText;
+            }
+        };
+
+        function showSuggestions(results, row) {
+            let container = document.getElementById('suggestions');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'suggestions';
+                container.className = 'absolute z-50 bg-white border-2 border-black w-64 shadow-xl max-h-60 overflow-y-auto';
+                document.body.appendChild(container);
+            }
+            const rect = row.querySelector('.song-title').getBoundingClientRect();
+            container.style.top = `${rect.bottom + window.scrollY}px`;
+            container.style.left = `${rect.left + window.scrollX}px`;
+            container.innerHTML = results.map(s => `
+                <div class="p-2 border-b border-gray-200 hover:bg-gray-100 cursor-pointer text-sm" data-title="${s.trackName}" data-time="${formatTime(s.trackTimeMillis)}">
+                    ${s.trackName} <span class="text-gray-500 text-xs">(${s.artistName})</span>
+                </div>
+            `).join('');
+            
+            container.querySelectorAll('div').forEach(item => {
+                item.onclick = () => {
+                    row.querySelector('.song-title').value = item.dataset.title;
+                    row.querySelector('.song-duration').value = item.dataset.time;
+                    container.innerHTML = '';
+                };
+            });
+        }
+
+        function formatTime(ms) {
+            const sec = Math.floor(ms / 1000);
+            return `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
+        }
+
+        window.toggleSync = (btn, val) => {
+            document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('active', 'bg-black', 'text-white'));
+            btn.classList.add('active', 'bg-black', 'text-white');
+            currentSync = val;
+            document.getElementById('error-msg').classList.add('hidden');
+        };
+
+        window.loadBandData = async (bandId) => {
+            try {
+                const bandRef = doc(db, "bands", bandId);
+                const bandSnap = await getDoc(bandRef);
+                if (!bandSnap.exists()) return;
+                const bandData = bandSnap.data();
+                document.getElementById('band-name-input').value = bandData.name || '';
+                document.getElementById('event-count-input').value = bandData.events ? bandData.events.length : 1;
+                const memberIds = bandData.memberIds || [];
+                const rows = document.querySelectorAll('.member-row');
+                for (let i = 0; i < Math.min(memberIds.length, rows.length); i++) {
+                    const uSnap = await getDoc(doc(db, "users", memberIds[i]));
+                    if (uSnap.exists()) {
+                        const u = uSnap.data();
+                        rows[i].querySelector('.member-name').value = u.name || '';
+                        rows[i].querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
+                    }
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        window.submitData = () => {
+            const errorDiv = document.getElementById('error-msg');
+            let errors = [];
+            if(!document.getElementById('band-name-input').value.trim()) errors.push("バンド名を入力してください");
+            if(!currentSync) errors.push("同期の有無を選択してください");
+            
+            if(errors.length > 0) {
+                errorDiv.innerHTML = errors.map(e => `<div>・${e}</div>`).join('');
+                errorDiv.classList.remove('hidden');
+                errorDiv.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                errorDiv.classList.add('hidden');
+                alert("送信完了しました");
+            }
+        };
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
-        body { font-family: 'Noto Sans JP', sans-serif; }
-        .sync-btn.active { background-color: #000; color: #fff; transform: scale(1.02); transition: all 0.2s; }
-        .song-row:hover { background-color: #f9fafb; }
+        .sync-btn.active { transition: all 0.2s; }
         @media print {
-            @page { size: A4; margin: 0; }
-            body { padding: 0 !important; background: white !important; }
+            @page { size: A4; margin: 10mm; }
             .no-print { display: none !important; }
-            #print-area { border: 2px solid black !important; box-shadow: none !important; }
+            #print-area { border: 2px solid black !important; box-shadow: none !important; width: 100% !important; }
         }
     </style>
 </head>
 <body class="bg-gray-100 p-4 min-h-screen">
-
-    <div id="print-area" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-8 shadow-2xl transition-all duration-500">
+    <div id="print-area" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-8 shadow-2xl">
+        <div class="flex justify-end mb-8"><div class="border-2 border-black px-10 py-2 font-bold text-2xl tracking-widest bg-gray-50 uppercase">月定演</div></div>
         
-        <!-- Header -->
-        <div class="flex justify-end mb-8">
-            <div class="border-2 border-black px-10 py-2 font-bold text-2xl tracking-widest bg-gray-50 uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                月定演
-            </div>
+        <div class="border-2 border-black mb-8">
+            <div class="flex border-b-2 border-black"><div class="w-28 border-r-2 border-black p-3 font-bold bg-gray-50">バンド名</div><input id="band-name-input" class="w-full px-4 outline-none"></div>
+            <div class="p-2 text-right text-xs font-bold text-gray-500">新規 or 既存（<input id="event-count-input" class="w-12 border-b border-gray-400 outline-none text-center" placeholder="1"> 回目）</div>
         </div>
 
-        <!-- Band Info Section -->
-        <div class="border-2 border-black mb-8 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
-            <div class="flex border-b-2 border-black">
-                <div class="w-28 border-r-2 border-black p-3 font-bold flex items-center bg-gray-50">バンド名</div>
-                <input id="band-name-input" class="w-full px-4 outline-none text-lg placeholder:text-gray-300" placeholder="バンド名を入力">
-            </div>
-            <div class="p-2 text-right text-xs font-bold text-gray-500">
-                新規 or 既存（<input id="event-count-input" class="w-16 border-b border-gray-400 outline-none text-center" placeholder="1"> 回目）
-            </div>
-        </div>
-
-        <!-- Member Table -->
         <table class="w-full border-2 border-black mb-8 border-collapse">
-            <thead>
-                <tr class="bg-gray-50 border-b-2 border-black">
-                    <th class="border-r-2 border-black p-3 w-20 text-sm">学年</th>
-                    <th class="border-r-2 border-black p-3 w-24 text-sm">パート</th>
-                    <th class="p-3 text-sm text-left">メンバー氏名</th>
-                </tr>
-            </thead>
-            <tbody id="member-table">
-                <!-- JS will inject rows -->
-            </tbody>
+            <tbody id="member-table"></tbody>
         </table>
 
-        <!-- Songs & Sync Section -->
         <div class="flex gap-4 mb-8">
-            <table class="flex-grow border-2 border-black border-collapse">
-                <tbody id="song-table">
-                    <!-- JS will inject rows -->
-                </tbody>
-            </table>
-            
-            <div class="w-24 border-2 border-black flex flex-col items-center shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]">
+            <table class="flex-grow border-2 border-black border-collapse"><tbody id="song-table"></tbody></table>
+            <div class="w-24 border-2 border-black flex flex-col items-center">
                 <div class="font-bold border-b-2 border-black w-full text-center text-sm p-3 bg-gray-50">同期</div>
-                <button onclick="toggleSync(this, '有')" class="sync-btn w-full p-4 font-bold text-gray-400 hover:bg-gray-100 transition-colors border-b border-black">有</button>
-                <button onclick="toggleSync(this, '無')" class="sync-btn w-full p-4 font-bold text-gray-400 hover:bg-gray-100 transition-colors">無</button>
+                <button onclick="toggleSync(this, '有')" class="sync-btn w-full p-4 font-bold text-gray-400 border-b border-black hover:bg-gray-100">有</button>
+                <button onclick="toggleSync(this, '無')" class="sync-btn w-full p-4 font-bold text-gray-400 hover:bg-gray-100">無</button>
             </div>
         </div>
 
-        <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-sm mb-6 animate-pulse"></div>
-
+        <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6"></div>
         <div class="no-print flex gap-4 mt-8 pt-6 border-t border-gray-200">
-            <button onclick="window.print()" class="flex-1 bg-black text-white py-3 font-bold hover:bg-gray-800 transition-transform active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">PDF出力</button>
-            <button onclick="submitData()" class="flex-1 bg-green-600 text-white py-3 font-bold hover:bg-green-700 transition-transform active:scale-95 shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)]">送信する</button>
+            <button onclick="loadBandData('GyOs5xdbRty6xnS1pO5M')" class="bg-gray-600 text-white px-4 py-2 rounded">情報読込</button>
+            <button onclick="window.print()" class="bg-black text-white px-4 py-2 rounded">PDF出力</button>
+            <button onclick="submitData()" class="bg-green-600 text-white px-4 py-2 rounded">送信する</button>
         </div>
     </div>
 
     <script>
         const mTable = document.getElementById('member-table');
         const sTable = document.getElementById('song-table');
-
-        // Generate Rows
-        for(let i=0; i<8; i++) {
-            mTable.innerHTML += `
-                <tr class="border-b border-gray-200 h-12">
-                    <td class="border-r-2 border-black text-center"><input class="w-full text-center outline-none"></td>
-                    <td class="border-r-2 border-black text-center"><input class="w-full text-center outline-none"></td>
-                    <td><input class="w-full px-4 outline-none"></td>
-                </tr>`;
-        }
-
-        for(let i=0; i<5; i++) {
-            sTable.innerHTML += `
-                <tr class="song-row border-b border-black h-14">
-                    <td class="border-r-2 border-black text-center font-bold bg-gray-50 w-12">${i+1}</td>
-                    <td class="border-r-2 border-black"><input class="w-full px-4 outline-none song-title" placeholder="曲名"></td>
-                    <td class="w-24"><input class="w-full text-center outline-none font-mono song-duration" placeholder="00:00"></td>
-                </tr>`;
-        }
-
-        function toggleSync(btn, val) {
-            document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById('error-msg').classList.add('hidden');
-        }
-
-        function submitData() {
-            const errorDiv = document.getElementById('error-msg');
-            errorDiv.classList.remove('hidden');
-            errorDiv.innerText = "※ まだ送信先が設定されていません。サーバー連携をお待ちください。";
-        }
+        for(let i=0; i<8; i++) mTable.innerHTML += `<tr class="member-row border-b border-black h-12"><td class="border-r-2 border-black w-20"><input class="w-full text-center outline-none"></td><td class="border-r-2 border-black w-24"><input class="w-full text-center outline-none member-part"></td><td><input class="w-full px-4 outline-none member-name"></td></tr>`;
+        for(let i=0; i<5; i++) sTable.innerHTML += `<tr class="border-b border-black h-14"><td class="border-r-2 border-black text-center font-bold bg-gray-50 w-12">${i+1}</td><td class="border-r-2 border-black flex items-center"><input class="w-full px-4 outline-none song-title" placeholder="曲名"><button onclick="searchSong(this)" class="px-2 text-xs text-blue-600 underline">検索</button></td><td class="w-24"><input class="w-full text-center outline-none font-mono song-duration" placeholder="00:00"></td></tr>`;
     </script>
 </body>
 </html>
