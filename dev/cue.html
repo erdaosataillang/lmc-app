@@ -35,7 +35,6 @@
                 const bandData = bandSnap.data();
                 document.getElementById('band-name-input').value = bandData.name || '';
                 
-                // イベント数から回数を判定
                 const eventCount = bandData.events ? bandData.events.length : 0;
                 document.getElementById('event-count-input').value = eventCount > 0 ? eventCount : '';
 
@@ -58,9 +57,16 @@
     </script>
     <style>
         @media print {
+            @page { margin: 0; }
+            body { padding: 0 !important; margin: 0 !important; background: white !important; }
             .no-print { display: none !important; }
-            body { background: white; padding: 0; }
-            #print-area { box-shadow: none; border: 2px solid black; }
+            #print-area { 
+                box-shadow: none !important; 
+                border: 2px solid black !important; 
+                margin: 0 !important;
+                width: 100% !important;
+                max-width: none !important;
+            }
         }
         body { font-family: sans-serif; }
     </style>
@@ -71,7 +77,6 @@
             <div class="border-2 border-black px-8 py-1 font-bold text-2xl tracking-widest bg-gray-50">月定演</div>
         </div>
         
-        <!-- Band Name and New/Existing field -->
         <div class="border-2 border-black mb-2">
             <div class="flex border-b-2 border-black">
                 <div class="w-24 border-r-2 border-black p-2 font-bold flex items-center bg-gray-50 text-sm">バンド名</div>
