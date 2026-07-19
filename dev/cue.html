@@ -2,239 +2,15 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <!-- スマホでの勝手なズームを防ぎ、レイアウト崩れを防止 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
-            authDomain: "urakata-app.firebaseapp.com",
-            projectId: "urakata-app",
-            storageBucket: "urakata-app.firebasestorage.app",
-            messagingSenderId: "407777765696",
-            appId: "1:407777765696:web:045c2d94729022b4eab2a5"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Global variables for older browser support
-        window.db = db;
-        window.doc = doc;
-        window.getDoc = getDoc;
-    </script>
-
-    <script>
-        const partMap = { "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.", "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho." };
-        let currentSync = null;
-
-        // Mobile-friendly iTunes Search API
-        window.searchSong = async (btn) => {
-            const row = btn.closest('tr');
-            const titleInput = row.querySelector('.song-title');
-            const durationInput = row.querySelector('.song-duration');
-            const query = titleInput.value.trim();
-
-            if (!query) {
-                alert("曲名を入力してください");
-                return;
-            }
-            
-            const originalText = btn.innerText;
-            btn.innerText = "検索中...";
-            btn.disabled = true;
-
-            try {
-                // Add a timestamp to bypass strict iOS caching
-                const timestamp = new Date().getTime();
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&country=jp&limit=5&_=${timestamp}`;
-                
-                const res = await fetch(url);
-                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                
-                const data = await res.json();
-
-                if (data.results && data.results.length > 0) {
-                    showSuggestions(data.results, row);
-                } else {
-                    alert("曲が見つかりませんでした");
-                }
-            } catch (e) {
-                console.error("Search API Error:", e);
-                alert("検索中にエラーが発生しました。ネットワーク環境を確認してください。");
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
-        };
-
-        // UI for search suggestions, optimized for touch
-        function showSuggestions(results, row) {
-            // Remove existing suggestions
-            let existingContainer = document.getElementById('suggestions');
-            if (existingContainer) existingContainer.remove();
-
-            const container = document.createElement('div');
-            container.id = 'suggestions';
-            // Use absolute positioning relative to the page, ensure high z-index
-            container.className = 'absolute z-[9999] bg-white border-2 border-black w-72 shadow-2xl max-h-64 overflow-y-auto rounded-md';
-            
-            // Positioning calculation
-            const rect = row.querySelector('.song-title').getBoundingClientRect();
-            // Add slight offset for better visibility
-            container.style.top = `${rect.bottom + window.scrollY + 5}px`;
-            container.style.left = `${rect.left + window.scrollX}px`;
-            
-            // Build suggestion items
-            container.innerHTML = results.map(s => `
-                <div class="suggestion-item p-3 border-b border-gray-200 active:bg-blue-100 hover:bg-gray-100 cursor-pointer text-sm" 
-                     data-title="${s.trackName.replace(/"/g, '&quot;')}" 
-                     data-time="${formatTime(s.trackTimeMillis)}">
-                    <div class="font-bold truncate">${s.trackName}</div>
-                    <div class="text-gray-500 text-xs truncate">${s.artistName}</div>
-                </div>
-            `).join('');
-            
-            document.body.appendChild(container);
-
-            // Event listener for selecting an item using mousedown/touchstart for better iOS response
-            const items = container.querySelectorAll('.suggestion-item');
-            items.forEach(item => {
-                // Use 'pointerdown' or 'mousedown'/'touchstart' instead of 'click' to avoid blur issues
-                item.addEventListener('mousedown', function(e) {
-                    e.preventDefault(); // Prevent input blur
-                    row.querySelector('.song-title').value = this.dataset.title;
-                    row.querySelector('.song-duration').value = this.dataset.time;
-                    container.remove();
-                });
-                // Also add touchstart for explicitly handling mobile touches
-                item.addEventListener('touchstart', function(e) {
-                    e.preventDefault(); 
-                    row.querySelector('.song-title').value = this.dataset.title;
-                    row.querySelector('.song-duration').value = this.dataset.time;
-                    container.remove();
-                });
-            });
-
-            // Close suggestions when clicking outside
-            setTimeout(() => {
-                const closeHandler = (e) => {
-                    if (container && !container.contains(e.target)) {
-                        container.remove();
-                        document.removeEventListener('mousedown', closeHandler);
-                        document.removeEventListener('touchstart', closeHandler);
-                    }
-                };
-                document.addEventListener('mousedown', closeHandler);
-                document.addEventListener('touchstart', closeHandler);
-            }, 100); // Small delay to prevent immediate triggering
-        }
-
-        function formatTime(ms) {
-            const sec = Math.floor(ms / 1000);
-            return `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
-        }
-
-        window.toggleSync = (btn, val) => {
-            document.querySelectorAll('.sync-btn').forEach(b => {
-                b.classList.remove('active', 'bg-black', 'text-white');
-                b.classList.add('text-gray-400');
-            });
-            btn.classList.add('active', 'bg-black', 'text-white');
-            btn.classList.remove('text-gray-400');
-            currentSync = val;
-        };
-
-        window.loadBandData = async (bandId) => {
-            if (!window.db) {
-                alert("データベースの初期化を待っています。数秒後にお試しください。");
-                return;
-            }
-            try {
-                const btn = document.getElementById('load-btn');
-                const originalText = btn.innerText;
-                btn.innerText = "読込中...";
-                btn.disabled = true;
-
-                const bandSnap = await window.getDoc(window.doc(window.db, "bands", bandId));
-                if (!bandSnap.exists()) {
-                    alert("バンドデータが見つかりません。");
-                    return;
-                }
-                
-                const bandData = bandSnap.data();
-                document.getElementById('band-name-input').value = bandData.name || '';
-                document.getElementById('event-count-input').value = bandData.events ? bandData.events.length : 1;
-                
-                const memberIds = bandData.memberIds || [];
-                const rows = document.querySelectorAll('.member-row');
-                
-                // Clear existing inputs first
-                rows.forEach(row => {
-                    row.querySelector('.member-grade').value = '';
-                    row.querySelector('.member-part').value = '';
-                    row.querySelector('.member-name').value = '';
-                });
-
-                for (let i = 0; i < Math.min(memberIds.length, rows.length); i++) {
-                    const uSnap = await window.getDoc(window.doc(window.db, "users", memberIds[i]));
-                    if (uSnap.exists()) {
-                        const u = uSnap.data();
-                        rows[i].querySelector('.member-grade').value = u.year || u.grade || ''; 
-                        rows[i].querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
-                        rows[i].querySelector('.member-name').value = u.name || '';
-                    }
-                }
-                btn.innerText = originalText;
-                btn.disabled = false;
-            } catch (e) { 
-                console.error("Firebase Error:", e);
-                alert("データの読み込みに失敗しました。");
-                const btn = document.getElementById('load-btn');
-                if(btn) { btn.innerText = "情報読込"; btn.disabled = false; }
-            }
-        };
-
-        window.submitData = () => {
-            const errorDiv = document.getElementById('error-msg');
-            let errors = [];
-            
-            const bandName = document.getElementById('band-name-input').value.trim();
-            const count = document.getElementById('event-count-input').value.trim();
-            
-            // Check members
-            const hasMember = Array.from(document.querySelectorAll('.member-name')).some(i => i.value.trim() !== "");
-            
-            // Check songs
-            const songs = Array.from(document.querySelectorAll('.song-title')).filter(i => i.value.trim() !== "");
-            const durations = Array.from(document.querySelectorAll('.song-duration')).filter(i => i.value.trim() !== "");
-
-            if(!bandName) errors.push("バンド名を入力してください");
-            if(!count) errors.push("出演回数を入力してください");
-            if(!hasMember) errors.push("メンバーを少なくとも1名入力してください");
-            if(songs.length === 0) errors.push("曲名を少なくとも1曲入力してください");
-            if(songs.length !== durations.length) errors.push("全ての曲に長さを入力してください");
-            if(!currentSync) errors.push("同期の有無を選択してください");
-            
-            if(errors.length > 0) {
-                errorDiv.innerHTML = errors.map(e => `<div>・${e}</div>`).join('');
-                errorDiv.classList.remove('hidden');
-                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-                errorDiv.classList.add('hidden');
-                alert("送信準備が完了しました！（※実際の送信処理は未実装です）");
-            }
-        };
-    </script>
-    
     <style>
         .sync-btn.active { transition: all 0.2s; }
-        /* Improve touch targets for mobile */
-        input, button { touch-action: manipulation; }
+        /* モバイルでのタップハイライトを調整 */
+        input, button, .suggestion-item { -webkit-tap-highlight-color: transparent; }
         
         @media print {
             @page { size: A4; margin: 10mm; }
@@ -247,13 +23,14 @@
                 margin: 0 auto !important;
                 padding: 5mm !important;
             }
-            /* Ensure background colors print correctly */
+            /* 背景色が印刷されるように強制 */
             * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
         }
     </style>
 </head>
 
 <body class="bg-gray-100 p-2 md:p-4 min-h-screen">
+    <!-- メインのフォーム領域 -->
     <div id="print-area" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-8 shadow-2xl relative overflow-visible">
         
         <div class="flex justify-end mb-6 md:mb-8">
@@ -305,36 +82,230 @@
         <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6 text-sm"></div>
         
         <div class="no-print flex flex-wrap gap-2 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-center md:justify-start">
-            <button id="load-btn" type="button" onclick="loadBandData('GyOs5xdbRty6xnS1pO5M')" class="bg-gray-600 text-white px-4 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-gray-700 w-[45%] md:w-auto">情報読込</button>
+            <button id="load-btn" type="button" onclick="if(window.loadBandData) { window.loadBandData('GyOs5xdbRty6xnS1pO5M'); } else { alert('データベース接続準備中です。少々お待ちください。'); }" class="bg-gray-600 text-white px-4 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-gray-700 w-[45%] md:w-auto">情報読込</button>
             <button type="button" onclick="window.print()" class="bg-black text-white px-4 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-gray-800 w-[45%] md:w-auto">PDF出力</button>
             <button type="button" onclick="submitData()" class="bg-green-600 text-white px-8 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-green-700 w-full md:w-auto mt-2 md:mt-0">送信する</button>
         </div>
     </div>
 
+    <!-- UI動作用の基本JavaScript（Firebaseがコケても確実に動くように分離） -->
     <script>
-        // Generate Member Table Rows
+        let currentSync = null;
+
+        // テーブルの行を生成
         const mTable = document.getElementById('member-table');
         for(let i=0; i<8; i++) {
-            mTable.innerHTML += `
+            mTable.insertAdjacentHTML('beforeend', `
                 <tr class="member-row border-b border-black h-10 md:h-12">
-                    <td class="border-r-2 border-black w-16 md:w-20"><input type="text" class="w-full text-center outline-none member-grade text-sm md:text-base"></td>
-                    <td class="border-r-2 border-black w-20 md:w-24"><input type="text" class="w-full text-center outline-none member-part text-sm md:text-base"></td>
-                    <td><input type="text" class="w-full px-2 md:px-4 outline-none member-name text-sm md:text-base"></td>
-                </tr>`;
+                    <td class="border-r-2 border-black w-16 md:w-20"><input type="text" class="w-full h-full text-center outline-none member-grade text-sm md:text-base"></td>
+                    <td class="border-r-2 border-black w-20 md:w-24"><input type="text" class="w-full h-full text-center outline-none member-part text-sm md:text-base"></td>
+                    <td><input type="text" class="w-full h-full px-2 md:px-4 outline-none member-name text-sm md:text-base"></td>
+                </tr>`);
         }
         
-        // Generate Song Table Rows
         const sTable = document.getElementById('song-table');
         for(let i=0; i<5; i++) {
-            sTable.innerHTML += `
-                <tr class="border-b border-black h-12 md:h-14 relative">
+            sTable.insertAdjacentHTML('beforeend', `
+                <tr class="border-b border-black h-12 md:h-14">
                     <td class="border-r-2 border-black text-center font-bold bg-gray-50 w-10 text-sm md:text-base">${i+1}</td>
-                    <td class="border-r-2 border-black flex items-center h-full relative">
-                        <input type="text" class="w-full h-full px-2 md:px-4 outline-none song-title text-sm md:text-base" placeholder="曲名">
-                        <button type="button" onclick="searchSong(this)" class="px-2 md:px-3 h-full text-xs md:text-sm font-bold text-blue-600 bg-blue-50 border-l border-blue-200 active:bg-blue-100 flex-shrink-0 whitespace-nowrap">検索</button>
+                    <td class="border-r-2 border-black flex items-center h-full relative p-0" style="position: relative;">
+                        <input type="text" class="w-full h-full px-2 md:px-4 py-2 outline-none song-title text-sm md:text-base" placeholder="曲名">
+                        <button type="button" onclick="searchSong(this)" class="px-2 md:px-3 h-full text-xs md:text-sm font-bold text-blue-600 bg-blue-50 border-l border-blue-200 active:bg-blue-200 flex-shrink-0 whitespace-nowrap">検索</button>
                     </td>
-                    <td class="w-24 md:w-28"><input type="text" inputmode="numeric" class="w-full text-center outline-none font-mono song-duration text-sm md:text-base" placeholder="00:00"></td>
-                </tr>`;
+                    <td class="w-24 md:w-28"><input type="text" inputmode="numeric" class="w-full h-full text-center outline-none font-mono song-duration text-sm md:text-base" placeholder="00:00"></td>
+                </tr>`);
+        }
+
+        // 同期ボタンの切り替え
+        window.toggleSync = (btn, val) => {
+            document.querySelectorAll('.sync-btn').forEach(b => {
+                b.classList.remove('active', 'bg-black', 'text-white');
+                b.classList.add('text-gray-400');
+            });
+            btn.classList.add('active', 'bg-black', 'text-white');
+            btn.classList.remove('text-gray-400');
+            currentSync = val;
+        };
+
+        // 楽曲検索（iOS・LINEブラウザ対応版）
+        window.searchSong = async (btn) => {
+            const row = btn.closest('tr');
+            const tdElement = btn.closest('td');
+            const titleInput = tdElement.querySelector('.song-title');
+            const durationInput = row.querySelector('.song-duration');
+            const query = titleInput.value.trim();
+
+            if (!query) {
+                alert("曲名を入力してください");
+                return;
+            }
+            
+            const originalText = btn.innerText;
+            btn.innerText = "検索中...";
+            btn.disabled = true;
+
+            try {
+                // キャッシュバスターを追加し、常に最新の検索結果を取得
+                const timestamp = new Date().getTime();
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&country=jp&limit=5&_=${timestamp}`;
+                
+                const res = await fetch(url);
+                if (!res.ok) throw new Error("Network response was not ok");
+                
+                const data = await res.json();
+
+                if (data.results && data.results.length > 0) {
+                    showSuggestions(data.results, tdElement, titleInput, durationInput);
+                } else {
+                    alert("曲が見つかりませんでした");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("通信エラーが発生しました。電波の良い場所でお試しください。");
+            } finally {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        // サジェスト表示（スマホで確実にタップできるよう構造を変更）
+        function showSuggestions(results, tdElement, titleInput, durationInput) {
+            // 古いサジェストがあれば削除
+            const existing = document.getElementById('suggestion-box');
+            if (existing) existing.remove();
+
+            const box = document.createElement('div');
+            box.id = 'suggestion-box';
+            // 親のtdに対して相対位置で表示（スクロールに強い）
+            box.className = 'absolute top-full left-0 w-[240px] md:w-[300px] bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md';
+            
+            let html = '';
+            results.forEach(s => {
+                const title = s.trackName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const time = formatTime(s.trackTimeMillis);
+                html += `
+                <div class="suggestion-item p-3 border-b border-gray-200 active:bg-blue-100 bg-white cursor-pointer" 
+                     onclick="window.selectSongFromSuggest('${title}', '${time}')">
+                    <div class="font-bold text-sm truncate text-black">${s.trackName}</div>
+                    <div class="text-xs text-gray-500 truncate">${s.artistName}</div>
+                </div>`;
+            });
+            box.innerHTML = html;
+            tdElement.appendChild(box);
+
+            // 選択処理をグローバルに定義（スマホでのイベント喪失防止）
+            window.selectSongFromSuggest = (title, time) => {
+                titleInput.value = title;
+                durationInput.value = time;
+                box.remove();
+            };
+
+            // 画面のどこかをタップしたら閉じる処理（少し遅延させて登録）
+            setTimeout(() => {
+                const closeHandler = (e) => {
+                    if (document.getElementById('suggestion-box') && !box.contains(e.target)) {
+                        box.remove();
+                        document.removeEventListener('click', closeHandler);
+                        document.removeEventListener('touchstart', closeHandler);
+                    }
+                };
+                document.addEventListener('click', closeHandler);
+                document.addEventListener('touchstart', closeHandler);
+            }, 50);
+        }
+
+        function formatTime(ms) {
+            const sec = Math.floor(ms / 1000);
+            return `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
+        }
+
+        // バリデーション（送信チェック）
+        window.submitData = () => {
+            const errorDiv = document.getElementById('error-msg');
+            let errors = [];
+            
+            const bandName = document.getElementById('band-name-input').value.trim();
+            const count = document.getElementById('event-count-input').value.trim();
+            const hasMember = Array.from(document.querySelectorAll('.member-name')).some(i => i.value.trim() !== "");
+            const songs = Array.from(document.querySelectorAll('.song-title')).filter(i => i.value.trim() !== "");
+            const durations = Array.from(document.querySelectorAll('.song-duration')).filter(i => i.value.trim() !== "");
+
+            if(!bandName) errors.push("バンド名を入力してください");
+            if(!count) errors.push("出演回数を入力してください");
+            if(!hasMember) errors.push("メンバーを少なくとも1名入力してください");
+            if(songs.length === 0) errors.push("曲名を少なくとも1曲入力してください");
+            if(songs.length !== durations.length) errors.push("全ての曲に長さを入力してください");
+            if(!currentSync) errors.push("同期の有無を選択してください");
+            
+            if(errors.length > 0) {
+                errorDiv.innerHTML = errors.map(e => `<div>・${e}</div>`).join('');
+                errorDiv.classList.remove('hidden');
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                errorDiv.classList.add('hidden');
+                alert("送信準備が完了しました！");
+            }
+        };
+    </script>
+
+    <!-- Firebase連携用スクリプト（UIとは独立して実行される） -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+                authDomain: "urakata-app.firebaseapp.com",
+                projectId: "urakata-app",
+                storageBucket: "urakata-app.firebasestorage.app",
+                messagingSenderId: "407777765696",
+                appId: "1:407777765696:web:045c2d94729022b4eab2a5"
+            };
+
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const partMap = { "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.", "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho." };
+
+            window.loadBandData = async (bandId) => {
+                const btn = document.getElementById('load-btn');
+                const originalText = btn.innerText;
+                btn.innerText = "読込中...";
+                btn.disabled = true;
+
+                try {
+                    const bandSnap = await getDoc(doc(db, "bands", bandId));
+                    if (!bandSnap.exists()) {
+                        alert("データが見つかりませんでした");
+                        return;
+                    }
+                    const bandData = bandSnap.data();
+                    document.getElementById('band-name-input').value = bandData.name || '';
+                    document.getElementById('event-count-input').value = bandData.events ? bandData.events.length : 1;
+                    
+                    const memberIds = bandData.memberIds || [];
+                    const rows = document.querySelectorAll('.member-row');
+                    
+                    for (let i = 0; i < Math.min(memberIds.length, rows.length); i++) {
+                        const uSnap = await getDoc(doc(db, "users", memberIds[i]));
+                        if (uSnap.exists()) {
+                            const u = uSnap.data();
+                            rows[i].querySelector('.member-grade').value = u.year || u.grade || ''; 
+                            rows[i].querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
+                            rows[i].querySelector('.member-name').value = u.name || '';
+                        }
+                    }
+                } catch (e) { 
+                    console.error("Data Load Error:", e);
+                    alert("データの読み込みに失敗しました");
+                } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+            };
+        } catch(err) {
+            console.error("Firebase Initialization Failed:", err);
+            // モジュール読み込みに失敗しても、画面UIは壊れないように処理
         }
     </script>
 </body>
