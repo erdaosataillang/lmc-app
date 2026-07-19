@@ -135,8 +135,8 @@
             currentSync = val;
         };
 
-        // 楽曲検索（iOS・LINEブラウザのCORS制限を突破するためのプロキシ対応版）
-        window.searchSong = async (btn) => {
+        // 楽曲検索（JSONP方式に変更し、プロキシを廃止して直接Appleと通信する確実な手法）
+        window.searchSong = (btn) => {
             const row = btn.closest('tr');
             const titleInput = row.querySelector('.song-title');
             const durationInput = row.querySelector('.song-duration');
@@ -151,41 +151,63 @@
             btn.innerText = "検索中...";
             btn.disabled = true;
 
-            try {
-                // iTunes Search APIのURL
-                const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
-                // SafariやLINEブラウザの厳しいセキュリティ(CORS)を回避するため、無料のプロキシを経由して取得する
-                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(itunesUrl)}`;
+            // 他の検索と被らないよう、ユニークな関数名を作成
+            const callbackName = 'itunesCallback_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            
+            let isTimeout = false;
+
+            // 終了時の後片付け関数
+            const cleanup = () => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+                delete window[callbackName];
+                const scriptNode = document.getElementById(callbackName);
+                if (scriptNode) scriptNode.remove();
+            };
+
+            // タイムアウト処理 (10秒反応がなければエラーにする)
+            const timer = setTimeout(() => {
+                isTimeout = true;
+                console.error("[デバッグ] JSONP 通信タイムアウト");
+                cleanup();
+                alert("通信がタイムアウトしました。通信環境を確認してください。");
+            }, 10000);
+
+            // Appleからデータが返ってきたときに実行される関数をグローバルに定義
+            window[callbackName] = (data) => {
+                if (isTimeout) return;
+                clearTimeout(timer);
+                console.log("[デバッグ] JSONP 取得完了データ:", data);
                 
-                console.log("[デバッグ] リクエスト開始URL:", proxyUrl);
-                
-                // 強制的にキャッシュを無効化して最新データを取得
-                const res = await fetch(proxyUrl, { cache: 'no-store' });
-                
-                console.log("[デバッグ] レスポンスステータス:", res.status);
-                
-                if (!res.ok) {
-                    throw new Error(`HTTP Error: ${res.status} ${res.statusText}`);
-                }
-                
-                const data = await res.json();
-                console.log("[デバッグ] 取得完了データ:", data);
+                cleanup();
 
                 if (data.results && data.results.length > 0) {
                     showSuggestions(data.results, titleInput, durationInput);
                 } else {
                     alert("曲が見つかりませんでした");
                 }
-            } catch (e) {
-                console.error("[デバッグ] API通信エラー発生:", e);
-                console.error("[デバッグ] エラーメッセージ:", e.message);
-                console.error("[デバッグ] スタックトレース:", e.stack);
-                // エラーメッセージで違いがわかるように少し文言を変えています
-                alert("通信エラーが発生しました。\n右下の「vConsole」ボタンを押して、赤字で表示されているエラー内容を確認してください。\n詳細: " + e.message);
-            } finally {
-                btn.innerText = originalText;
-                btn.disabled = false;
-            }
+            };
+
+            // 意図的にscriptタグを生成し、ブラウザのCORSチェックをすり抜ける（JSONPの肝）
+            const script = document.createElement('script');
+            script.id = callbackName;
+            
+            // AppleのAPI URL (callbackパラメータを追加)
+            const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5&callback=${callbackName}`;
+            console.log("[デバッグ] JSONP リクエスト開始:", itunesUrl);
+            
+            script.src = itunesUrl;
+            
+            script.onerror = (e) => {
+                if (isTimeout) return;
+                clearTimeout(timer);
+                console.error("[デバッグ] JSONP スクリプト読み込みエラー", e);
+                cleanup();
+                alert("通信エラーが発生しました。");
+            };
+
+            // headに追加することでリクエストを発射
+            document.head.appendChild(script);
         };
 
         // サジェスト表示（スマホで確実にタップできるよう構造を最適化）
