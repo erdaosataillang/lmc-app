@@ -2,87 +2,57 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- スマホでの勝手なズームを防ぎ、レイアウト崩れを防止 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- ▼追加: スマホ用デバッグコンソール (vConsole) ▼ -->
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
-        // 画面右下に緑色の「vConsole」ボタンが表示されます
+        // デバッグ用コンソールの初期化
         var vConsole = new window.VConsole();
     </script>
-    <!-- ▲追加ここまで▲ -->
-
     <style>
         .sync-btn.active { transition: all 0.2s; }
-        /* モバイルでのタップハイライトを調整 */
-        input, button, .suggestion-item { -webkit-tap-highlight-color: transparent; }
-        
+        input, button { -webkit-tap-highlight-color: transparent; }
         @media print {
             @page { size: A4; margin: 10mm; }
             body { background: white !important; padding: 0 !important; }
             .no-print { display: none !important; }
-            #print-area { 
-                border: 2px solid black !important; 
-                box-shadow: none !important; 
-                width: 100% !important; 
-                margin: 0 auto !important;
-                padding: 5mm !important;
-            }
-            /* 背景色が印刷されるように強制 */
+            #print-area { border: 2px solid black !important; box-shadow: none !important; width: 100% !important; margin: 0 auto !important; }
             * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
         }
     </style>
 </head>
 
 <body class="bg-gray-100 p-2 md:p-4 min-h-screen">
-    <!-- メインのフォーム領域 -->
-    <div id="print-area" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-8 shadow-2xl relative overflow-visible">
-        
+    <div id="print-area" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-8 shadow-2xl relative">
         <div class="flex justify-end mb-6 md:mb-8">
             <div class="border-2 border-black px-6 md:px-10 py-1 md:py-2 font-bold text-xl md:text-2xl tracking-widest bg-gray-50 uppercase">月定演</div>
         </div>
         
         <div class="border-2 border-black mb-6 md:mb-8">
             <div class="flex border-b-2 border-black items-stretch">
-                <div class="w-20 md:w-28 border-r-2 border-black p-2 md:p-3 font-bold bg-gray-50 flex items-center justify-center text-sm md:text-base">バンド名</div>
+                <div class="w-24 md:w-28 border-r-2 border-black p-2 md:p-3 font-bold bg-gray-50 flex items-center justify-center text-sm md:text-base">バンド名</div>
                 <input id="band-name-input" class="flex-grow px-3 py-2 outline-none text-sm md:text-base">
             </div>
-            <div class="p-2 text-right text-xs font-bold text-gray-500 bg-gray-50/50">
+            <div class="p-2 text-right text-xs font-bold text-gray-500 bg-gray-50">
                 新規 or 既存（<input id="event-count-input" class="w-12 border-b border-gray-400 outline-none text-center bg-transparent" placeholder="1"> 回目）
             </div>
         </div>
 
         <table class="w-full border-2 border-black mb-6 md:mb-8 border-collapse">
-            <thead>
-                <tr class="bg-gray-50 border-b-2 border-black text-xs md:text-sm">
-                    <th class="border-r-2 border-black p-1 md:p-2 w-16 md:w-20">学年</th>
-                    <th class="border-r-2 border-black p-1 md:p-2 w-20 md:w-24">パート</th>
-                    <th class="p-1 md:p-2">メンバー</th>
-                </tr>
-            </thead>
             <tbody id="member-table"></tbody>
         </table>
 
         <div class="flex flex-col md:flex-row gap-4 mb-6 md:mb-8">
             <table class="flex-grow border-2 border-black border-collapse w-full">
-                <thead>
-                    <tr class="bg-gray-50 border-b-2 border-black text-xs md:text-sm">
-                        <th class="border-r-2 border-black p-1 w-10">順</th>
-                        <th class="border-r-2 border-black p-1">曲名</th>
-                        <th class="p-1 w-24 md:w-28">長さ</th>
-                    </tr>
-                </thead>
                 <tbody id="song-table"></tbody>
             </table>
             
             <div class="w-full md:w-24 border-2 border-black flex flex-row md:flex-col items-center">
                 <div class="font-bold border-b-2 md:border-b-2 border-black md:border-r-0 border-r-2 w-24 md:w-full text-center text-sm p-2 md:p-3 bg-gray-50 flex items-center justify-center">同期</div>
                 <div class="flex md:flex-col flex-grow w-full">
-                    <button type="button" onclick="toggleSync(this, '有')" class="sync-btn flex-grow p-2 md:p-4 font-bold text-gray-400 md:border-b border-black md:border-r-0 border-r border-black hover:bg-gray-100 transition focus:outline-none">有</button>
-                    <button type="button" onclick="toggleSync(this, '無')" class="sync-btn flex-grow p-2 md:p-4 font-bold text-gray-400 hover:bg-gray-100 transition focus:outline-none">無</button>
+                    <button type="button" class="sync-btn flex-grow p-2 md:p-4 font-bold text-gray-400 md:border-b border-black md:border-r-0 border-r border-black hover:bg-gray-100 transition focus:outline-none" data-val="有">有</button>
+                    <button type="button" class="sync-btn flex-grow p-2 md:p-4 font-bold text-gray-400 hover:bg-gray-100 transition focus:outline-none" data-val="無">無</button>
                 </div>
             </div>
         </div>
@@ -90,24 +60,23 @@
         <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6 text-sm"></div>
         
         <div class="no-print flex flex-wrap gap-2 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-center md:justify-start">
-            <button id="load-btn" type="button" onclick="if(window.loadBandData) { window.loadBandData('GyOs5xdbRty6xnS1pO5M'); } else { alert('データベース接続準備中です。少々お待ちください。'); }" class="bg-gray-600 text-white px-4 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-gray-700 w-[45%] md:w-auto">情報読込</button>
-            <button type="button" onclick="window.print()" class="bg-black text-white px-4 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-gray-800 w-[45%] md:w-auto">PDF出力</button>
-            <button type="button" onclick="submitData()" class="bg-green-600 text-white px-8 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-green-700 w-full md:w-auto mt-2 md:mt-0">送信する</button>
+            <button id="load-btn" type="button" class="bg-gray-600 text-white px-4 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-gray-700 w-[45%] md:w-auto">情報読込</button>
+            <button type="button" id="print-btn" class="bg-black text-white px-4 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-gray-800 w-[45%] md:w-auto">PDF出力</button>
+            <button type="button" id="submit-btn" class="bg-green-600 text-white px-8 py-3 md:py-2 rounded text-sm md:text-base font-bold shadow-md active:bg-green-700 w-full md:w-auto mt-2 md:mt-0">送信する</button>
         </div>
     </div>
 
-    <!-- UI動作用の基本JavaScript（Firebaseがコケても確実に動くように分離） -->
+    <!-- UI/ロジック分離 -->
     <script>
         let currentSync = null;
 
-        // テーブルの行を生成
         const mTable = document.getElementById('member-table');
         for(let i=0; i<8; i++) {
             mTable.insertAdjacentHTML('beforeend', `
                 <tr class="member-row border-b border-black h-10 md:h-12">
-                    <td class="border-r-2 border-black w-16 md:w-20"><input type="text" class="w-full h-full text-center outline-none member-grade text-sm md:text-base"></td>
-                    <td class="border-r-2 border-black w-20 md:w-24"><input type="text" class="w-full h-full text-center outline-none member-part text-sm md:text-base"></td>
-                    <td><input type="text" class="w-full h-full px-2 md:px-4 outline-none member-name text-sm md:text-base"></td>
+                    <td class="border-r-2 border-black w-16 md:w-20"><input type="text" class="w-full h-full text-center outline-none member-grade text-sm md:text-base" placeholder="学年"></td>
+                    <td class="border-r-2 border-black w-20 md:w-24"><input type="text" class="w-full h-full text-center outline-none member-part text-sm md:text-base" placeholder="パート"></td>
+                    <td><input type="text" class="w-full h-full px-2 md:px-4 outline-none member-name text-sm md:text-base" placeholder="名前"></td>
                 </tr>`);
         }
         
@@ -116,123 +85,110 @@
             sTable.insertAdjacentHTML('beforeend', `
                 <tr class="border-b border-black h-12 md:h-14">
                     <td class="border-r-2 border-black text-center font-bold bg-gray-50 w-10 text-sm md:text-base">${i+1}</td>
-                    <td class="border-r-2 border-black flex items-center h-full relative p-0" style="position: relative;">
-                        <input type="text" class="w-full h-full px-2 md:px-4 py-2 outline-none song-title text-sm md:text-base" placeholder="曲名">
-                        <button type="button" onclick="searchSong(this)" class="px-2 md:px-3 h-full text-xs md:text-sm font-bold text-blue-600 bg-blue-50 border-l border-blue-200 active:bg-blue-200 flex-shrink-0 whitespace-nowrap">検索</button>
+                    <td class="border-r-2 border-black flex items-center h-full p-0 relative">
+                        <input type="text" class="w-full h-full px-2 md:px-4 outline-none song-title text-sm md:text-base" placeholder="曲名">
+                        <button type="button" class="search-btn px-2 md:px-3 h-full text-xs md:text-sm font-bold text-blue-600 bg-blue-50 border-l border-blue-200 active:bg-blue-200">検索</button>
                     </td>
                     <td class="w-24 md:w-28"><input type="text" inputmode="numeric" class="w-full h-full text-center outline-none font-mono song-duration text-sm md:text-base" placeholder="00:00"></td>
                 </tr>`);
         }
 
-        // 同期ボタンの切り替え
-        window.toggleSync = (btn, val) => {
-            document.querySelectorAll('.sync-btn').forEach(b => {
-                b.classList.remove('active', 'bg-black', 'text-white');
-                b.classList.add('text-gray-400');
+        document.querySelectorAll('.sync-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.sync-btn').forEach(b => {
+                    b.classList.remove('active', 'bg-black', 'text-white');
+                    b.classList.add('text-gray-400');
+                });
+                this.classList.add('active', 'bg-black', 'text-white');
+                this.classList.remove('text-gray-400');
+                currentSync = this.dataset.val;
             });
-            btn.classList.add('active', 'bg-black', 'text-white');
-            btn.classList.remove('text-gray-400');
-            currentSync = val;
-        };
+        });
 
-        // 楽曲検索（JSONP方式に変更し、プロキシを廃止して直接Appleと通信する確実な手法）
-        window.searchSong = (btn) => {
-            const row = btn.closest('tr');
-            const titleInput = row.querySelector('.song-title');
-            const durationInput = row.querySelector('.song-duration');
-            const query = titleInput.value.trim();
-
-            if (!query) {
-                alert("曲名を入力してください");
-                return;
-            }
-            
-            const originalText = btn.innerText;
-            btn.innerText = "検索中...";
-            btn.disabled = true;
-
-            // 他の検索と被らないよう、ユニークな関数名を作成
-            const callbackName = 'itunesCallback_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-            
-            let isTimeout = false;
-
-            // 終了時の後片付け関数
-            const cleanup = () => {
-                btn.innerText = originalText;
-                btn.disabled = false;
-                delete window[callbackName];
-                const scriptNode = document.getElementById(callbackName);
-                if (scriptNode) scriptNode.remove();
-            };
-
-            // タイムアウト処理 (10秒反応がなければエラーにする)
-            const timer = setTimeout(() => {
-                isTimeout = true;
-                console.error("[デバッグ] JSONP 通信タイムアウト");
-                cleanup();
-                alert("通信がタイムアウトしました。通信環境を確認してください。");
-            }, 10000);
-
-            // Appleからデータが返ってきたときに実行される関数をグローバルに定義
-            window[callbackName] = (data) => {
-                if (isTimeout) return;
-                clearTimeout(timer);
-                console.log("[デバッグ] JSONP 取得完了データ:", data);
+        document.querySelectorAll('.search-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const row = this.closest('tr');
+                const titleInput = row.querySelector('.song-title');
+                const query = titleInput.value.trim();
                 
-                cleanup();
+                if (!query) return;
+                
+                const originalText = this.innerText;
+                this.innerText = "検索中";
+                this.disabled = true;
 
-                if (data.results && data.results.length > 0) {
-                    showSuggestions(data.results, titleInput, durationInput);
-                } else {
-                    alert("曲が見つかりませんでした");
+                try {
+                    const ts = Date.now();
+                    const targetUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5&_=${ts}`;
+                    
+                    const fetchRoutes = [
+                        targetUrl,
+                        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+                        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`
+                    ];
+
+                    let data = null;
+                    let success = false;
+
+                    for (let i = 0; i < fetchRoutes.length; i++) {
+                        try {
+                            console.log(`[デバッグ] 通信ルート ${i+1} を試行中:`, fetchRoutes[i]);
+                            const res = await fetch(fetchRoutes[i]);
+                            if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+                            
+                            const resJson = await res.json();
+                            
+                            if (fetchRoutes[i].includes('allorigins.win/get')) {
+                                if (!resJson.contents) throw new Error("allorigins contents is empty");
+                                data = JSON.parse(resJson.contents);
+                            } else {
+                                data = resJson;
+                            }
+                            
+                            success = true;
+                            console.log(`[デバッグ] 通信ルート ${i+1} で取得成功!`);
+                            break; 
+                        } catch (err) {
+                            console.warn(`[デバッグ] 通信ルート ${i+1} 失敗:`, err.message);
+                        }
+                    }
+
+                    if (!success || !data) throw new Error("全ての通信サーバーが応答しませんでした");
+                    if (data.results && data.results.length > 0) showSuggestions(data.results, row);
+                    else alert("曲が見つかりませんでした");
+
+                } catch (error) {
+                    console.error("[デバッグ] 最終エラー:", error);
+                    alert("通信エラーが発生しました。\n詳細: " + error.message);
+                } finally {
+                    this.innerText = originalText;
+                    this.disabled = false;
                 }
-            };
+            });
+        });
 
-            // 意図的にscriptタグを生成し、ブラウザのCORSチェックをすり抜ける（JSONPの肝）
-            const script = document.createElement('script');
-            script.id = callbackName;
-            
-            // AppleのAPI URL (callbackパラメータを追加)
-            const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5&callback=${callbackName}`;
-            console.log("[デバッグ] JSONP リクエスト開始:", itunesUrl);
-            
-            script.src = itunesUrl;
-            
-            script.onerror = (e) => {
-                if (isTimeout) return;
-                clearTimeout(timer);
-                console.error("[デバッグ] JSONP スクリプト読み込みエラー", e);
-                cleanup();
-                alert("通信エラーが発生しました。");
-            };
-
-            // headに追加することでリクエストを発射
-            document.head.appendChild(script);
-        };
-
-        // サジェスト表示（スマホで確実にタップできるよう構造を最適化）
-        function showSuggestions(results, titleInput, durationInput) {
+        function showSuggestions(results, row) {
             const existing = document.getElementById('suggestion-box');
             if (existing) existing.remove();
 
+            const titleInput = row.querySelector('.song-title');
+            const durationInput = row.querySelector('.song-duration');
+
             const box = document.createElement('div');
             box.id = 'suggestion-box';
-            box.className = 'absolute bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md';
+            box.className = 'absolute bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md w-64';
             
             const rect = titleInput.getBoundingClientRect();
             box.style.top = `${rect.bottom + window.scrollY}px`;
             box.style.left = `${rect.left + window.scrollX}px`;
-            box.style.width = `${Math.max(240, rect.width * 1.5)}px`;
             
             let html = '';
             results.forEach(s => {
-                const title = s.trackName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const time = formatTime(s.trackTimeMillis);
-                // スマホのタップ(ontouchstart)とPCのクリック(onmousedown)の両方を設定
+                const sec = Math.floor(s.trackTimeMillis / 1000);
+                const time = `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
                 html += `
                 <div class="suggestion-item p-3 border-b border-gray-200 active:bg-blue-100 hover:bg-gray-50 bg-white cursor-pointer" 
-                     onmousedown="window.selectSongFromSuggest(event, '${title}', '${time}')"
-                     ontouchstart="window.selectSongFromSuggest(event, '${title}', '${time}')">
+                     data-title="${s.trackName.replace(/"/g, '&quot;')}" data-time="${time}">
                     <div class="font-bold text-sm truncate text-black pointer-events-none">${s.trackName}</div>
                     <div class="text-xs text-gray-500 truncate pointer-events-none">${s.artistName}</div>
                 </div>`;
@@ -240,17 +196,23 @@
             box.innerHTML = html;
             document.body.appendChild(box);
 
-            window.selectSongFromSuggest = (e, title, time) => {
-                e.preventDefault();
-                titleInput.value = title;
-                durationInput.value = time;
-                box.remove();
+            const selectHandler = (e) => {
+                const item = e.target.closest('.suggestion-item');
+                if (item) {
+                    e.preventDefault();
+                    titleInput.value = item.dataset.title;
+                    durationInput.value = item.dataset.time;
+                    box.remove();
+                }
             };
+            
+            box.addEventListener('click', selectHandler);
+            box.addEventListener('touchstart', selectHandler, {passive: false});
 
             setTimeout(() => {
                 const closeHandler = (e) => {
                     const currentBox = document.getElementById('suggestion-box');
-                    if (currentBox && !currentBox.contains(e.target) && e.target !== titleInput) {
+                    if (currentBox && !currentBox.contains(e.target) && e.target !== titleInput && !e.target.classList.contains('search-btn')) {
                         currentBox.remove();
                         document.removeEventListener('click', closeHandler);
                         document.removeEventListener('touchstart', closeHandler);
@@ -259,38 +221,25 @@
                 document.addEventListener('click', closeHandler);
                 document.addEventListener('touchstart', closeHandler);
             }, 50);
-            
-            window.addEventListener('scroll', () => {
-                const currentBox = document.getElementById('suggestion-box');
-                if (currentBox) {
-                    const updatedRect = titleInput.getBoundingClientRect();
-                    currentBox.style.top = `${updatedRect.bottom + window.scrollY}px`;
-                    currentBox.style.left = `${updatedRect.left + window.scrollX}px`;
-                }
-            }, { passive: true });
         }
 
-        function formatTime(ms) {
-            const sec = Math.floor(ms / 1000);
-            return `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
-        }
+        document.getElementById('print-btn').addEventListener('click', () => window.print());
 
-        // バリデーション（送信チェック）
-        window.submitData = () => {
+        document.getElementById('submit-btn').addEventListener('click', () => {
             const errorDiv = document.getElementById('error-msg');
             let errors = [];
             
-            const bandName = document.getElementById('band-name-input').value.trim();
-            const count = document.getElementById('event-count-input').value.trim();
+            if(!document.getElementById('band-name-input').value.trim()) errors.push("バンド名を入力してください");
+            if(!document.getElementById('event-count-input').value.trim()) errors.push("出演回数を入力してください");
+            
             const hasMember = Array.from(document.querySelectorAll('.member-name')).some(i => i.value.trim() !== "");
+            if(!hasMember) errors.push("メンバーを少なくとも1名入力してください");
+            
             const songs = Array.from(document.querySelectorAll('.song-title')).filter(i => i.value.trim() !== "");
             const durations = Array.from(document.querySelectorAll('.song-duration')).filter(i => i.value.trim() !== "");
-
-            if(!bandName) errors.push("バンド名を入力してください");
-            if(!count) errors.push("出演回数を入力してください");
-            if(!hasMember) errors.push("メンバーを少なくとも1名入力してください");
             if(songs.length === 0) errors.push("曲名を少なくとも1曲入力してください");
             if(songs.length !== durations.length) errors.push("全ての曲に長さを入力してください");
+            
             if(!currentSync) errors.push("同期の有無を選択してください");
             
             if(errors.length > 0) {
@@ -301,10 +250,9 @@
                 errorDiv.classList.add('hidden');
                 alert("送信準備が完了しました！");
             }
-        };
+        });
     </script>
 
-    <!-- Firebase連携用スクリプト（UIとは独立して実行される） -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -323,14 +271,14 @@
             const db = getFirestore(app);
             const partMap = { "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.", "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho." };
 
-            window.loadBandData = async (bandId) => {
-                const btn = document.getElementById('load-btn');
+            document.getElementById('load-btn').addEventListener('click', async function() {
+                const btn = this;
                 const originalText = btn.innerText;
                 btn.innerText = "読込中...";
                 btn.disabled = true;
 
                 try {
-                    const bandSnap = await getDoc(doc(db, "bands", bandId));
+                    const bandSnap = await getDoc(doc(db, "bands", "GyOs5xdbRty6xnS1pO5M"));
                     if (!bandSnap.exists()) {
                         alert("データが見つかりませんでした");
                         return;
@@ -346,7 +294,6 @@
                         const uSnap = await getDoc(doc(db, "users", memberIds[i]));
                         if (uSnap.exists()) {
                             const u = uSnap.data();
-                            // Firebaseからの学年(year/grade)の反映
                             rows[i].querySelector('.member-grade').value = u.year || u.grade || ''; 
                             rows[i].querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
                             rows[i].querySelector('.member-name').value = u.name || '';
@@ -359,10 +306,10 @@
                     btn.innerText = originalText;
                     btn.disabled = false;
                 }
-            };
+            });
         } catch(err) {
             console.error("Firebase Initialization Failed:", err);
-            // モジュール読み込みに失敗しても、画面UIは壊れないように処理
+            document.getElementById('load-btn').addEventListener('click', () => alert('データベース接続準備中です。'));
         }
     </script>
 </body>
