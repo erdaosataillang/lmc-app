@@ -1,133 +1,134 @@
-import React, { useState } from 'react';
-
-const App = () => {
-  const [formData, setFormData] = useState({
-    monthly: '月定演',
-    bandName: '',
-    existingCount: '',
-    ngDate: '',
-    members: Array(8).fill({ grade: '', part: '', name: '' }),
-    songs: Array(5).fill({ title: '', duration: '' }),
-    sync: '無', // '有' or '無'
-    rehearsal: { date: '', time: '', duration: '' },
-    remarks: ''
-  });
-
-  const handleUpdate = (field, value, index = null, subField = null) => {
-    if (index !== null) {
-      const list = [...formData[field]];
-      list[index] = { ...list[index], [subField]: value };
-      setFormData({ ...formData, [field]: list });
-    } else if (subField) {
-      setFormData({ ...formData, [field]: { ...formData[field], [subField]: value } });
-    } else {
-      setFormData({ ...formData, [field]: value });
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 p-2 md:p-6 font-sans">
-      <div className="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-6 shadow-xl">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cueシート・デジタルフォーム</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", sans-serif; }
+        .border-black { border-color: black; }
+        input, textarea { background: transparent; }
+        /* Sync toggle active state */
+        .sync-active { background-color: black; color: white; }
+    </style>
+</head>
+<body class="bg-gray-100 p-2 md:p-6">
+    <div id="app" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-6 shadow-xl">
         
-        {/* Title Area */}
-        <div className="flex justify-end mb-6">
-          <div className="border-2 border-black px-8 py-1 font-bold text-2xl tracking-widest bg-gray-50">
-            {formData.monthly}
-          </div>
+        <!-- Title Area -->
+        <div class="flex justify-end mb-6">
+            <div class="border-2 border-black px-8 py-1 font-bold text-2xl tracking-widest bg-gray-50">月定演</div>
         </div>
 
-        {/* Band Name Section */}
-        <div className="border-2 border-black mb-2 flex">
-          <div className="w-24 border-r-2 border-black p-2 font-bold flex items-center bg-gray-50 text-sm">バンド名</div>
-          <div className="flex-grow flex flex-col justify-center">
-            <input className="w-full px-2 outline-none h-8 text-lg" value={formData.bandName} onChange={(e) => handleUpdate('bandName', e.target.value)} />
-            <div className="text-[10px] text-right px-2 border-t border-gray-200">新規 or 既存（<input className="w-10 border-b border-black outline-none text-center" value={formData.existingCount} onChange={(e) => handleUpdate('existingCount', e.target.value)} /> 回目）</div>
-          </div>
+        <!-- Band Name Section -->
+        <div class="border-2 border-black mb-2 flex">
+            <div class="w-24 border-r-2 border-black p-2 font-bold flex items-center bg-gray-50 text-sm">バンド名</div>
+            <div class="flex-grow flex flex-col justify-center">
+                <input type="text" class="w-full px-2 outline-none h-8 text-lg" placeholder="バンド名を入力">
+                <div class="text-[10px] text-right px-2 border-t border-gray-200">新規 or 既存（<input type="text" class="w-10 border-b border-black outline-none text-center" placeholder="回数"> 回目）</div>
+            </div>
         </div>
 
-        {/* NG Date Section */}
-        <div className="flex border-2 border-black mb-6">
-          <div className="w-24 border-r-2 border-black p-2 font-bold flex items-center bg-gray-50 text-sm">出演NG日</div>
-          <input className="flex-grow p-2 outline-none" value={formData.ngDate} onChange={(e) => handleUpdate('ngDate', e.target.value)} />
+        <!-- NG Date Section -->
+        <div class="flex border-2 border-black mb-6">
+            <div class="w-24 border-r-2 border-black p-2 font-bold flex items-center bg-gray-50 text-sm">出演NG日</div>
+            <input type="text" class="flex-grow p-2 outline-none" placeholder="日付を入力">
         </div>
 
-        {/* Members Table */}
-        <table className="w-full border-2 border-black mb-6 border-collapse">
-          <thead>
-            <tr className="border-b-2 border-black bg-gray-50">
-              <th className="border-r-2 border-black p-2 w-20 text-sm font-bold">学年</th>
-              <th className="border-r-2 border-black p-2 w-24 text-sm font-bold">パート</th>
-              <th className="p-2 text-sm font-bold">メンバー</th>
-            </tr>
-          </thead>
-          <tbody>
-            {formData.members.map((m, i) => (
-              <tr key={i} className="border-b border-black h-10">
-                <td className="border-r-2 border-black"><input className="w-full px-2 outline-none" value={m.grade} onChange={(e) => handleUpdate('members', e.target.value, i, 'grade')} /></td>
-                <td className="border-r-2 border-black"><input className="w-full px-2 outline-none" value={m.part} onChange={(e) => handleUpdate('members', e.target.value, i, 'part')} /></td>
-                <td><input className="w-full px-2 outline-none" value={m.name} onChange={(e) => handleUpdate('members', e.target.value, i, 'name')} /></td>
-              </tr>
-            ))}
-          </tbody>
+        <!-- Members Table -->
+        <table class="w-full border-2 border-black mb-6 border-collapse">
+            <thead>
+                <tr class="border-b-2 border-black bg-gray-50">
+                    <th class="border-r-2 border-black p-2 w-20 text-sm font-bold">学年</th>
+                    <th class="border-r-2 border-black p-2 w-24 text-sm font-bold">パート</th>
+                    <th class="p-2 text-sm font-bold">メンバー</th>
+                </tr>
+            </thead>
+            <tbody id="member-table">
+                <!-- Rows injected by JS -->
+            </tbody>
         </table>
 
-        {/* Songs and Sync Section */}
-        <div className="flex gap-2 mb-6">
-          <table className="flex-grow border-2 border-black border-collapse">
-            <thead>
-              <tr className="border-b-2 border-black bg-gray-50">
-                <th className="border-r-2 border-black p-1 w-10 font-bold text-sm">曲</th>
-                <th className="border-r-2 border-black p-1"></th>
-                <th className="p-1 w-28 font-bold text-xs">曲の長さ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {formData.songs.map((s, i) => (
-                <tr key={i} className="border-b border-black h-12">
-                  <td className="border-r-2 border-black p-1 text-center font-bold bg-gray-50">{i + 1}</td>
-                  <td className="border-r-2 border-black"><input className="w-full px-2 outline-none" value={s.title} onChange={(e) => handleUpdate('songs', e.target.value, i, 'title')} /></td>
-                  <td><input className="w-full px-2 outline-none text-center font-mono" placeholder="00:00" value={s.duration} onChange={(e) => handleUpdate('songs', e.target.value, i, 'duration')} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {/* Sync Box */}
-          <div className="w-20 border-2 border-black flex flex-col items-center bg-gray-50">
-            <div className="font-bold border-b-2 border-black w-full text-center text-sm p-1">同期</div>
-            <div className="flex-grow flex flex-col justify-around py-4 w-full cursor-pointer select-none">
-              {['有', '無'].map((val) => (
-                <div 
-                  key={val}
-                  onClick={() => handleUpdate('sync', val)}
-                  className={`text-center font-bold text-xl py-2 transition-colors ${formData.sync === val ? 'bg-black text-white' : 'text-gray-400 hover:text-black'}`}
-                >
-                  {val}
+        <!-- Songs and Sync Section -->
+        <div class="flex gap-2 mb-6">
+            <table class="flex-grow border-2 border-black border-collapse">
+                <thead>
+                    <tr class="border-b-2 border-black bg-gray-50">
+                        <th class="border-r-2 border-black p-1 w-10 font-bold text-sm">曲</th>
+                        <th class="border-r-2 border-black p-1">曲名</th>
+                        <th class="p-1 w-28 font-bold text-xs">曲の長さ</th>
+                    </tr>
+                </thead>
+                <tbody id="song-table">
+                    <!-- Rows injected by JS -->
+                </tbody>
+            </table>
+            
+            <!-- Sync Box -->
+            <div class="w-20 border-2 border-black flex flex-col items-center bg-gray-50">
+                <div class="font-bold border-b-2 border-black w-full text-center text-sm p-1">同期</div>
+                <div id="sync-selector" class="flex-grow flex flex-col justify-around py-4 w-full cursor-pointer select-none">
+                    <div id="sync-yes" onclick="toggleSync('yes')" class="text-center font-bold text-xl py-2 transition-colors">有</div>
+                    <div id="sync-no" onclick="toggleSync('no')" class="text-center font-bold text-xl py-2 transition-colors sync-active">無</div>
                 </div>
-              ))}
             </div>
-          </div>
         </div>
 
-        {/* Footer Grid */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="border-2 border-black p-3">
-            <div className="font-bold mb-3 text-sm">初合わせ日程</div>
-            <div className="text-sm space-y-2">
-              <div className="flex items-center">・日　　付 <input className="border-b border-gray-300 flex-grow ml-2 outline-none" value={formData.rehearsal.date} onChange={(e) => handleUpdate('rehearsal', e.target.value, null, 'date')} /></div>
-              <div className="flex items-center">・可能時間 <input className="border-b border-gray-300 flex-grow ml-2 outline-none" value={formData.rehearsal.time} onChange={(e) => handleUpdate('rehearsal', e.target.value, null, 'time')} /></div>
-              <div className="flex items-center">・所要時間 <input className="border-b border-gray-300 flex-grow ml-2 outline-none" value={formData.rehearsal.duration} onChange={(e) => handleUpdate('rehearsal', e.target.value, null, 'duration')} /></div>
+        <!-- Footer Grid -->
+        <div class="grid grid-cols-2 gap-2">
+            <div class="border-2 border-black p-3">
+                <div class="font-bold mb-3 text-sm">初合わせ日程</div>
+                <div class="text-sm space-y-2">
+                    <div class="flex items-center">・日　　付 <input type="text" class="border-b border-gray-300 flex-grow ml-2 outline-none"></div>
+                    <div class="flex items-center">・可能時間 <input type="text" class="border-b border-gray-300 flex-grow ml-2 outline-none"></div>
+                    <div class="flex items-center">・所要時間 <input type="text" class="border-b border-gray-300 flex-grow ml-2 outline-none"></div>
+                </div>
             </div>
-          </div>
-          <div className="border-2 border-black p-3">
-            <div className="font-bold text-sm mb-1">備考欄(意気込み、要望･･･)</div>
-            <div className="text-[10px] mb-1 text-gray-500">トリ・大トリ希望もここへ</div>
-            <textarea className="w-full h-[76px] outline-none resize-none text-sm p-1 border border-gray-100" value={formData.remarks} onChange={(e) => handleUpdate('remarks', e.target.value)} />
-          </div>
+            <div class="border-2 border-black p-3">
+                <div class="font-bold text-sm mb-1">備考欄(意気込み、要望･･･)</div>
+                <div class="text-[10px] mb-1 text-gray-500">トリ・大トリ希望もここへ</div>
+                <textarea class="w-full h-[76px] outline-none resize-none text-sm p-1 border border-gray-100"></textarea>
+            </div>
         </div>
-      </div>
     </div>
-  );
-};
 
-export default App;
+    <script>
+        // Generate rows for members
+        const memberTable = document.getElementById('member-table');
+        for(let i=0; i<8; i++) {
+            memberTable.innerHTML += `
+                <tr class="border-b border-black h-10">
+                    <td class="border-r-2 border-black"><input class="w-full px-2 outline-none"></td>
+                    <td class="border-r-2 border-black"><input class="w-full px-2 outline-none"></td>
+                    <td><input class="w-full px-2 outline-none"></td>
+                </tr>`;
+        }
+
+        // Generate rows for songs
+        const songTable = document.getElementById('song-table');
+        for(let i=0; i<5; i++) {
+            songTable.innerHTML += `
+                <tr class="border-b border-black h-12">
+                    <td class="border-r-2 border-black p-1 text-center font-bold bg-gray-50">${i + 1}</td>
+                    <td class="border-r-2 border-black"><input class="w-full px-2 outline-none"></td>
+                    <td><input class="w-full px-2 outline-none text-center font-mono" placeholder="00:00"></td>
+                </tr>`;
+        }
+
+        // Sync toggle logic
+        function toggleSync(val) {
+            const yes = document.getElementById('sync-yes');
+            const no = document.getElementById('sync-no');
+            if(val === 'yes') {
+                yes.classList.add('sync-active');
+                no.classList.remove('sync-active');
+            } else {
+                no.classList.add('sync-active');
+                yes.classList.remove('sync-active');
+            }
+        }
+    </script>
+</body>
+</html>
