@@ -127,7 +127,7 @@
             currentSync = val;
         };
 
-        // 楽曲検索（iOS・LINEブラウザ対応版）
+        // 楽曲検索（iOS・LINEブラウザのCORS制限を突破するためのプロキシ対応版）
         window.searchSong = async (btn) => {
             const row = btn.closest('tr');
             const titleInput = row.querySelector('.song-title');
@@ -144,10 +144,14 @@
             btn.disabled = true;
 
             try {
-                // 余計なパラメータを外し、よりシンプルにリクエスト
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
+                // iTunes Search APIのURL
+                const itunesUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
+                // SafariやLINEブラウザの厳しいセキュリティ(CORS)を回避するため、無料のプロキシを経由して取得する
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(itunesUrl)}`;
                 
-                const res = await fetch(url);
+                // 強制的にキャッシュを無効化して最新データを取得
+                const res = await fetch(proxyUrl, { cache: 'no-store' });
+                
                 if (!res.ok) throw new Error("Network Error");
                 
                 const data = await res.json();
@@ -158,26 +162,24 @@
                     alert("曲が見つかりませんでした");
                 }
             } catch (e) {
-                console.error(e);
-                alert("通信エラーが発生しました。時間をおいて再度お試しください。");
+                console.error("Search API Error:", e);
+                // エラーメッセージで違いがわかるように少し文言を変えています
+                alert("通信エラーが発生しました。\nネットワーク環境を確認し、再度お試しください。");
             } finally {
                 btn.innerText = originalText;
                 btn.disabled = false;
             }
         };
 
-        // サジェスト表示（スマホで確実にタップできるよう構造を変更）
+        // サジェスト表示（スマホで確実にタップできるよう構造を最適化）
         function showSuggestions(results, titleInput, durationInput) {
-            // 古いサジェストがあれば削除
             const existing = document.getElementById('suggestion-box');
             if (existing) existing.remove();
 
             const box = document.createElement('div');
             box.id = 'suggestion-box';
-            // テーブルの中ではなく、画面全体(body)の最前面に絶対配置
             box.className = 'absolute bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md';
             
-            // 入力欄の座標を取得して、画面上の正しい位置に追従させる
             const rect = titleInput.getBoundingClientRect();
             box.style.top = `${rect.bottom + window.scrollY}px`;
             box.style.left = `${rect.left + window.scrollX}px`;
@@ -188,7 +190,6 @@
                 const title = s.trackName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 const time = formatTime(s.trackTimeMillis);
                 // スマホのタップ(ontouchstart)とPCのクリック(onmousedown)の両方を設定
-                // onclickを使わないことで、キーボードが閉じる挙動との競合を回避
                 html += `
                 <div class="suggestion-item p-3 border-b border-gray-200 active:bg-blue-100 hover:bg-gray-50 bg-white cursor-pointer" 
                      onmousedown="window.selectSongFromSuggest(event, '${title}', '${time}')"
@@ -200,15 +201,13 @@
             box.innerHTML = html;
             document.body.appendChild(box);
 
-            // 選択処理
             window.selectSongFromSuggest = (e, title, time) => {
-                e.preventDefault(); // タップ時の余計なイベント（フォーカス外れ等）を防止
+                e.preventDefault();
                 titleInput.value = title;
                 durationInput.value = time;
                 box.remove();
             };
 
-            // 外側をタップしたら閉じる処理
             setTimeout(() => {
                 const closeHandler = (e) => {
                     const currentBox = document.getElementById('suggestion-box');
@@ -222,7 +221,6 @@
                 document.addEventListener('touchstart', closeHandler);
             }, 50);
             
-            // スクロール時にリストの位置を追従させる
             window.addEventListener('scroll', () => {
                 const currentBox = document.getElementById('suggestion-box');
                 if (currentBox) {
@@ -309,6 +307,7 @@
                         const uSnap = await getDoc(doc(db, "users", memberIds[i]));
                         if (uSnap.exists()) {
                             const u = uSnap.data();
+                            // Firebaseからの学年(year/grade)の反映
                             rows[i].querySelector('.member-grade').value = u.year || u.grade || ''; 
                             rows[i].querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
                             rows[i].querySelector('.member-name').value = u.name || '';
