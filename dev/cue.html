@@ -7,12 +7,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
-        // デバッグ用コンソールの初期化
+        // デバッグ用コンソールの初期化 (エラー特定用)
         var vConsole = new window.VConsole();
     </script>
     <style>
         .sync-btn.active { transition: all 0.2s; }
-        input, button { -webkit-tap-highlight-color: transparent; }
+        /* スマホでのタップ時のハイライトを消す */
+        input, button, .sugg-item { -webkit-tap-highlight-color: transparent; }
+        
+        /* 印刷時のスタイル */
         @media print {
             @page { size: A4; margin: 10mm; }
             body { background: white !important; padding: 0 !important; }
@@ -25,6 +28,7 @@
 
 <body class="bg-gray-100 p-2 md:p-4 min-h-screen">
     <div id="print-area" class="mx-auto w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-8 shadow-2xl relative">
+        
         <div class="flex justify-end mb-6 md:mb-8">
             <div class="border-2 border-black px-6 md:px-10 py-1 md:py-2 font-bold text-xl md:text-2xl tracking-widest bg-gray-50 uppercase">月定演</div>
         </div>
@@ -66,10 +70,10 @@
         </div>
     </div>
 
-    <!-- UI/ロジック分離 -->
     <script>
         let currentSync = null;
 
+        // メンバーテーブルの生成
         const mTable = document.getElementById('member-table');
         for(let i=0; i<8; i++) {
             mTable.insertAdjacentHTML('beforeend', `
@@ -80,12 +84,13 @@
                 </tr>`);
         }
         
+        // 曲テーブルの生成 (親要素に relative を付与してサジェストを確実に配置)
         const sTable = document.getElementById('song-table');
         for(let i=0; i<5; i++) {
             sTable.insertAdjacentHTML('beforeend', `
                 <tr class="border-b border-black h-12 md:h-14">
                     <td class="border-r-2 border-black text-center font-bold bg-gray-50 w-10 text-sm md:text-base">${i+1}</td>
-                    <td class="border-r-2 border-black flex items-center h-full p-0 relative">
+                    <td class="border-r-2 border-black flex items-center h-full p-0 relative song-cell">
                         <input type="text" class="w-full h-full px-2 md:px-4 outline-none song-title text-sm md:text-base" placeholder="曲名">
                         <button type="button" class="search-btn px-2 md:px-3 h-full text-xs md:text-sm font-bold text-blue-600 bg-blue-50 border-l border-blue-200 active:bg-blue-200">検索</button>
                     </td>
@@ -93,6 +98,7 @@
                 </tr>`);
         }
 
+        // 同期ボタンのトグル処理
         document.querySelectorAll('.sync-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.sync-btn').forEach(b => {
@@ -105,6 +111,7 @@
             });
         });
 
+        // 楽曲検索 (絶対失敗させない3段構えのフォールバック通信)
         document.querySelectorAll('.search-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const row = this.closest('tr');
@@ -117,49 +124,65 @@
                 this.innerText = "検索中";
                 this.disabled = true;
 
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
+                const proxy1 = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+                const proxy2 = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
+                let data = null;
+                let success = false;
+
                 try {
-                    const ts = Date.now();
-                    const targetUrl = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5&_=${ts}`;
-                    
-                    const fetchRoutes = [
-                        targetUrl,
-                        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-                        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`
-                    ];
-
-                    let data = null;
-                    let success = false;
-
-                    for (let i = 0; i < fetchRoutes.length; i++) {
-                        try {
-                            console.log(`[デバッグ] 通信ルート ${i+1} を試行中:`, fetchRoutes[i]);
-                            const res = await fetch(fetchRoutes[i]);
-                            if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-                            
-                            const resJson = await res.json();
-                            
-                            if (fetchRoutes[i].includes('allorigins.win/get')) {
-                                if (!resJson.contents) throw new Error("allorigins contents is empty");
-                                data = JSON.parse(resJson.contents);
-                            } else {
-                                data = resJson;
-                            }
-                            
+                    // ルート1: CodeTabs プロキシ (高速・直接JSON)
+                    console.log("[デバッグ] ルート1 試行中...");
+                    try {
+                        const res1 = await fetch(proxy1);
+                        if (res1.ok) {
+                            data = await res1.json();
                             success = true;
-                            console.log(`[デバッグ] 通信ルート ${i+1} で取得成功!`);
-                            break; 
-                        } catch (err) {
-                            console.warn(`[デバッグ] 通信ルート ${i+1} 失敗:`, err.message);
+                            console.log("[デバッグ] ルート1 成功");
                         }
+                    } catch(e) { console.warn("[デバッグ] ルート1 失敗:", e); }
+
+                    // ルート2: AllOrigins プロキシ (安定・ラップされたJSON)
+                    if (!success) {
+                        console.log("[デバッグ] ルート2 試行中...");
+                        try {
+                            const res2 = await fetch(proxy2);
+                            if (res2.ok) {
+                                const raw = await res2.json();
+                                data = JSON.parse(raw.contents);
+                                success = true;
+                                console.log("[デバッグ] ルート2 成功");
+                            }
+                        } catch(e) { console.warn("[デバッグ] ルート2 失敗:", e); }
                     }
 
-                    if (!success || !data) throw new Error("全ての通信サーバーが応答しませんでした");
-                    if (data.results && data.results.length > 0) showSuggestions(data.results, row);
-                    else alert("曲が見つかりませんでした");
+                    // ルート3: 直通信 (念のため)
+                    if (!success) {
+                        console.log("[デバッグ] ルート3 試行中...");
+                        try {
+                            const res3 = await fetch(url, { headers: { 'Accept': 'application/json' }});
+                            if (res3.ok) {
+                                data = await res3.json();
+                                success = true;
+                                console.log("[デバッグ] ルート3 成功");
+                            }
+                        } catch(e) { console.warn("[デバッグ] ルート3 失敗:", e); }
+                    }
+
+                    if (!success || !data) {
+                        throw new Error("全ての通信サーバーが応答しませんでした");
+                    }
+
+                    if (data.results && data.results.length > 0) {
+                        showSuggestions(data.results, row);
+                    } else {
+                        alert("曲が見つかりませんでした");
+                    }
 
                 } catch (error) {
                     console.error("[デバッグ] 最終エラー:", error);
-                    alert("通信エラーが発生しました。\n詳細: " + error.message);
+                    alert("通信エラーが発生しました。\nネットワーク状況を確認してください。");
                 } finally {
                     this.innerText = originalText;
                     this.disabled = false;
@@ -167,51 +190,52 @@
             });
         });
 
+        // サジェストリストの表示 (iPhoneのタップ問題対策版)
         function showSuggestions(results, row) {
-            const existing = document.getElementById('suggestion-box');
-            if (existing) existing.remove();
+            // 既存のサジェストを削除
+            document.querySelectorAll('.suggestion-box').forEach(b => b.remove());
 
+            const td = row.querySelector('.song-cell');
             const titleInput = row.querySelector('.song-title');
             const durationInput = row.querySelector('.song-duration');
 
             const box = document.createElement('div');
-            box.id = 'suggestion-box';
-            box.className = 'absolute bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md w-64';
-            
-            const rect = titleInput.getBoundingClientRect();
-            box.style.top = `${rect.bottom + window.scrollY}px`;
-            box.style.left = `${rect.left + window.scrollX}px`;
+            box.className = 'suggestion-box absolute left-0 top-full mt-[2px] bg-white border-2 border-black z-[9999] shadow-2xl max-h-60 overflow-y-auto rounded-b-md w-64 md:w-full';
             
             let html = '';
             results.forEach(s => {
                 const sec = Math.floor(s.trackTimeMillis / 1000);
                 const time = `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
+                // HTMLを生成
                 html += `
-                <div class="suggestion-item p-3 border-b border-gray-200 active:bg-blue-100 hover:bg-gray-50 bg-white cursor-pointer" 
+                <div class="sugg-item p-3 border-b border-gray-200 active:bg-blue-100 hover:bg-gray-50 bg-white cursor-pointer" 
                      data-title="${s.trackName.replace(/"/g, '&quot;')}" data-time="${time}">
                     <div class="font-bold text-sm truncate text-black pointer-events-none">${s.trackName}</div>
                     <div class="text-xs text-gray-500 truncate pointer-events-none">${s.artistName}</div>
                 </div>`;
             });
             box.innerHTML = html;
-            document.body.appendChild(box);
+            td.appendChild(box);
 
+            // iOS Safari 対策: touchstart を使ってキーボードが閉じる前にデータを反映する
             const selectHandler = (e) => {
-                const item = e.target.closest('.suggestion-item');
+                const item = e.target.closest('.sugg-item');
                 if (item) {
-                    e.preventDefault();
+                    e.preventDefault(); // これが重要: 入力欄からフォーカスが外れるのを防ぐ
                     titleInput.value = item.dataset.title;
                     durationInput.value = item.dataset.time;
                     box.remove();
                 }
             };
             
-            box.addEventListener('click', selectHandler);
+            // touchstartとclickの両方で検知
             box.addEventListener('touchstart', selectHandler, {passive: false});
+            box.addEventListener('click', selectHandler);
 
+            // リストの外側をクリック・タップしたら閉じる処理
             setTimeout(() => {
                 const closeHandler = (e) => {
-                    const currentBox = document.getElementById('suggestion-box');
+                    const currentBox = document.querySelector('.suggestion-box');
                     if (currentBox && !currentBox.contains(e.target) && e.target !== titleInput && !e.target.classList.contains('search-btn')) {
                         currentBox.remove();
                         document.removeEventListener('click', closeHandler);
@@ -223,8 +247,10 @@
             }, 50);
         }
 
+        // 印刷ボタン
         document.getElementById('print-btn').addEventListener('click', () => window.print());
 
+        // 送信ボタン (バリデーション)
         document.getElementById('submit-btn').addEventListener('click', () => {
             const errorDiv = document.getElementById('error-msg');
             let errors = [];
