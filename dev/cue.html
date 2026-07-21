@@ -266,7 +266,48 @@
                 const canvas = await html2canvas(element, {
                     scale: 2, // 高解像度で出力
                     useCORS: true,
-                    backgroundColor: '#ffffff'
+                    backgroundColor: '#ffffff',
+                    // ▼ここから追加：画像化の一瞬だけinputをdivに変換して文字切れバグを回避する▼
+                    onclone: (clonedDoc) => {
+                        const clonedArea = clonedDoc.getElementById('print-area');
+                        if (!clonedArea) return;
+                        
+                        const inputs = clonedArea.querySelectorAll('input');
+                        inputs.forEach(input => {
+                            const div = clonedDoc.createElement('div');
+                            div.className = input.className; // クラスを継承
+                            div.style.cssText = window.getComputedStyle(input).cssText; // スタイルを完全継承
+                            
+                            // input特有の文字切れを防ぐためのFlexboxレイアウト
+                            div.style.display = 'flex';
+                            div.style.alignItems = 'center';
+                            div.style.boxSizing = 'border-box';
+                            div.style.whiteSpace = 'nowrap';
+                            div.style.overflow = 'hidden';
+                            
+                            // テキストの配置を継承
+                            if (input.classList.contains('text-center')) {
+                                div.style.justifyContent = 'center';
+                            } else if (input.classList.contains('text-right')) {
+                                div.style.justifyContent = 'flex-end';
+                            } else {
+                                div.style.justifyContent = 'flex-start';
+                            }
+
+                            // 入力値またはプレースホルダーをセット
+                            if (input.value) {
+                                div.textContent = input.value;
+                                div.style.color = '#000000'; // 黒文字
+                            } else {
+                                div.textContent = input.placeholder;
+                                div.style.color = '#9ca3af'; // グレー文字 (text-gray-400相当)
+                            }
+
+                            // クローン(裏側)のDOM上だけで入れ替えを実行
+                            input.parentNode.replaceChild(div, input);
+                        });
+                    }
+                    // ▲ここまで追加▲
                 });
                 
                 // バンド名を取得してファイル名にする
