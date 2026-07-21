@@ -254,66 +254,73 @@
             });
         });
 
-        // 基本機能 (PDF出力を画像出力に変更)
+        // 画像出力処理 (文字切れバグを完全回避する実DOM置換アプローチ)
         document.getElementById('image-btn').addEventListener('click', async function() {
             const originalText = this.innerText;
             this.innerText = "生成中...";
             this.disabled = true;
             
+            const element = document.getElementById('print-area');
+            const inputs = element.querySelectorAll('input');
+            const replacements = [];
+
+            // 1. 実DOMのinputをすべてdivに物理的にすり替える
+            inputs.forEach(input => {
+                const div = document.createElement('div');
+                div.className = input.className; // Tailwindクラスを継承
+                
+                // 元のinputと完全に同じサイズ・スタイルを強制的に適用
+                const computed = window.getComputedStyle(input);
+                div.style.display = 'flex';
+                div.style.alignItems = 'center'; // 上下中央揃えを強制
+                div.style.boxSizing = 'border-box';
+                div.style.whiteSpace = 'nowrap';
+                div.style.overflow = 'hidden';
+                div.style.width = input.offsetWidth + 'px';
+                div.style.height = input.offsetHeight + 'px';
+                div.style.fontSize = computed.fontSize;
+                div.style.fontFamily = computed.fontFamily;
+                div.style.padding = computed.padding;
+                
+                // テキストの配置を継承
+                if (input.classList.contains('text-center') || computed.textAlign === 'center') {
+                    div.style.justifyContent = 'center';
+                } else if (input.classList.contains('text-right') || computed.textAlign === 'right') {
+                    div.style.justifyContent = 'flex-end';
+                } else {
+                    div.style.justifyContent = 'flex-start';
+                }
+
+                // 入力値またはプレースホルダーをセット
+                if (input.value) {
+                    div.textContent = input.value;
+                    div.style.color = '#000000'; // 黒文字
+                } else {
+                    div.textContent = input.placeholder;
+                    div.style.color = '#9ca3af'; // グレー文字
+                }
+
+                // 実際のDOM上で一瞬だけすり替える（元のinputは隠す）
+                input.parentNode.insertBefore(div, input);
+                input.style.display = 'none';
+                
+                replacements.push({ div, input });
+            });
+
+            // スマホ等で描画が完全に切り替わるまでほんの少し待機
+            await new Promise(resolve => setTimeout(resolve, 50));
+
             try {
-                // html2canvasを使って対象領域(#print-area)を画像化
-                const element = document.getElementById('print-area');
+                // 2. html2canvasで画像化 (実DOMをそのまま撮影)
                 const canvas = await html2canvas(element, {
-                    scale: 2, // 高解像度で出力
+                    scale: 2, // 高解像度
                     useCORS: true,
-                    backgroundColor: '#ffffff',
-                    // ▼ここから追加：画像化の一瞬だけinputをdivに変換して文字切れバグを回避する▼
-                    onclone: (clonedDoc) => {
-                        const clonedArea = clonedDoc.getElementById('print-area');
-                        if (!clonedArea) return;
-                        
-                        const inputs = clonedArea.querySelectorAll('input');
-                        inputs.forEach(input => {
-                            const div = clonedDoc.createElement('div');
-                            div.className = input.className; // クラスを継承
-                            div.style.cssText = window.getComputedStyle(input).cssText; // スタイルを完全継承
-                            
-                            // input特有の文字切れを防ぐためのFlexboxレイアウト
-                            div.style.display = 'flex';
-                            div.style.alignItems = 'center';
-                            div.style.boxSizing = 'border-box';
-                            div.style.whiteSpace = 'nowrap';
-                            div.style.overflow = 'hidden';
-                            
-                            // テキストの配置を継承
-                            if (input.classList.contains('text-center')) {
-                                div.style.justifyContent = 'center';
-                            } else if (input.classList.contains('text-right')) {
-                                div.style.justifyContent = 'flex-end';
-                            } else {
-                                div.style.justifyContent = 'flex-start';
-                            }
-
-                            // 入力値またはプレースホルダーをセット
-                            if (input.value) {
-                                div.textContent = input.value;
-                                div.style.color = '#000000'; // 黒文字
-                            } else {
-                                div.textContent = input.placeholder;
-                                div.style.color = '#9ca3af'; // グレー文字 (text-gray-400相当)
-                            }
-
-                            // クローン(裏側)のDOM上だけで入れ替えを実行
-                            input.parentNode.replaceChild(div, input);
-                        });
-                    }
-                    // ▲ここまで追加▲
+                    backgroundColor: '#ffffff'
                 });
                 
-                // バンド名を取得してファイル名にする
                 const bandName = document.getElementById('band-name-input').value.trim() || 'band';
                 
-                // 画像としてダウンロード
+                // 3. 画像としてダウンロード
                 const link = document.createElement('a');
                 link.download = `cue_${bandName}.png`;
                 link.href = canvas.toDataURL('image/png');
@@ -324,6 +331,12 @@
                 console.error("Image Generate Error:", err);
                 showToast("画像の生成に失敗しました", true);
             } finally {
+                // 4. すべて元に戻す (すり替えたdivを消し、inputを表示)
+                replacements.forEach(({ div, input }) => {
+                    div.remove();
+                    input.style.display = '';
+                });
+
                 this.innerText = originalText;
                 this.disabled = false;
             }
