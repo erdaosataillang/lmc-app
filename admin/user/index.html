@@ -150,6 +150,7 @@
                                 <th>学籍番号</th>
                                 <th>パート</th>
                                 <th>誕生日</th>
+                                <th>電話番号</th>
                                 <th class="pr-8 text-center">操作</th>
                             </tr>
                         </thead>
@@ -249,7 +250,8 @@
                        (u.studentId || "").toLowerCase().includes(q) ||
                        (u.faculty || "").toLowerCase().includes(q) ||
                        (u.part || "").toLowerCase().includes(q) ||
-                       partJapanese.toLowerCase().includes(q);
+                       partJapanese.toLowerCase().includes(q) ||
+                       (u.tel || "").includes(q); // 電話番号検索も追加
             });
             
             if (userShowOnlyCurrent) {
@@ -326,7 +328,7 @@
             const tableBody = document.getElementById('users-table-body');
             const selectAllCheck = document.getElementById('select-all-checkbox');
             if (data.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="8" class="py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members found</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="9" class="py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members found</td></tr>`;
                 return;
             }
             const allSelectedInFiltered = data.every(u => selectedUserIds.has(u.id));
@@ -354,6 +356,7 @@
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-400">${user.studentId || '-'}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-indigo-500">${getPartName(user.part)}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs text-gray-500">${birthStr}</span></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-500">${user.tel || '-'}</span></td>
                     <td class="pr-8 text-center"><button onclick="window.showUserDetail('${user.id}')" class="w-8 h-8 rounded-full hover:bg-indigo-50 text-gray-300 hover:text-indigo-500 transition-colors"><i class="fa-solid fa-ellipsis"></i></button></td>
                 </tr>`;
             }).join('');
@@ -482,6 +485,17 @@
                             </div>
 
                             <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.4s">
+                                <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-phone text-xs"></i>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">電話番号</span>
+                                    </div>
+                                    ${user.tel ? `<button onclick="window.copyInfo('${user.tel}', this)" class="copy-btn"><i class="fa-regular fa-copy text-[10px]"></i></button>` : ''}
+                                </div>
+                                <div class="font-mono font-bold text-gray-800 text-sm">${user.tel || '未設定'}</div>
+                            </div>
+
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group col-span-full" style="animation-delay: 0.5s">
                                 <div class="flex items-center gap-2 mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <i class="fa-solid fa-cake-candles text-xs"></i>
                                     <span class="text-[9px] font-black uppercase tracking-widest">誕生日</span>
@@ -489,7 +503,7 @@
                                 <div class="font-bold text-gray-800 text-sm">${birthStr}</div>
                             </div>
 
-                            <div class="animate-item bg-gray-50/50 p-3 rounded-2xl col-span-full flex items-center justify-between group mt-2" style="animation-delay: 0.5s">
+                            <div class="animate-item bg-gray-50/50 p-3 rounded-2xl col-span-full flex items-center justify-between group mt-2" style="animation-delay: 0.6s">
                                 <div class="flex items-center gap-2">
                                     <span class="text-[8px] font-black text-gray-300 uppercase tracking-tighter">システムID:</span>
                                     <span class="font-mono text-[9px] text-gray-400">${user.id}</span>
@@ -556,9 +570,15 @@
                                     </select>
                                 </div>
                             </div>
-                            <div>
-                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
-                                <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">電話番号</label>
+                                    <input type="tel" id="edit-tel" value="${user.tel || ''}" class="edit-input font-mono" placeholder="09012345678">
+                                </div>
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
+                                    <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
+                                </div>
                             </div>
                             <div>
                                 <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
@@ -591,17 +611,18 @@
             const faculty = document.getElementById('edit-faculty')?.value;
             const studentId = document.getElementById('edit-studentId')?.value;
             const part = document.getElementById('edit-part')?.value;
+            const tel = document.getElementById('edit-tel')?.value;
             const birthdayInput = document.getElementById('edit-birthday')?.value;
             const headerImage = document.getElementById('edit-headerImage')?.value;
 
             let birthday = null;
             if (birthdayInput) birthday = Timestamp.fromDate(new Date(birthdayInput));
             try {
-                await updateDoc(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, birthday, headerImage });
+                await updateDoc(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, tel, birthday, headerImage });
                 isEditing = false;
                 const updatedUser = usersData.find(u => u.id === userId);
                 if (updatedUser) {
-                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, birthday, headerImage });
+                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, tel, birthday, headerImage });
                     renderModalContent(updatedUser);
                 }
             } catch (err) {
@@ -663,21 +684,21 @@
         document.getElementById('select-all-checkbox')?.addEventListener('change', (e) => {
             if (e.target.checked) filteredData.forEach(u => selectedUserIds.add(u.id));
             else filteredData.forEach(u => selectedUserIds.delete(u.id));
-            renderUsers();
+            updateSelectionUI();
         });
 
         document.getElementById('csv-download-btn')?.addEventListener('click', () => {
             if (selectedUserIds.size === 0) return;
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
             selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
-            const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '誕生日', 'システムID'];
+            const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '電話番号', '誕生日', 'システムID'];
             const rows = selectedUsers.map(u => {
                 let birthStr = '';
                 if (u.birthday) {
                     const d = u.birthday.toDate ? u.birthday.toDate() : new Date(u.birthday.seconds * 1000 || u.birthday);
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
-                return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
+                return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), u.tel || '', birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
             });
             const csvContent = "\ufeff" + [headers.join(','), ...rows].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
