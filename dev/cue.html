@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 画像出力用のライブラリを追加 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* オリジナルのスタイルベース */
         .sync-btn.active { transition: all 0.2s; }
@@ -178,10 +180,10 @@
 
         <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6 text-sm"></div>
         
-        <!-- Apple風にリデザインしたボタン群 -->
-        <div class="no-print flex flex-wrap gap-3 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-center md:justify-end">
-            <button type="button" id="print-btn" class="btn-apple-dark px-6 py-2.5 text-sm md:text-base font-bold w-[47%] md:w-auto">
-                PDF出力
+        <!-- Apple風にリデザインしたボタン群 (画像出力時は非表示にする属性を追加) -->
+        <div class="no-print flex flex-wrap gap-3 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-center md:justify-end" data-html2canvas-ignore="true">
+            <button type="button" id="image-btn" class="btn-apple-dark px-6 py-2.5 text-sm md:text-base font-bold w-[47%] md:w-auto">
+                画像保存
             </button>
             <button type="button" id="submit-btn" class="btn-apple-primary px-8 py-2.5 text-sm md:text-base font-bold w-full md:w-auto mt-2 md:mt-0">
                 送信する
@@ -232,8 +234,8 @@
                     <td class="border-r-2 border-black text-center font-bold bg-gray-50 w-10 text-sm md:text-base">${i+1}</td>
                     <td class="border-r-2 border-black flex items-center h-full p-0 relative">
                         <input type="text" class="w-full h-full px-2 md:px-4 outline-none song-title text-sm md:text-base flex-grow" placeholder="曲名">
-                        <!-- Apple風検索ボタン -->
-                        <button type="button" class="search-btn btn-apple-search px-3 py-1.5 mr-1 text-xs md:text-sm font-bold shrink-0">検索</button>
+                        <!-- Apple風検索ボタン (画像出力時は非表示にする属性を追加) -->
+                        <button type="button" class="search-btn btn-apple-search px-3 py-1.5 mr-1 text-xs md:text-sm font-bold shrink-0" data-html2canvas-ignore="true">検索</button>
                     </td>
                     <td class="w-24 md:w-28"><input type="text" inputmode="numeric" class="w-full h-full text-center outline-none font-mono song-duration text-sm md:text-base" placeholder="00:00"></td>
                 </tr>`);
@@ -252,121 +254,39 @@
             });
         });
 
-        // 楽曲検索 (Apple Music / iTunes API 直接通信)
-        document.querySelectorAll('.search-btn').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                const row = this.closest('tr');
-                const titleInput = row.querySelector('.song-title');
-                const query = titleInput.value.trim();
-                
-                if (!query) return;
-                
-                const originalText = this.innerText;
-                this.innerText = "検索中";
-                this.disabled = true;
-
-                try {
-                    // Apple Music API と直接通信 (ブロッカーOFF前提)
-                    const response = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`);
-                    
-                    if (!response.ok) throw new Error("通信エラー");
-                    const data = await response.json();
-
-                    if (data.results && data.results.length > 0) {
-                        showSuggestions(data.results, row);
-                    } else {
-                        showToast("曲が見つかりませんでした", true);
-                    }
-                } catch (error) {
-                    console.error("Search Error:", error);
-                    showToast("通信エラー: 広告・DNSブロッカーが原因の可能性があります", true);
-                } finally {
-                    this.innerText = originalText;
-                    this.disabled = false;
-                }
-            });
-        });
-
-        // サジェスト表示 (スマホ特化・オリジナルテイスト)
-        function showSuggestions(results, row) {
-            const existing = document.getElementById('suggestion-box');
-            if (existing) existing.remove();
-
-            const titleInput = row.querySelector('.song-title');
-            const durationInput = row.querySelector('.song-duration');
-
-            const box = document.createElement('div');
-            box.id = 'suggestion-box';
-            // オリジナルの太枠をベースにしたデザイン
-            box.className = 'absolute bg-white border-2 border-black z-[9999] shadow-[0_10px_30px_rgba(0,0,0,0.2)] max-h-60 overflow-y-auto w-64';
+        // 基本機能 (PDF出力を画像出力に変更)
+        document.getElementById('image-btn').addEventListener('click', async function() {
+            const originalText = this.innerText;
+            this.innerText = "生成中...";
+            this.disabled = true;
             
-            const rect = titleInput.getBoundingClientRect();
-            box.style.top = `${rect.bottom + window.scrollY}px`;
-            box.style.left = `${rect.left + window.scrollX}px`;
-            
-            let html = '';
-            results.forEach(s => {
-                // Apple Music API用に成形 (ミリ秒を分:秒に)
-                const sec = Math.floor(s.trackTimeMillis / 1000);
-                const time = `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
+            try {
+                // html2canvasを使って対象領域(#print-area)を画像化
+                const element = document.getElementById('print-area');
+                const canvas = await html2canvas(element, {
+                    scale: 2, // 高解像度で出力
+                    useCORS: true,
+                    backgroundColor: '#ffffff'
+                });
                 
-                html += `
-                <div class="suggestion-item p-3 border-b border-gray-200 active:bg-gray-100 hover:bg-gray-50 bg-white cursor-pointer" 
-                     data-title="${s.trackName.replace(/"/g, '&quot;')}" data-time="${time}">
-                    <div class="font-bold text-sm truncate text-black pointer-events-none">${s.trackName}</div>
-                    <div class="text-xs text-gray-500 truncate pointer-events-none">${s.artistName}</div>
-                </div>`;
-            });
-            box.innerHTML = html;
-            document.body.appendChild(box);
-
-            const selectHandler = (e) => {
-                const item = e.target.closest('.suggestion-item');
-                if (item) {
-                    e.preventDefault();
-                    titleInput.value = item.dataset.title;
-                    durationInput.value = item.dataset.time;
-                    box.remove();
-                }
-            };
-            
-            box.addEventListener('click', selectHandler);
-            box.addEventListener('touchstart', selectHandler, {passive: false});
-
-            // 外側タップで閉じる
-            setTimeout(() => {
-                const closeHandler = (e) => {
-                    const currentBox = document.getElementById('suggestion-box');
-                    if (currentBox && !currentBox.contains(e.target) && e.target !== titleInput && !e.target.classList.contains('search-btn')) {
-                        currentBox.remove();
-                        document.removeEventListener('click', closeHandler);
-                        document.removeEventListener('touchstart', closeHandler);
-                    }
-                };
-                document.addEventListener('click', closeHandler);
-                document.addEventListener('touchstart', closeHandler);
-            }, 50);
-        }
-
-        // NG日の理由入力の表示切り替えロジック
-        const ngDateInput = document.getElementById('ng-date-input');
-        const ngReasonContainer = document.getElementById('ng-reason-container');
-        
-        ngDateInput.addEventListener('input', function() {
-            if (this.value.trim() !== "") {
-                // 何か入力されたら理由欄を表示
-                ngReasonContainer.classList.remove('hidden');
-                ngReasonContainer.classList.add('flex');
-            } else {
-                // 空っぽになったら理由欄を隠して中身をリセット
-                ngReasonContainer.classList.add('hidden');
-                ngReasonContainer.classList.remove('flex');
-                document.getElementById('ng-reason-input').value = ""; 
+                // バンド名を取得してファイル名にする
+                const bandName = document.getElementById('band-name-input').value.trim() || 'band';
+                
+                // 画像としてダウンロード
+                const link = document.createElement('a');
+                link.download = `cue_${bandName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                showToast("画像を保存しました");
+            } catch (err) {
+                console.error("Image Generate Error:", err);
+                showToast("画像の生成に失敗しました", true);
+            } finally {
+                this.innerText = originalText;
+                this.disabled = false;
             }
         });
-
-        // 基本機能
-        document.getElementById('print-btn').addEventListener('click', () => window.print());
 
         document.getElementById('submit-btn').addEventListener('click', () => {
             const errorDiv = document.getElementById('error-msg');
