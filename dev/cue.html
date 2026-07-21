@@ -255,7 +255,41 @@
             });
         });
 
-        // 楽曲検索 (Appleの直接通信 - 280blockerオフ前提)
+        // ★ Spotify API 認証情報 (Spotify for Developersで取得が必要)
+        const SPOTIFY_CLIENT_ID = "YOUR_CLIENT_ID_HERE"; // ←ここに取得したClient IDを貼り付けてください
+        const SPOTIFY_CLIENT_SECRET = "YOUR_CLIENT_SECRET_HERE"; // ←ここに取得したClient Secretを貼り付けてください
+        
+        let spotifyAccessToken = null;
+        let tokenExpiration = 0;
+
+        // Spotify APIからアクセストークンを取得・管理する関数
+        async function getSpotifyToken() {
+            // トークンが有効期限内なら再利用
+            if (spotifyAccessToken && Date.now() < tokenExpiration) {
+                return spotifyAccessToken;
+            }
+            const params = new URLSearchParams();
+            params.append('grant_type', 'client_credentials');
+            params.append('client_id', SPOTIFY_CLIENT_ID);
+            params.append('client_secret', SPOTIFY_CLIENT_SECRET);
+
+            const res = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            });
+            const data = await res.json();
+            if (data.access_token) {
+                spotifyAccessToken = data.access_token;
+                // 期限(秒)をミリ秒に変換し、余裕を持たせて60秒前に期限切れとする
+                tokenExpiration = Date.now() + (data.expires_in - 60) * 1000;
+                return spotifyAccessToken;
+            } else {
+                throw new Error(data.error_description || "Token request failed");
+            }
+        }
+
+        // 楽曲検索 (Spotify Web API への変更)
         document.querySelectorAll('.search-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
                 const row = this.closest('tr');
@@ -263,23 +297,57 @@
                 const query = titleInput.value.trim();
                 
                 if (!query) return;
+
+                if (SPOTIFY_CLIENT_ID === "YOUR_CLIENT_ID_HERE" || !SPOTIFY_CLIENT_ID || SPOTIFY_CLIENT_SECRET === "YOUR_CLIENT_SECRET_HERE") {
+                    showToast("Spotify APIキーが設定されていません。コードを編集してください。", true);
+                    return;
+                }
                 
                 const originalText = this.innerText;
                 this.innerText = "検索中";
                 this.disabled = true;
 
                 try {
-                    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&country=jp&limit=5`, { cache: 'no-store' });
-                    const data = await res.json();
+                    // 1. トークンを取得（有効なものがあればそれを再利用）
+                    const token = await getSpotifyToken();
 
-                    if (data.results && data.results.length > 0) {
-                        showSuggestions(data.results, row);
+                    // 2. Spotify APIで楽曲検索
+                    const searchRes = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&market=JP&limit=5`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    const searchData = await searchRes.json();
+
+                    if (searchData.error) {
+                        console.error("Spotify API Error:", searchData.error);
+                        showToast(`APIエラー: ${searchData.error.message}`, true);
+                        return;
+                    }
+
+                    if (searchData.tracks && searchData.tracks.items.length > 0) {
+                        // 3. データを使いやすい形に成形
+                        const formattedResults = searchData.tracks.items.map(track => {
+                            // duration_ms (ミリ秒) を MM:SS 形式に変換
+                            const totalSeconds = Math.floor(track.duration_ms / 1000);
+                            const minutes = Math.floor(totalSeconds / 60);
+                            const seconds = totalSeconds % 60;
+                            const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                            return {
+                                trackName: track.name,
+                                artistName: track.artists.map(a => a.name).join(', '), // 複数のアーティストがいる場合はカンマ区切り
+                                time: timeStr
+                            };
+                        });
+
+                        showSuggestions(formattedResults, row);
                     } else {
                         showToast("曲が見つかりませんでした", true);
                     }
                 } catch (error) {
                     console.error("Search Error:", error);
-                    showToast("通信エラーが発生しました", true);
+                    showToast("通信エラーが発生しました。設定等をご確認ください。", true);
                 } finally {
                     this.innerText = originalText;
                     this.disabled = false;
@@ -306,11 +374,10 @@
             
             let html = '';
             results.forEach(s => {
-                const sec = Math.floor(s.trackTimeMillis / 1000);
-                const time = `${Math.floor(sec / 60)}:${(sec % 60).toString().padStart(2, '0')}`;
+                // YouTube API用に成形されたデータ (s.time) をそのまま使用
                 html += `
                 <div class="suggestion-item p-3 border-b border-gray-200 active:bg-gray-100 hover:bg-gray-50 bg-white cursor-pointer" 
-                     data-title="${s.trackName.replace(/"/g, '&quot;')}" data-time="${time}">
+                     data-title="${s.trackName.replace(/"/g, '&quot;')}" data-time="${s.time}">
                     <div class="font-bold text-sm truncate text-black pointer-events-none">${s.trackName}</div>
                     <div class="text-xs text-gray-500 truncate pointer-events-none">${s.artistName}</div>
                 </div>`;
@@ -421,18 +488,25 @@
             const db = getFirestore(app);
             const partMap = { "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.", "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho." };
 
-            document.getElementById('load-btn').addEventListener('click', async function() {
-                const btn = this;
-                const originalText = btn.innerHTML;
-                btn.innerHTML = `<span class="flex items-center justify-center gap-2">読込中...</span>`;
-                btn.disabled = true;
+            window.addEventListener('DOMContentLoaded', async () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const bandId = urlParams.get('bandID');
+                const eventId = urlParams.get('eventID'); // 今回は取得のみ。必要に応じて拡張可能
+
+                if (!bandId) {
+                    return; // bandIDがない場合は何もしない（新規作成用）
+                }
+
+                showToast("データを読み込んでいます...");
 
                 try {
-                    const bandSnap = await getDoc(doc(db, "bands", "GyOs5xdbRty6xnS1pO5M"));
+                    // URLから取得した bandId を使ってデータを取得
+                    const bandSnap = await getDoc(doc(db, "bands", bandId));
                     if (!bandSnap.exists()) {
-                        showToast("データが見つかりませんでした", true);
+                        showToast("指定されたバンドデータが見つかりませんでした", true);
                         return;
                     }
+                    
                     const bandData = bandSnap.data();
                     document.getElementById('band-name-input').value = bandData.name || '';
                     document.getElementById('event-count-input').value = bandData.events ? bandData.events.length : 1;
@@ -449,18 +523,15 @@
                             rows[i].querySelector('.member-name').value = u.name || '';
                         }
                     }
-                    showToast("データを読み込みました");
+                    showToast("バンドデータを読み込みました");
                 } catch (e) { 
                     console.error("Data Load Error:", e);
                     showToast("データの読み込みに失敗しました", true);
-                } finally {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
                 }
             });
         } catch(err) {
             console.error("Firebase Initialization Failed:", err);
-            document.getElementById('load-btn').addEventListener('click', () => showToast('データベース接続準備中です', true));
+            showToast('データベース接続準備中にエラーが発生しました', true);
         }
     </script>
 </body>
