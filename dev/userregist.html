@@ -16,7 +16,7 @@
         body {
             font-family: 'Roboto', sans-serif;
             background-color: #e0f2fe; /* 薄い水色の背景 */
-            overflow: hidden; /* スクロールバーを隠す */
+            /* overflow: hidden; を削除し、スマホのキーボード表示時にスクロールできるように変更 */
             margin: 0;
             padding: 0;
         }
@@ -175,7 +175,8 @@
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen">
+<!-- bodyのクラスを変更し、キーボードが出た時に上下スクロール可能にしつつ、横ブレを防ぐ -->
+<body class="flex flex-col items-center justify-center min-h-screen py-8 overflow-x-hidden">
 
     <!-- メタボール効果のためのSVGフィルター定義 -->
     <svg style="width:0; height:0; position:absolute;">
@@ -211,7 +212,8 @@
                 <div class="step active" id="step1">
                     <form onsubmit="handleGenericNext(event)">
                         <div class="input-group">
-                            <input type="text" id="name" placeholder=" " required autocomplete="off">
+                            <!-- オートコンプリートや自動大文字化の無効化を追加 -->
+                            <input type="text" id="name" placeholder=" " required autocomplete="name" autocapitalize="off" autocorrect="off">
                             <label for="name">お名前 (本名)</label>
                         </div>
                         <div class="mt-8 flex justify-end">
@@ -231,7 +233,8 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <input type="text" id="furigana" placeholder=" " required autocomplete="off" oninput="validateFuriganaInput(this)">
+                            <!-- ふりがな特化の入力制御（自動大文字・補完オフ） -->
+                            <input type="text" id="furigana" placeholder=" " required autocomplete="off" autocapitalize="off" autocorrect="off" oninput="validateFuriganaInput(this)">
                             <label for="furigana">ふりがな (ひらがなのみ)</label>
                         </div>
                         <p id="furigana-error" class="text-red-500 text-xs mt-1 hidden">ひらがな（例：やました たろう）で入力してください。</p>
@@ -252,7 +255,8 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <input type="tel" id="phone" placeholder=" " required autocomplete="off" pattern="[0-9\-]*">
+                            <!-- スマホでテンキーを優先的に表示するための inputmode="tel" を追加 -->
+                            <input type="tel" id="phone" placeholder=" " required autocomplete="tel" inputmode="tel" pattern="[0-9\-]*">
                             <label for="phone">電話番号</label>
                         </div>
                         <div class="mt-8 flex justify-end">
@@ -292,7 +296,8 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <input type="text" id="student_id" placeholder=" " required autocomplete="off" oninput="parseStudentId(this)">
+                            <!-- 英字を大文字で入力しやすくする制御 (autocapitalize="characters") -->
+                            <input type="text" id="student_id" placeholder=" " required autocomplete="off" autocapitalize="characters" autocorrect="off" oninput="parseStudentId(this)">
                             <label for="student_id">学籍番号 (例: 26H000)</label>
                         </div>
                         <p id="student-id-error" class="text-red-500 text-xs mt-1 hidden">形式を確認してください。</p>
@@ -444,7 +449,8 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <input type="password" id="password" placeholder=" " required minlength="8">
+                            <!-- パスワード入力時も不要な大文字化を防ぐ -->
+                            <input type="password" id="password" placeholder=" " required minlength="8" autocapitalize="off" autocorrect="off">
                             <label for="password">パスワード (8文字以上)</label>
                         </div>
                         <div class="mt-8 flex justify-end">
