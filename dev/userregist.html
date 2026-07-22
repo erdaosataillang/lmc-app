@@ -347,10 +347,61 @@
                     </form>
                 </div>
 
-                <!-- ステップ8: 利用規約とプライバシーポリシー同意 -->
+                <!-- ステップ8: 楽器選択 (軽音モード専用・複数選択可) -->
+                <div class="step" id="step-instrument">
+                    <form onsubmit="handleInstrumentNext(event)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(7)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-1">演奏・希望楽器</h3>
+                            <p class="text-xs text-gray-500 mb-4">担当したい、または演奏できる楽器を選択してください（複数選択可 / なし も可）</p>
+                            
+                            <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="instrument" value="ボーカル" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">ボーカル</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="instrument" value="ギター" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">ギター</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="instrument" value="ベース" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">ベース</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="instrument" value="ドラム" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">ドラム</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="instrument" value="キーボード・ピアノ" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">キーボード・ピアノ</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                    <input type="checkbox" name="instrument" value="マネージャー・ローディー" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">マネージャー</span>
+                                </label>
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors col-span-2" onclick="handleNoneInstrument(this)">
+                                    <input type="checkbox" id="inst-none" name="instrument" value="なし" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">なし（リスナー・見学など）</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ8(または9): 利用規約とプライバシーポリシー同意 -->
                 <div class="step" id="step-terms">
                     <form onsubmit="handleTermsNext(event)">
-                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 7 : 4)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 8 : 4)">
                             <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
                             戻る
                         </div>
@@ -436,8 +487,8 @@
 
         // 総ステップ数の制御
         // 通常: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 利用規約(5), パスワード(6), 完了(7) -> 計7ステップ
-        // 軽音: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 学籍番号(5), 学部(6), 学年(7), 利用規約(8), パスワード(9), 完了(10) -> 計10ステップ
-        const totalSteps = isLmcMode ? 10 : 7;
+        // 軽音: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 学籍番号(5), 学部(6), 学年(7), 楽器(8), 利用規約(9), パスワード(10), 完了(11) -> 計11ステップ
+        const totalSteps = isLmcMode ? 11 : 7;
         
         // コンテナの幅をステップ数に応じて動的に設定
         const stepContainer = document.getElementById('step-container');
@@ -451,7 +502,7 @@
 
         // 軽音モードでない場合、軽音専用ステップをDOMから完全削除してIDのズレを解消
         if (!isLmcMode) {
-            ['step5', 'step6', 'step7'].forEach(id => {
+            ['step5', 'step6', 'step7', 'step-instrument'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.remove();
             });
@@ -508,6 +559,7 @@
             "学籍番号を入力してください (例: 26H000)",
             "学部・学科を選択または入力してください",
             "現在の学年を選択してください",
+            "担当・希望する楽器を選択してください",
             "利用規約とプライバシーポリシーをご確認ください",
             "セキュリティのためパスワードを設定",
             "準備が完了しました"
@@ -683,7 +735,23 @@
 
         function handleYearNext(e) {
             e.preventDefault();
-            handleNext(e, isLmcMode ? 7 : 4);
+            handleNext(e, isLmcMode ? 8 : 4);
+        }
+
+        function handleNoneInstrument(labelEl) {
+            const noneCheckbox = document.getElementById('inst-none');
+            // 「なし」がチェックされた場合、他の楽器チェックボックスを外す
+            if (!noneCheckbox.checked) {
+                const allCheckboxes = document.querySelectorAll('input[name="instrument"]');
+                allCheckboxes.forEach(cb => {
+                    if (cb !== noneCheckbox) cb.checked = false;
+                });
+            }
+        }
+
+        function handleInstrumentNext(e) {
+            e.preventDefault();
+            handleNext(e, isLmcMode ? 9 : 5);
         }
 
         function handleTermsNext(e) {
@@ -692,7 +760,7 @@
             if (!checkbox.checked) {
                 return;
             }
-            handleNext(e, isLmcMode ? 8 : 5);
+            handleNext(e, isLmcMode ? 10 : 5);
         }
 
         function handleNext(e, stepNum) {
