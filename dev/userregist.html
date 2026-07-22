@@ -389,10 +389,6 @@
                                     <input type="checkbox" name="instrument" value="キーボード・ピアノ" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                                     <span class="text-xs text-gray-700 font-medium">キーボード・ピアノ</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
-                                    <input type="checkbox" name="instrument" value="マネージャー・ローディー" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                    <span class="text-xs text-gray-700 font-medium">マネージャー</span>
-                                </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors col-span-2" onclick="window.handleNoneInstrument(this)">
                                     <input type="checkbox" id="inst-none" name="instrument" value="なし" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                                     <span class="text-xs text-gray-700 font-medium">なし（リスナー・見学など）</span>
@@ -775,6 +771,23 @@
             if (!birthdateInput.value) return;
             goToNextStep();
         };
+         // 楽器選択の排他制御（追加）
+        window.handleInstrumentChange = function(checkbox) {
+            const allCheckboxes = document.querySelectorAll('input[name="instrument"]');
+            const noneCheckbox = document.querySelector('input[name="instrument"][value="None/Other"]');
+
+            if (checkbox.value === "None/Other" && checkbox.checked) {
+                // 「その他 / なし」がチェックされた場合、他のチェックを全て外す
+                allCheckboxes.forEach(cb => {
+                    if (cb !== noneCheckbox) cb.checked = false;
+                });
+            } else if (checkbox.checked) {
+                // 他の楽器がチェックされた場合、「その他 / なし」のチェックを外す
+                if (noneCheckbox) noneCheckbox.checked = false;
+            }
+        };
+
+        window.handleTermsNext = function(btn) {
 
         window.parseStudentId = function(input) {
             const val = input.value.trim();
