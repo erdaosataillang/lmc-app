@@ -376,27 +376,54 @@
                         document.getElementById('band-name').value = data.name || '';
                         
                         const names = document.querySelectorAll('.name-input');
-                        const parts = document.querySelectorAll('.part-input');
                         const grades = document.querySelectorAll('.grade-input');
+                        // パートはUserコレクションにあるか不明なため、一旦手入力用に残すか、
+                        // もしUserにあるなら data.part 等で取得可能です。
                         
-                        if (data.members && Array.isArray(data.members)) {
-                            data.members.forEach((member, idx) => {
-                                if (idx < 8) {
-                                    names[idx].value = member.name || '';
-                                    parts[idx].value = member.part || '';
-                                    
-                                    // usersコレクションから学年を取得（Firebaseの構造依存）
-                                    if (member.userId) {
-                                        const userRef = doc(db, 'users', member.userId);
-                                        getDoc(userRef).then(userSnap => {
-                                            if (userSnap.exists()) {
-                                                grades[idx].value = userSnap.data().grade || '';
-                                            }
-                                        }).catch(err => console.log("User fetch error:", err));
+                        // 画像の構造に合わせて、`memberIds` 配列をループ処理
+                        if (data.memberIds && Array.isArray(data.memberIds)) {
+                            // Promise.all を使って複数人のデータを一気に並行で取得する
+                            const userPromises = data.memberIds.map((uid, idx) => {
+                                if (idx >= 8) return null; // 最大8人まで
+                                const userRef = doc(db, 'users', uid);
+                                return getDoc(userRef).then(userSnap => {
+                                    if (userSnap.exists()) {
+                                        const userData = userSnap.data();
+                                        return { idx: idx, data: userData };
                                     }
+                                    return null;
+                                }).catch(err => {
+                                    console.log(`User ${uid} fetch error:`, err);
+                                    return null;
+                                });
+                            });
+
+                            // すべてのユーザー情報の取得を待ってから表に反映
+                            const fetchedUsers = await Promise.all(userPromises);
+                            
+                            fetchedUsers.forEach(result => {
+                                if (result && result.idx < 8) {
+                                    names[result.idx].value = result.data.name || '';
+                                    grades[result.idx].value = result.data.grade || '';
+                                    // もし part も users コレクションにあれば追加:
+                                    // document.querySelectorAll('.part-input')[result.idx].value = result.data.part || '';
                                 }
                             });
                         }
+                        
+                        // さらに、もしバンドデータの中に `songs` (楽曲リスト) があれば、それも読み込む
+                        if (data.songs && Array.isArray(data.songs)) {
+                            const songTitles = document.querySelectorAll('.song-title');
+                            const songDurations = document.querySelectorAll('.song-duration');
+                            
+                            data.songs.forEach((song, idx) => {
+                                if (idx < 5) {
+                                    songTitles[idx].value = song.title || '';
+                                    songDurations[idx].value = song.duration || '';
+                                }
+                            });
+                        }
+
                         showToast('バンドとイベント情報を読み込みました', 'success');
                     } else {
                         showToast('バンド情報が見つかりません', 'error');
