@@ -360,6 +360,22 @@
                         const data = bandDocSnap.data();
                         document.getElementById('band-name').value = data.name || '';
                         
+                        // --- 出演回数の自動計算・入力 ---
+                        const existingCountInput = document.getElementById('existing-count');
+                        if (data.events && Array.isArray(data.events)) {
+                            const eventCount = data.events.length;
+                            if (eventCount <= 1) {
+                                // 1回以下なら「新規」と表示
+                                existingCountInput.value = '新規';
+                            } else {
+                                // 2回以上ならその回数を表示
+                                existingCountInput.value = eventCount;
+                            }
+                        } else {
+                            // events配列が存在しない場合は「新規」扱い
+                            existingCountInput.value = '新規';
+                        }
+                        
                         const names = document.querySelectorAll('.name-input');
                         const grades = document.querySelectorAll('.grade-input');
                         const parts = document.querySelectorAll('.part-input');
