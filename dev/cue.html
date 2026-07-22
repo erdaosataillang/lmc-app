@@ -377,8 +377,7 @@
                         
                         const names = document.querySelectorAll('.name-input');
                         const grades = document.querySelectorAll('.grade-input');
-                        // パートはUserコレクションにあるか不明なため、一旦手入力用に残すか、
-                        // もしUserにあるなら data.part 等で取得可能です。
+                        const parts = document.querySelectorAll('.part-input');
                         
                         // 画像の構造に合わせて、`memberIds` 配列をループ処理
                         if (data.memberIds && Array.isArray(data.memberIds)) {
@@ -404,9 +403,8 @@
                             fetchedUsers.forEach(result => {
                                 if (result && result.idx < 8) {
                                     names[result.idx].value = result.data.name || '';
-                                    grades[result.idx].value = result.data.grade || '';
-                                    // もし part も users コレクションにあれば追加:
-                                    // document.querySelectorAll('.part-input')[result.idx].value = result.data.part || '';
+                                    grades[result.idx].value = result.data.year || '';
+                                    parts[result.idx].value = result.data.part || '';
                                 }
                             });
                         }
