@@ -523,23 +523,32 @@
                     // プロフィールを取得
                     const profile = await liff.getProfile();
                     
-                    // Firestoreの該当ユーザーにLINE情報を追加(マージ)
-                    await updateDoc(doc(db, "users", tempUid), {
-                        lineUserId: profile.userId,
-                        displayName: profile.displayName,
-                        icon: profile.pictureUrl || "", // LINEのアイコン画像
-                        lineLinkedAt: serverTimestamp()
-                    });
+                    // Firestoreにドキュメントが本当に存在するか確認する
+                    const docRef = doc(db, "users", tempUid);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        // 存在する場合のみアップデート(マージ)
+                        await updateDoc(docRef, {
+                            lineUserId: profile.userId,
+                            displayName: profile.displayName,
+                            icon: profile.pictureUrl || "", // LINEのアイコン画像
+                            lineLinkedAt: serverTimestamp()
+                        });
+                        alert("LINE連携が完了しました！アプリを開始します。");
+                        // window.location.href = "/main.html"; // 実際のメイン画面URL
+                    } else {
+                        // データベース側にデータが存在しない（テスト時のゴミデータなど）場合
+                        console.warn("連携対象のユーザーデータが見つかりませんでした。");
+                    }
                     
-                    // 処理が終わったらローカルストレージを掃除
+                    // 成功・失敗に関わらず、処理が終わったら古いUIDを掃除してエラーのループを防ぐ
                     localStorage.removeItem('registrationUid');
-                    
-                    // 本番アプリのメイン画面へ遷移（今はとりあえずアラート）
-                    alert("LINE連携が完了しました！アプリを開始します。");
-                    // window.location.href = "/main.html"; // 実際のメイン画面URL
                 }
             } catch (err) {
-                console.error("LIFFの初期化に失敗しました", err);
+                console.error("LIFFの初期化または連携処理に失敗しました", err);
+                // 予期せぬエラーで止まってしまった場合もローカルストレージをクリアしておく
+                localStorage.removeItem('registrationUid');
             }
         }
         
