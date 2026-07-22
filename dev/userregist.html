@@ -752,16 +752,20 @@
 
             btnText.style.display = 'none';
             btnLoader.style.display = 'block';
-                // 5. Firestoreへドキュメントを書き込み
-                await setDoc(doc(db, "users", newUid), userData);
+            submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            submitBtn.disabled = true;
 
-                // 6. 成功画面への遷移アニメーション
-                goToNextStep();
-
-                if (isLmcMode) {
-                    document.getElementById('success-title').textContent = '登録完了！';
-                    document.getElementById('success-desc').textContent = 'ようこそ';
-                }
+            try {
+                // 1. 34文字のカスタムUIDを生成
+                const generateUid = () => {
+                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                    let rand = '';
+                    for (let i = 0; i < 33; i++) {
+                        rand += chars.charAt(Math.floor(Math.random() * chars.length));
+                    }
+                    return 'U' + rand;
+                };
+                const newUid = generateUid();
 
                 // 2. フォーム値の収集
                 const formName = document.getElementById('name').value;
@@ -776,7 +780,7 @@
                     name: formName,
                     kana: formKana,
                     phone: formPhone,
-                    birthday: formBirthdate ? new Date(formBirthdate) : null, // 自動的にTimestampになる
+                    birthday: formBirthdate ? new Date(formBirthdate) : null,
                     password: formPassword, // 認証用の連携を想定して一応保存
                     createdAt: serverTimestamp(),
                     lastLogin: serverTimestamp(),
@@ -792,9 +796,8 @@
                     userData.faculty = document.getElementById('department').value;
                     userData.grade = document.getElementById('school_year').value;
                     
-                    // 楽器情報を取得し、カンマ区切りまたは配列で保存
+                    // 楽器情報を取得し、カンマ区切りで保存（jobフィールドに割り当て）
                     const instruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
-                    // jobにまとめるか、instrumentsとして保存（今回はjobフィールドに割り当て）
                     userData.job = instruments.join(", "); 
                 }
 
@@ -803,20 +806,7 @@
 
                 // 6. 成功画面への遷移アニメーション
                 currentStepIndex = totalSteps - 1;
-                const movePercentage = currentStepIndex * (100 / totalSteps);
-                stepContainer.style.transform = `translateX(-${movePercentage}%)`;
-                
-                const activeSteps = document.querySelectorAll('.step');
-                activeSteps.forEach((s, idx) => {
-                    if (idx === currentStepIndex) s.classList.add('active');
-                    else s.classList.remove('active');
-                });
-                descElement.textContent = descriptions[currentStepIndex];
-
-                if (isLmcMode) {
-                    document.getElementById('success-title').textContent = '登録完了！';
-                    document.getElementById('success-desc').innerHTML = 'ようこそ<br>さっそくはじめましょう';
-                }
+                updateStepDisplay(); // 相対的な関数で移動処理を行う
 
                 setTimeout(() => {
                     document.getElementById('success-icon').style.transform = 'scale(1)';
@@ -832,7 +822,7 @@
                 submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
                 submitBtn.disabled = false;
             }
-        }
+        };
 
         const buttons = document.querySelectorAll('.btn');
         buttons.forEach(btn => {
