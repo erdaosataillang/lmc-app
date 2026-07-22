@@ -468,22 +468,27 @@
                 </div>
 
                 <!-- ステップ(最後): 完了画面 -->
-                <div class="step" id="step-complete">
+                 <div class="step" id="step-complete">
                     <div class="flex flex-col items-center justify-center text-center py-8">
                         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-500 scale-0 transition-transform duration-500 delay-300" id="success-icon">
                             <span class="material-symbols-outlined text-5xl">check</span>
                         </div>
                         <h2 class="text-2xl font-bold text-gray-800 mb-2" id="success-title">登録完了！</h2>
                         <p class="text-gray-500 mb-8" id="success-desc">ようこそ<br>さっそくはじめましょう</p>
-                        <button class="btn bg-gray-900 text-white font-medium py-3 px-8 rounded-full shadow-lg w-full" onclick="location.reload()">
-                            はじめる
+                        
+                        <!-- ここをLINE連携ボタンに変更 -->
+                        <button class="btn bg-[#06C755] text-white font-medium py-3 px-8 rounded-full shadow-lg w-full flex items-center justify-center gap-2 hover:bg-[#05b34c]" onclick="window.startLineLink()">
+                            <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current">
+                                <path d="M21.543 10.457c0-4.24-4.298-7.683-9.58-7.683-5.282 0-9.58 3.443-9.58 7.683 0 3.82 3.42 7.025 8.163 7.575.318.037.755.117.865.34.1.202.065.517.032.813l-.135.815c-.04.244-.194 1.2.98.706 1.173-.493 6.323-3.722 8.143-5.918.723-.884 1.112-1.895 1.112-2.993z" />
+                            </svg>
+                            LINE連携してはじめる
                         </button>
+                        
                     </div>
                 </div>
 
             </div>
         </div>
-    </div>
 
     <!-- type="module" を指定し、Firebase SDKをインポート -->
     <script type="module">
