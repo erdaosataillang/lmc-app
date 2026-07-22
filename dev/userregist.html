@@ -42,16 +42,16 @@
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
 
-        /* --- 2. フォームのスライド遷移 (6ステップ対応: width = 600%, 各ステップ16.666%) --- */
+        /* --- 2. フォームのスライド遷移 (7ステップ対応: width = 700%, 各ステップ14.285%) --- */
         .step-container {
             display: flex;
-            width: 600%; /* 6ステップ分（100% × 6） */
+            width: 700%; /* 7ステップ分（100% × 7） */
             transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
             will-change: transform;
         }
         
         .step {
-            width: 16.6666%; /* 各ステップはコンテナの1/6に固定しズレを防止 */
+            width: 14.2857%; /* 各ステップはコンテナの1/7に固定しズレを防止 */
             flex-shrink: 0;
             padding: 1rem;
             opacity: 0;
@@ -173,7 +173,7 @@
             <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-3">
                 <span class="material-symbols-outlined text-3xl">water_drop</span>
             </div>
-            <h1 class="text-2xl font-bold text-gray-800 tracking-tight">アカウント作成</h1>
+            <h1 class="text-2xl font-bold text-gray-800 tracking-tight" id="main-title">アカウント作成</h1>
             <p class="text-sm text-gray-500 mt-1" id="step-desc">基本情報を入力してください</p>
         </div>
 
@@ -240,7 +240,7 @@
 
                 <!-- ステップ4: 生年月日 -->
                 <div class="step" id="step4">
-                    <form onsubmit="handleNext(event, 4)">
+                    <form onsubmit="handleDobNext(event)">
                         <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(3)">
                             <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
                             戻る
@@ -258,10 +258,31 @@
                     </form>
                 </div>
 
-                <!-- ステップ5: パスワード -->
+                <!-- ステップ5: 学籍番号 (軽音モード専用) -->
                 <div class="step" id="step5">
-                    <form onsubmit="handleSubmit(event)">
+                    <form onsubmit="handleStudentIdNext(event)">
                         <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(4)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="student_id" placeholder=" " required autocomplete="off" oninput="parseStudentId(this)">
+                            <label for="student_id">学籍番号 (例: 23H054)</label>
+                        </div>
+                        <p id="student-id-error" class="text-red-500 text-xs mt-1 hidden">形式（例: 23H054）を確認してください。</p>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ6: パスワード -->
+                <div class="step" id="step6">
+                    <form onsubmit="handleSubmit(event)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 5 : 4)">
                             <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
                             戻る
                         </div>
@@ -278,14 +299,14 @@
                     </form>
                 </div>
 
-                <!-- ステップ6: 完了画面 -->
-                <div class="step" id="step6">
+                <!-- ステップ7: 完了画面 -->
+                <div class="step" id="step7">
                     <div class="flex flex-col items-center justify-center text-center py-8">
                         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-500 scale-0 transition-transform duration-500 delay-300" id="success-icon">
                             <span class="material-symbols-outlined text-5xl">check</span>
                         </div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">登録完了！</h2>
-                        <p class="text-gray-500 mb-8">Fluidアプリへようこそ。<br>さっそく始めましょう。</p>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2" id="success-title">登録完了！</h2>
+                        <p class="text-gray-500 mb-8" id="success-desc">Fluidアプリへようこそ。<br>さっそく始めましょう。</p>
                         <button class="btn bg-gray-900 text-white font-medium py-3 px-8 rounded-full shadow-lg w-full" onclick="location.reload()">
                             はじめる
                         </button>
@@ -297,6 +318,37 @@
     </div>
 
     <script>
+        // URLパラメータのチェック (?sec=LMC または ?sec=LP)
+        const urlParams = new URLSearchParams(window.location.search);
+        const secParam = urlParams.get('sec');
+        const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
+
+        // 軽音モードの場合、ヘッダータイトルを変更
+        if (isLmcMode) {
+            document.getElementById('main-title').textContent = '軽音サークル 新規登録';
+        }
+
+        // 総ステップ数の制御
+        // 通常: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), パスワード(5), 完了(6) -> 計6ステップ
+        // 軽音: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 学籍番号/学部学年(5), パスワード(6), 完了(7) -> 計7ステップ
+        const totalSteps = isLmcMode ? 7 : 6;
+        
+        // コンテナの幅をステップ数に応じて動的に設定 (例: 7ステップなら 700%)
+        const stepContainer = document.getElementById('step-container');
+        stepContainer.style.width = `${totalSteps * 100}%`;
+
+        // 各ステップの幅を動的に設定
+        const steps = document.querySelectorAll('.step');
+        steps.forEach(s => {
+            s.style.width = `${100 / totalSteps}%`;
+        });
+
+        // 軽音モードでない場合、学籍番号ステップ(id="step5")を非表示にしてDOMから除外またはスキップ可能にする
+        if (!isLmcMode) {
+            const step5 = document.getElementById('step5');
+            if (step5) step5.remove();
+        }
+
         const blobContainer = document.getElementById('blob-container');
         const numBlobs = 8;
         const blobs = [];
@@ -337,12 +389,18 @@
         }
         animateBlobs();
 
-        const stepContainer = document.getElementById('step-container');
         const descElement = document.getElementById('step-desc');
-        const steps = document.querySelectorAll('.step');
         let currentStepIndex = 0;
 
-        const descriptions = [
+        const descriptions = isLmcMode ? [
+            "お名前（本名）を入力してください",
+            "ふりがな（ひらがな）を入力してください",
+            "ご連絡先の電話番号を入力してください",
+            "生年月日を選択してください",
+            "学籍番号を入力してください",
+            "セキュリティのためパスワードを設定",
+            "準備が完了しました"
+        ] : [
             "お名前（本名）を入力してください",
             "ふりがな（ひらがな）を入力してください",
             "ご連絡先の電話番号を入力してください",
@@ -353,7 +411,6 @@
 
         function validateFuriganaInput(input) {
             const errorElement = document.getElementById('furigana-error');
-            // ひらがなと全角・半角スペース、長音（ー）のみ許可する正規表現
             const hiraganaRegex = /^[ぁ-んー\s]+$/;
             
             if (input.value && !hiraganaRegex.test(input.value)) {
@@ -377,14 +434,36 @@
             handleNext(e, 2);
         }
 
+        function handleDobNext(e) {
+            e.preventDefault();
+            handleNext(e, 3);
+        }
+
+        function parseStudentId(input) {
+            const val = input.value.trim();
+            // 学籍番号のパース補助ロジック
+            const errorElement = document.getElementById('student-id-error');
+            if (val.length > 0 && val.length < 5) {
+                errorElement.classList.remove('hidden');
+            } else {
+                errorElement.classList.add('hidden');
+            }
+        }
+
+        function handleStudentIdNext(e) {
+            e.preventDefault();
+            handleNext(e, 4);
+        }
+
         function handleNext(e, stepNum) {
             e.preventDefault();
             currentStepIndex = stepNum;
             
-            const movePercentage = currentStepIndex * (100 / 6); // 6ステップなので各16.666%
+            const movePercentage = currentStepIndex * (100 / totalSteps);
             stepContainer.style.transform = `translateX(-${movePercentage}%)`;
             
-            steps.forEach((s, idx) => {
+            const activeSteps = document.querySelectorAll('.step');
+            activeSteps.forEach((s, idx) => {
                 if (idx === currentStepIndex) {
                     s.classList.add('active');
                 } else {
@@ -396,11 +475,12 @@
         }
 
         function goBack(targetStepNum) {
-            currentStepIndex = targetStepNum - 1;
-            const movePercentage = currentStepIndex * (100 / 6);
+            currentStepIndex = targetStepNum;
+            const movePercentage = currentStepIndex * (100 / totalSteps);
             stepContainer.style.transform = `translateX(-${movePercentage}%)`;
             
-            steps.forEach((s, idx) => {
+            const activeSteps = document.querySelectorAll('.step');
+            activeSteps.forEach((s, idx) => {
                 if (idx === currentStepIndex) {
                     s.classList.add('active');
                 } else {
@@ -424,18 +504,24 @@
             submitBtn.disabled = true;
 
             setTimeout(() => {
-                currentStepIndex = 5;
-                const movePercentage = 5 * (100 / 6);
+                currentStepIndex = totalSteps - 1;
+                const movePercentage = currentStepIndex * (100 / totalSteps);
                 stepContainer.style.transform = `translateX(-${movePercentage}%)`;
                 
-                steps.forEach((s, idx) => {
-                    if (idx === 5) {
+                const activeSteps = document.querySelectorAll('.step');
+                activeSteps.forEach((s, idx) => {
+                    if (idx === currentStepIndex) {
                         s.classList.add('active');
                     } else {
                         s.classList.remove('active');
                     }
                 });
-                descElement.textContent = descriptions[5];
+                descElement.textContent = descriptions[currentStepIndex];
+
+                if (isLmcMode) {
+                    document.getElementById('success-title').textContent = '軽音サークル登録完了！';
+                    document.getElementById('success-desc').textContent = '軽音サークルへようこそ。<br>新歓ライブでお待ちしています！';
+                }
 
                 setTimeout(() => {
                     document.getElementById('success-icon').style.transform = 'scale(1)';
