@@ -432,19 +432,6 @@
                                 }
                             });
                         }
-                        
-                        // さらに、もしバンドデータの中に `songs` (楽曲リスト) があれば、それも読み込む
-                        if (data.songs && Array.isArray(data.songs)) {
-                            const songTitles = document.querySelectorAll('.song-title');
-                            const songDurations = document.querySelectorAll('.song-duration');
-                            
-                            data.songs.forEach((song, idx) => {
-                                if (idx < 5) {
-                                    songTitles[idx].value = song.title || '';
-                                    songDurations[idx].value = song.duration || '';
-                                }
-                            });
-                        }
 
                         showToast('バンドとイベント情報を読み込みました', 'success');
                     } else {
