@@ -2,29 +2,21 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- スマホでの表示を最適化するためのビューポート設定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Fluid Registration</title>
     
-    <!-- Tailwind CSS (スタイリング用) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts (Roboto) & Material Symbols -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-
 
     <style>
         body {
             font-family: 'Roboto', sans-serif;
-            background-color: #e0f2fe; /* 薄い水色の背景 */
-            /* overflow: hidden; を削除し、スマホのキーボード表示時にスクロールできるように変更 */
+            background-color: #e0f2fe;
             margin: 0;
             padding: 0;
         }
-
-        /* --- 1. 水の融合（メタボール）エフェクト --- */
         .gooey-bg {
             position: fixed;
             top: 0;
@@ -32,29 +24,23 @@
             width: 100vw;
             height: 100vh;
             z-index: -1;
-            /* SVGで定義したフィルターを適用して要素同士をくっつける */
             filter: url('#goo'); 
             overflow: hidden;
         }
-
         .blob {
             position: absolute;
-            top: 0; /* translate3dの基準点を左上に固定 */
+            top: 0;
             left: 0;
-            background: linear-gradient(135deg, #3b82f6, #06b6d4); /* 青からシアンのグラデーション */
+            background: linear-gradient(135deg, #3b82f6, #06b6d4);
             border-radius: 50%;
-            /* 激重の原因になるため box-shadow を削除し、GPUレンダリングを強制 */
             will-change: transform;
         }
-
-        /* --- 2. フォームのスライド遷移 --- */
         .step-container {
             display: flex;
-            width: 800%; /* 最大8ステップ分（100% × 8） */
+            width: 900%; /* 最大9ステップ分 */
             transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
             will-change: transform;
         }
-        
         .step {
             flex-shrink: 0;
             padding: 1rem;
@@ -62,11 +48,7 @@
             transition: opacity 0.3s ease;
             box-sizing: border-box;
         }
-        .step.active {
-            opacity: 1;
-        }
-
-        /* --- 3. Google風フローティングラベル --- */
+        .step.active { opacity: 1; }
         .input-group {
             position: relative;
             margin-bottom: 1.5rem;
@@ -89,27 +71,20 @@
             color: #64748b;
             transition: all 0.2s ease-out;
             pointer-events: none;
-            background-color: white; /* 枠線の上にラベルが乗る際の背景 */
+            background-color: white;
             padding: 0 0.25rem;
         }
-        /* フォーカス時、または入力値がある時にラベルを上部へ移動 */
-        .input-group input:focus,
-        .input-group input:not(:placeholder-shown),
-        .input-group select:focus,
-        .input-group select:valid {
+        .input-group input:focus, .input-group input:not(:placeholder-shown),
+        .input-group select:focus, .input-group select:valid {
             border-color: #2563eb;
             border-width: 2px;
         }
-        .input-group input:focus ~ label,
-        .input-group input:not(:placeholder-shown) ~ label,
-        .input-group select:focus ~ label,
-        .input-group select:valid ~ label {
+        .input-group input:focus ~ label, .input-group input:not(:placeholder-shown) ~ label,
+        .input-group select:focus ~ label, .input-group select:valid ~ label {
             top: 0;
             font-size: 0.75rem;
             color: #2563eb;
         }
-
-        /* サジェストリストのスタイル */
         .suggestions-list {
             position: absolute;
             top: 100%;
@@ -135,16 +110,12 @@
             background-color: #eff6ff;
             color: #2563eb;
         }
-
-        /* --- 4. ボタンの波紋（リップル）とローディング --- */
         .btn {
             position: relative;
             overflow: hidden;
             transition: background-color 0.3s, transform 0.1s;
         }
-        .btn:active {
-            transform: scale(0.98);
-        }
+        .btn:active { transform: scale(0.98); }
         .ripple {
             position: absolute;
             border-radius: 50%;
@@ -156,7 +127,6 @@
         @keyframes ripple-anim {
             to { transform: scale(4); opacity: 0; }
         }
-
         .loader {
             display: none;
             border: 3px solid rgba(255,255,255,0.3);
@@ -170,8 +140,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* ガラスモルフィズム（背景が透けるカード） */
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(12px);
@@ -180,10 +148,8 @@
         }
     </style>
 </head>
-<!-- bodyのクラスを変更し、キーボードが出た時に上下スクロール可能にしつつ、横ブレを防ぐ -->
 <body class="flex flex-col items-center justify-center min-h-screen py-8 overflow-x-hidden">
 
-    <!-- メタボール効果のためのSVGフィルター定義 -->
     <svg style="width:0; height:0; position:absolute;">
         <defs>
             <filter id="goo">
@@ -194,30 +160,44 @@
         </defs>
     </svg>
 
-    <!-- 水滴（Blob）が漂う背景コンテナ -->
     <div class="gooey-bg" id="blob-container"></div>
 
-    <!-- メインカード -->
     <div class="glass-card w-full max-w-sm sm:max-w-md mx-4 rounded-3xl shadow-2xl overflow-hidden relative z-10 p-2">
         
-        <!-- ヘッダー部分 -->
         <div class="text-center pt-8 pb-4">
             <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-3">
                 <span class="material-symbols-outlined text-3xl">water_drop</span>
             </div>
             <h1 class="text-2xl font-bold text-gray-800 tracking-tight" id="main-title">アカウント作成</h1>
-            <p class="text-sm text-gray-500 mt-1" id="step-desc">基本情報を入力してください</p>
+            <p class="text-sm text-gray-500 mt-1" id="step-desc">LINEでログインしてください</p>
         </div>
 
-        <!-- スライドするフォーム群 -->
         <div class="overflow-hidden">
             <div class="step-container" id="step-container">
                 
+                <!-- 新規: ステップ0 (LINEログイン) -->
+                <div class="step active" id="step0">
+                    <div class="flex flex-col items-center justify-center text-center py-4">
+                        <div class="w-16 h-16 bg-[#06C755]/10 rounded-full flex items-center justify-center mb-6 text-[#06C755]">
+                            <span class="material-symbols-outlined text-4xl">chat</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-2">LINE連携ではじめる</h2>
+                        <p class="text-gray-500 mb-8 text-xs px-4">今後のログインや運営からの連絡のために、LINEアカウントを使用して登録を行います。</p>
+                        
+                        <button type="button" class="btn bg-[#06C755] text-white font-medium py-3 px-6 rounded-full shadow-lg w-full flex items-center justify-center gap-2 hover:bg-[#05b34c]" onclick="window.startLineLogin()">
+                            <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current">
+                                <path d="M21.543 10.457c0-4.24-4.298-7.683-9.58-7.683-5.282 0-9.58 3.443-9.58 7.683 0 3.82 3.42 7.025 8.163 7.575.318.037.755.117.865.34.1.202.065.517.032.813l-.135.815c-.04.244-.194 1.2.98.706 1.173-.493 6.323-3.722 8.143-5.918.723-.884 1.112-1.895 1.112-2.993z" />
+                            </svg>
+                            LINEでログイン
+                        </button>
+                    </div>
+                </div>
+
                 <!-- ステップ1: お名前 (本名) -->
-                <div class="step active" id="step1">
+                <div class="step" id="step1">
                     <form onsubmit="handleGenericNext(event)">
-                        <div class="input-group">
-                            <!-- オートコンプリートや自動大文字化の無効化を追加 -->
+                        <!-- 最初の入力画面なので「戻る」は非表示にします -->
+                        <div class="input-group mt-4">
                             <input type="text" id="name" placeholder=" " required autocomplete="name" autocapitalize="off" autocorrect="off">
                             <label for="name">お名前 (本名)</label>
                         </div>
@@ -238,7 +218,6 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <!-- ふりがな特化の入力制御（自動大文字・補完オフ） -->
                             <input type="text" id="furigana" placeholder=" " required autocomplete="off" autocapitalize="off" autocorrect="off" oninput="validateFuriganaInput(this)">
                             <label for="furigana">ふりがな (ひらがなのみ)</label>
                         </div>
@@ -260,7 +239,6 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <!-- スマホでテンキーを優先的に表示するための inputmode="tel" を追加 -->
                             <input type="tel" id="phone" placeholder=" " required autocomplete="tel" inputmode="tel" pattern="[0-9\-]*">
                             <label for="phone">電話番号</label>
                         </div>
@@ -301,7 +279,6 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <!-- 英字を大文字で入力しやすくする制御 (autocapitalize="characters") -->
                             <input type="text" id="student_id" placeholder=" " required autocomplete="off" autocapitalize="characters" autocorrect="off" oninput="parseStudentId(this)">
                             <label for="student_id">学籍番号 (例: 26H000)</label>
                         </div>
@@ -369,23 +346,23 @@
                             <p class="text-xs text-gray-500 mb-4">担当したい、または演奏できる楽器を選択してください（複数選択可 / なし も可）</p>
                             
                             <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors" onclick="window.handleInstrumentChange(this)">
                                     <input type="checkbox" name="instrument" value="ボーカル" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                                     <span class="text-xs text-gray-700 font-medium">ボーカル</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors" onclick="window.handleInstrumentChange(this)">
                                     <input type="checkbox" name="instrument" value="ギター" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                                     <span class="text-xs text-gray-700 font-medium">ギター</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors" onclick="window.handleInstrumentChange(this)">
                                     <input type="checkbox" name="instrument" value="ベース" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                                     <span class="text-xs text-gray-700 font-medium">ベース</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors" onclick="window.handleInstrumentChange(this)">
                                     <input type="checkbox" name="instrument" value="ドラム" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                                     <span class="text-xs text-gray-700 font-medium">ドラム</span>
                                 </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors">
+                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors" onclick="window.handleInstrumentChange(this)">
                                     <input type="checkbox" name="instrument" value="キーボード・ピアノ" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
                                     <span class="text-xs text-gray-700 font-medium">キーボード・ピアノ</span>
                                 </label>
@@ -450,20 +427,19 @@
                             戻る
                         </div>
                         <div class="input-group">
-                            <!-- パスワード入力時も不要な大文字化を防ぐ -->
                             <input type="password" id="password" placeholder=" " required minlength="8" autocapitalize="off" autocorrect="off">
                             <label for="password">パスワード (8文字以上)</label>
                         </div>
                         <div class="mt-8 flex justify-end">
                             <button type="submit" id="submit-btn" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center">
-                                <span id="btn-text">登録する</span>
+                                <span id="btn-text">登録を完了する</span>
                                 <div class="loader" id="btn-loader"></div>
                             </button>
                         </div>
                     </form>
                 </div>
 
-                <!-- ステップ(最後): 完了画面 -->
+                <!-- ステップ(最後): 完了画面 (純粋な完了のみ) -->
                  <div class="step" id="step-complete">
                     <div class="flex flex-col items-center justify-center text-center py-8">
                         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-500 scale-0 transition-transform duration-500 delay-300" id="success-icon">
@@ -472,27 +448,21 @@
                         <h2 class="text-2xl font-bold text-gray-800 mb-2" id="success-title">登録完了！</h2>
                         <p class="text-gray-500 mb-8" id="success-desc">ようこそ<br>さっそくはじめましょう</p>
                         
-                        <!-- ここをLINE連携ボタンに変更 -->
-                        <button class="btn bg-[#06C755] text-white font-medium py-3 px-8 rounded-full shadow-lg w-full flex items-center justify-center gap-2 hover:bg-[#05b34c]" onclick="window.startLineLink()">
-                            <svg viewBox="0 0 24 24" class="w-6 h-6 fill-current">
-                                <path d="M21.543 10.457c0-4.24-4.298-7.683-9.58-7.683-5.282 0-9.58 3.443-9.58 7.683 0 3.82 3.42 7.025 8.163 7.575.318.037.755.117.865.34.1.202.065.517.032.813l-.135.815c-.04.244-.194 1.2.98.706 1.173-.493 6.323-3.722 8.143-5.918.723-.884 1.112-1.895 1.112-2.993z" />
-                            </svg>
-                            LINE連携してはじめる
+                        <button class="btn bg-blue-600 text-white font-medium py-3 px-8 rounded-full shadow-lg w-full flex items-center justify-center hover:bg-blue-700" onclick="alert('メインのアプリ画面へ遷移します'); /* window.location.href = '/main.html'; */">
+                            アプリをはじめる
                         </button>
-                        
                     </div>
                 </div>
 
             </div>
         </div>
+    </div>
 
-    <!-- type="module" を指定し、Firebase SDKをインポート -->
+    <!-- Firebase SDKのインポート -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        // updateDoc を追加
-        import { getFirestore, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-        // 提供されたFirebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -506,71 +476,62 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-          // ==========================================
+        // ==========================================
         // LIFF (LINE連携) の初期化と処理
         // ==========================================
-        const MY_LIFF_ID = "2008162165-cVfrU588"; // 例: 1234567890-AbCdEfGh
+        const MY_LIFF_ID = "2008162165-cVfrU588"; // 発行したLIFF ID
+        
+        // 取得したLINEプロフィール情報を保存する変数
+        let globalLineProfile = null;
 
         async function initializeLiff() {
             try {
                 await liff.init({ liffId: MY_LIFF_ID });
                 
-                // LINE認証から戻ってきた時の処理
-                // liffがログイン済み かつ localStorageに登録直後のUIDが残っている場合
-                const tempUid = localStorage.getItem('registrationUid');
-                
-                if (liff.isLoggedIn() && tempUid) {
-                    // プロフィールを取得
+                if (liff.isLoggedIn()) {
+                    // ログイン済みの場合、プロフィールを取得
                     const profile = await liff.getProfile();
+                    globalLineProfile = profile;
                     
-                    // Firestoreにドキュメントが本当に存在するか確認する
-                    const docRef = doc(db, "users", tempUid);
+                    // Firestoreにすでにこのユーザー(userId)が存在するか確認
+                    const docRef = doc(db, "users", profile.userId);
                     const docSnap = await getDoc(docRef);
 
                     if (docSnap.exists()) {
-                        // 存在する場合のみアップデート(マージ)
-                        await updateDoc(docRef, {
-                            lineUserId: profile.userId,
-                            displayName: profile.displayName,
-                            icon: profile.pictureUrl || "", // LINEのアイコン画像
-                            lineLinkedAt: serverTimestamp()
-                        });
-                        alert("LINE連携が完了しました！アプリを開始します。");
-                        // window.location.href = "/main.html"; // 実際のメイン画面URL
-                    } else {
-                        // データベース側にデータが存在しない（テスト時のゴミデータなど）場合
-                        console.warn("連携対象のユーザーデータが見つかりませんでした。");
+                        // 既にアカウントがある場合は登録をスキップしてメイン画面へ
+                        alert("すでに登録済みのLINEアカウントです。アプリを開始します。");
+                        // window.location.href = "/main.html"; // 実際のURL
+                        return;
                     }
-                    
-                    // 成功・失敗に関わらず、処理が終わったら古いUIDを掃除してエラーのループを防ぐ
-                    localStorage.removeItem('registrationUid');
+
+                    // 新規ユーザーの場合は、ステップ1(名前入力)へ自動で進める
+                    currentStepIndex = 1; 
+                    updateStepDisplay();
                 }
+                // ログインしていない場合は初期状態（ステップ0: ログインボタン）のまま待機
             } catch (err) {
-                console.error("LIFFの初期化または連携処理に失敗しました", err);
-                // 予期せぬエラーで止まってしまった場合もローカルストレージをクリアしておく
-                localStorage.removeItem('registrationUid');
+                console.error("LIFFの初期化に失敗しました", err);
             }
         }
         
-        // 開発環境(LIFF ID未設定)ではエラーになるため、一旦コメントアウトを外して使ってください
         initializeLiff();
 
-        window.startLineLink = function() {
+        window.startLineLogin = function() {
             if (MY_LIFF_ID === "ここにLINE Developersで発行したLIFF IDを入力") {
                 alert("LINE DevelopersでLIFF IDを発行し、コード内の MY_LIFF_ID に設定してください。");
                 return;
             }
             if (!liff.isLoggedIn()) {
-                // ログインしていなければLINEの認証画面へ飛ばす
                 liff.login();
             } else {
-                // すでにLINEアプリ内ブラウザ等でログイン済みの場合は、そのままリロードして初期化処理を走らせる
                 location.reload();
             }
         };
 
 
-        // URLパラメータのチェック (?sec=LMC または ?sec=LP)
+        // ==========================================
+        // UI・アニメーション・フォーム制御
+        // ==========================================
         const urlParams = new URLSearchParams(window.location.search);
         const secParam = urlParams.get('sec');
         const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
@@ -579,7 +540,7 @@
             document.getElementById('main-title').textContent = '軽音サークル 新規登録';
         }
 
-        // 不要なステップをDOMから完全に削除
+        // 不要なステップをDOMから削除
         if (!isLmcMode) {
             ['step5', 'step6', 'step7', 'step-instrument'].forEach(id => {
                 const el = document.getElementById(id);
@@ -587,7 +548,6 @@
             });
         }
 
-        // DOMに残っている実際のステップ数を取得してコンテナ幅を計算
         const steps = document.querySelectorAll('.step');
         const totalSteps = steps.length;
         const stepContainer = document.getElementById('step-container');
@@ -597,8 +557,8 @@
             s.style.width = `${100 / totalSteps}%`;
         });
 
+        // 水滴アニメーション
         const blobContainer = document.getElementById('blob-container');
-        // iPhoneの負荷をさらに下げるため、水滴の数を8個から5個に調整
         const numBlobs = 5; 
         const blobs = [];
 
@@ -611,29 +571,20 @@
             
             const x = Math.random() * window.innerWidth;
             const y = Math.random() * window.innerHeight;
-            // 初期位置も transform で設定
             blob.style.transform = `translate3d(${x - size / 2}px, ${y - size / 2}px, 0)`;
             blobContainer.appendChild(blob);
             
             blobs.push({
-                element: blob,
-                x: x,
-                y: y,
-                vx: (Math.random() - 0.5) * 1.5,
-                vy: (Math.random() - 0.5) * 1.5,
-                size: size
+                element: blob, x: x, y: y,
+                vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5, size: size
             });
         }
 
         function animateBlobs() {
             blobs.forEach(blob => {
-                blob.x += blob.vx;
-                blob.y += blob.vy;
-
+                blob.x += blob.vx; blob.y += blob.vy;
                 if (blob.x <= -blob.size/2 || blob.x >= window.innerWidth + blob.size/2) blob.vx *= -1;
                 if (blob.y <= -blob.size/2 || blob.y >= window.innerHeight + blob.size/2) blob.vy *= -1;
-
-                // top/left ではなく、translate3d を使ってGPUアクセラレーションを効かせる
                 blob.element.style.transform = `translate3d(${blob.x - blob.size / 2}px, ${blob.y - blob.size / 2}px, 0)`;
             });
             requestAnimationFrame(animateBlobs);
@@ -641,9 +592,10 @@
         animateBlobs();
 
         const descElement = document.getElementById('step-desc');
-        let currentStepIndex = 0;
+        let currentStepIndex = 0; // 初期位置は「LINEログイン（ステップ0）」
 
         const descriptions = isLmcMode ? [
+            "LINEでログインしてください",
             "お名前（本名）を入力してください",
             "ふりがな（ひらがな）を入力してください",
             "ご連絡先の電話番号を入力してください",
@@ -656,6 +608,7 @@
             "セキュリティのためパスワードを設定",
             "準備が完了しました"
         ] : [
+            "LINEでログインしてください",
             "お名前（本名）を入力してください",
             "ふりがな（ひらがな）を入力してください",
             "ご連絡先の電話番号を入力してください",
@@ -671,10 +624,8 @@
             "総合政策学部 総合政策学科", "商学部 商学科", "経営学部 経営学科", "経済学部 経済学科",
             "法学部 法律学科", "法学部 現代社会法学科", "薬学部 医療薬学科", "歯学部 歯学科"
         ];
-
         const yearList = ["1年生", "2年生", "3年生", "4年生", "5年生", "6年生", "院生・その他"];
 
-        // モジュール内で定義した関数をHTML(onclick等)から呼べるようにwindowオブジェクトに登録
         window.filterDepartments = function(input) {
             const listEl = document.getElementById('dept-suggestions');
             const val = input.value.trim().toLowerCase();
@@ -682,11 +633,8 @@
             if (filtered.length > 0) {
                 listEl.innerHTML = filtered.map(item => `<div class="suggestion-item" onclick="selectDepartment('${item}')">${item}</div>`).join('');
                 listEl.classList.remove('hidden');
-            } else {
-                listEl.classList.add('hidden');
-            }
+            } else { listEl.classList.add('hidden'); }
         }
-
         window.selectDepartment = function(val) {
             document.getElementById('department').value = val;
             document.getElementById('dept-suggestions').classList.add('hidden');
@@ -699,11 +647,8 @@
             if (filtered.length > 0) {
                 listEl.innerHTML = filtered.map(item => `<div class="suggestion-item" onclick="selectYear('${item}')">${item}</div>`).join('');
                 listEl.classList.remove('hidden');
-            } else {
-                listEl.classList.add('hidden');
-            }
+            } else { listEl.classList.add('hidden'); }
         }
-
         window.selectYear = function(val) {
             document.getElementById('school_year').value = val;
             document.getElementById('year-suggestions').classList.add('hidden');
@@ -720,10 +665,6 @@
             }
         });
 
-        // ==========================================
-        // フォームナビゲーションとバリデーション
-        // ==========================================
-
         window.goToNextStep = function() {
             if (currentStepIndex < totalSteps - 1) {
                 currentStepIndex++;
@@ -732,7 +673,8 @@
         };
 
         window.goToPrevStep = function() {
-            if (currentStepIndex > 0) {
+            // ステップ1(名前入力)からステップ0(LINEログイン)へは戻れないように制限
+            if (currentStepIndex > 1) {
                 currentStepIndex--;
                 updateStepDisplay();
             }
@@ -746,7 +688,7 @@
                 if (idx === currentStepIndex) s.classList.add('active');
                 else s.classList.remove('active');
             });
-            descElement.textContent = descriptions[currentStepIndex];
+            descElement.textContent = descriptions[currentStepIndex] || "";
         }
 
         window.handleGenericNext = function(e) {
@@ -776,23 +718,24 @@
 
         window.handleDobNext = function(e) {
             e.preventDefault();
-            const birthdateInput = document.getElementById('birthdate');
-            if (!birthdateInput.value) return;
+            if (!document.getElementById('birthdate').value) return;
             goToNextStep();
         };
-         // 楽器選択の排他制御（追加）
-        window.handleInstrumentChange = function(checkbox) {
-            const allCheckboxes = document.querySelectorAll('input[name="instrument"]');
-            const noneCheckbox = document.querySelector('input[name="instrument"][value="None/Other"]');
 
-            if (checkbox.value === "None/Other" && checkbox.checked) {
-                // 「その他 / なし」がチェックされた場合、他のチェックを全て外す
+        window.handleInstrumentChange = function(checkbox) {
+            const noneCheckbox = document.getElementById('inst-none');
+            if (checkbox && checkbox.checked) {
+                if (noneCheckbox) noneCheckbox.checked = false;
+            }
+        };
+
+        window.handleNoneInstrument = function(labelEl) {
+            const noneCheckbox = document.getElementById('inst-none');
+            if (!noneCheckbox.checked) {
+                const allCheckboxes = document.querySelectorAll('input[name="instrument"]');
                 allCheckboxes.forEach(cb => {
                     if (cb !== noneCheckbox) cb.checked = false;
                 });
-            } else if (checkbox.checked) {
-                // 他の楽器がチェックされた場合、「その他 / なし」のチェックを外す
-                if (noneCheckbox) noneCheckbox.checked = false;
             }
         };
 
@@ -808,39 +751,28 @@
                 };
                 if (codeMap[code]) {
                     const deptInput = document.getElementById('department');
-                    if (deptInput && !deptInput.value) {
-                        deptInput.value = codeMap[code];
-                    }
+                    if (deptInput && !deptInput.value) deptInput.value = codeMap[code];
                 }
             }
-            if (val.length > 0 && val.length < 5) {
-                errorElement.classList.remove('hidden');
-            } else {
-                errorElement.classList.add('hidden');
-            }
-        };
-
-        window.handleNoneInstrument = function(labelEl) {
-            const noneCheckbox = document.getElementById('inst-none');
-            if (!noneCheckbox.checked) {
-                const allCheckboxes = document.querySelectorAll('input[name="instrument"]');
-                allCheckboxes.forEach(cb => {
-                    if (cb !== noneCheckbox) cb.checked = false;
-                });
-            }
+            if (val.length > 0 && val.length < 5) errorElement.classList.remove('hidden');
+            else errorElement.classList.add('hidden');
         };
 
         window.handleTermsNext = function(e) {
             e.preventDefault();
-            const checkbox = document.getElementById('terms-agree');
-            if (!checkbox.checked) return;
+            if (!document.getElementById('terms-agree').checked) return;
             goToNextStep();
         };
 
-        // Firestoreへのデータ登録処理
+        // Firestoreへのデータ登録処理 (LINEのIDを使用)
         window.handleSubmit = async function(e) {
             e.preventDefault();
             
+            if (!globalLineProfile || !globalLineProfile.userId) {
+                alert("LINEのログイン情報が見つかりません。画面を再読み込みして最初からやり直してください。");
+                return;
+            }
+
             const btnText = document.getElementById('btn-text');
             const btnLoader = document.getElementById('btn-loader');
             const submitBtn = document.getElementById('submit-btn');
@@ -851,18 +783,8 @@
             submitBtn.disabled = true;
 
             try {
-                const generateUid = () => {
-                    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-                    let rand = '';
-                    for (let i = 0; i < 33; i++) {
-                        rand += chars.charAt(Math.floor(Math.random() * chars.length));
-                    }
-                    return 'U' + rand;
-                };
-                const newUid = generateUid();
-
-                // 登録したUIDをLINE連携用に一時保存
-                localStorage.setItem('registrationUid', newUid);
+                // LINEのユーザーIDをFirestoreの主キー(UID)として使用する
+                const lineUserId = globalLineProfile.userId;
 
                 const formName = document.getElementById('name').value;
                 const formKana = document.getElementById('furigana').value;
@@ -870,39 +792,42 @@
                 const formBirthdate = document.getElementById('birthdate').value;
                 const formPassword = document.getElementById('password').value;
 
-                // 3. 基本データの構成（画像の構造に合わせる）
+                // 基本データの構成
                 const userData = {
-                    uid: newUid,
+                    uid: lineUserId, // LINE ID
+                    lineUserId: lineUserId,
+                    displayName: globalLineProfile.displayName || formName,
+                    icon: globalLineProfile.pictureUrl || "",
+                    lineLinkedAt: serverTimestamp(),
+                    
                     name: formName,
                     kana: formKana,
                     phone: formPhone,
                     birthday: formBirthdate ? new Date(formBirthdate) : null,
-                    password: formPassword, // 認証用の連携を想定して一応保存
+                    password: formPassword,
                     createdAt: serverTimestamp(),
                     lastLogin: serverTimestamp(),
-                    affiliations: ["urakata"], // デフォルト
-                    feeStatus: {},
-                    icon: ""
+                    affiliations: ["urakata"],
+                    feeStatus: {}
                 };
 
-                // 4. 軽音モード（LMC/LP）の場合の追加情報
+                // 軽音モード（LMC/LP）の場合の追加情報
                 if (isLmcMode) {
-                    userData.affiliations.push(secParam.toLowerCase()); // 例: "lmc" や "lp"
+                    userData.affiliations.push(secParam.toLowerCase());
                     userData.studentId = document.getElementById('student_id').value;
                     userData.faculty = document.getElementById('department').value;
                     userData.grade = document.getElementById('school_year').value;
                     
-                    // 楽器情報を取得し、カンマ区切りで保存（jobフィールドに割り当て）
                     const instruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
                     userData.job = instruments.join(", "); 
                 }
 
-                // 5. Firestoreへドキュメントを書き込み (コレクション: users)
-                await setDoc(doc(db, "users", newUid), userData);
+                // Firestoreへドキュメントを書き込み
+                await setDoc(doc(db, "users", lineUserId), userData);
 
-                // 6. 成功画面への遷移アニメーション
+                // 成功画面への遷移
                 currentStepIndex = totalSteps - 1;
-                updateStepDisplay(); // 相対的な関数で移動処理を行う
+                updateStepDisplay();
 
                 setTimeout(() => {
                     document.getElementById('success-icon').style.transform = 'scale(1)';
@@ -910,9 +835,8 @@
 
             } catch (error) {
                 console.error("Firestoreへの保存中にエラーが発生しました:", error);
-                alert("登録処理中にエラーが発生しました。ネットワーク環境などを確認して再度お試しください。");
+                alert("登録処理中にエラーが発生しました。");
                 
-                // エラー時はボタンを元に戻す
                 btnText.style.display = 'block';
                 btnLoader.style.display = 'none';
                 submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
