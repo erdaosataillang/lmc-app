@@ -264,19 +264,17 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        
         // Immersive環境、または通常の環境用の設定
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
-                // ↓↓↓ ここをあなたのFirebaseの実際のキーに書き換えます ↓↓↓
-                apiKey: "AIzaSyxxxxxxxxxxxxxxxxxxxxxxx",
-                authDomain: "your-project-id.firebaseapp.com",
-                projectId: "your-project-id",
-                storageBucket: "your-project-id.firebasestorage.app",
-                messagingSenderId: "1234567890",
-                appId: "1:1234567890:web:xxxxxxxxxxxxxxxxx"
-                // ↑↑↑ ここまで ↑↑↑
+                apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+                authDomain: "urakata-app.firebaseapp.com",
+                projectId: "urakata-app",
+                storageBucket: "urakata-app.firebasestorage.app",
+                messagingSenderId: "407777765696",
+                appId: "1:407777765696:web:045c2d94729022b4eab2a5",
+                measurementId: "G-9ZRMD26XNJ"
             };
 
         let db = null;
