@@ -400,11 +400,34 @@
                             // すべてのユーザー情報の取得を待ってから表に反映
                             const fetchedUsers = await Promise.all(userPromises);
                             
+                            // パート名を略称に変換する関数
+                            const formatPart = (partName) => {
+                                if (!partName) return '';
+                                const lower = partName.toLowerCase();
+                                const partMap = {
+                                    'vocal': 'Vo.',
+                                    'vocals': 'Vo.',
+                                    'guitar': 'Gt.',
+                                    'bass': 'Ba.',
+                                    'drums': 'Dr.',
+                                    'drum': 'Dr.',
+                                    'keyboard': 'Key.',
+                                    'keyboards': 'Key.',
+                                    'key': 'Key.',
+                                    'piano': 'Pf.',
+                                    'chorus': 'Cho.',
+                                    'synthesizer': 'Syn.',
+                                    'percussion': 'Per.',
+                                    'dj': 'DJ'
+                                };
+                                return partMap[lower] || partName; // マップになければそのまま表示
+                            };
+
                             fetchedUsers.forEach(result => {
                                 if (result && result.idx < 8) {
                                     names[result.idx].value = result.data.name || '';
                                     grades[result.idx].value = result.data.year || '';
-                                    parts[result.idx].value = result.data.part || '';
+                                    parts[result.idx].value = formatPart(result.data.part);
                                 }
                             });
                         }
