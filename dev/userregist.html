@@ -485,7 +485,8 @@
     <!-- type="module" を指定し、Firebase SDKをインポート -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        // updateDoc を追加
+        import { getFirestore, doc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
         // 提供されたFirebase設定
         const firebaseConfig = {
@@ -500,6 +501,61 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+
+        // ==========================================
+        // LIFF (LINE連携) の初期化と処理
+        // ==========================================
+        const MY_LIFF_ID = "ここにLINE Developersで発行したLIFF IDを入力"; // 例: 1234567890-AbCdEfGh
+
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: MY_LIFF_ID });
+                
+                // LINE認証から戻ってきた時の処理
+                // liffがログイン済み かつ localStorageに登録直後のUIDが残っている場合
+                const tempUid = localStorage.getItem('registrationUid');
+                
+                if (liff.isLoggedIn() && tempUid) {
+                    // プロフィールを取得
+                    const profile = await liff.getProfile();
+                    
+                    // Firestoreの該当ユーザーにLINE情報を追加(マージ)
+                    await updateDoc(doc(db, "users", tempUid), {
+                        lineUserId: profile.userId,
+                        displayName: profile.displayName,
+                        icon: profile.pictureUrl || "", // LINEのアイコン画像
+                        lineLinkedAt: serverTimestamp()
+                    });
+                    
+                    // 処理が終わったらローカルストレージを掃除
+                    localStorage.removeItem('registrationUid');
+                    
+                    // 本番アプリのメイン画面へ遷移（今はとりあえずアラート）
+                    alert("LINE連携が完了しました！アプリを開始します。");
+                    // window.location.href = "/main.html"; // 実際のメイン画面URL
+                }
+            } catch (err) {
+                console.error("LIFFの初期化に失敗しました", err);
+            }
+        }
+        
+        // 開発環境(LIFF ID未設定)ではエラーになるため、一旦コメントアウトを外して使ってください
+        // initializeLiff();
+
+        window.startLineLink = function() {
+            if (MY_LIFF_ID === "ここにLINE Developersで発行したLIFF IDを入力") {
+                alert("LINE DevelopersでLIFF IDを発行し、コード内の MY_LIFF_ID に設定してください。");
+                return;
+            }
+            if (!liff.isLoggedIn()) {
+                // ログインしていなければLINEの認証画面へ飛ばす
+                liff.login();
+            } else {
+                // すでにLINEアプリ内ブラウザ等でログイン済みの場合は、そのままリロードして初期化処理を走らせる
+                location.reload();
+            }
+        };
+
 
         // URLパラメータのチェック (?sec=LMC または ?sec=LP)
         const urlParams = new URLSearchParams(window.location.search);
@@ -767,7 +823,6 @@
             submitBtn.disabled = true;
 
             try {
-                // 1. 34文字のカスタムUIDを生成
                 const generateUid = () => {
                     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
                     let rand = '';
@@ -778,7 +833,9 @@
                 };
                 const newUid = generateUid();
 
-                // 2. フォーム値の収集
+                // 登録したUIDをLINE連携用に一時保存
+                localStorage.setItem('registrationUid', newUid);
+
                 const formName = document.getElementById('name').value;
                 const formKana = document.getElementById('furigana').value;
                 const formPhone = document.getElementById('phone').value;
