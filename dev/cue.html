@@ -264,12 +264,19 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        
         // Immersive環境、または通常の環境用の設定
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
-                // お客様の環境で動かす場合は、ここにFirebase設定を記述してください。
-                // (すでにFirebase側で設定済みの場合は不要です)
+                // ↓↓↓ ここをあなたのFirebaseの実際のキーに書き換えます ↓↓↓
+                apiKey: "AIzaSyxxxxxxxxxxxxxxxxxxxxxxx",
+                authDomain: "your-project-id.firebaseapp.com",
+                projectId: "your-project-id",
+                storageBucket: "your-project-id.firebasestorage.app",
+                messagingSenderId: "1234567890",
+                appId: "1:1234567890:web:xxxxxxxxxxxxxxxxx"
+                // ↑↑↑ ここまで ↑↑↑
             };
 
         let db = null;
