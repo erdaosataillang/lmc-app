@@ -347,10 +347,48 @@
                     </form>
                 </div>
 
-                <!-- ステップ8(通常6): パスワード -->
+                <!-- ステップ8: 利用規約とプライバシーポリシー同意 -->
+                <div class="step" id="step-terms">
+                    <form onsubmit="handleTermsNext(event)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 7 : 4)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">利用規約とプライバシーポリシー</h3>
+                            <p class="text-xs text-gray-500 mb-4">ご登録の前に、以下の規約およびポリシーをご確認ください。</p>
+                            
+                            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 max-h-48 overflow-y-auto text-xs text-gray-600 space-y-3 mb-4">
+                                <div>
+                                    <p class="font-bold text-blue-800 mb-1">■ 利用規約</p>
+                                    <p>当サービスの利用に関するルールを定めています。詳細は<a href="https://www.sorairosystem.com/lab/terms-of-service" target="_blank" class="text-blue-600 underline hover:text-blue-800">利用規約ページ</a>をご確認ください。</p>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-blue-800 mb-1">■ プライバシーポリシー</p>
+                                    <p>ご提供いただく個人情報の取り扱いについては、<a href="https://www.sorairosystem.com/lab/privacy-polycy" target="_blank" class="text-blue-600 underline hover:text-blue-800">プライバシーポリシーページ</a>をご覧ください。</p>
+                                </div>
+                            </div>
+
+                            <label class="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-blue-50/50 transition-colors">
+                                <input type="checkbox" id="terms-agree" required class="mt-1 w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                <span class="text-xs text-gray-700 select-none">
+                                    <a href="https://www.sorairosystem.com/lab/terms-of-service" target="_blank" class="text-blue-600 underline">利用規約</a>および<a href="https://www.sorairosystem.com/lab/privacy-polycy" target="_blank" class="text-blue-600 underline">プライバシーポリシー</a>に同意します
+                                </span>
+                            </label>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>同意して次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ(最終手前): パスワード -->
                 <div class="step" id="step-password">
                     <form onsubmit="handleSubmit(event)">
-                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 7 : 4)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 8 : 5)">
                             <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
                             戻る
                         </div>
@@ -367,7 +405,7 @@
                     </form>
                 </div>
 
-                <!-- ステップ9(通常7): 完了画面 -->
+                <!-- ステップ(最後): 完了画面 -->
                 <div class="step" id="step-complete">
                     <div class="flex flex-col items-center justify-center text-center py-8">
                         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-500 scale-0 transition-transform duration-500 delay-300" id="success-icon">
@@ -397,9 +435,9 @@
         }
 
         // 総ステップ数の制御
-        // 通常: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), パスワード(5), 完了(6) -> 計6ステップ
-        // 軽音: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 学籍番号(5), 学部(6), 学年(7), パスワード(8), 完了(9) -> 計9ステップ
-        const totalSteps = isLmcMode ? 9 : 6;
+        // 通常: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 利用規約(5), パスワード(6), 完了(7) -> 計7ステップ
+        // 軽音: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 学籍番号(5), 学部(6), 学年(7), 利用規約(8), パスワード(9), 完了(10) -> 計10ステップ
+        const totalSteps = isLmcMode ? 10 : 7;
         
         // コンテナの幅をステップ数に応じて動的に設定
         const stepContainer = document.getElementById('step-container');
@@ -467,9 +505,10 @@
             "ふりがな（ひらがな）を入力してください",
             "ご連絡先の電話番号を入力してください",
             "生年月日を選択してください",
-            "学籍番号を入力してください (例: 23H054)",
+            "学籍番号を入力してください (例: 26H000)",
             "学部・学科を選択または入力してください",
             "現在の学年を選択してください",
+            "利用規約とプライバシーポリシーをご確認ください",
             "セキュリティのためパスワードを設定",
             "準備が完了しました"
         ] : [
@@ -477,6 +516,7 @@
             "ふりがな（ひらがな）を入力してください",
             "ご連絡先の電話番号を入力してください",
             "生年月日を選択してください",
+            "利用規約とプライバシーポリシーをご確認ください",
             "セキュリティのためパスワードを設定",
             "準備が完了しました"
         ];
@@ -643,7 +683,16 @@
 
         function handleYearNext(e) {
             e.preventDefault();
-            handleNext(e, 7);
+            handleNext(e, isLmcMode ? 7 : 4);
+        }
+
+        function handleTermsNext(e) {
+            e.preventDefault();
+            const checkbox = document.getElementById('terms-agree');
+            if (!checkbox.checked) {
+                return;
+            }
+            handleNext(e, isLmcMode ? 8 : 5);
         }
 
         function handleNext(e, stepNum) {
