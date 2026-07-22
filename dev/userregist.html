@@ -36,10 +36,12 @@
 
         .blob {
             position: absolute;
+            top: 0; /* translate3dの基準点を左上に固定 */
+            left: 0;
             background: linear-gradient(135deg, #3b82f6, #06b6d4); /* 青からシアンのグラデーション */
             border-radius: 50%;
-            /* フィルター効果を高めるために少しぼかす */
-            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+            /* 激重の原因になるため box-shadow を削除し、GPUレンダリングを強制 */
+            will-change: transform;
         }
 
         /* --- 2. フォームのスライド遷移 --- */
@@ -527,7 +529,8 @@
         });
 
         const blobContainer = document.getElementById('blob-container');
-        const numBlobs = 8;
+        // iPhoneの負荷をさらに下げるため、水滴の数を8個から5個に調整
+        const numBlobs = 5; 
         const blobs = [];
 
         for (let i = 0; i < numBlobs; i++) {
@@ -539,6 +542,8 @@
             
             const x = Math.random() * window.innerWidth;
             const y = Math.random() * window.innerHeight;
+            // 初期位置も transform で設定
+            blob.style.transform = `translate3d(${x - size / 2}px, ${y - size / 2}px, 0)`;
             blobContainer.appendChild(blob);
             
             blobs.push({
@@ -559,8 +564,8 @@
                 if (blob.x <= -blob.size/2 || blob.x >= window.innerWidth + blob.size/2) blob.vx *= -1;
                 if (blob.y <= -blob.size/2 || blob.y >= window.innerHeight + blob.size/2) blob.vy *= -1;
 
-                blob.element.style.left = `${blob.x - blob.size / 2}px`;
-                blob.element.style.top = `${blob.y - blob.size / 2}px`;
+                // top/left ではなく、translate3d を使ってGPUアクセラレーションを効かせる
+                blob.element.style.transform = `translate3d(${blob.x - blob.size / 2}px, ${blob.y - blob.size / 2}px, 0)`;
             });
             requestAnimationFrame(animateBlobs);
         }
