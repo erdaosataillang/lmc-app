@@ -234,26 +234,14 @@
             </table>
             
             <!-- 同期 -->
-<div class="w-16 md:w-20 border-black-2 flex flex-col bg-white">
-    <div class="font-bold border-b-black-2 w-full text-center text-xs md:text-sm p-1 bg-gray-50">同期</div>
-    <div class="flex-grow flex flex-col justify-center segment-control">
-        <button type="button" class="segment-btn sync-btn" data-val="無">無</button>
-        <button type="button" class="segment-btn sync-btn" data-val="有">有</button>
-        <input type="hidden" id="sync-val" value="">
-    </div>
-</div>
-
-        <!-- エラーメッセージ表示領域 -->
-        <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6 text-sm"></div>
-        
-        <!-- 操作ボタン群（スクショ時は非表示になるクラス .no-print を付与） -->
-        <div class="no-print flex flex-col md:flex-row gap-3 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-end">
-            <button type="button" id="image-btn" class="btn-apple-dark px-6 py-3 text-sm md:text-base font-bold w-full md:w-auto">
-                スクショ準備
-            </button>
-            <button type="button" id="submit-btn" class="btn-apple-primary px-8 py-3 text-sm md:text-base font-bold w-full md:w-auto">
-                送信する
-            </button>
+            <div class="w-16 md:w-20 border-black-2 flex flex-col bg-white">
+                <div class="font-bold border-b-black-2 w-full text-center text-xs md:text-sm p-1 bg-gray-50">同期</div>
+                <div class="flex-grow flex flex-col justify-center segment-control">
+                    <button type="button" class="segment-btn sync-btn" data-val="無">無</button>
+                    <button type="button" class="segment-btn sync-btn" data-val="有">有</button>
+                    <input type="hidden" id="sync-val" value="">
+                </div>
+            </div>
         </div>
     </div>
 
@@ -559,103 +547,6 @@
                 document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
             }
         }, {passive: true});
-
-        // スクショ準備処理 (ネイティブスクショ用)
-        document.getElementById('image-btn').addEventListener('click', function(e) {
-            e.stopPropagation();
-
-            // 隠す要素（操作ボタンや検索ボタンなど）
-            const hideElements = document.querySelectorAll('.no-print, .search-btn');
-            const originalDisplays = new Map();
-            
-            // 要素を非表示にしてスクショに写り込まないようにする
-            hideElements.forEach(el => {
-                originalDisplays.set(el, el.style.display);
-                el.style.display = 'none';
-            });
-            
-            showToast("📸 スクショ準備完了！端末の機能で撮影してください（画面タップで戻ります）", 'info');
-            
-            // 画面のどこかをタップ/クリックしたら元に戻す
-            const restoreUI = () => {
-                hideElements.forEach(el => {
-                    el.style.display = originalDisplays.get(el) || '';
-                });
-                document.removeEventListener('click', restoreUI);
-                document.removeEventListener('touchstart', restoreUI);
-            };
-            
-            // 直後のイベント発火を防ぐため、少し遅らせてタップ判定をオンにする
-            setTimeout(() => {
-                document.addEventListener('click', restoreUI);
-                document.addEventListener('touchstart', restoreUI, { passive: true });
-            }, 300);
-        });
-
-        // 送信処理（バリデーション）
-        document.getElementById('submit-btn').addEventListener('click', () => {
-            const errorDiv = document.getElementById('error-msg');
-            const errors = [];
-
-            // 必須項目のチェック
-            if (!document.getElementById('band-name').value.trim()) errors.push("バンド名が入力されていません。");
-            if (!document.getElementById('existing-count').value.trim()) errors.push("新規or既存の出演回数が入力されていません。");
-            
-            // NG日の理由チェック
-            const ngDate = document.getElementById('ng-date').value.trim();
-            const ngReason = document.getElementById('ng-reason').value.trim();
-            if (ngDate !== '' && ngReason === '') {
-                errors.push("出演NG日の理由を具体的に入力してください。");
-            }
-
-            // メンバーが1名以上いるか
-            let memberCount = 0;
-            document.querySelectorAll('.name-input').forEach(input => {
-                if (input.value.trim() !== '') memberCount++;
-            });
-            if (memberCount === 0) errors.push("メンバーを少なくとも1名入力してください。");
-
-            // 曲が1曲以上あり、かつ曲の長さが入力されているか
-            let songCount = 0;
-            let durationMissing = false;
-            
-            const titles = document.querySelectorAll('.song-title');
-            const durations = document.querySelectorAll('.song-duration');
-            
-            titles.forEach((titleInput, index) => {
-                if (titleInput.value.trim() !== '') {
-                    songCount++;
-                    if (durations[index].value.trim() === '') {
-                        durationMissing = true;
-                    }
-                }
-            });
-
-            if (songCount === 0) errors.push("曲名を少なくとも1曲入力してください。");
-            if (durationMissing) errors.push("入力された曲の長さ（時間）が不足しています。");
-
-            // 同期の有無チェック
-            if (!document.getElementById('sync-val').value) {
-                errors.push("同期の有無を選択してください。");
-            }
-
-            // エラー表示
-            if (errors.length > 0) {
-                errorDiv.innerHTML = errors.map(err => `<div>・${err}</div>`).join('');
-                errorDiv.classList.remove('hidden');
-                showToast("入力内容にエラーがあります", 'error');
-                
-                // エラー箇所にスクロール
-                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-                errorDiv.classList.add('hidden');
-                
-                // ここで実際のデータ送信（保存）処理を行います
-                // 成功したと仮定してメッセージを表示
-                showToast("データを正常に送信しました！", 'success');
-                console.log("Validation Passed! Ready to save to Firestore.");
-            }
-        });
 
         // === 楽曲行の自動追加ロジック ===
         document.addEventListener('input', function(e) {
