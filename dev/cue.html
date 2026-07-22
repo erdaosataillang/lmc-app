@@ -264,18 +264,16 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Immersive環境、または通常の環境用の設定
-        const firebaseConfig = typeof __firebase_config !== 'undefined' 
-            ? JSON.parse(__firebase_config) 
-            : {
-                apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
-                authDomain: "urakata-app.firebaseapp.com",
-                projectId: "urakata-app",
-                storageBucket: "urakata-app.firebasestorage.app",
-                messagingSenderId: "407777765696",
-                appId: "1:407777765696:web:045c2d94729022b4eab2a5",
-                measurementId: "G-9ZRMD26XNJ"
-            };
+        // お客様のFirebase設定（エラーが出ないよう直接記述）
+        const firebaseConfig = {
+            apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+            authDomain: "urakata-app.firebaseapp.com",
+            projectId: "urakata-app",
+            storageBucket: "urakata-app.firebasestorage.app",
+            messagingSenderId: "407777765696",
+            appId: "1:407777765696:web:045c2d94729022b4eab2a5",
+            measurementId: "G-9ZRMD26XNJ"
+        };
 
         let db = null;
         try {
@@ -527,6 +525,9 @@
                             titleInput.value = song.trackName;
                             row.querySelector('.song-duration').value = timeStr;
                             suggestBox.style.display = 'none';
+                            
+                            // 検索から選んだ際にも「入力された」イベントを強制発火させ、行追加ロジックを動かす
+                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
                         };
 
                         div.addEventListener('mousedown', applySelection);
@@ -651,41 +652,50 @@
                 console.log("Validation Passed! Ready to save to Firestore.");
             }
         });
-        <!-- STREAMING_CHUNK: 楽曲の自動行追加処理を追加中... -->
-<!-- ... existing code ... -->
-    // === 楽曲行の自動追加ロジック ===
-    document.addEventListener('input', function(e) {
-        // プレースホルダーが「00:00」のinputがある行 ＝ 楽曲テーブルと判定
-        const timeInput = e.target.closest('tr')?.querySelector('input[placeholder="00:00"]');
-        if (!timeInput) return;
 
-        const tr = e.target.closest('tr');
-        const tbody = tr.parentElement;
-        const rows = tbody.querySelectorAll('tr');
-        const lastRow = rows[rows.length - 1];
+        // === 楽曲行の自動追加ロジック ===
+        document.addEventListener('input', function(e) {
+            // プレースホルダーが「00:00」のinputがある行 ＝ 楽曲テーブルと判定
+            const timeInput = e.target.closest('tr')?.querySelector('input[placeholder="00:00"]');
+            if (!timeInput) return;
 
-        // 現在入力されたのが「一番最後の行」かどうか
-        if (tr === lastRow) {
-            const inputs = lastRow.querySelectorAll('input');
-            const isAnyFilled = Array.from(inputs).some(input => input.value.trim() !== '');
+            const tr = e.target.closest('tr');
+            const tbody = tr.parentElement;
+            const rows = tbody.querySelectorAll('tr');
+            const lastRow = rows[rows.length - 1];
 
-            if (isAnyFilled) {
-                // 最後の行に1文字でも入力されたら、行を丸ごとコピーして下に追加
-                const newRow = lastRow.cloneNode(true);
-                
-                // コピーした新しい行の中身（文字）を空っぽにする
-                newRow.querySelectorAll('input').forEach(input => input.value = '');
-                
-                // 左端の番号を +1 する（5なら6にする）
-                const numTd = newRow.querySelector('td:first-child');
-                if (numTd && !isNaN(parseInt(numTd.textContent))) {
-                    numTd.textContent = rows.length + 1;
+            // 現在入力されたのが「一番最後の行」かどうか
+            if (tr === lastRow) {
+                const inputs = lastRow.querySelectorAll('input');
+                const isAnyFilled = Array.from(inputs).some(input => input.value.trim() !== '');
+
+                if (isAnyFilled) {
+                    // 最後の行に1文字でも入力されたら、行を丸ごとコピーして下に追加
+                    const newRow = lastRow.cloneNode(true);
+                    
+                    // コピーした新しい行の中身（文字）を空っぽにする
+                    newRow.querySelectorAll('input').forEach(input => input.value = '');
+                    
+                    // 左端の番号を +1 する（5なら6にする）
+                    const numTd = newRow.querySelector('td:first-child');
+                    if (numTd && !isNaN(parseInt(numTd.textContent))) {
+                        numTd.textContent = rows.length + 1;
+                    }
+
+                    // 検索用のID（suggest-0 等）が重複しないように更新する
+                    const newIndex = rows.length;
+                    const searchBtn = newRow.querySelector('.search-btn');
+                    const suggestDiv = newRow.querySelector('.suggest-list');
+                    const songTitleInput = newRow.querySelector('.song-title');
+                    
+                    if (searchBtn) searchBtn.setAttribute('onclick', `searchSong(this, ${newIndex})`);
+                    if (suggestDiv) suggestDiv.id = `suggest-${newIndex}`;
+                    if (songTitleInput) songTitleInput.setAttribute('oninput', `showSuggest(this, ${newIndex})`);
+                    
+                    tbody.appendChild(newRow);
                 }
-                
-                tbody.appendChild(newRow);
             }
-        }
-    });
-</script>
+        });
+    </script>
 </body>
 </html>
