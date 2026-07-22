@@ -42,16 +42,15 @@
             box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
 
-        /* --- 2. フォームのスライド遷移 (7ステップ対応: width = 700%, 各ステップ14.285%) --- */
+        /* --- 2. フォームのスライド遷移 --- */
         .step-container {
             display: flex;
-            width: 700%; /* 7ステップ分（100% × 7） */
+            width: 800%; /* 最大8ステップ分（100% × 8） */
             transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
             will-change: transform;
         }
         
         .step {
-            width: 14.2857%; /* 各ステップはコンテナの1/7に固定しズレを防止 */
             flex-shrink: 0;
             padding: 1rem;
             opacity: 0;
@@ -102,6 +101,33 @@
         .input-group select:valid ~ label {
             top: 0;
             font-size: 0.75rem;
+            color: #2563eb;
+        }
+
+        /* サジェストリストのスタイル */
+        .suggestions-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            margin-top: 0.25rem;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .suggestion-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #334155;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .suggestion-item:hover {
+            background-color: #eff6ff;
             color: #2563eb;
         }
 
@@ -279,10 +305,52 @@
                     </form>
                 </div>
 
-                <!-- ステップ6: パスワード -->
+                <!-- ステップ6: 学部・学科 (軽音モード専用) -->
                 <div class="step" id="step6">
+                    <form onsubmit="handleDepartmentNext(event)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(5)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="department" placeholder=" " required autocomplete="off" oninput="filterDepartments(this)" onfocus="filterDepartments(this)">
+                            <label for="department">学部・学科 (サジェスト選択)</label>
+                            <div id="dept-suggestions" class="suggestions-list hidden"></div>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ7: 学年 (軽音モード専用) -->
+                <div class="step" id="step7">
+                    <form onsubmit="handleYearNext(event)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(6)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="school_year" placeholder=" " required autocomplete="off" oninput="filterYears(this)" onfocus="filterYears(this)">
+                            <label for="school_year">学年 (例: 1年生)</label>
+                            <div id="year-suggestions" class="suggestions-list hidden"></div>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ8(通常6): パスワード -->
+                <div class="step" id="step-password">
                     <form onsubmit="handleSubmit(event)">
-                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 5 : 4)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(isLmcMode ? 7 : 4)">
                             <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
                             戻る
                         </div>
@@ -299,8 +367,8 @@
                     </form>
                 </div>
 
-                <!-- ステップ7: 完了画面 -->
-                <div class="step" id="step7">
+                <!-- ステップ9(通常7): 完了画面 -->
+                <div class="step" id="step-complete">
                     <div class="flex flex-col items-center justify-center text-center py-8">
                         <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-500 scale-0 transition-transform duration-500 delay-300" id="success-icon">
                             <span class="material-symbols-outlined text-5xl">check</span>
@@ -330,10 +398,10 @@
 
         // 総ステップ数の制御
         // 通常: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), パスワード(5), 完了(6) -> 計6ステップ
-        // 軽音: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 学籍番号/学部学年(5), パスワード(6), 完了(7) -> 計7ステップ
-        const totalSteps = isLmcMode ? 7 : 6;
+        // 軽音: お名前(1), ふりがな(2), 電話番号(3), 生年月日(4), 学籍番号(5), 学部(6), 学年(7), パスワード(8), 完了(9) -> 計9ステップ
+        const totalSteps = isLmcMode ? 9 : 6;
         
-        // コンテナの幅をステップ数に応じて動的に設定 (例: 7ステップなら 700%)
+        // コンテナの幅をステップ数に応じて動的に設定
         const stepContainer = document.getElementById('step-container');
         stepContainer.style.width = `${totalSteps * 100}%`;
 
@@ -343,10 +411,12 @@
             s.style.width = `${100 / totalSteps}%`;
         });
 
-        // 軽音モードでない場合、学籍番号ステップ(id="step5")を非表示にしてDOMから除外またはスキップ可能にする
+        // 軽音モードでない場合、軽音専用ステップをDOMから完全削除してIDのズレを解消
         if (!isLmcMode) {
-            const step5 = document.getElementById('step5');
-            if (step5) step5.remove();
+            ['step5', 'step6', 'step7'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+            });
         }
 
         const blobContainer = document.getElementById('blob-container');
@@ -397,7 +467,9 @@
             "ふりがな（ひらがな）を入力してください",
             "ご連絡先の電話番号を入力してください",
             "生年月日を選択してください",
-            "学籍番号を入力してください",
+            "学籍番号を入力してください (例: 23H054)",
+            "学部・学科を選択または入力してください",
+            "現在の学年を選択してください",
             "セキュリティのためパスワードを設定",
             "準備が完了しました"
         ] : [
@@ -408,6 +480,84 @@
             "セキュリティのためパスワードを設定",
             "準備が完了しました"
         ];
+
+        // 学部・学科のリスト定義
+        const departmentList = [
+            "文学部 歴史学科",
+            "文学部 日本文化学科",
+            "文学部 宗教文化学科",
+            "文学部 英語英米文化学科",
+            "文学部 グローバル英語学科",
+            "心理学部 心理学科",
+            "健康科学部 健康科学科",
+            "健康科学部 健康栄養学科",
+            "総合政策学部 総合政策学科",
+            "商学部 商学科",
+            "経営学部 経営学科",
+            "経済学部 経済学科",
+            "法学部 法律学科",
+            "法学部 現代社会法学科",
+            "薬学部 医療薬学科",
+            "歯学部 歯学科"
+        ];
+
+        const yearList = [
+            "1年生",
+            "2年生",
+            "3年生",
+            "4年生",
+            "5年生",
+            "6年生",
+            "院生・その他"
+        ];
+
+        function filterDepartments(input) {
+            const listEl = document.getElementById('dept-suggestions');
+            const val = input.value.trim().toLowerCase();
+            const filtered = departmentList.filter(d => d.toLowerCase().includes(val));
+            
+            if (filtered.length > 0) {
+                listEl.innerHTML = filtered.map(item => `<div class="suggestion-item" onclick="selectDepartment('${item}')">${item}</div>`).join('');
+                listEl.classList.remove('hidden');
+            } else {
+                listEl.classList.add('hidden');
+            }
+        }
+
+        function selectDepartment(val) {
+            document.getElementById('department').value = val;
+            document.getElementById('dept-suggestions').classList.add('hidden');
+        }
+
+        function filterYears(input) {
+            const listEl = document.getElementById('year-suggestions');
+            const val = input.value.trim().toLowerCase();
+            const filtered = yearList.filter(y => y.toLowerCase().includes(val));
+            
+            if (filtered.length > 0) {
+                listEl.innerHTML = filtered.map(item => `<div class="suggestion-item" onclick="selectYear('${item}')">${item}</div>`).join('');
+                listEl.classList.remove('hidden');
+            } else {
+                listEl.classList.add('hidden');
+            }
+        }
+
+        function selectYear(val) {
+            document.getElementById('school_year').value = val;
+            document.getElementById('year-suggestions').classList.add('hidden');
+        }
+
+        // 外側クリックでサジェストを隠す
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#department') && !e.target.closest('#dept-suggestions')) {
+                const el = document.getElementById('dept-suggestions');
+                if (el) el.classList.add('hidden');
+            }
+            if (!e.target.closest('#school_year') && !e.target.closest('#year-suggestions')) {
+                const el = document.getElementById('year-suggestions');
+                if (el) el.classList.add('hidden');
+            }
+        });
 
         function validateFuriganaInput(input) {
             const errorElement = document.getElementById('furigana-error');
@@ -436,13 +586,44 @@
 
         function handleDobNext(e) {
             e.preventDefault();
-            handleNext(e, 3);
+            const birthdateInput = document.getElementById('birthdate');
+            if (!birthdateInput.value) {
+                return;
+            }
+            // 軽音モードならステップ4からステップ5へ進む (通常ならステップ3からパスワードへ)
+            handleNext(e, 4);
         }
 
         function parseStudentId(input) {
             const val = input.value.trim();
-            // 学籍番号のパース補助ロジック
             const errorElement = document.getElementById('student-id-error');
+            
+            // 学籍番号のアルファベット文字から学部コードを自動推定して学部フィールドにセットする補助
+            if (val.length >= 3) {
+                const code = val.charAt(2).toUpperCase();
+                const codeMap = {
+                    'H': '文学部 歴史学科',
+                    'N': '文学部 日本文化学科',
+                    'R': '文学部 宗教文化学科',
+                    'K': '文学部 英語英米文化学科',
+                    'V': '文学部 グローバル英語学科',
+                    'P': '心理学部 心理学科',
+                    'Z': '健康科学部 健康科学科',
+                    'X': '健康科学部 健康栄養学科',
+                    'G': '総合政策学部 総合政策学科',
+                    'C': '商学部 商学科',
+                    'M': '経営学部 経営学科',
+                    'E': '経済学部 経済学科',
+                    'J': '法学部 法律学科'
+                };
+                if (codeMap[code]) {
+                    const deptInput = document.getElementById('department');
+                    if (deptInput && !deptInput.value) {
+                        deptInput.value = codeMap[code];
+                    }
+                }
+            }
+
             if (val.length > 0 && val.length < 5) {
                 errorElement.classList.remove('hidden');
             } else {
@@ -452,7 +633,17 @@
 
         function handleStudentIdNext(e) {
             e.preventDefault();
-            handleNext(e, 4);
+            handleNext(e, 5);
+        }
+
+        function handleDepartmentNext(e) {
+            e.preventDefault();
+            handleNext(e, 6);
+        }
+
+        function handleYearNext(e) {
+            e.preventDefault();
+            handleNext(e, 7);
         }
 
         function handleNext(e, stepNum) {
