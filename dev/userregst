@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <!-- スマホでの表示を最適化するためのビューポート設定 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fluid Registration</title>
+    
+    <!-- Tailwind CSS (スタイリング用) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Roboto) & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #e0f2fe; /* 薄い水色の背景 */
+            overflow: hidden; /* スクロールバーを隠す */
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- 1. 水の融合（メタボール）エフェクト --- */
+        .gooey-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            /* SVGで定義したフィルターを適用して要素同士をくっつける */
+            filter: url('#goo'); 
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            background: linear-gradient(135deg, #3b82f6, #06b6d4); /* 青からシアンのグラデーション */
+            border-radius: 50%;
+            /* フィルター効果を高めるために少しぼかす */
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        /* --- 2. フォームのスライド遷移 (6ステップ対応: width = 600%, 各ステップ16.666%) --- */
+        .step-container {
+            display: flex;
+            width: 600%; /* 6ステップ分（100% × 6） */
+            transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+            will-change: transform;
+        }
+        
+        .step {
+            width: 16.6666%; /* 各ステップはコンテナの1/6に固定しズレを防止 */
+            flex-shrink: 0;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-sizing: border-box;
+        }
+        .step.active {
+            opacity: 1;
+        }
+
+        /* --- 3. Google風フローティングラベル --- */
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 1rem 1rem 0.5rem 1rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            outline: none;
+            font-size: 1rem;
+            background: transparent;
+            transition: border-color 0.2s;
+        }
+        .input-group label {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            transition: all 0.2s ease-out;
+            pointer-events: none;
+            background-color: white; /* 枠線の上にラベルが乗る際の背景 */
+            padding: 0 0.25rem;
+        }
+        /* フォーカス時、または入力値がある時にラベルを上部へ移動 */
+        .input-group input:focus,
+        .input-group input:not(:placeholder-shown),
+        .input-group select:focus,
+        .input-group select:valid {
+            border-color: #2563eb;
+            border-width: 2px;
+        }
+        .input-group input:focus ~ label,
+        .input-group input:not(:placeholder-shown) ~ label,
+        .input-group select:focus ~ label,
+        .input-group select:valid ~ label {
+            top: 0;
+            font-size: 0.75rem;
+            color: #2563eb;
+        }
+
+        /* --- 4. ボタンの波紋（リップル）とローディング --- */
+        .btn {
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0);
+            animation: ripple-anim 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-anim {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ガラスモルフィズム（背景が透けるカード） */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <!-- メタボール効果のためのSVGフィルター定義 -->
+    <svg style="width:0; height:0; position:absolute;">
+        <defs>
+            <filter id="goo">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="goo" />
+                <feBlend in="SourceGraphic" in2="goo" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- 水滴（Blob）が漂う背景コンテナ -->
+    <div class="gooey-bg" id="blob-container"></div>
+
+    <!-- メインカード -->
+    <div class="glass-card w-full max-w-sm sm:max-w-md mx-4 rounded-3xl shadow-2xl overflow-hidden relative z-10 p-2">
+        
+        <!-- ヘッダー部分 -->
+        <div class="text-center pt-8 pb-4">
+            <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-3">
+                <span class="material-symbols-outlined text-3xl">water_drop</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800 tracking-tight">アカウント作成</h1>
+            <p class="text-sm text-gray-500 mt-1" id="step-desc">基本情報を入力してください</p>
+        </div>
+
+        <!-- スライドするフォーム群 -->
+        <div class="overflow-hidden">
+            <div class="step-container" id="step-container">
+                
+                <!-- ステップ1: お名前 (本名) -->
+                <div class="step active" id="step1">
+                    <form onsubmit="handleNext(event, 1)">
+                        <div class="input-group">
+                            <input type="text" id="name" placeholder=" " required autocomplete="off">
+                            <label for="name">お名前 (本名)</label>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ2: ふりがな -->
+                <div class="step" id="step2">
+                    <form onsubmit="handleFuriganaNext(event)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(1)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="furigana" placeholder=" " required autocomplete="off" oninput="validateFuriganaInput(this)">
+                            <label for="furigana">ふりがな (ひらがなのみ)</label>
+                        </div>
+                        <p id="furigana-error" class="text-red-500 text-xs mt-1 hidden">ひらがな（例：やました たろう）で入力してください。</p>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ3: 電話番号 -->
+                <div class="step" id="step3">
+                    <form onsubmit="handleNext(event, 3)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(2)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="input-group">
+                            <input type="tel" id="phone" placeholder=" " required autocomplete="off" pattern="[0-9\-]*">
+                            <label for="phone">電話番号</label>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ4: 生年月日 -->
+                <div class="step" id="step4">
+                    <form onsubmit="handleNext(event, 4)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(3)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="input-group">
+                            <input type="date" id="birthdate" required>
+                            <label for="birthdate" style="top:0; font-size:0.75rem; color:#2563eb;">生年月日</label>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
+                                <span>次へ</span>
+                                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ5: パスワード -->
+                <div class="step" id="step5">
+                    <form onsubmit="handleSubmit(event)">
+                        <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goBack(4)">
+                            <span class="material-symbols-outlined text-sm mr-1">arrow_back</span>
+                            戻る
+                        </div>
+                        <div class="input-group">
+                            <input type="password" id="password" placeholder=" " required minlength="8">
+                            <label for="password">パスワード (8文字以上)</label>
+                        </div>
+                        <div class="mt-8 flex justify-end">
+                            <button type="submit" id="submit-btn" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center">
+                                <span id="btn-text">登録する</span>
+                                <div class="loader" id="btn-loader"></div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ステップ6: 完了画面 -->
+                <div class="step" id="step6">
+                    <div class="flex flex-col items-center justify-center text-center py-8">
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-500 scale-0 transition-transform duration-500 delay-300" id="success-icon">
+                            <span class="material-symbols-outlined text-5xl">check</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">登録完了！</h2>
+                        <p class="text-gray-500 mb-8">Fluidアプリへようこそ。<br>さっそく始めましょう。</p>
+                        <button class="btn bg-gray-900 text-white font-medium py-3 px-8 rounded-full shadow-lg w-full" onclick="location.reload()">
+                            はじめる
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const blobContainer = document.getElementById('blob-container');
+        const numBlobs = 8;
+        const blobs = [];
+
+        for (let i = 0; i < numBlobs; i++) {
+            const blob = document.createElement('div');
+            blob.classList.add('blob');
+            const size = Math.random() * 120 + 80;
+            blob.style.width = `${size}px`;
+            blob.style.height = `${size}px`;
+            
+            const x = Math.random() * window.innerWidth;
+            const y = Math.random() * window.innerHeight;
+            blobContainer.appendChild(blob);
+            
+            blobs.push({
+                element: blob,
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: (Math.random() - 0.5) * 1.5,
+                size: size
+            });
+        }
+
+        function animateBlobs() {
+            blobs.forEach(blob => {
+                blob.x += blob.vx;
+                blob.y += blob.vy;
+
+                if (blob.x <= -blob.size/2 || blob.x >= window.innerWidth + blob.size/2) blob.vx *= -1;
+                if (blob.y <= -blob.size/2 || blob.y >= window.innerHeight + blob.size/2) blob.vy *= -1;
+
+                blob.element.style.left = `${blob.x - blob.size / 2}px`;
+                blob.element.style.top = `${blob.y - blob.size / 2}px`;
+            });
+            requestAnimationFrame(animateBlobs);
+        }
+        animateBlobs();
+
+        const stepContainer = document.getElementById('step-container');
+        const descElement = document.getElementById('step-desc');
+        const steps = document.querySelectorAll('.step');
+        let currentStepIndex = 0;
+
+        const descriptions = [
+            "お名前（本名）を入力してください",
+            "ふりがな（ひらがな）を入力してください",
+            "ご連絡先の電話番号を入力してください",
+            "生年月日を選択してください",
+            "セキュリティのためパスワードを設定",
+            "準備が完了しました"
+        ];
+
+        function validateFuriganaInput(input) {
+            const errorElement = document.getElementById('furigana-error');
+            // ひらがなと全角・半角スペース、長音（ー）のみ許可する正規表現
+            const hiraganaRegex = /^[ぁ-んー\s]+$/;
+            
+            if (input.value && !hiraganaRegex.test(input.value)) {
+                errorElement.classList.remove('hidden');
+                input.setCustomValidity('ひらがなのみで入力してください');
+            } else {
+                errorElement.classList.add('hidden');
+                input.setCustomValidity('');
+            }
+        }
+
+        function handleFuriganaNext(e) {
+            e.preventDefault();
+            const furiganaInput = document.getElementById('furigana');
+            const hiraganaRegex = /^[ぁ-んー\s]+$/;
+            
+            if (!hiraganaRegex.test(furiganaInput.value)) {
+                document.getElementById('furigana-error').classList.remove('hidden');
+                return;
+            }
+            handleNext(e, 2);
+        }
+
+        function handleNext(e, stepNum) {
+            e.preventDefault();
+            currentStepIndex = stepNum;
+            
+            const movePercentage = currentStepIndex * (100 / 6); // 6ステップなので各16.666%
+            stepContainer.style.transform = `translateX(-${movePercentage}%)`;
+            
+            steps.forEach((s, idx) => {
+                if (idx === currentStepIndex) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+            
+            descElement.textContent = descriptions[currentStepIndex];
+        }
+
+        function goBack(targetStepNum) {
+            currentStepIndex = targetStepNum - 1;
+            const movePercentage = currentStepIndex * (100 / 6);
+            stepContainer.style.transform = `translateX(-${movePercentage}%)`;
+            
+            steps.forEach((s, idx) => {
+                if (idx === currentStepIndex) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+            
+            descElement.textContent = descriptions[currentStepIndex];
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            
+            const btnText = document.getElementById('btn-text');
+            const btnLoader = document.getElementById('btn-loader');
+            const submitBtn = document.getElementById('submit-btn');
+
+            btnText.style.display = 'none';
+            btnLoader.style.display = 'block';
+            submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
+            submitBtn.disabled = true;
+
+            setTimeout(() => {
+                currentStepIndex = 5;
+                const movePercentage = 5 * (100 / 6);
+                stepContainer.style.transform = `translateX(-${movePercentage}%)`;
+                
+                steps.forEach((s, idx) => {
+                    if (idx === 5) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+                descElement.textContent = descriptions[5];
+
+                setTimeout(() => {
+                    document.getElementById('success-icon').style.transform = 'scale(1)';
+                }, 400);
+
+            }, 1500);
+        }
+
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('mousedown', function(e) {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                
+                const diameter = Math.max(rect.width, rect.height);
+                ripple.style.width = ripple.style.height = `${diameter}px`;
+                ripple.style.left = `${x - diameter / 2}px`;
+                ripple.style.top = `${y - diameter / 2}px`;
+
+                btn.appendChild(ripple);
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+    </script>
+</body>
+</html>
