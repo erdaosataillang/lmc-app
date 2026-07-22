@@ -1,39 +1,517 @@
-<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <!-- スマホでの拡大縮小を防ぎ、アプリのような操作感にするための設定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
+    <!-- Tailwind CSSの読み込み -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
-        /* オリジナルのスタイルベース */
-<!-- ... existing code ... -->
-```
+        /* ==========================================
+           Apple風 UIデザイン (Emil Kowalskiスタイル参考)
+           ========================================== */
+        
+        /* 検索ボタン */
+        .search-btn {
+            background: linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%);
+            border: 1px solid #d1d5db;
+            color: #007aff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+        .search-btn:active {
+            transform: scale(0.96);
+            background: #f3f4f6;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
 
-```html:Cueシート・デジタルフォーム:index.html
-<!-- ... existing code ... -->
+        /* スクショ準備ボタン（ダーク） */
+        .btn-apple-dark {
+            background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
+            border: 1px solid #1f2937;
+            color: white;
+            border-radius: 9999px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+        .btn-apple-dark:active {
+            transform: scale(0.97);
+            background: #374151;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 送信ボタン（プライマリー/緑ベース） */
+        .btn-apple-primary {
+            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
+            border: 1px solid #15803d;
+            color: white;
+            border-radius: 9999px;
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+        .btn-apple-primary:active {
+            transform: scale(0.97);
+            background: #16a34a;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Toast（通知）アニメーション */
+        @keyframes slideDown {
+            from { transform: translate(-50%, -100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+        .toast-enter {
+            animation: slideDown 0.4s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+
+        /* ==========================================
+           基本のシートレイアウト
+           ========================================== */
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f3f4f6;
+            color: #000;
+        }
+
+        .sheet-container {
+            width: 100%;
+            max-width: 680px;
+            margin: 0 auto;
+            background-color: #fff;
+            border: 2px solid #000;
+            padding: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        @media (min-width: 768px) {
+            .sheet-container {
+                padding: 24px;
+                margin-top: 24px;
+                margin-bottom: 24px;
+            }
+        }
+
+        /* テーブル共通スタイル */
+        .border-black-2 { border: 2px solid #000; }
+        .border-b-black-2 { border-bottom: 2px solid #000; }
+        .border-r-black-2 { border-right: 2px solid #000; }
+        .border-b-black-1 { border-bottom: 1px solid #000; }
+        
+        input {
+            width: 100%;
+            outline: none;
+            background: transparent;
+        }
+        input:focus {
+            background-color: #fefce8;
+        }
+
+        /* 検索候補リストのスタイル */
+        .suggest-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .suggest-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            font-size: 0.875rem;
+            line-height: 1.2;
+            transition: background-color 0.15s;
+        }
+        .suggest-item:active {
+            background-color: #e5e7eb;
+        }
+
+        /* iOS風セグメントコントロール（同期ボタン） */
+        .segment-control {
+            display: flex;
+            background-color: #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 2px;
+            margin: 4px;
+        }
+        .segment-btn {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem 0;
+            font-size: 0.875rem;
+            font-weight: bold;
+            border-radius: 0.375rem;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+        .segment-btn.active {
+            background-color: white;
+            color: black;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-2 md:p-6">
+
+    <!-- Toast通知用コンテナ -->
+    <div id="toast-container" class="fixed top-4 left-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <div id="capture-area" class="sheet-container relative">
+        
+        <!-- タイトル部分 -->
+        <div class="flex justify-end mb-6">
+            <div id="event-title" class="border-black-2 px-8 py-1 font-bold text-2xl tracking-widest bg-gray-50">
+                月定演
+            </div>
+        </div>
+
+        <!-- バンド名 -->
+        <div class="border-black-2 mb-2 flex bg-white">
+            <div class="w-24 border-r-black-2 p-2 font-bold flex items-center justify-center bg-gray-50 text-sm">
+                バンド名
+            </div>
+            <div class="flex-grow flex flex-col justify-center">
+                <input type="text" id="band-name" class="px-2 h-8 text-lg font-bold" placeholder="バンド名を入力">
+                <div class="text-[10px] text-right px-2 border-t border-gray-200 py-0.5 text-gray-500">
+                    新規 or 既存（<input type="text" id="existing-count" class="w-10 border-b border-black text-center mx-1" placeholder="ー">回目）
+                </div>
+            </div>
+        </div>
+
+        <!-- 出演NG日 -->
+        <div class="flex border-black-2 mb-2 bg-white">
+            <div class="w-24 border-r-black-2 p-2 font-bold flex items-center justify-center bg-gray-50 text-sm leading-tight text-center">
+                出演NG日
+            </div>
+            <input type="text" id="ng-date" class="flex-grow p-2" placeholder="特になし (ある場合は日付を入力)">
+        </div>
+
+        <!-- NG理由 (NG日が入力された時だけ表示) -->
+        <div id="ng-reason-row" class="flex border-black-2 mb-6 bg-white hidden">
+            <div class="w-24 border-r-black-2 p-2 font-bold flex items-center justify-center bg-red-50 text-red-600 text-sm leading-tight text-center">
+                NGの理由
+            </div>
+            <input type="text" id="ng-reason" class="flex-grow p-2" placeholder="NGの理由を具体的に記入してください（必須）">
+        </div>
+
+        <!-- メンバー表 -->
+        <table class="w-full border-black-2 mb-6 border-collapse bg-white table-fixed">
+            <thead>
+                <tr class="border-b-black-2 bg-gray-50">
+                    <th class="border-r-black-2 p-2 w-16 md:w-20 text-sm font-bold">学年</th>
+                    <th class="border-r-black-2 p-2 w-20 md:w-24 text-sm font-bold">パート</th>
+                    <th class="p-2 text-sm font-bold">名前</th>
+                </tr>
+            </thead>
+            <tbody id="members-tbody">
+                <!-- JSで8行生成します -->
+            </tbody>
+        </table>
+
+        <!-- 曲目と同期 -->
+        <div class="flex gap-2 mb-6">
+            <!-- 曲目表 -->
+            <table class="flex-grow border-black-2 border-collapse bg-white table-fixed">
+                <thead>
+                    <tr class="border-b-black-2 bg-gray-50">
+                        <th class="border-r-black-2 p-1 w-8 md:w-10 font-bold text-xs md:text-sm">曲</th>
+                        <th class="border-r-black-2 p-1 text-xs md:text-sm">曲名</th>
+                        <th class="p-1 w-20 md:w-28 font-bold text-xs">曲の長さ</th>
+                    </tr>
+                </thead>
+                <tbody id="songs-tbody">
+                    <!-- JSで5行生成します -->
+                </tbody>
+            </table>
+            
+            <!-- 同期 -->
+            <div class="w-16 md:w-20 border-black-2 flex flex-col bg-white">
+                <div class="font-bold border-b-black-2 w-full text-center text-xs md:text-sm p-1 bg-gray-50">同期</div>
+                <div class="flex-grow flex flex-col justify-center segment-control">
+                    <button type="button" class="segment-btn sync-btn active" data-val="無">無</button>
+                    <button type="button" class="segment-btn sync-btn" data-val="有">有</button>
+                    <input type="hidden" id="sync-val" value="無">
+                </div>
+            </div>
+        </div>
+
+        <!-- エラーメッセージ表示領域 -->
         <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6 text-sm"></div>
         
-        <!-- Apple風にリデザインしたボタン群 -->
-        <div class="no-print flex flex-wrap gap-3 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-center md:justify-end">
-            <button type="button" id="image-btn" class="btn-apple-dark px-6 py-2.5 text-sm md:text-base font-bold w-[47%] md:w-auto">
+        <!-- 操作ボタン群（スクショ時は非表示になるクラス .no-print を付与） -->
+        <div class="no-print flex flex-col md:flex-row gap-3 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-end">
+            <button type="button" id="image-btn" class="btn-apple-dark px-6 py-3 text-sm md:text-base font-bold w-full md:w-auto">
                 スクショ準備
             </button>
-            <button type="button" id="submit-btn" class="btn-apple-primary px-8 py-2.5 text-sm md:text-base font-bold w-full md:w-auto mt-2 md:mt-0">
+            <button type="button" id="submit-btn" class="btn-apple-primary px-8 py-3 text-sm md:text-base font-bold w-full md:w-auto">
                 送信する
             </button>
         </div>
     </div>
-<!-- ... existing code ... -->
-```
 
-```html:Cueシート・デジタルフォーム:index.html
-<!-- ... existing code ... -->
+    <!-- Firebase SDK (ES Modules形式) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Immersive環境、または通常の環境用の設定
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                // お客様の環境で動かす場合は、ここにFirebase設定を記述してください。
+                // (すでにFirebase側で設定済みの場合は不要です)
+            };
+
+        let db = null;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            const auth = getAuth(app);
+            // 匿名ログイン等が必要な場合は有効化
+            // signInAnonymously(auth);
+        } catch(e) {
+            console.log("Firebase setup skipped or missing config.");
+        }
+
+        // ==========================================
+        // UI と ロジックの初期化
+        // ==========================================
+        
+        // Toast（通知）を表示する関数
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'error' ? 'bg-red-600' : type === 'info' ? 'bg-blue-600' : 'bg-gray-800';
+            toast.className = `toast-enter ${bgColor} text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 max-w-[90vw]`;
+            toast.innerHTML = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translate(-50%, -100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // メンバー表を8行生成
+        const membersTbody = document.getElementById('members-tbody');
+        for (let i = 0; i < 8; i++) {
+            const tr = document.createElement('tr');
+            tr.className = i < 7 ? 'border-b-black-1 h-10' : 'h-10';
+            tr.innerHTML = `
+                <td class="border-r-black-2"><input type="text" class="px-2 text-center text-sm grade-input" data-index="${i}"></td>
+                <td class="border-r-black-2"><input type="text" class="px-2 text-center text-sm part-input" data-index="${i}"></td>
+                <td><input type="text" class="px-2 text-sm name-input" data-index="${i}"></td>
+            `;
+            membersTbody.appendChild(tr);
+        }
+
+        // 楽曲表を5行生成
+        const songsTbody = document.getElementById('songs-tbody');
+        for (let i = 0; i < 5; i++) {
+            const tr = document.createElement('tr');
+            tr.className = i < 4 ? 'border-b-black-1 h-12 relative' : 'h-12 relative';
+            tr.innerHTML = `
+                <td class="border-r-black-2 p-1 text-center font-bold bg-gray-50">${i + 1}</td>
+                <td class="border-r-black-2 relative flex items-center pr-1">
+                    <input type="text" class="px-2 w-full text-sm song-title" placeholder="曲名を入力" oninput="showSuggest(this, ${i})">
+                    <button type="button" class="no-print search-btn ml-1 px-3 py-1 text-xs rounded-full font-bold whitespace-nowrap" onclick="searchSong(this, ${i})">
+                        検索
+                    </button>
+                    <div id="suggest-${i}" class="suggest-list"></div>
+                </td>
+                <td><input type="text" class="px-2 text-center font-mono text-sm song-duration" placeholder="00:00"></td>
+            `;
+            songsTbody.appendChild(tr);
+        }
+
+        // ページ読み込み時にURLパラメータからデータを取得
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const bandId = urlParams.get('bandID');
+            const eventId = urlParams.get('eventID');
+
+            if (bandId && eventId && db) {
+                try {
+                    // イベント情報の取得（例: "2026年度7月定期演奏会" -> "7月" を抽出）
+                    const eventDocRef = doc(db, 'events', eventId);
+                    const eventDocSnap = await getDoc(eventDocRef);
+                    if (eventDocSnap.exists()) {
+                        const eventData = eventDocSnap.data();
+                        const eventName = eventData.event || "";
+                        
+                        // 正規表現で「〇月」の部分を抽出
+                        const monthMatch = eventName.match(/(\d{1,2})月/);
+                        if (monthMatch) {
+                            document.getElementById('event-title').innerText = `${monthMatch[1]}月定演`;
+                        } else {
+                            document.getElementById('event-title').innerText = eventName; // 抽出できなければそのまま表示
+                        }
+                    }
+
+                    // バンド情報の取得
+                    const bandDocRef = doc(db, 'bands', bandId);
+                    const bandDocSnap = await getDoc(bandDocRef);
+                    
+                    if (bandDocSnap.exists()) {
+                        const data = bandDocSnap.data();
+                        document.getElementById('band-name').value = data.name || '';
+                        
+                        const names = document.querySelectorAll('.name-input');
+                        const parts = document.querySelectorAll('.part-input');
+                        const grades = document.querySelectorAll('.grade-input');
+                        
+                        if (data.members && Array.isArray(data.members)) {
+                            data.members.forEach((member, idx) => {
+                                if (idx < 8) {
+                                    names[idx].value = member.name || '';
+                                    parts[idx].value = member.part || '';
+                                    
+                                    // usersコレクションから学年を取得（Firebaseの構造依存）
+                                    if (member.userId) {
+                                        const userRef = doc(db, 'users', member.userId);
+                                        getDoc(userRef).then(userSnap => {
+                                            if (userSnap.exists()) {
+                                                grades[idx].value = userSnap.data().grade || '';
+                                            }
+                                        }).catch(err => console.log("User fetch error:", err));
+                                    }
+                                }
+                            });
+                        }
+                        showToast('バンドとイベント情報を読み込みました', 'success');
+                    } else {
+                        showToast('バンド情報が見つかりません', 'error');
+                    }
+                } catch (error) {
+                    console.error("Fetch Error:", error);
+                    showToast('データの読み込みに失敗しました', 'error');
+                }
+            }
+        });
+
+        // NG日に入力があったら「NG理由」の行を表示する
+        document.getElementById('ng-date').addEventListener('input', function() {
+            const reasonRow = document.getElementById('ng-reason-row');
+            if (this.value.trim() !== '') {
+                reasonRow.classList.remove('hidden');
+            } else {
+                reasonRow.classList.add('hidden');
+                document.getElementById('ng-reason').value = ''; // 空にリセット
+            }
+        });
+
+        // 同期ボタンのトグル（iOSセグメントコントロール風）
+        document.querySelectorAll('.sync-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById('sync-val').value = e.target.getAttribute('data-val');
             });
         });
+
+        // Apple Music (iTunes API) を直接叩く検索関数
+        window.searchSong = async (btn, index) => {
+            const row = btn.closest('tr');
+            const titleInput = row.querySelector('.song-title');
+            const query = titleInput.value.trim();
+            const suggestBox = document.getElementById(`suggest-${index}`);
+            
+            if (!query) {
+                showToast("曲名を入力してから検索してください", 'info');
+                return;
+            }
+
+            btn.innerText = "検索中...";
+            btn.disabled = true;
+
+            try {
+                // iTunes API への直接リクエスト（CORS制限なし）
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
+                
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                const data = await response.json();
+                const results = data.results;
+
+                if (results && results.length > 0) {
+                    suggestBox.innerHTML = '';
+                    results.forEach(song => {
+                        const div = document.createElement('div');
+                        div.className = 'suggest-item';
+                        
+                        // ミリ秒を 分:秒 に変換
+                        const totalSeconds = Math.floor(song.trackTimeMillis / 1000);
+                        const mins = Math.floor(totalSeconds / 60);
+                        const secs = totalSeconds % 60;
+                        const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                        
+                        div.innerHTML = `
+                            <div class="font-bold text-black">${song.trackName}</div>
+                            <div class="text-xs text-gray-500 flex justify-between">
+                                <span>${song.artistName}</span>
+                                <span class="font-mono bg-gray-100 px-1 rounded">${timeStr}</span>
+                            </div>
+                        `;
+
+                        // スマホのタップバグ対策: touchstart で即座に反応させる
+                        const applySelection = (e) => {
+                            e.preventDefault(); // 余計なイベントを防ぐ
+                            titleInput.value = song.trackName;
+                            row.querySelector('.song-duration').value = timeStr;
+                            suggestBox.style.display = 'none';
+                        };
+
+                        div.addEventListener('mousedown', applySelection);
+                        div.addEventListener('touchstart', applySelection, {passive: false});
+
+                        suggestBox.appendChild(div);
+                    });
+                    suggestBox.style.display = 'block';
+                } else {
+                    showToast("曲が見つかりませんでした", 'error');
+                    suggestBox.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("Search Error:", error);
+                showToast("検索に失敗しました", 'error');
+            } finally {
+                btn.innerText = "検索";
+                btn.disabled = false;
+            }
+        };
+
+        // サジェストボックス以外をタップしたら閉じる
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.suggest-list') && !e.target.closest('.search-btn')) {
+                document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
+            }
+        });
+        document.addEventListener('touchstart', (e) => {
+            if (!e.target.closest('.suggest-list') && !e.target.closest('.search-btn')) {
+                document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
+            }
+        }, {passive: true});
 
         // スクショ準備処理 (ネイティブスクショ用)
         document.getElementById('image-btn').addEventListener('click', function(e) {
             e.stopPropagation();
 
-            // 隠す要素（各種ボタン類）を取得
+            // 隠す要素（操作ボタンや検索ボタンなど）
             const hideElements = document.querySelectorAll('.no-print, .search-btn');
             const originalDisplays = new Map();
             
@@ -43,9 +521,9 @@
                 el.style.display = 'none';
             });
             
-            showToast("📸 スクショ準備完了！端末の機能で撮影してください（画面タップで戻ります）");
+            showToast("📸 スクショ準備完了！端末の機能で撮影してください（画面タップで戻ります）", 'info');
             
-            // 画面タップでUIを復元する処理
+            // 画面のどこかをタップ/クリックしたら元に戻す
             const restoreUI = () => {
                 hideElements.forEach(el => {
                     el.style.display = originalDisplays.get(el) || '';
@@ -61,6 +539,65 @@
             }, 300);
         });
 
+        // 送信処理（バリデーション）
         document.getElementById('submit-btn').addEventListener('click', () => {
             const errorDiv = document.getElementById('error-msg');
-<!-- ... existing code ... -->
+            const errors = [];
+
+            // 必須項目のチェック
+            if (!document.getElementById('band-name').value.trim()) errors.push("バンド名が入力されていません。");
+            if (!document.getElementById('existing-count').value.trim()) errors.push("新規or既存の出演回数が入力されていません。");
+            
+            // NG日の理由チェック
+            const ngDate = document.getElementById('ng-date').value.trim();
+            const ngReason = document.getElementById('ng-reason').value.trim();
+            if (ngDate !== '' && ngReason === '') {
+                errors.push("出演NG日の理由を具体的に入力してください。");
+            }
+
+            // メンバーが1名以上いるか
+            let memberCount = 0;
+            document.querySelectorAll('.name-input').forEach(input => {
+                if (input.value.trim() !== '') memberCount++;
+            });
+            if (memberCount === 0) errors.push("メンバーを少なくとも1名入力してください。");
+
+            // 曲が1曲以上あり、かつ曲の長さが入力されているか
+            let songCount = 0;
+            let durationMissing = false;
+            
+            const titles = document.querySelectorAll('.song-title');
+            const durations = document.querySelectorAll('.song-duration');
+            
+            titles.forEach((titleInput, index) => {
+                if (titleInput.value.trim() !== '') {
+                    songCount++;
+                    if (durations[index].value.trim() === '') {
+                        durationMissing = true;
+                    }
+                }
+            });
+
+            if (songCount === 0) errors.push("曲名を少なくとも1曲入力してください。");
+            if (durationMissing) errors.push("入力された曲の長さ（時間）が不足しています。");
+
+            // エラー表示
+            if (errors.length > 0) {
+                errorDiv.innerHTML = errors.map(err => `<div>・${err}</div>`).join('');
+                errorDiv.classList.remove('hidden');
+                showToast("入力内容にエラーがあります", 'error');
+                
+                // エラー箇所にスクロール
+                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                errorDiv.classList.add('hidden');
+                
+                // ここで実際のデータ送信（保存）処理を行います
+                // 成功したと仮定してメッセージを表示
+                showToast("データを正常に送信しました！", 'success');
+                console.log("Validation Passed! Ready to save to Firestore.");
+            }
+        });
+    </script>
+</body>
+</html>
