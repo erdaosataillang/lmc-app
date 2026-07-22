@@ -178,7 +178,7 @@
     <!-- Logic -->
     <script type="module">
         import { initAdminPage, db } from "/js/admin-common.js";
-        import { collection, onSnapshot, doc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, onSnapshot, doc, updateDoc, deleteDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let usersData = [];
         let filteredData = [];
@@ -251,7 +251,7 @@
                        (u.faculty || "").toLowerCase().includes(q) ||
                        (u.part || "").toLowerCase().includes(q) ||
                        partJapanese.toLowerCase().includes(q) ||
-                       (u.tel || "").includes(q); // 電話番号検索も追加
+                       (u.tel || "").includes(q);
             });
             
             if (userShowOnlyCurrent) {
@@ -437,9 +437,14 @@
                     <div class="px-8 pb-8 -mt-14 relative">
                         <div class="mb-4 flex justify-between items-end">
                             ${iconLarge}
-                            <button onclick="window.toggleEditMode('${user.id}')" class="px-5 py-2 bg-gray-900 text-white text-xs font-black rounded-2xl shadow-xl hover:bg-gray-800 transition-all active:scale-95 flex items-center gap-2">
-                                <i class="fa-solid fa-pen text-[10px]"></i> 編集
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="window.deleteUser('${user.id}')" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-black rounded-2xl shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                                    <i class="fa-solid fa-trash text-[10px]"></i> 削除
+                                </button>
+                                <button onclick="window.toggleEditMode('${user.id}')" class="px-5 py-2 bg-gray-900 text-white text-xs font-black rounded-2xl shadow-xl hover:bg-gray-800 transition-all active:scale-95 flex items-center gap-2">
+                                    <i class="fa-solid fa-pen text-[10px]"></i> 編集
+                                </button>
+                            </div>
                         </div>
                         
                         <div class="mb-6">
@@ -519,13 +524,13 @@
                     <div class="bg-gray-100 h-24 w-full relative"></div>
                     <div class="px-8 pb-10 -mt-12 relative">
                         <div class="flex justify-between items-start mb-6">
-                             <div class="w-24 h-24 rounded-3xl bg-white shadow-xl flex items-center justify-center text-indigo-300 text-3xl font-black border-4 border-white">
+                           <div class="w-24 h-24 rounded-3xl bg-white shadow-xl flex items-center justify-center text-indigo-300 text-3xl font-black border-4 border-white">
                                 ${(user.name||"?")[0]}
-                             </div>
-                             <div class="flex gap-2 mt-12">
+                           </div>
+                           <div class="flex gap-2 mt-12">
                                 <button onclick="window.toggleEditMode('${user.id}')" class="px-4 py-2 bg-gray-100 text-gray-500 font-bold rounded-xl hover:bg-gray-200 transition-all text-xs">キャンセル</button>
                                 <button id="save-user-btn" class="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-all text-xs uppercase tracking-widest">保存する</button>
-                             </div>
+                           </div>
                         </div>
 
                         <div class="space-y-4">
@@ -597,6 +602,24 @@
             if (!user) return;
             isEditing = !isEditing;
             renderModalContent(user);
+        };
+
+        // 削除機能の追加
+        window.deleteUser = async (userId) => {
+            const user = usersData.find(u => u.id === userId);
+            const userName = user ? user.name : 'この部員';
+            if (!confirm(`本当に「${userName}」さんのデータを削除しますか？\nこの操作は元に戻せません。`)) {
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, 'users', userId));
+                window.closeUserDetail();
+                selectedUserIds.delete(userId);
+                updateSelectionUI();
+            } catch (err) {
+                console.error(err);
+                alert("削除に失敗しました。");
+            }
         };
 
         async function saveUserChanges(userId) {
