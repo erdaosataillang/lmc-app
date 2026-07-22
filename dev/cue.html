@@ -1,472 +1,66 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
+<!-- ... existing code ... -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 画像出力用のライブラリを追加 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         /* オリジナルのスタイルベース */
-        .sync-btn.active { transition: all 0.2s; }
-        input, button { -webkit-tap-highlight-color: transparent; }
-        
-        /* Emil Kowalski スタイルのボタン (洗練された質感とアニメーション) */
-        .btn-apple {
-            position: relative;
-            background: linear-gradient(180deg, #FFFFFF 0%, #F9F9FB 100%);
-            border: 1px solid #d1d1d6;
-            border-radius: 8px;
-            box-shadow: 
-                0 1px 2px rgba(0, 0, 0, 0.04), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.8), 
-                inset 0 -1px 0 rgba(0, 0, 0, 0.02);
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-            user-select: none;
-        }
-        .btn-apple:hover {
-            background: linear-gradient(180deg, #FAFAFC 0%, #F3F3F5 100%);
-        }
-        .btn-apple:active {
-            transform: scale(0.97);
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
-            background: #F3F3F5;
-        }
+<!-- ... existing code ... -->
+```
 
-        .btn-apple-primary {
-            position: relative;
-            /* 元デザインの緑色をベースにしたApple風グラデーション */
-            background: linear-gradient(180deg, #34C759 0%, #30B752 100%); 
-            border: 1px solid rgba(0, 0, 0, 0.05);
-            border-radius: 8px;
-            color: white;
-            box-shadow: 
-                0 2px 4px rgba(52, 199, 89, 0.2), 
-                inset 0 1px 1px rgba(255, 255, 255, 0.2), 
-                inset 0 -1px 1px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .btn-apple-primary:hover {
-            background: linear-gradient(180deg, #38D35F 0%, #32C056 100%);
-        }
-        .btn-apple-primary:active {
-            transform: scale(0.97);
-            background: #2EAB4E;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-apple-dark {
-            background: linear-gradient(180deg, #323232 0%, #1A1A1A 100%);
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            color: white;
-            box-shadow: 
-                0 2px 4px rgba(0, 0, 0, 0.15), 
-                inset 0 1px 1px rgba(255, 255, 255, 0.15), 
-                inset 0 -1px 1px rgba(0, 0, 0, 0.2);
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .btn-apple-dark:hover {
-            background: linear-gradient(180deg, #404040 0%, #252525 100%);
-        }
-        .btn-apple-dark:active {
-            transform: scale(0.97);
-            background: #1A1A1A;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        /* 検索ボタン用 Appleスタイル */
-        .btn-apple-search {
-            background: linear-gradient(180deg, #FFFFFF 0%, #F9F9FB 100%);
-            border: 1px solid #d1d1d6;
-            border-radius: 6px;
-            color: #007AFF; /* iOS風ブルー */
-            box-shadow: 
-                0 1px 2px rgba(0, 0, 0, 0.04), 
-                inset 0 1px 0 rgba(255, 255, 255, 0.8), 
-                inset 0 -1px 0 rgba(0, 0, 0, 0.02);
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-            user-select: none;
-        }
-        .btn-apple-search:hover {
-            background: linear-gradient(180deg, #FAFAFC 0%, #F3F3F5 100%);
-        }
-        .btn-apple-search:active {
-            transform: scale(0.95);
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
-            background: #F3F3F5;
-        }
-
-        /* トースト通知 (alertの代わり) */
-        .apple-toast {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            transform: translateY(-100%) scale(0.95);
-            opacity: 0;
-            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-        .apple-toast.show {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-
-        @media print {
-            @page { size: A4; margin: 10mm; }
-            body { background: white !important; padding: 0 !important; }
-            .no-print { display: none !important; }
-            #print-area { border: 2px solid black !important; box-shadow: none !important; width: 100% !important; margin: 0 auto !important; }
-            * { -webkit-print-color-adjust: exact !important; color-adjust: exact !important; }
-        }
-    </style>
-</head>
-
-<body class="bg-gray-100 p-2 md:p-4 min-h-screen flex justify-center">
-    
-    <!-- トースト通知コンテナ -->
-    <div id="toast-container" class="fixed top-4 left-0 right-0 z-50 flex flex-col items-center gap-3 pointer-events-none"></div>
-
-    <div id="print-area" class="w-full max-w-[680px] bg-white border-2 border-black p-4 md:p-8 shadow-2xl relative">
-        <div class="flex justify-end mb-6 md:mb-8">
-            <div id="event-title-display" class="border-2 border-black px-6 md:px-10 py-1 md:py-2 font-bold text-xl md:text-2xl tracking-widest bg-gray-50 uppercase">月定演</div>
-        </div>
-        
-        <div class="border-2 border-black mb-6 md:mb-8">
-            <div class="flex border-b-2 border-black items-stretch">
-                <div class="w-24 md:w-28 border-r-2 border-black p-2 md:p-3 font-bold bg-gray-50 flex items-center justify-center text-sm md:text-base">バンド名</div>
-                <input id="band-name-input" class="flex-grow px-3 py-2 outline-none text-sm md:text-base">
-            </div>
-            <div class="p-2 text-right text-xs font-bold text-gray-500 bg-gray-50">
-                新規 or 既存（<input id="event-count-input" class="w-12 border-b border-gray-400 outline-none text-center bg-transparent" placeholder="1"> 回目）
-            </div>
-        </div>
-
-        <!-- 出演NG日と理由 -->
-        <div class="border-2 border-black mb-6 md:mb-8 transition-all">
-            <div class="flex items-stretch">
-                <div class="w-24 md:w-28 border-r-2 border-black p-2 md:p-3 font-bold bg-gray-50 flex items-center justify-center text-sm md:text-base whitespace-nowrap">出演NG日</div>
-                <input id="ng-date-input" class="flex-grow px-3 py-2 outline-none text-sm md:text-base" placeholder="特になし (ある場合は日付を入力)">
-            </div>
-            <!-- 最初は非表示 (hidden)、日付が入力されると表示される -->
-            <div id="ng-reason-container" class="hidden items-stretch border-t-2 border-black bg-red-50/20">
-                <div class="w-24 md:w-28 border-r-2 border-black p-2 md:p-3 font-bold bg-gray-50 flex items-center justify-center text-sm md:text-base whitespace-nowrap text-red-600">NG理由<span class="ml-1 text-xs">*</span></div>
-                <input id="ng-reason-input" class="flex-grow px-3 py-2 outline-none text-sm md:text-base bg-transparent placeholder:text-red-300" placeholder="必須: NGの理由を具体的に入力してください">
-            </div>
-        </div>
-
-        <!-- メンバーテーブル (オリジナルデザイン維持) -->
-        <table class="w-full border-2 border-black mb-6 md:mb-8 border-collapse">
-            <tbody id="member-table"></tbody>
-        </table>
-
-        <!-- 曲テーブル & 同期 (オリジナルデザイン維持) -->
-        <div class="flex flex-col md:flex-row gap-4 mb-6 md:mb-8">
-            <table class="flex-grow border-2 border-black border-collapse w-full">
-                <tbody id="song-table"></tbody>
-            </table>
-            
-            <div class="w-full md:w-24 border-2 border-black flex flex-row md:flex-col items-center">
-                <div class="font-bold border-b-2 md:border-b-2 border-black md:border-r-0 border-r-2 w-24 md:w-full text-center text-sm p-2 md:p-3 bg-gray-50 flex items-center justify-center">同期</div>
-                <div class="flex md:flex-col flex-grow w-full">
-                    <button type="button" class="sync-btn flex-grow p-2 md:p-4 font-bold text-gray-400 md:border-b border-black md:border-r-0 border-r border-black hover:bg-gray-100 transition focus:outline-none" data-val="有">有</button>
-                    <button type="button" class="sync-btn flex-grow p-2 md:p-4 font-bold text-gray-400 hover:bg-gray-100 transition focus:outline-none" data-val="無">無</button>
-                </div>
-            </div>
-        </div>
-
+```html:Cueシート・デジタルフォーム:index.html
+<!-- ... existing code ... -->
         <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded mb-6 text-sm"></div>
         
-        <!-- Apple風にリデザインしたボタン群 (画像出力時は非表示にする属性を追加) -->
-        <div class="no-print flex flex-wrap gap-3 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-center md:justify-end" data-html2canvas-ignore="true">
+        <!-- Apple風にリデザインしたボタン群 -->
+        <div class="no-print flex flex-wrap gap-3 md:gap-4 mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200 justify-center md:justify-end">
             <button type="button" id="image-btn" class="btn-apple-dark px-6 py-2.5 text-sm md:text-base font-bold w-[47%] md:w-auto">
-                画像保存
+                スクショ準備
             </button>
             <button type="button" id="submit-btn" class="btn-apple-primary px-8 py-2.5 text-sm md:text-base font-bold w-full md:w-auto mt-2 md:mt-0">
                 送信する
             </button>
         </div>
     </div>
+<!-- ... existing code ... -->
+```
 
-    <!-- UI/ロジック -->
-    <script>
-        // カスタムToast通知 (alert()の代替)
-        function showToast(message, isError = false) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            const color = isError ? 'text-red-600' : 'text-green-600';
-            
-            toast.className = `apple-toast flex items-center gap-2 px-5 py-3 text-sm font-bold text-gray-800 ${isError ? 'border-red-200 bg-red-50/90' : ''}`;
-            toast.innerHTML = `<span class="${color}">●</span> <span>${message}</span>`;
-            
-            container.appendChild(toast);
-            
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => toast.classList.add('show'));
-            });
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 400); 
-            }, 3000);
-        }
-
-        let currentSync = null;
-
-        // 初期構築
-        const mTable = document.getElementById('member-table');
-        for(let i=0; i<8; i++) {
-            mTable.insertAdjacentHTML('beforeend', `
-                <tr class="member-row border-b border-black h-10 md:h-12">
-                    <td class="border-r-2 border-black w-16 md:w-20"><input type="text" class="w-full h-full text-center outline-none member-grade text-sm md:text-base" placeholder="学年"></td>
-                    <td class="border-r-2 border-black w-20 md:w-24"><input type="text" class="w-full h-full text-center outline-none member-part text-sm md:text-base" placeholder="パート"></td>
-                    <td><input type="text" class="w-full h-full px-2 md:px-4 outline-none member-name text-sm md:text-base" placeholder="名前"></td>
-                </tr>`);
-        }
-        
-        const sTable = document.getElementById('song-table');
-        for(let i=0; i<5; i++) {
-            sTable.insertAdjacentHTML('beforeend', `
-                <tr class="border-b border-black h-12 md:h-14">
-                    <td class="border-r-2 border-black text-center font-bold bg-gray-50 w-10 text-sm md:text-base">${i+1}</td>
-                    <td class="border-r-2 border-black flex items-center h-full p-0 relative">
-                        <input type="text" class="w-full h-full px-2 md:px-4 outline-none song-title text-sm md:text-base flex-grow" placeholder="曲名">
-                        <!-- Apple風検索ボタン (画像出力時は非表示にする属性を追加) -->
-                        <button type="button" class="search-btn btn-apple-search px-3 py-1.5 mr-1 text-xs md:text-sm font-bold shrink-0" data-html2canvas-ignore="true">検索</button>
-                    </td>
-                    <td class="w-24 md:w-28"><input type="text" inputmode="numeric" class="w-full h-full text-center outline-none font-mono song-duration text-sm md:text-base" placeholder="00:00"></td>
-                </tr>`);
-        }
-
-        // 同期ボタン
-        document.querySelectorAll('.sync-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.sync-btn').forEach(b => {
-                    b.classList.remove('active', 'bg-black', 'text-white');
-                    b.classList.add('text-gray-400');
-                });
-                this.classList.add('active', 'bg-black', 'text-white');
-                this.classList.remove('text-gray-400');
-                currentSync = this.dataset.val;
+```html:Cueシート・デジタルフォーム:index.html
+<!-- ... existing code ... -->
             });
         });
 
-        // 画像出力処理 (文字切れバグを完全回避する実DOM置換アプローチ)
-        document.getElementById('image-btn').addEventListener('click', async function() {
-            const originalText = this.innerText;
-            this.innerText = "生成中...";
-            this.disabled = true;
+        // スクショ準備処理 (ネイティブスクショ用)
+        document.getElementById('image-btn').addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            // 隠す要素（各種ボタン類）を取得
+            const hideElements = document.querySelectorAll('.no-print, .search-btn');
+            const originalDisplays = new Map();
             
-            const element = document.getElementById('print-area');
-            const inputs = element.querySelectorAll('input');
-            const replacements = [];
-
-            // 1. 実DOMのinputをすべてdivに物理的にすり替える
-            inputs.forEach(input => {
-                const div = document.createElement('div');
-                div.className = input.className; // Tailwindクラスを継承
-                
-                // 元のinputと完全に同じサイズ・スタイルを強制的に適用
-                const computed = window.getComputedStyle(input);
-                div.style.display = 'flex';
-                div.style.alignItems = 'center'; // 上下中央揃えを強制
-                div.style.boxSizing = 'border-box';
-                div.style.whiteSpace = 'nowrap';
-                div.style.overflow = 'hidden';
-                div.style.width = input.offsetWidth + 'px';
-                div.style.height = input.offsetHeight + 'px';
-                div.style.fontSize = computed.fontSize;
-                div.style.fontFamily = computed.fontFamily;
-                div.style.padding = computed.padding;
-                
-                // テキストの配置を継承
-                if (input.classList.contains('text-center') || computed.textAlign === 'center') {
-                    div.style.justifyContent = 'center';
-                } else if (input.classList.contains('text-right') || computed.textAlign === 'right') {
-                    div.style.justifyContent = 'flex-end';
-                } else {
-                    div.style.justifyContent = 'flex-start';
-                }
-
-                // 入力値またはプレースホルダーをセット
-                if (input.value) {
-                    div.textContent = input.value;
-                    div.style.color = '#000000'; // 黒文字
-                } else {
-                    div.textContent = input.placeholder;
-                    div.style.color = '#9ca3af'; // グレー文字
-                }
-
-                // 実際のDOM上で一瞬だけすり替える（元のinputは隠す）
-                input.parentNode.insertBefore(div, input);
-                input.style.display = 'none';
-                
-                replacements.push({ div, input });
+            // 要素を非表示にしてスクショに写り込まないようにする
+            hideElements.forEach(el => {
+                originalDisplays.set(el, el.style.display);
+                el.style.display = 'none';
             });
-
-            // スマホ等で描画が完全に切り替わるまでほんの少し待機
-            await new Promise(resolve => setTimeout(resolve, 50));
-
-            try {
-                // 2. html2canvasで画像化 (実DOMをそのまま撮影)
-                const canvas = await html2canvas(element, {
-                    scale: 2, // 高解像度
-                    useCORS: true,
-                    backgroundColor: '#ffffff'
+            
+            showToast("📸 スクショ準備完了！端末の機能で撮影してください（画面タップで戻ります）");
+            
+            // 画面タップでUIを復元する処理
+            const restoreUI = () => {
+                hideElements.forEach(el => {
+                    el.style.display = originalDisplays.get(el) || '';
                 });
-                
-                const bandName = document.getElementById('band-name-input').value.trim() || 'band';
-                
-                // 3. 画像としてダウンロード
-                const link = document.createElement('a');
-                link.download = `cue_${bandName}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-                
-                showToast("画像を保存しました");
-            } catch (err) {
-                console.error("Image Generate Error:", err);
-                showToast("画像の生成に失敗しました", true);
-            } finally {
-                // 4. すべて元に戻す (すり替えたdivを消し、inputを表示)
-                replacements.forEach(({ div, input }) => {
-                    div.remove();
-                    input.style.display = '';
-                });
-
-                this.innerText = originalText;
-                this.disabled = false;
-            }
+                document.removeEventListener('click', restoreUI);
+                document.removeEventListener('touchstart', restoreUI);
+            };
+            
+            // 直後のイベント発火を防ぐため、少し遅らせてタップ判定をオンにする
+            setTimeout(() => {
+                document.addEventListener('click', restoreUI);
+                document.addEventListener('touchstart', restoreUI, { passive: true });
+            }, 300);
         });
 
         document.getElementById('submit-btn').addEventListener('click', () => {
             const errorDiv = document.getElementById('error-msg');
-            let errors = [];
-            
-            if(!document.getElementById('band-name-input').value.trim()) errors.push("バンド名を入力してください");
-            if(!document.getElementById('event-count-input').value.trim()) errors.push("出演回数を入力してください");
-            
-            // NG日のバリデーション (NG日があるのに理由がない場合エラー)
-            const ngDateValue = ngDateInput.value.trim();
-            const ngReasonValue = document.getElementById('ng-reason-input').value.trim();
-            if(ngDateValue !== "" && ngReasonValue === "") {
-                errors.push("出演NG日の理由を入力してください");
-            }
-            
-            const hasMember = Array.from(document.querySelectorAll('.member-name')).some(i => i.value.trim() !== "");
-            if(!hasMember) errors.push("メンバーを少なくとも1名入力してください");
-            
-            const songs = Array.from(document.querySelectorAll('.song-title')).filter(i => i.value.trim() !== "");
-            const durations = Array.from(document.querySelectorAll('.song-duration')).filter(i => i.value.trim() !== "");
-            if(songs.length === 0) errors.push("曲名を少なくとも1曲入力してください");
-            if(songs.length !== durations.length) errors.push("全ての曲に長さを入力してください");
-            
-            if(!currentSync) errors.push("同期の有無を選択してください");
-            
-            if(errors.length > 0) {
-                errorDiv.innerHTML = errors.map(e => `<div>・${e}</div>`).join('');
-                errorDiv.classList.remove('hidden');
-                errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                showToast("入力内容に不足があります", true);
-            } else {
-                errorDiv.classList.add('hidden');
-                showToast("送信準備が完了しました！");
-            }
-        });
-    </script>
-
-    <!-- Firebase連携 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        try {
-            const firebaseConfig = {
-                apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
-                authDomain: "urakata-app.firebaseapp.com",
-                projectId: "urakata-app",
-                storageBucket: "urakata-app.firebasestorage.app",
-                messagingSenderId: "407777765696",
-                appId: "1:407777765696:web:045c2d94729022b4eab2a5"
-            };
-
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            const partMap = { "vocal": "Vo.", "guitar": "Gt.", "bass": "Ba.", "drums": "Dr.", "keyboard": "Key.", "chorus": "Cho." };
-
-            window.addEventListener('DOMContentLoaded', async () => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const bandId = urlParams.get('bandID');
-                const eventId = urlParams.get('eventID');
-
-                if (!bandId && !eventId) return; // 新規作成用
-
-                showToast("データを読み込んでいます...");
-
-                // 1. イベント情報の取得と表示（"n月定演" の抽出）
-                if (eventId) {
-                    try {
-                        const eventSnap = await getDoc(doc(db, "events", eventId));
-                        if (eventSnap.exists()) {
-                            const eventData = eventSnap.data();
-                            const eventName = eventData.event || "";
-                            
-                            // "2026年度7月定期演奏会" などから "7月" を抽出
-                            const match = eventName.match(/(\d+)月/);
-                            let titleText = "月定演";
-                            
-                            if (match) {
-                                titleText = `${match[1]}月定演`;
-                            } else if (eventName) {
-                                titleText = eventName; // "月"が含まれない場合はそのまま表示
-                            }
-                            
-                            document.getElementById('event-title-display').innerText = titleText;
-                        }
-                    } catch (e) {
-                        console.error("Event Data Load Error:", e);
-                    }
-                }
-
-                // 2. バンドとメンバー情報の取得
-                if (bandId) {
-                    try {
-                        const bandSnap = await getDoc(doc(db, "bands", bandId));
-                        if (!bandSnap.exists()) {
-                            showToast("指定されたバンドデータが見つかりませんでした", true);
-                            return;
-                        }
-                        
-                        const bandData = bandSnap.data();
-                        document.getElementById('band-name-input').value = bandData.name || '';
-                        document.getElementById('event-count-input').value = bandData.events ? bandData.events.length : 1;
-                        
-                        const memberIds = bandData.memberIds || [];
-                        const rows = document.querySelectorAll('.member-row');
-                        
-                        for (let i = 0; i < Math.min(memberIds.length, rows.length); i++) {
-                            const uSnap = await getDoc(doc(db, "users", memberIds[i]));
-                            if (uSnap.exists()) {
-                                const u = uSnap.data();
-                                rows[i].querySelector('.member-grade').value = u.year || u.grade || ''; 
-                                rows[i].querySelector('.member-part').value = partMap[u.part?.toLowerCase()] || u.part || '';
-                                rows[i].querySelector('.member-name').value = u.name || '';
-                            }
-                        }
-                        showToast("データを読み込みました");
-                    } catch (e) { 
-                        console.error("Data Load Error:", e);
-                        showToast("データの読み込みに失敗しました", true);
-                    }
-                }
-            });
-        } catch(err) {
-            console.error("Firebase Initialization Failed:", err);
-            showToast('データベース接続準備中にエラーが発生しました', true);
-        }
-    </script>
-</body>
-</html>
+<!-- ... existing code ... -->
