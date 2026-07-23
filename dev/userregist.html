@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fluid Registration</title>
+    <title>アカウント新規登録</title>
+    
+    <!-- ファビコンの追加 -->
+    <link rel="icon" href="https://ul.h3z.jp/hWMQAhTT.png">
+    <link rel="apple-touch-icon" href="https://ul.h3z.jp/hWMQAhTT.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -794,32 +798,41 @@
 
                 // 基本データの構成
                 const userData = {
-                    uid: lineUserId, // LINE ID
-                    lineUserId: lineUserId,
-                    displayName: globalLineProfile.displayName || formName,
-                    icon: globalLineProfile.pictureUrl || "",
-                    lineLinkedAt: serverTimestamp(),
-                    
-                    name: formName,
-                    kana: formKana,
-                    phone: formPhone,
-                    birthday: formBirthdate ? new Date(formBirthdate) : null,
-                    password: formPassword,
-                    createdAt: serverTimestamp(),
-                    lastLogin: serverTimestamp(),
                     affiliations: ["urakata"],
-                    feeStatus: {}
+                    birthday: formBirthdate ? new Date(formBirthdate) : null,
+                    createdAt: serverTimestamp(),
+                    feeStatus: {},
+                    icon: globalLineProfile.pictureUrl || "",
+                    kana: formKana,
+                    lastLogin: serverTimestamp(),
+                    lineDisplayName: globalLineProfile.displayName || "",
+                    lineUserId: lineUserId,
+                    name: formName,
+                    org: "urakata",
+                    phone: formPhone, // 連絡用として独自に保持
+                    password: formPassword // 独自認証用
                 };
 
                 // 軽音モード（LMC/LP）の場合の追加情報
                 if (isLmcMode) {
-                    userData.affiliations.push(secParam.toLowerCase());
+                    const secLower = secParam.toLowerCase();
+                    userData.affiliations.push(secLower);
                     userData.studentId = document.getElementById('student_id').value;
                     userData.faculty = document.getElementById('department').value;
-                    userData.grade = document.getElementById('school_year').value;
                     
+                    // 学年の入力（例："1年生"）から数字（"1"）だけを抽出して year に保存
+                    const gradeRaw = document.getElementById('school_year').value;
+                    const numMatch = gradeRaw.match(/\d+/);
+                    userData.year = numMatch ? numMatch[0] : gradeRaw;
+                    
+                    // 楽器情報を part フィールドとして保存
                     const instruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
-                    userData.job = instruments.join(", "); 
+                    userData.part = instruments.join(", "); 
+                    
+                    // その他の運用フィールドの初期値
+                    userData.job = ""; 
+                    userData.role = "";
+                    userData.roll = [`${secLower}_normal`]; // 例: lmc_normal
                 }
 
                 // Firestoreへドキュメントを書き込み
