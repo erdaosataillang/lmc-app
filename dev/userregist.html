@@ -498,15 +498,18 @@
                     globalLineProfile = profile;
                     
                     // Firestoreにすでにこのユーザー(userId)が存在するか確認
-                    const docRef = doc(db, "users", profile.userId);
-                    const docSnap = await getDoc(docRef);
+                    const docRef = doc(db, "users", lineUserId);
+                        const docSnap = await getDoc(docRef);
 
-                    if (docSnap.exists()) {
-                        // 既にアカウントがある場合は登録をスキップしてメイン画面へ
-                        alert("すでに登録済みのLINEアカウントです。アプリを開始します。");
-                        // window.location.href = "/main.html"; // 実際のURL
-                        return;
-                    }
+                        if (docSnap.exists()) {
+                            alert("すでに登録済みのLINEアカウントです。アプリへ移動します。");
+                            if (jumpedUrl) {
+                                window.location.href = jumpedUrl;
+                            } else {
+                                alert("エラー: ジャンプ元のURL（?jumpedurl=）がありません。");
+                            }
+                            return; // 登録済みならここで処理終了
+                        }
 
                     // 新規ユーザーの場合は、ステップ1(名前入力)へ自動で進める
                     currentStepIndex = 1; 
@@ -539,6 +542,12 @@
         const urlParams = new URLSearchParams(window.location.search);
         const secParam = urlParams.get('sec');
         const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
+        
+        // ジャンプ元URLの取得とエラーチェック
+        const jumpedUrl = urlParams.get('jumpedurl');
+        if (!jumpedUrl) {
+            alert("エラー: ジャンプ元のURL（?jumpedurl=）が指定されていません。正しいリンクからアクセスしてください。");
+        }
 
         if (isLmcMode) {
             document.getElementById('main-title').textContent = '軽音サークル 新規登録';
@@ -796,6 +805,9 @@
                 const formPhone = document.getElementById('phone').value;
                 const formBirthdate = document.getElementById('birthdate').value;
                 const formPassword = document.getElementById('password').value;
+                  // LMCモードかどうかに応じてroleの値を決定
+                const roleValue = isLmcMode ? "LMC_normal" : "user_normal";
+                
                 // 3. 基本データの構成（画像の構造とフィールド名に完全に合わせる）
                 const userData = {
                     affiliations: ["urakata"],
@@ -811,6 +823,7 @@
                     oldId: "", // 画像にあるフィールド（初期値）
                     org: "urakata",
                     part: "", // 軽音モードでない場合のデフォルト
+                    role: roleValue, // 動的に判定した値を格納
                     role: "", // 画像にあるフィールド（初期値）
                     selectedBandId: null, // 画像にあるフィールド（初期値）
                     selectedEventId: null, // 画像にあるフィールド（初期値）
