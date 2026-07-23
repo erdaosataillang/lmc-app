@@ -792,11 +792,7 @@
 
                 const formName = document.getElementById('name').value;
                 const formKana = document.getElementById('furigana').value;
-                const formPhone = document.getElementById('phone').value;
-                const formBirthdate = document.getElementById('birthdate').value;
-                const formPassword = document.getElementById('password').value;
-
-                // 基本データの構成
+                // 3. 基本データの構成（画像の構造とフィールド名に完全に合わせる）
                 const userData = {
                     affiliations: ["urakata"],
                     birthday: formBirthdate ? new Date(formBirthdate) : null,
@@ -808,34 +804,38 @@
                     lineDisplayName: globalLineProfile.displayName || "",
                     lineUserId: lineUserId,
                     name: formName,
+                    oldId: "", // 画像にあるフィールド（初期値）
                     org: "urakata",
-                    tel: formPhone, // 連絡用として独自に保持
-                    password: formPassword // 独自認証用
+                    part: "", // 軽音モードでない場合のデフォルト
+                    role: "", // 画像にあるフィールド（初期値）
+                    selectedBandId: null, // 画像にあるフィールド（初期値）
+                    selectedEventId: null, // 画像にあるフィールド（初期値）
+                    status: "idle", // 画像にあるフィールド（初期値）
+                    studentId: "",
+                    tel: formPhone, // フィールド名を phone から tel に変更
+                    year: "" 
                 };
 
-                // 軽音モード（LMC/LP）の場合の追加情報
+                // 4. 軽音モード（LMC/LP）の場合の追加情報
                 if (isLmcMode) {
-                    const secLower = secParam.toLowerCase();
-                    userData.affiliations.push(secLower);
+                    userData.affiliations.push(secParam.toLowerCase()); // 例: "lmc" や "lp"
                     userData.studentId = document.getElementById('student_id').value;
                     userData.faculty = document.getElementById('department').value;
                     
-                    // 学年の入力（例："1年生"）から数字（"1"）だけを抽出して year に保存
+                    // 学年の入力（例："3年生"）から数字（"3"）だけを抽出して year に保存
                     const gradeRaw = document.getElementById('school_year').value;
                     const numMatch = gradeRaw.match(/\d+/);
                     userData.year = numMatch ? numMatch[0] : gradeRaw;
                     
-                    // 楽器情報を part フィールドとして保存
+                    // 楽器情報を取得し、カンマ区切りで part に保存
                     const instruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
                     userData.part = instruments.join(", "); 
-                    
-                    // その他の運用フィールドの初期値
-                    userData.job = ""; 
-                    userData.role = "";
-                    userData.roll = [`${secLower}_normal`]; // 例: lmc_normal
+
+                    // rollフィールド（例: "lmc_normal"）の追加
+                    userData.roll = [`${secParam.toLowerCase()}_normal`];
                 }
 
-                // Firestoreへドキュメントを書き込み
+                // 5. Firestoreへドキュメントを書き込み (コレクション: users, ドキュメントID: LINEのuserId)
                 await setDoc(doc(db, "users", lineUserId), userData);
 
                 // 成功画面への遷移
