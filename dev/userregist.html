@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -10,6 +9,7 @@
     <link rel="icon" href="https://ul.h3z.jp/hWMQAhTT.png">
     <link rel="apple-touch-icon" href="https://ul.h3z.jp/hWMQAhTT.png">
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
@@ -155,6 +155,7 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen py-8 overflow-x-hidden">
 
+    <!-- メタボール効果のためのSVGフィルター定義 -->
     <svg style="width:0; height:0; position:absolute;">
         <defs>
             <filter id="goo">
@@ -165,10 +166,13 @@
         </defs>
     </svg>
 
+    <!-- 水滴（Blob）が漂う背景コンテナ -->
     <div class="gooey-bg" id="blob-container"></div>
 
+    <!-- メインカード -->
     <div class="glass-card w-full max-w-sm sm:max-w-md mx-4 rounded-3xl shadow-2xl overflow-hidden relative z-10 p-2">
         
+        <!-- ヘッダー部分 -->
         <div class="text-center pt-8 pb-4">
             <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-3">
                 <span class="material-symbols-outlined text-3xl">water_drop</span>
@@ -177,10 +181,11 @@
             <p class="text-sm text-gray-500 mt-1" id="step-desc">LINEでログインしてください</p>
         </div>
 
+        <!-- スライドするフォーム群 -->
         <div class="overflow-hidden">
             <div class="step-container" id="step-container">
                 
-                <!-- 新規: ステップ0 (LINEログイン) -->
+                <!-- ステップ0 (LINEログイン) -->
                 <div class="step active" id="step0">
                     <div class="flex flex-col items-center justify-center text-center py-4">
                         <div class="w-16 h-16 bg-[#06C755]/10 rounded-full flex items-center justify-center mb-6 text-[#06C755]">
@@ -482,12 +487,30 @@
         const db = getFirestore(app);
 
         // ==========================================
+        // URLパラメータの取得
+        // ==========================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const secParam = urlParams.get('sec');
+        const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
+        
+        // ジャンプ元URLの取得とエラーチェック
+        const jumpedUrl = urlParams.get('jumpedurl');
+        if (!jumpedUrl) {
+            alert("エラー: ジャンプ元のURL（?jumpedurl=）が指定されていません。正しいリンクからアクセスしてください。");
+        }
+
+        if (isLmcMode) {
+            document.getElementById('main-title').textContent = '軽音サークル 新規登録';
+        }
+
+        // ==========================================
         // LIFF (LINE連携) の初期化と処理
         // ==========================================
         const MY_LIFF_ID = "2008162165-cVfrU588"; // 発行したLIFF ID
         
         // 取得したLINEプロフィール情報を保存する変数
         let globalLineProfile = null;
+        let lineUserId = null;
 
         async function initializeLiff() {
             try {
@@ -497,20 +520,21 @@
                     // ログイン済みの場合、プロフィールを取得
                     const profile = await liff.getProfile();
                     globalLineProfile = profile;
+                    lineUserId = profile.userId;
                     
                     // Firestoreにすでにこのユーザー(userId)が存在するか確認
                     const docRef = doc(db, "users", lineUserId);
-                        const docSnap = await getDoc(docRef);
+                    const docSnap = await getDoc(docRef);
 
-                        if (docSnap.exists()) {
-                            alert("すでに登録済みのLINEアカウントです。アプリへ移動します。");
-                            if (jumpedUrl) {
-                                window.location.href = jumpedUrl;
-                            } else {
-                                alert("エラー: ジャンプ元のURL（?jumpedurl=）がありません。");
-                            }
-                            return; // 登録済みならここで処理終了
+                    if (docSnap.exists()) {
+                        alert("すでに登録済みのLINEアカウントです。アプリへ移動します。");
+                        if (jumpedUrl) {
+                            window.location.href = jumpedUrl;
+                        } else {
+                            alert("エラー: ジャンプ元のURL（?jumpedurl=）がありません。");
                         }
+                        return; // 登録済みならここで処理終了
+                    }
 
                     // 新規ユーザーの場合は、ステップ1(名前入力)へ自動で進める
                     currentStepIndex = 1; 
@@ -536,23 +560,9 @@
             }
         };
 
-
         // ==========================================
         // UI・アニメーション・フォーム制御
         // ==========================================
-        const urlParams = new URLSearchParams(window.location.search);
-        const secParam = urlParams.get('sec');
-        const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
-        
-        // ジャンプ元URLの取得とエラーチェック
-        const jumpedUrl = urlParams.get('jumpedurl');
-        if (!jumpedUrl) {
-            alert("エラー: ジャンプ元のURL（?jumpedurl=）が指定されていません。正しいリンクからアクセスしてください。");
-        }
-
-        if (isLmcMode) {
-            document.getElementById('main-title').textContent = '軽音サークル 新規登録';
-        }
 
         // 不要なステップをDOMから削除
         if (!isLmcMode) {
@@ -825,7 +835,6 @@
                     org: "urakata",
                     part: "", // 軽音モードでない場合のデフォルト
                     role: roleValue, // 動的に判定した値を格納
-                    role: "", // 画像にあるフィールド（初期値）
                     selectedBandId: null, // 画像にあるフィールド（初期値）
                     selectedEventId: null, // 画像にあるフィールド（初期値）
                     status: "idle", // 画像にあるフィールド（初期値）
@@ -854,7 +863,8 @@
                 }
 
                 // 5. Firestoreへドキュメントを書き込み (コレクション: users, ドキュメントID: LINEのuserId)
-                await setDoc(doc(db, "users", lineUserId), userData);
+                // merge: true を指定して、既存のフィールドを上書きしないようにする
+                await setDoc(doc(db, "users", lineUserId), userData, { merge: true });
 
                 // 成功画面への遷移
                 currentStepIndex = totalSteps - 1;
