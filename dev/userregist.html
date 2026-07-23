@@ -790,8 +790,12 @@
                 // LINEのユーザーIDをFirestoreの主キー(UID)として使用する
                 const lineUserId = globalLineProfile.userId;
 
+                // 各フォームから入力値を取得する
                 const formName = document.getElementById('name').value;
                 const formKana = document.getElementById('furigana').value;
+                const formPhone = document.getElementById('phone').value;
+                const formBirthdate = document.getElementById('birthdate').value;
+                const formPassword = document.getElementById('password').value;
                 // 3. 基本データの構成（画像の構造とフィールド名に完全に合わせる）
                 const userData = {
                     affiliations: ["urakata"],
