@@ -452,7 +452,6 @@
                         <h2 class="text-2xl font-bold text-gray-800 mb-2" id="success-title">登録完了！</h2>
                         <p class="text-gray-500 mb-8" id="success-desc">ようこそ<br>さっそくはじめましょう</p>
                         
-                        <!-- sessionStorageから取り出したURLへ遷移する関数を呼び出す -->
                         <button class="btn bg-blue-600 text-white font-medium py-3 px-8 rounded-full shadow-lg w-full flex items-center justify-center hover:bg-blue-700" onclick="window.finishRegistration()">
                             アプリをはじめる
                         </button>
@@ -473,21 +472,27 @@
         // ==========================================
         const urlParams = new URLSearchParams(window.location.search);
         
-        // 初回アクセス時にURLにパラメータがあれば、セッションストレージに記録
-        if (urlParams.has('sec')) {
-            sessionStorage.setItem('secParam', urlParams.get('sec'));
-        }
-        if (urlParams.has('jumpedurl')) {
-            sessionStorage.setItem('jumpedUrl', urlParams.get('jumpedurl'));
+        // 1. まずURLのパラメータを確認
+        let secParam = urlParams.get('sec');
+        let jumpedUrl = urlParams.get('jumpedurl');
+
+        // 2. URLにある場合はセッションに保存、ない場合はセッションから復元を利用する
+        if (secParam) {
+            sessionStorage.setItem('secParam', secParam);
+        } else {
+            secParam = sessionStorage.getItem('secParam');
         }
 
-        // セッションストレージから値を取り出す（LINEから戻ってきた後もここから復元される）
-        const secParam = sessionStorage.getItem('secParam');
-        const jumpedUrl = sessionStorage.getItem('jumpedUrl');
+        if (jumpedUrl) {
+            sessionStorage.setItem('jumpedUrl', jumpedUrl);
+        } else {
+            jumpedUrl = sessionStorage.getItem('jumpedUrl');
+        }
         
         // モードの判定
         const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
 
+        // 3. どちらにもジャンプURLが存在しない場合はエラーを吐く
         if (!jumpedUrl) {
             alert("エラー: ジャンプ元のURL（?jumpedurl=）が指定されていません。正しいリンクからアクセスしてください。");
         }
@@ -499,6 +504,10 @@
         // 完了ボタン押下時の遷移関数
         window.finishRegistration = function() {
             if (jumpedUrl) {
+                // 安全のため、遷移直前にお役御免となったセッションのお掃除をしておく
+                sessionStorage.removeItem('secParam');
+                sessionStorage.removeItem('jumpedUrl');
+                
                 window.location.href = jumpedUrl;
             } else {
                 alert("遷移先のURLが不明なため、移動できません。");
@@ -523,6 +532,7 @@
         // ==========================================
         const MY_LIFF_ID = "2008162165-cVfrU588"; // 発行したLIFF ID
         
+        // 取得したLINEプロフィール情報を保存する変数
         let globalLineProfile = null;
         let lineUserId = null;
 
@@ -531,10 +541,12 @@
                 await liff.init({ liffId: MY_LIFF_ID });
                 
                 if (liff.isLoggedIn()) {
+                    // ログイン済みの場合、プロフィールを取得
                     const profile = await liff.getProfile();
                     globalLineProfile = profile;
                     lineUserId = profile.userId;
                     
+                    // Firestoreにすでにこのユーザー(userId)が存在するか確認
                     const docRef = doc(db, "users", lineUserId);
                     const docSnap = await getDoc(docRef);
 
@@ -542,14 +554,17 @@
                         alert("すでに登録済みのLINEアカウントです。アプリへ移動します。");
                         if (jumpedUrl) {
                             window.location.href = jumpedUrl;
+                        } else {
+                            alert("エラー: ジャンプ元のURL（?jumpedurl=）がありません。");
                         }
-                        return;
+                        return; // 登録済みならここで処理終了
                     }
 
                     // 新規ユーザーの場合は、ステップ1(名前入力)へ自動で進める
                     currentStepIndex = 1; 
                     updateStepDisplay();
                 }
+                // ログインしていない場合は初期状態（ステップ0: ログインボタン）のまま待機
             } catch (err) {
                 console.error("LIFFの初期化に失敗しました", err);
             }
@@ -572,7 +587,8 @@
         // ==========================================
         // UI・アニメーション・フォーム制御
         // ==========================================
-        
+
+        // 不要なステップをDOMから削除
         if (!isLmcMode) {
             ['step5', 'step6', 'step7', 'step-instrument'].forEach(id => {
                 const el = document.getElementById(id);
@@ -589,6 +605,7 @@
             s.style.width = `${100 / totalSteps}%`;
         });
 
+        // 水滴アニメーション
         const blobContainer = document.getElementById('blob-container');
         const numBlobs = 5; 
         const blobs = [];
@@ -623,7 +640,7 @@
         animateBlobs();
 
         const descElement = document.getElementById('step-desc');
-        let currentStepIndex = 0;
+        let currentStepIndex = 0; // 初期位置は「LINEログイン（ステップ0）」
 
         const descriptions = isLmcMode ? [
             "LINEでログインしてください",
@@ -704,6 +721,7 @@
         };
 
         window.goToPrevStep = function() {
+            // ステップ1(名前入力)からステップ0(LINEログイン)へは戻れないように制限
             if (currentStepIndex > 1) {
                 currentStepIndex--;
                 updateStepDisplay();
@@ -794,7 +812,7 @@
             goToNextStep();
         };
 
-        // Firestoreへのデータ登録処理
+        // Firestoreへのデータ登録処理 (LINEのIDを使用)
         window.handleSubmit = async function(e) {
             e.preventDefault();
             
@@ -813,17 +831,19 @@
             submitBtn.disabled = true;
 
             try {
+                // LINEのユーザーIDをFirestoreの主キー(UID)として使用する
                 const lineUserId = globalLineProfile.userId;
 
+                // 各フォームから入力値を取得する
                 const formName = document.getElementById('name').value;
                 const formKana = document.getElementById('furigana').value;
                 const formPhone = document.getElementById('phone').value;
                 const formBirthdate = document.getElementById('birthdate').value;
                 const formPassword = document.getElementById('password').value;
-                
-                // roleの値を決定 (セッションストレージから復元した値で判定される)
+                // LMCモードかどうかに応じてroleの値を決定
                 const roleValue = isLmcMode ? "LMC_normal" : "user_normal";
                 
+                // 3. 基本データの構成（画像の構造とフィールド名に完全に合わせる）
                 const userData = {
                     affiliations: ["urakata"],
                     birthday: formBirthdate ? new Date(formBirthdate) : null,
@@ -835,37 +855,41 @@
                     lineDisplayName: globalLineProfile.displayName || "",
                     lineUserId: lineUserId,
                     name: formName,
-                    oldId: "", 
+                    oldId: "", // 画像にあるフィールド（初期値）
                     org: "urakata",
-                    part: "", 
-                    role: roleValue,
-                    selectedBandId: null, 
-                    selectedEventId: null, 
-                    status: "idle", 
+                    part: "", // 軽音モードでない場合のデフォルト
+                    role: roleValue, // 動的に判定した値を格納
+                    selectedBandId: null, // 画像にあるフィールド（初期値）
+                    selectedEventId: null, // 画像にあるフィールド（初期値）
+                    status: "idle", // 画像にあるフィールド（初期値）
                     studentId: "",
-                    tel: formPhone,
+                    tel: formPhone, // フィールド名を phone から tel に変更
                     year: "" 
                 };
 
+                // 4. 軽音モード（LMC/LP）の場合の追加情報
                 if (isLmcMode) {
-                    userData.affiliations.push(secParam.toLowerCase());
+                    userData.affiliations.push(secParam.toLowerCase()); // 例: "lmc" や "lp"
                     userData.studentId = document.getElementById('student_id').value;
                     userData.faculty = document.getElementById('department').value;
                     
+                    // 学年の入力（例："3年生"）から数字（"3"）だけを抽出して year に保存
                     const gradeRaw = document.getElementById('school_year').value;
                     const numMatch = gradeRaw.match(/\d+/);
                     userData.year = numMatch ? numMatch[0] : gradeRaw;
                     
+                    // 楽器情報を取得し、カンマ区切りで part に保存
                     const instruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
                     userData.part = instruments.join(", "); 
-                    
-                    // roleではなくrollフィールドへの追加
+
+                    // rollフィールド（例: "lmc_normal"）の追加
                     userData.roll = [`${secParam.toLowerCase()}_normal`];
                 }
 
-                // merge: true を付与して既存フィールドを上書きさせない
+                // 5. Firestoreへドキュメントを書き込み (コレクション: users, ドキュメントID: LINEのuserId)
                 await setDoc(doc(db, "users", lineUserId), userData, { merge: true });
 
+                // 成功画面への遷移
                 currentStepIndex = totalSteps - 1;
                 updateStepDisplay();
 
