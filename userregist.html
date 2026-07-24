@@ -584,9 +584,9 @@
             }
 
             if (!liff.isLoggedIn()) {
-                // セッションストレージで管理するため、パラメーターを明示的に渡す必要性が低くなったが
-                // 安全のため現在のURL（パラメーターありならそれも含める）にリダイレクトさせる
-                liff.login({ redirectUri: window.location.href });
+                // 400 Bad Request を防ぐため、redirectUriの指定を削除
+                // セッションストレージでパラメータを保持しているので、これだけで正常に復帰できます
+                liff.login();
             } else {
                 location.reload();
             }
