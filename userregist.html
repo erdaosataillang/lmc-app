@@ -9,7 +9,6 @@
     <link rel="icon" href="https://ul.h3z.jp/hWMQAhTT.png">
     <link rel="apple-touch-icon" href="https://ul.h3z.jp/hWMQAhTT.png">
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
@@ -155,7 +154,6 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen py-8 overflow-x-hidden">
 
-    <!-- メタボール効果のためのSVGフィルター定義 -->
     <svg style="width:0; height:0; position:absolute;">
         <defs>
             <filter id="goo">
@@ -166,13 +164,10 @@
         </defs>
     </svg>
 
-    <!-- 水滴（Blob）が漂う背景コンテナ -->
     <div class="gooey-bg" id="blob-container"></div>
 
-    <!-- メインカード -->
     <div class="glass-card w-full max-w-sm sm:max-w-md mx-4 rounded-3xl shadow-2xl overflow-hidden relative z-10 p-2">
         
-        <!-- ヘッダー部分 -->
         <div class="text-center pt-8 pb-4">
             <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-3">
                 <span class="material-symbols-outlined text-3xl">water_drop</span>
@@ -181,11 +176,10 @@
             <p class="text-sm text-gray-500 mt-1" id="step-desc">LINEでログインしてください</p>
         </div>
 
-        <!-- スライドするフォーム群 -->
         <div class="overflow-hidden">
             <div class="step-container" id="step-container">
                 
-                <!-- ステップ0 (LINEログイン) -->
+                <!-- 新規: ステップ0 (LINEログイン) -->
                 <div class="step active" id="step0">
                     <div class="flex flex-col items-center justify-center text-center py-4">
                         <div class="w-16 h-16 bg-[#06C755]/10 rounded-full flex items-center justify-center mb-6 text-[#06C755]">
@@ -458,7 +452,8 @@
                         <h2 class="text-2xl font-bold text-gray-800 mb-2" id="success-title">登録完了！</h2>
                         <p class="text-gray-500 mb-8" id="success-desc">ようこそ<br>さっそくはじめましょう</p>
                         
-                        <button class="btn bg-blue-600 text-white font-medium py-3 px-8 rounded-full shadow-lg w-full flex items-center justify-center hover:bg-blue-700" onclick="alert('メインのアプリ画面へ遷移します'); /* window.location.href = '/main.html'; */">
+                        <!-- sessionStorageから取り出したURLへ遷移する関数を呼び出す -->
+                        <button class="btn bg-blue-600 text-white font-medium py-3 px-8 rounded-full shadow-lg w-full flex items-center justify-center hover:bg-blue-700" onclick="window.finishRegistration()">
                             アプリをはじめる
                         </button>
                     </div>
@@ -472,6 +467,43 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        // ==========================================
+        // URLパラメータの取得と保持 (セッションストレージ使用)
+        // ==========================================
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // 初回アクセス時にURLにパラメータがあれば、セッションストレージに記録
+        if (urlParams.has('sec')) {
+            sessionStorage.setItem('secParam', urlParams.get('sec'));
+        }
+        if (urlParams.has('jumpedurl')) {
+            sessionStorage.setItem('jumpedUrl', urlParams.get('jumpedurl'));
+        }
+
+        // セッションストレージから値を取り出す（LINEから戻ってきた後もここから復元される）
+        const secParam = sessionStorage.getItem('secParam');
+        const jumpedUrl = sessionStorage.getItem('jumpedUrl');
+        
+        // モードの判定
+        const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
+
+        if (!jumpedUrl) {
+            alert("エラー: ジャンプ元のURL（?jumpedurl=）が指定されていません。正しいリンクからアクセスしてください。");
+        }
+
+        if (isLmcMode) {
+            document.getElementById('main-title').textContent = '軽音サークル 新規登録';
+        }
+
+        // 完了ボタン押下時の遷移関数
+        window.finishRegistration = function() {
+            if (jumpedUrl) {
+                window.location.href = jumpedUrl;
+            } else {
+                alert("遷移先のURLが不明なため、移動できません。");
+            }
+        };
 
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
@@ -487,28 +519,10 @@
         const db = getFirestore(app);
 
         // ==========================================
-        // URLパラメータの取得
-        // ==========================================
-        const urlParams = new URLSearchParams(window.location.search);
-        const secParam = urlParams.get('sec');
-        const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
-        
-        // ジャンプ元URLの取得とエラーチェック
-        const jumpedUrl = urlParams.get('jumpedurl');
-        if (!jumpedUrl) {
-            alert("エラー: ジャンプ元のURL（?jumpedurl=）が指定されていません。正しいリンクからアクセスしてください。");
-        }
-
-        if (isLmcMode) {
-            document.getElementById('main-title').textContent = '軽音サークル 新規登録';
-        }
-
-        // ==========================================
         // LIFF (LINE連携) の初期化と処理
         // ==========================================
         const MY_LIFF_ID = "2008162165-cVfrU588"; // 発行したLIFF ID
         
-        // 取得したLINEプロフィール情報を保存する変数
         let globalLineProfile = null;
         let lineUserId = null;
 
@@ -517,12 +531,10 @@
                 await liff.init({ liffId: MY_LIFF_ID });
                 
                 if (liff.isLoggedIn()) {
-                    // ログイン済みの場合、プロフィールを取得
                     const profile = await liff.getProfile();
                     globalLineProfile = profile;
                     lineUserId = profile.userId;
                     
-                    // Firestoreにすでにこのユーザー(userId)が存在するか確認
                     const docRef = doc(db, "users", lineUserId);
                     const docSnap = await getDoc(docRef);
 
@@ -530,17 +542,14 @@
                         alert("すでに登録済みのLINEアカウントです。アプリへ移動します。");
                         if (jumpedUrl) {
                             window.location.href = jumpedUrl;
-                        } else {
-                            alert("エラー: ジャンプ元のURL（?jumpedurl=）がありません。");
                         }
-                        return; // 登録済みならここで処理終了
+                        return;
                     }
 
                     // 新規ユーザーの場合は、ステップ1(名前入力)へ自動で進める
                     currentStepIndex = 1; 
                     updateStepDisplay();
                 }
-                // ログインしていない場合は初期状態（ステップ0: ログインボタン）のまま待機
             } catch (err) {
                 console.error("LIFFの初期化に失敗しました", err);
             }
@@ -563,8 +572,7 @@
         // ==========================================
         // UI・アニメーション・フォーム制御
         // ==========================================
-
-        // 不要なステップをDOMから削除
+        
         if (!isLmcMode) {
             ['step5', 'step6', 'step7', 'step-instrument'].forEach(id => {
                 const el = document.getElementById(id);
@@ -581,7 +589,6 @@
             s.style.width = `${100 / totalSteps}%`;
         });
 
-        // 水滴アニメーション
         const blobContainer = document.getElementById('blob-container');
         const numBlobs = 5; 
         const blobs = [];
@@ -616,7 +623,7 @@
         animateBlobs();
 
         const descElement = document.getElementById('step-desc');
-        let currentStepIndex = 0; // 初期位置は「LINEログイン（ステップ0）」
+        let currentStepIndex = 0;
 
         const descriptions = isLmcMode ? [
             "LINEでログインしてください",
@@ -697,7 +704,6 @@
         };
 
         window.goToPrevStep = function() {
-            // ステップ1(名前入力)からステップ0(LINEログイン)へは戻れないように制限
             if (currentStepIndex > 1) {
                 currentStepIndex--;
                 updateStepDisplay();
@@ -788,7 +794,7 @@
             goToNextStep();
         };
 
-        // Firestoreへのデータ登録処理 (LINEのIDを使用)
+        // Firestoreへのデータ登録処理
         window.handleSubmit = async function(e) {
             e.preventDefault();
             
@@ -807,19 +813,17 @@
             submitBtn.disabled = true;
 
             try {
-                // LINEのユーザーIDをFirestoreの主キー(UID)として使用する
                 const lineUserId = globalLineProfile.userId;
 
-                // 各フォームから入力値を取得する
                 const formName = document.getElementById('name').value;
                 const formKana = document.getElementById('furigana').value;
                 const formPhone = document.getElementById('phone').value;
                 const formBirthdate = document.getElementById('birthdate').value;
                 const formPassword = document.getElementById('password').value;
-                  // LMCモードかどうかに応じてroleの値を決定
+                
+                // roleの値を決定 (セッションストレージから復元した値で判定される)
                 const roleValue = isLmcMode ? "LMC_normal" : "user_normal";
                 
-                // 3. 基本データの構成（画像の構造とフィールド名に完全に合わせる）
                 const userData = {
                     affiliations: ["urakata"],
                     birthday: formBirthdate ? new Date(formBirthdate) : null,
@@ -831,42 +835,37 @@
                     lineDisplayName: globalLineProfile.displayName || "",
                     lineUserId: lineUserId,
                     name: formName,
-                    oldId: "", // 画像にあるフィールド（初期値）
+                    oldId: "", 
                     org: "urakata",
-                    part: "", // 軽音モードでない場合のデフォルト
-                    role: roleValue, // 動的に判定した値を格納
-                    selectedBandId: null, // 画像にあるフィールド（初期値）
-                    selectedEventId: null, // 画像にあるフィールド（初期値）
-                    status: "idle", // 画像にあるフィールド（初期値）
+                    part: "", 
+                    role: roleValue,
+                    selectedBandId: null, 
+                    selectedEventId: null, 
+                    status: "idle", 
                     studentId: "",
-                    tel: formPhone, // フィールド名を phone から tel に変更
+                    tel: formPhone,
                     year: "" 
                 };
 
-                // 4. 軽音モード（LMC/LP）の場合の追加情報
                 if (isLmcMode) {
-                    userData.affiliations.push(secParam.toLowerCase()); // 例: "lmc" や "lp"
+                    userData.affiliations.push(secParam.toLowerCase());
                     userData.studentId = document.getElementById('student_id').value;
                     userData.faculty = document.getElementById('department').value;
                     
-                    // 学年の入力（例："3年生"）から数字（"3"）だけを抽出して year に保存
                     const gradeRaw = document.getElementById('school_year').value;
                     const numMatch = gradeRaw.match(/\d+/);
                     userData.year = numMatch ? numMatch[0] : gradeRaw;
                     
-                    // 楽器情報を取得し、カンマ区切りで part に保存
                     const instruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
                     userData.part = instruments.join(", "); 
-
-                    // rollフィールド（例: "lmc_normal"）の追加
+                    
+                    // roleではなくrollフィールドへの追加
                     userData.roll = [`${secParam.toLowerCase()}_normal`];
                 }
 
-                // 5. Firestoreへドキュメントを書き込み (コレクション: users, ドキュメントID: LINEのuserId)
-                // merge: true を指定して、既存のフィールドを上書きしないようにする
+                // merge: true を付与して既存フィールドを上書きさせない
                 await setDoc(doc(db, "users", lineUserId), userData, { merge: true });
 
-                // 成功画面への遷移
                 currentStepIndex = totalSteps - 1;
                 updateStepDisplay();
 
