@@ -27,36 +27,6 @@
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        /* スクショ準備ボタン（ダーク） */
-        .btn-apple-dark {
-            background: linear-gradient(180deg, #4b5563 0%, #374151 100%);
-            border: 1px solid #1f2937;
-            color: white;
-            border-radius: 9999px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-        }
-        .btn-apple-dark:active {
-            transform: scale(0.97);
-            background: #374151;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        /* 送信ボタン（プライマリー/緑ベース） */
-        .btn-apple-primary {
-            background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
-            border: 1px solid #15803d;
-            color: white;
-            border-radius: 9999px;
-            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-        }
-        .btn-apple-primary:active {
-            transform: scale(0.97);
-            background: #16a34a;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
         /* Toast（通知）アニメーション */
         @keyframes slideDown {
             from { transform: translate(-50%, -100%); opacity: 0; }
@@ -251,32 +221,28 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // お客様のFirebase設定（エラーが出ないよう直接記述）
-        const firebaseConfig = {
-            apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
-            authDomain: "urakata-app.firebaseapp.com",
-            projectId: "urakata-app",
-            storageBucket: "urakata-app.firebasestorage.app",
-            messagingSenderId: "407777765696",
-            appId: "1:407777765696:web:045c2d94729022b4eab2a5",
-            measurementId: "G-9ZRMD26XNJ"
-        };
+        // Immersive環境、または通常の環境用の設定
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
+                authDomain: "urakata-app.firebaseapp.com",
+                projectId: "urakata-app",
+                storageBucket: "urakata-app.firebasestorage.app",
+                messagingSenderId: "407777765696",
+                appId: "1:407777765696:web:045c2d94729022b4eab2a5",
+                measurementId: "G-9ZRMD26XNJ"
+            };
 
         let db = null;
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             const auth = getAuth(app);
-            // 匿名ログイン等が必要な場合は有効化
-            // signInAnonymously(auth);
         } catch(e) {
             console.log("Firebase setup skipped or missing config.");
         }
 
-        // ==========================================
-        // UI と ロジックの初期化
-        // ==========================================
-        
         // Toast（通知）を表示する関数
         window.showToast = function(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -309,11 +275,10 @@
             membersTbody.appendChild(tr);
         }
 
-        // 楽曲表を5行生成
-        const songsTbody = document.getElementById('songs-tbody');
-        for (let i = 0; i < 5; i++) {
+        // 楽曲表の行生成関数（動的追加に対応するため関数化）
+        const createSongRow = (i) => {
             const tr = document.createElement('tr');
-            tr.className = i < 4 ? 'border-b-black-1 h-12 relative' : 'h-12 relative';
+            tr.className = 'border-b-black-1 h-12 relative';
             tr.innerHTML = `
                 <td class="border-r-black-2 p-1 text-center font-bold bg-gray-50">${i + 1}</td>
                 <td class="border-r-black-2 relative flex items-center pr-1">
@@ -325,34 +290,135 @@
                 </td>
                 <td><input type="text" class="px-2 text-center font-mono text-sm song-duration" placeholder="00:00"></td>
             `;
-            songsTbody.appendChild(tr);
+            return tr;
+        };
+
+        const songsTbody = document.getElementById('songs-tbody');
+        for (let i = 0; i < 5; i++) {
+            songsTbody.appendChild(createSongRow(i));
         }
 
-        // ページ読み込み時にURLパラメータからデータを取得
-        window.addEventListener('DOMContentLoaded', async () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const bandId = urlParams.get('bandID');
-            const eventId = urlParams.get('eventID');
+        const urlParams = new URLSearchParams(window.location.search);
+        const bandId = urlParams.get('bandID');
+        const eventId = urlParams.get('eventID');
+        const draftKey = `draft_${bandId}_${eventId}`; // バンド＆イベントごとの固有キー
 
+        // 入力データをすべて収集してローカルストレージに保存する
+        const saveDraft = () => {
+            if (!bandId || !eventId) return; // IDがない場合は保存しない
+
+            const data = {
+                bandName: document.getElementById('band-name').value,
+                existingCount: document.getElementById('existing-count').value,
+                ngDate: document.getElementById('ng-date').value,
+                ngReason: document.getElementById('ng-reason').value,
+                syncVal: document.getElementById('sync-val').value,
+                members: [],
+                songs: []
+            };
+
+            // メンバーデータの収集
+            document.querySelectorAll('#members-tbody tr').forEach(tr => {
+                data.members.push({
+                    grade: tr.querySelector('.grade-input').value,
+                    part: tr.querySelector('.part-input').value,
+                    name: tr.querySelector('.name-input').value
+                });
+            });
+
+            // 楽曲データの収集
+            document.querySelectorAll('#songs-tbody tr').forEach(tr => {
+                data.songs.push({
+                    title: tr.querySelector('.song-title').value,
+                    duration: tr.querySelector('.song-duration').value
+                });
+            });
+
+            localStorage.setItem(draftKey, JSON.stringify(data));
+        };
+
+        // ローカルストレージからデータを復元する
+        const loadDraft = () => {
+            const savedJson = localStorage.getItem(draftKey);
+            if (!savedJson) return false;
+
+            try {
+                const data = JSON.parse(savedJson);
+                
+                document.getElementById('band-name').value = data.bandName || '';
+                document.getElementById('existing-count').value = data.existingCount || '';
+                
+                const ngDateInput = document.getElementById('ng-date');
+                ngDateInput.value = data.ngDate || '';
+                if (data.ngDate && data.ngDate.trim() !== '') {
+                    document.getElementById('ng-reason-row').classList.remove('hidden');
+                    document.getElementById('ng-reason').value = data.ngReason || '';
+                }
+
+                if (data.syncVal) {
+                    document.getElementById('sync-val').value = data.syncVal;
+                    document.querySelectorAll('.sync-btn').forEach(btn => {
+                        if (btn.getAttribute('data-val') === data.syncVal) {
+                            btn.classList.add('active');
+                        }
+                    });
+                }
+
+                // メンバーの復元
+                const membersTrs = document.querySelectorAll('#members-tbody tr');
+                data.members.forEach((m, i) => {
+                    if (membersTrs[i]) {
+                        membersTrs[i].querySelector('.grade-input').value = m.grade || '';
+                        membersTrs[i].querySelector('.part-input').value = m.part || '';
+                        membersTrs[i].querySelector('.name-input').value = m.name || '';
+                    }
+                });
+
+                // 楽曲の復元（行が足りなければ増やす）
+                songsTbody.innerHTML = ''; // 一旦クリア
+                const rowCount = Math.max(5, data.songs.length); // 最低5行は維持
+                for (let i = 0; i < rowCount; i++) {
+                    const tr = createSongRow(i);
+                    if (data.songs[i]) {
+                        tr.querySelector('.song-title').value = data.songs[i].title || '';
+                        tr.querySelector('.song-duration').value = data.songs[i].duration || '';
+                    }
+                    // 最後の行のボーダー調整
+                    if (i === rowCount - 1) tr.classList.remove('border-b-black-1');
+                    songsTbody.appendChild(tr);
+                }
+                
+                return true;
+            } catch (e) {
+                console.error("Draft load error:", e);
+                return false;
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
             if (bandId && eventId && db) {
                 try {
-                    // イベント情報の取得（例: "2026年度7月定期演奏会" -> "7月" を抽出）
+                    // 1. イベント情報の取得（常に取得してタイトルを更新）
                     const eventDocRef = doc(db, 'events', eventId);
                     const eventDocSnap = await getDoc(eventDocRef);
                     if (eventDocSnap.exists()) {
                         const eventData = eventDocSnap.data();
                         const eventName = eventData.event || "";
-                        
-                        // 正規表現で「〇月」の部分を抽出
                         const monthMatch = eventName.match(/(\d{1,2})月/);
                         if (monthMatch) {
                             document.getElementById('event-title').innerText = `${monthMatch[1]}月定演`;
                         } else {
-                            document.getElementById('event-title').innerText = eventName; // 抽出できなければそのまま表示
+                            document.getElementById('event-title').innerText = eventName;
                         }
                     }
 
-                    // バンド情報の取得
+                    // 2. 下書き(ローカルストレージ)があればそれを優先して読み込む
+                    if (loadDraft()) {
+                        showToast('入力途中のデータを復元しました', 'info');
+                        return; // 下書きがある場合はFirestoreの上書きはしない
+                    }
+
+                    // 3. 下書きがない場合はFirestoreから初期情報を取得
                     const bandDocRef = doc(db, 'bands', bandId);
                     const bandDocSnap = await getDoc(bandDocRef);
                     
@@ -360,19 +426,16 @@
                         const data = bandDocSnap.data();
                         document.getElementById('band-name').value = data.name || '';
                         
-                        // --- 出演回数の自動計算・入力 ---
+                        // 出演回数の自動計算・入力
                         const existingCountInput = document.getElementById('existing-count');
                         if (data.events && Array.isArray(data.events)) {
                             const eventCount = data.events.length;
                             if (eventCount <= 1) {
-                                // 1回以下なら「新規」と表示
                                 existingCountInput.value = '新規';
                             } else {
-                                // 2回以上ならその回数を表示
                                 existingCountInput.value = eventCount;
                             }
                         } else {
-                            // events配列が存在しない場合は「新規」扱い
                             existingCountInput.value = '新規';
                         }
                         
@@ -380,48 +443,33 @@
                         const grades = document.querySelectorAll('.grade-input');
                         const parts = document.querySelectorAll('.part-input');
                         
-                        // 画像の構造に合わせて、`memberIds` 配列をループ処理
+                        // メンバー詳細をusersコレクションから取得
                         if (data.memberIds && Array.isArray(data.memberIds)) {
-                            // Promise.all を使って複数人のデータを一気に並行で取得する
                             const userPromises = data.memberIds.map((uid, idx) => {
-                                if (idx >= 8) return null; // 最大8人まで
+                                if (idx >= 8) return null;
                                 const userRef = doc(db, 'users', uid);
                                 return getDoc(userRef).then(userSnap => {
                                     if (userSnap.exists()) {
-                                        const userData = userSnap.data();
-                                        return { idx: idx, data: userData };
+                                        return { idx: idx, data: userSnap.data() };
                                     }
                                     return null;
-                                }).catch(err => {
-                                    console.log(`User ${uid} fetch error:`, err);
-                                    return null;
-                                });
+                                }).catch(() => null);
                             });
 
-                            // すべてのユーザー情報の取得を待ってから表に反映
                             const fetchedUsers = await Promise.all(userPromises);
                             
-                            // パート名を略称に変換する関数
                             const formatPart = (partName) => {
                                 if (!partName) return '';
                                 const lower = partName.toLowerCase();
                                 const partMap = {
-                                    'vocal': 'Vo.',
-                                    'vocals': 'Vo.',
-                                    'guitar': 'Gt.',
-                                    'bass': 'Ba.',
-                                    'drums': 'Dr.',
-                                    'drum': 'Dr.',
-                                    'keyboard': 'Key.',
-                                    'keyboards': 'Key.',
-                                    'key': 'Key.',
-                                    'piano': 'Pf.',
-                                    'chorus': 'Cho.',
-                                    'synthesizer': 'Syn.',
-                                    'percussion': 'Per.',
-                                    'dj': 'DJ'
+                                    'vocal': 'Vo.', 'vocals': 'Vo.',
+                                    'guitar': 'Gt.', 'bass': 'Ba.',
+                                    'drums': 'Dr.', 'drum': 'Dr.',
+                                    'keyboard': 'Key.', 'keyboards': 'Key.', 'key': 'Key.',
+                                    'piano': 'Pf.', 'chorus': 'Cho.',
+                                    'synthesizer': 'Syn.', 'percussion': 'Per.', 'dj': 'DJ'
                                 };
-                                return partMap[lower] || partName; // マップになければそのまま表示
+                                return partMap[lower] || partName;
                             };
 
                             fetchedUsers.forEach(result => {
@@ -432,16 +480,22 @@
                                 }
                             });
                         }
-
-                        showToast('バンドとイベント情報を読み込みました', 'success');
-                    } else {
-                        showToast('バンド情報が見つかりません', 'error');
+                        
+                        // 初期読み込みが終わったら、その状態を保存しておく
+                        saveDraft();
+                        showToast('バンド情報を読み込みました', 'success');
                     }
                 } catch (error) {
                     console.error("Fetch Error:", error);
                     showToast('データの読み込みに失敗しました', 'error');
                 }
             }
+        });
+
+        
+        // 画面内の入力（文字入力、削除など）があったら自動保存
+        document.addEventListener('input', () => {
+            saveDraft();
         });
 
         // NG日に入力があったら「NG理由」の行を表示する
@@ -451,20 +505,21 @@
                 reasonRow.classList.remove('hidden');
             } else {
                 reasonRow.classList.add('hidden');
-                document.getElementById('ng-reason').value = ''; // 空にリセット
+                document.getElementById('ng-reason').value = ''; 
             }
         });
 
-        // 同期ボタンのトグル（iOSセグメントコントロール風）
+        // 同期ボタンのトグル
         document.querySelectorAll('.sync-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 document.getElementById('sync-val').value = e.target.getAttribute('data-val');
+                saveDraft(); // 選択後に自動保存
             });
         });
 
-        // Apple Music (iTunes API) を直接叩く検索関数
+        // Apple Music (iTunes API) 検索
         window.searchSong = async (btn, index) => {
             const row = btn.closest('tr');
             const titleInput = row.querySelector('.song-title');
@@ -480,9 +535,7 @@
             btn.disabled = true;
 
             try {
-                // iTunes API への直接リクエスト（CORS制限なし）
                 const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
-                
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
@@ -495,7 +548,6 @@
                         const div = document.createElement('div');
                         div.className = 'suggest-item';
                         
-                        // ミリ秒を 分:秒 に変換
                         const totalSeconds = Math.floor(song.trackTimeMillis / 1000);
                         const mins = Math.floor(totalSeconds / 60);
                         const secs = totalSeconds % 60;
@@ -509,14 +561,13 @@
                             </div>
                         `;
 
-                        // スマホのタップバグ対策: touchstart で即座に反応させる
                         const applySelection = (e) => {
-                            e.preventDefault(); // 余計なイベントを防ぐ
+                            e.preventDefault(); 
                             titleInput.value = song.trackName;
                             row.querySelector('.song-duration').value = timeStr;
                             suggestBox.style.display = 'none';
                             
-                            // 検索から選んだ際にも「入力された」イベントを強制発火させ、行追加ロジックを動かす
+                            // 検索入力後もイベントを発火させ、行追加と保存をトリガーする
                             titleInput.dispatchEvent(new Event('input', { bubbles: true }));
                         };
 
@@ -540,20 +591,15 @@
         };
 
         // サジェストボックス以外をタップしたら閉じる
-        document.addEventListener('click', (e) => {
+        const closeSuggests = (e) => {
             if (!e.target.closest('.suggest-list') && !e.target.closest('.search-btn')) {
                 document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
             }
-        });
-        document.addEventListener('touchstart', (e) => {
-            if (!e.target.closest('.suggest-list') && !e.target.closest('.search-btn')) {
-                document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
-            }
-        }, {passive: true});
+        };
+        document.addEventListener('click', closeSuggests);
+        document.addEventListener('touchstart', closeSuggests, {passive: true});
 
-        // === 楽曲行の自動追加ロジック ===
         document.addEventListener('input', function(e) {
-            // プレースホルダーが「00:00」のinputがある行 ＝ 楽曲テーブルと判定
             const timeInput = e.target.closest('tr')?.querySelector('input[placeholder="00:00"]');
             if (!timeInput) return;
 
@@ -562,25 +608,24 @@
             const rows = tbody.querySelectorAll('tr');
             const lastRow = rows[rows.length - 1];
 
-            // 現在入力されたのが「一番最後の行」かどうか
             if (tr === lastRow) {
                 const inputs = lastRow.querySelectorAll('input');
                 const isAnyFilled = Array.from(inputs).some(input => input.value.trim() !== '');
 
                 if (isAnyFilled) {
-                    // 最後の行に1文字でも入力されたら、行を丸ごとコピーして下に追加
                     const newRow = lastRow.cloneNode(true);
-                    
-                    // コピーした新しい行の中身（文字）を空っぽにする
                     newRow.querySelectorAll('input').forEach(input => input.value = '');
                     
-                    // 左端の番号を +1 する（5なら6にする）
                     const numTd = newRow.querySelector('td:first-child');
                     if (numTd && !isNaN(parseInt(numTd.textContent))) {
                         numTd.textContent = rows.length + 1;
                     }
 
-                    // 検索用のID（suggest-0 等）が重複しないように更新する
+                    // ボーダーの再調整
+                    lastRow.classList.add('border-b-black-1');
+                    newRow.classList.remove('border-b-black-1');
+
+                    // 検索用のID等を更新
                     const newIndex = rows.length;
                     const searchBtn = newRow.querySelector('.search-btn');
                     const suggestDiv = newRow.querySelector('.suggest-list');
