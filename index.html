@@ -532,12 +532,16 @@
 
 
 
-        function checkIsAdmin(roleData) {
-            // roleが配列の場合のみ判定する安全なロジック
-            if (Array.isArray(roleData)) {
-                return roleData.includes('lmc_all') || roleData.includes('admin');
-            }
-            return false;
+        function checkIsAdmin(userData) {
+            if (!userData) return false;
+            const role = userData.role;
+            const roll = userData.roll;
+            const hasRoleAdmin = role && (Array.isArray(role) ? (role.includes('lmc_all') || role.includes('admin')) : (role === 'lmc_all' || role === 'admin'));
+            const hasRollAdmin = roll && (Array.isArray(roll) ? (roll.includes('lmc_all') || roll.includes('admin')) : (roll === 'lmc_all' || roll === 'admin'));
+            const isU = userData.affiliations?.includes("urakata");
+            
+            // role/rollがlmc_allやadminを含んでいるか、urakata所属で何らかの役職を持っている場合
+            return !!(hasRoleAdmin || hasRollAdmin || (isU && (role || roll)));
         }
         
         // --- メンバープロフィールポップアップ表示 ---
@@ -613,8 +617,8 @@
                     currentUserData = JSON.parse(cachedUser); 
                     renderHeaderIcons(currentUserData); 
                 
-                // 管理者権限を判定してキャッシュ (配列対応)
-                const isAdmin = checkIsAdmin(currentUserData?.role);
+                // 管理者権限を判定してキャッシュ
+                const isAdmin = checkIsAdmin(currentUserData);
                 localStorage.setItem(CACHE_KEY_ADMIN, isAdmin ? 'true' : 'false');
                 
                 // ナビゲーションを再描画せず、要素のクラスを直接操作する
@@ -662,13 +666,12 @@
                 if(!userSnap.exists()){ location.href=MY_PAGE_URL; return; }
                 currentUserData = userSnap.data();
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
-                // 管理者権限のチェックとナビゲーションの表示制御
-                const isU = currentUserData?.affiliations?.includes("urakata");
-                const hasLmcAll = currentUserData?.roll && (Array.isArray(currentUserData.roll) ? currentUserData.roll.includes('lmc_all') : currentUserData.roll === 'lmc_all');
-                if(isU && (currentUserData.role || hasLmcAll)) {
-                    document.getElementById('nav-admin').classList.remove('hidden');
-                }
-                renderHeaderIcons(currentUserData); 
+                
+                // 管理者権限のチェックとキャッシュの更新
+                const isAdmin = checkIsAdmin(currentUserData);
+                localStorage.setItem(CACHE_KEY_ADMIN, isAdmin ? 'true' : 'false');
+                
+                renderHeaderIcons(currentUserData);
                 
                 await loadTargetEvents();
                 loadMyBands();
