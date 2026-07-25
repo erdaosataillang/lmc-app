@@ -139,12 +139,23 @@
             color: #fff;
             font-weight: bold;
         }
-        #debug-console-logs {
+       #debug-console-logs {
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
         }
+
+        /* 通知・モーダル関連 */
+        .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
+        .notification-badge { position: absolute; top: 4px; right: 4px; width: 10px; height: 10px; background: #d93025; border-radius: 50%; border: 2px solid white; display: none; }
+        .notification-badge.show { display: block; }
+        .notif-icon-box { width: 40px; height: 40px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; color: #0b57d0; flex-shrink: 0; }
+        .notif-icon-box.warning { background: #fce8e6; color: #d93025; }
+        .notification-item { padding: 20px 16px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 12px; font-size: 14px; }
+        .notification-item.clickable { cursor: pointer; }
+        .auth-code-input { letter-spacing: 4px; text-align: center; font-size: 24px; font-weight: bold; }
     </style>
+    
 </head>
 <body>
     <!-- デバッグコンソール -->
@@ -176,6 +187,42 @@
             <div style="display:flex; gap:12px; margin-top: 16px;">
                 <button class="btn-secondary" style="margin:0; flex:1;" onclick="cancelCrop()">キャンセル</button>
                 <button class="btn-primary" id="btn-confirm-crop" style="margin:0; flex:1;" onclick="confirmCrop()">決定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知モーダル -->
+    <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
+        <div class="modal-content" style="padding: 0;">
+            <h3 style="margin-top:0; padding: 24px 24px 10px; font-size: 18px; border-bottom: 1px solid #f0f0f0;">通知</h3>
+            <div id="notificationList" style="max-height:60vh; overflow-y:auto; padding-bottom: 20px;"></div>
+            <div style="padding: 16px 24px;">
+                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-notification')">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- メール認証 -->
+    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
+        <div class="modal-content" style="padding: 24px;">
+            <div id="email-step-1">
+                <h3 style="font-size: 18px; margin-top:0;">メールアドレス登録</h3>
+                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
+                <div class="form-group">
+                    <label class="form-label">アドレス</label>
+                    <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
+                </div>
+                <button class="btn-primary" onclick="sendAuthCode()">認証コード送信</button>
+                <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
+            </div>
+            <div id="email-step-2" class="hidden">
+                <h3 style="font-size: 18px; margin-top:0;">認証コード入力</h3>
+                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">メールの6桁の数字を入力してください。</p>
+                <div class="form-group">
+                    <input type="number" id="inputAuthCode" class="form-input auth-code-input" placeholder="000000" maxlength="6">
+                </div>
+                <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
+                <button class="btn-secondary" onclick="backToEmailInput()">戻る</button>
             </div>
         </div>
     </div>
@@ -227,7 +274,16 @@
     </div>
 
     <div id="screen-admin" class="container">
-        <div class="app-header"><div class="header-title">データの管理</div><div class="header-avatar" id="headerIconAdmin"></div></div>
+        <div class="app-header">
+            <div class="header-title">データの管理</div>
+            <div class="header-right" style="display:flex; align-items:center; gap:16px;">
+                <div class="notification-btn" onclick="openNotificationModal()">
+                    <span class="material-icons" style="color:#5f6368;">notifications</span>
+                    <span class="notification-badge" id="headerNotifBadge"></span>
+                </div>
+                <div class="header-avatar" id="headerIconAdmin"></div>
+            </div>
+        </div>
         <div class="scroll-content">
             <div class="menu-list">
                 <button class="menu-btn" onclick="openAdminBasics()"><div class="menu-icon-wrapper icon-admin-basic"><span class="material-icons">settings</span></div><div class="menu-content"><span class="menu-title">基本の設定</span><span class="menu-subtitle">年度、幹部権限、実施中のイベント</span></div><span class="material-icons menu-arrow">chevron_right</span></button>
@@ -242,14 +298,8 @@
         </div>
     </div>
 
-    <!-- ボトムナビゲーション -->
-    <div class="bottom-nav">
-        <div class="nav-item" onclick="window.location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
-        <div class="nav-item" onclick="window.location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
-        <div class="nav-item" onclick="window.location.href='/cue.html'"><span class="material-icons nav-icon">description</span><span>Cueシート</span></div>
-        <div class="nav-item active" id="nav-admin" onclick="window.location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
-        <div class="nav-item" onclick="window.location.href='/mypage.html'"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
-    </div>
+    <!-- ナビゲーション格納用コンテナ -->
+    <div id="nav-container"></div>
 
     <!-- Basic Settings Page -->
     <div id="page-admin-basics" class="page-container">
@@ -1267,12 +1317,185 @@
                     debugLog("App Initialized (Online)");
                 }
 
+                checkNotifications();
+                renderNav();
+
                 const hasAdminRole = checkAdminRole(currentUserData.roll);
                 if(!hasAdminRole){
                     document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>'; 
                 }
             }catch(e){console.error(e)} 
         }
+        
+        // --- ナビゲーション即時描画 ---
+        function renderNav() {
+            const container = document.getElementById('nav-container');
+            if(!container) return;
+            const path = window.location.pathname;
+            
+            // 管理者権限の判定（管理画面用に用意されている checkAdminRole 関数を使用）
+            const isAdmin = currentUserData ? checkAdminRole(currentUserData.roll) : (localStorage.getItem('lmc_is_admin') === 'true');
+            
+            const items = [
+                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
+                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
+                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html', hidden: true },
+                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !isAdmin },
+                { id: 'mypage', label: 'マイページ', icon: 'account_circle', onClick: 'window.location.href="' + MY_PAGE_URL + '"' }
+            ];
+
+            let html = '<div class="bottom-nav">';
+            items.forEach(item => {
+                // admin用ページ（このページ）では 'admin' または 'manage' がURLに含まれる前提で active をつける
+                const isActive = path.includes(item.id) || (path === '/' && item.id === 'index') || (item.id === 'admin' && (path.includes('admin') || path.includes('manage')));
+                const hiddenClass = item.hidden ? 'hidden' : '';
+                const clickAction = item.onClick ? `onclick='${item.onClick}'` : `onclick="window.location.href='${item.href}'"`;
+                html += `
+                    <div class="nav-item ${isActive ? 'active' : ''} ${hiddenClass}" ${item.id ? `id="nav-${item.id}"` : ''} ${clickAction}>
+                        <span class="material-icons nav-icon">${item.icon}</span>
+                        <span>${item.label}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // --- メール・通知ロジック ---
+        function checkNotifications() { 
+            let hasNotification = false;
+            if(!(currentUserData?.Email || currentUserData?.email)) {
+                hasNotification = true;
+            }
+            if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
+                hasNotification = true;
+            }
+            
+            const badge = document.getElementById('headerNotifBadge');
+            if(badge) {
+                if (hasNotification) {
+                    badge.classList.add('show'); 
+                } else {
+                    badge.classList.remove('show'); 
+                }
+            }
+        }
+
+        window.openNotificationModal = async () => {
+            const list = document.getElementById('notificationList'); 
+            list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>読み込み中...</div>";
+            openModal('modal-notification');
+
+            let html = "";
+            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
+            if (!hasEmail) {
+                html += `
+                <div class="notification-item clickable" onclick="openEmailRegisterModal()">
+                    <div class="notif-icon-box warning"><span class="material-icons">warning</span></div>
+                    <div class="notif-content">
+                        <div class="notif-text" style="font-weight:bold;">重要: メールアドレスを登録してください</div>
+                    </div>
+                </div>`;
+            }
+
+            if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
+                for (const bid of currentUserData.pendingInvites) {
+                    try {
+                        const bSnap = await getDoc(doc(db, "bands", bid));
+                        if (bSnap.exists()) {
+                            const bData = bSnap.data();
+                            if(bData.memberIds && bData.memberIds.includes(currentUser)){
+                                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                                continue;
+                            }
+
+                            html += `
+                            <div class="notification-item" style="flex-direction:column; gap:12px; padding: 20px 16px; border-bottom: 1px solid #f0f0f0;">
+                                <div style="display:flex; align-items:center; gap:16px;">
+                                    <div class="notif-icon-box" style="background:#e8f0fe; color:#0b57d0; width: 40px; height: 40px;">
+                                        <span class="material-icons" style="font-size: 20px;">group_add</span>
+                                    </div>
+                                    <div class="notif-content" style="flex:1;">
+                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${bData.name}</strong> からの招待</div>
+                                        <div style="font-size:12px; color:#536471; margin-top:2px;">バンドへ参加しますか？</div>
+                                    </div>
+                                </div>
+                                <div style="display:flex; gap:8px; width:100%; padding-left: 56px; box-sizing: border-box;">
+                                    <button class="btn-secondary" style="margin:0; flex:1; padding:8px 0; font-size:13px; background:#f1f3f4; color:#1f1f1f;" onclick="rejectInvite('${bid}')">削除</button>
+                                    <button class="btn-primary" style="margin:0; flex:1; padding:8px 0; font-size:13px;" onclick="acceptInviteFromNotif('${bid}', '${bData.name}')">参加する</button>
+                                </div>
+                            </div>`;
+                        } else {
+                            await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                            currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                        }
+                    } catch(e) { console.error(e); }
+                }
+            }
+            
+            if(html === "") {
+                html = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
+            }
+            
+            list.innerHTML = html;
+            checkNotifications(); 
+        };
+
+        window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
+        window.sendAuthCode = async () => {
+            const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            try {
+                await updateDoc(doc(db, "users", currentUser), { tempEmail: email, authCode: code });
+                await addDoc(collection(db, "mail_queue"), { to: email, subject: "認証コード", body: `コード: ${code}`, userId: currentUser, createdAt: serverTimestamp() });
+                showCustomAlert("コードを送信しました。");
+                document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
+            } catch(e) { showCustomAlert(e.message); }
+        };
+        window.verifyAuthCode = async () => {
+            const input = document.getElementById('inputAuthCode').value.trim();
+            const userData = (await getDoc(doc(db, "users", currentUser))).data();
+            if (userData.authCode === input) {
+                await updateDoc(doc(db, "users", currentUser), { Email: userData.tempEmail, tempEmail: deleteField(), authCode: deleteField() });
+                showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
+            } else { showCustomAlert("コードが正しくありません。"); }
+        };
+        window.backToEmailInput = () => {
+            document.getElementById('email-step-2').classList.add('hidden');
+            document.getElementById('email-step-1').classList.remove('hidden');
+        };
+        
+        window.acceptInviteFromNotif = async (bid, bName) => {
+            try {
+                await updateDoc(doc(db, "bands", bid), {
+                    memberIds: arrayUnion(currentUser),
+                    memberNames: arrayUnion(currentProfile.displayName)
+                });
+                
+                if (currentUserData.pendingInvites && currentUserData.pendingInvites.includes(bid)) {
+                    await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                    currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                }
+                
+                showCustomAlert(`${bName} に参加しました！`);
+                openNotificationModal();
+                checkNotifications();
+            } catch(e) { showCustomAlert("参加処理に失敗しました。"); }
+        };
+
+        window.rejectInvite = async (bid) => {
+            try {
+                await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
+                currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
+                openNotificationModal();
+                checkNotifications();
+            } catch(e) { console.error(e); }
+        };
+
+        // 即時実行用（キャッシュ表示用）
+        renderNav();
+
         main();
     </script>
 </body>
