@@ -86,12 +86,13 @@
         .image-picker-area { display: flex; justify-content: center; margin-bottom: 20px; } .image-picker { width: 72px; height: 72px; background: #f1f3f4; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: #0b57d0; cursor: pointer; overflow: hidden; position: relative; }
         .image-picker img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: flex-end; } .modal-overlay.open { display: flex; }
-        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; animation: slideUp 0.3s ease; }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: flex; justify-content: center; align-items: flex-end; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; } 
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 28px 28px 0 0; padding: 24px; box-sizing: border-box; max-height: 85vh; overflow-y: auto; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
         
-        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; animation: zoomIn 0.2s ease; margin: auto; }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; margin: auto; transform: scale(0.9); opacity: 0; transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease; }
+        .modal-overlay.open .dialog-content { transform: scale(1); opacity: 1; }
         .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #1f1f1f; }
         .dialog-message { font-size: 13px; color: #444746; margin-bottom: 24px; line-height: 1.5; white-space: pre-wrap; }
         .dialog-buttons { display: flex; gap: 12px; }
@@ -358,20 +359,20 @@
                         </div>
                     </div>
 
-                    <!-- 名前とイベント名 -->
+                    <!-- 名前とイベント名 (onchangeを追加して自動保存化) -->
                     <div style="margin-bottom: 16px;">
-                        <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 14px; font-weight: 700; border: none; background: transparent; width: 100%; color: #000; padding: 0; outline: none; margin-bottom: 2px;">
+                        <input type="text" id="detailBandName" class="band-name-input" readonly onchange="updateBandName()" style="font-size: 14px; font-weight: 700; border: none; background: transparent; width: 100%; color: #000; padding: 0; outline: none; margin-bottom: 2px;">
                         <div id="detailBandEventName" style="font-size: 14px; color: #000;"></div>
                     </div>
                     
-                    <!-- アクションボタン (Edit Profile等と同スタイル) -->
+                    <!-- アクションボタン -->
                     <div style="display: flex; gap: 8px;">
                         <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">メンバーを追加</button>
                         <button id="btnSubmitCueInModal" style="flex: 1; background: #efefef; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Cueシートを提出</button>
                     </div>
                 </div>
 
-                <!-- ▼ インスタ風タブバー ▼ -->
+                <!-- ▼ インスタ風タブバー (4つに変更) ▼ -->
                 <div style="display: flex; border-bottom: 1px solid #dbdbdb; position: sticky; top: 0; z-index: 15; background: #ffffff;">
                     <div id="tab-btn-members" onclick="switchDetailTab('members')" style="flex:1; text-align:center; padding: 12px 0; cursor:pointer; border-bottom: 1px solid #000; color: #000; display:flex; justify-content:center; align-items:center;">
                         <span class="material-icons" style="font-size: 26px;">grid_on</span>
@@ -382,6 +383,9 @@
                     <div id="tab-btn-songs" onclick="switchDetailTab('songs')" style="flex:1; text-align:center; padding: 12px 0; cursor:pointer; border-bottom: 1px solid transparent; color: #a8a8a8; display:flex; justify-content:center; align-items:center;">
                         <span class="material-icons" style="font-size: 26px;">music_note</span>
                     </div>
+                    <div id="tab-btn-settings" onclick="switchDetailTab('settings')" style="flex:1; text-align:center; padding: 12px 0; cursor:pointer; border-bottom: 1px solid transparent; color: #a8a8a8; display:flex; justify-content:center; align-items:center;">
+                        <span class="material-icons" style="font-size: 26px;">settings</span>
+                    </div>
                 </div>
 
                 <!-- ▼ コンテンツ領域 ▼ -->
@@ -390,18 +394,6 @@
                     <div id="tab-content-members">
                         <input type="hidden" id="detailBandId">
                         <div id="detailMemberList"></div>
-                        
-                        <div id="bandCreatorActions" class="hidden" style="padding: 24px 16px; display:flex; flex-direction:column; gap:8px;">
-                            <button class="btn-primary" onclick="updateBandName()" style="border-radius: 8px; font-weight: 600;">バンド名を保存</button>
-                            <div style="display:flex; gap:8px;">
-                                <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0; border-radius: 8px; font-weight: 600;" onclick="archiveBand()">アーカイブ</button>
-                                <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0; border-radius: 8px; font-weight: 600;" onclick="restoreBand()">復元</button>
-                                <button class="btn-danger" style="flex:1; margin:0; border-radius: 8px; font-weight: 600;" onclick="deleteBand()">解散</button>
-                            </div>
-                        </div>
-                        <div id="bandMemberActions" class="hidden" style="padding: 24px 16px;">
-                            <button class="btn-danger" onclick="leaveBand()" style="width:100%; border-radius: 8px; font-weight: 600;">バンドを脱退する</button>
-                        </div>
                     </div>
 
                     <!-- Cueシート -->
@@ -431,6 +423,21 @@
                         <div id="bandSongAddArea" class="hidden" style="display:flex; padding:16px; gap:8px; border-top:1px solid #dbdbdb;">
                             <input type="text" id="inputNewSong" class="form-input" style="padding:10px 16px; font-size:14px; flex:1; border-radius: 20px; border: 1px solid #dbdbdb; background: #fafafa;" placeholder="曲名を追加...">
                             <button class="btn-primary" style="width:auto; padding:0 20px; font-size:14px; border-radius: 20px; font-weight: 600;" onclick="addSongToBand()">追加</button>
+                        </div>
+                    </div>
+
+                    <!-- 設定 (新規追加) -->
+                    <div id="tab-content-settings" class="hidden">
+                        <div id="bandCreatorActions" class="hidden" style="padding: 24px 16px; display:flex; flex-direction:column; gap:16px;">
+                            <div style="font-size: 14px; font-weight: 700; color: #5f6368; border-bottom: 1px solid #efefef; padding-bottom: 8px;">バンド管理</div>
+                            <div style="display:flex; flex-direction:column; gap:12px;">
+                                <button id="btnArchive" class="btn-secondary" style="margin:0; border-radius: 8px; font-weight: 600;" onclick="archiveBand()">アーカイブする</button>
+                                <button id="btnRestore" class="btn-secondary hidden" style="margin:0; border-radius: 8px; font-weight: 600;" onclick="restoreBand()">復元する</button>
+                                <button class="btn-danger" style="margin:0; border-radius: 8px; font-weight: 600;" onclick="deleteBand()">バンドを解散する</button>
+                            </div>
+                        </div>
+                        <div id="bandMemberActions" class="hidden" style="padding: 24px 16px;">
+                            <button class="btn-danger" onclick="leaveBand()" style="width:100%; border-radius: 8px; font-weight: 600;">バンドを脱退する</button>
                         </div>
                     </div>
                 </div>
@@ -589,7 +596,7 @@
 
        // --- タブ切り替えロジック ---
         window.switchDetailTab = (tabId) => {
-            ['members', 'cuesheet', 'songs'].forEach(id => {
+            ['members', 'cuesheet', 'songs', 'settings'].forEach(id => {
                 const btn = document.getElementById(`tab-btn-${id}`);
                 const content = document.getElementById(`tab-content-${id}`);
                 if (!btn || !content) return;
@@ -604,7 +611,6 @@
                 }
             });
         };
-
 
         function checkIsAdmin(userData) {
             if (!userData) return false;
