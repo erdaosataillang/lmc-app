@@ -312,57 +312,62 @@
     <!-- バンド詳細 -->
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
         <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh;">
-            <!-- インスタ風ヘッダーレイアウト -->
-            <div class="band-detail-header" style="background: white; padding: 16px; border-bottom: 1px solid #dbdbdb; position: relative;">
-                <!-- 上部：戻るボタンとタイトル -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <button onclick="closeModal('modal-band-detail')" style="background: transparent; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;"><span class="material-icons" style="font-size: 24px; color: #1f1f1f;">close</span></button>
-                    <div style="font-size: 16px; font-weight: bold; color: #1f1f1f;">バンド詳細</div>
-                    <div style="width: 24px;"></div> <!-- 配置のバランスを取る空要素 -->
-                </div>
+            
+            <!-- ▼ 変更1：常に固定される細いタイトルバー ▼ -->
+            <div style="background: white; padding: 16px; border-bottom: 1px solid #dbdbdb; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; flex-shrink: 0;">
+                <button onclick="closeModal('modal-band-detail')" style="background: transparent; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;"><span class="material-icons" style="font-size: 24px; color: #1f1f1f;">close</span></button>
+                <div style="font-size: 16px; font-weight: bold; color: #1f1f1f;">バンド詳細</div>
+                <div style="width: 24px;"></div> <!-- 配置のバランスを取る空要素 -->
+            </div>
 
-                <!-- プロフィール上部：アイコン(左) と スタッツ(右) -->
-                <div style="display: flex; align-items: center; margin-bottom: 16px;">
-                    <!-- 左：丸アイコン -->
-                    <div style="position: relative; width: 80px; height: 80px; margin-right: 24px; flex-shrink: 0;">
-                        <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0; padding: 0; border: 1px solid #efefef; background: #fafafa;">
-                            <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            <!-- ▼ 変更2：ここから下の「アイコン・ボタン・詳細」全てが一緒にスクロールされる ▼ -->
+            <div style="overflow-y: auto; flex-grow: 1; background: #fafafa;">
+                
+                <!-- インスタ風プロフィール部分 -->
+                <div class="band-detail-profile" style="background: white; padding: 16px 16px 20px; border-bottom: 1px solid #dbdbdb;">
+                    <!-- プロフィール上部：アイコン(左) と スタッツ(右) -->
+                    <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                        <!-- 左：丸アイコン -->
+                        <div style="position: relative; width: 80px; height: 80px; margin-right: 24px; flex-shrink: 0;">
+                            <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0; padding: 0; border: 1px solid #efefef; background: #fafafa;">
+                                <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                            </div>
+                            <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><span class="material-icons" style="font-size: 14px;">add</span></div>
+                            <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
                         </div>
-                        <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: #0b57d0; color: white; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"><span class="material-icons" style="font-size: 14px;">add</span></div>
-                        <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
+                        
+                        <!-- 右：3つのスタッツ (インスタ風) -->
+                        <div style="flex: 1; display: flex; justify-content: space-around;">
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <span id="stat-member-count" style="font-size: 16px; font-weight: bold; color: #1f1f1f;">--</span>
+                                <span style="font-size: 12px; color: #1f1f1f;">メンバー</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <span id="stat-booking-count" style="font-size: 16px; font-weight: bold; color: #1f1f1f;">--</span>
+                                <span style="font-size: 12px; color: #1f1f1f;">演奏回数</span>
+                            </div>
+                            <div style="display: flex; flex-direction: column; align-items: center;">
+                                <span id="stat-song-count" style="font-size: 16px; font-weight: bold; color: #1f1f1f;">--</span>
+                                <span style="font-size: 12px; color: #1f1f1f;">演奏曲数</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- プロフィール詳細：名前とイベント名 -->
+                    <div style="margin-bottom: 16px;">
+                        <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 15px; font-weight: bold; border: none; background: transparent; width: 100%; color: #1f1f1f; padding: 0; outline: none; margin-bottom: 4px;">
+                        <div id="detailBandEventName" style="font-size: 13px; color: #536471;"></div>
                     </div>
                     
-                    <!-- 右：3つのスタッツ (インスタ風) -->
-                    <div style="flex: 1; display: flex; justify-content: space-around;">
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span id="stat-member-count" style="font-size: 16px; font-weight: bold; color: #1f1f1f;">--</span>
-                            <span style="font-size: 12px; color: #1f1f1f;">メンバー</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span id="stat-booking-count" style="font-size: 16px; font-weight: bold; color: #1f1f1f;">--</span>
-                            <span style="font-size: 12px; color: #1f1f1f;">演奏回数</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; align-items: center;">
-                            <span id="stat-song-count" style="font-size: 16px; font-weight: bold; color: #1f1f1f;">--</span>
-                            <span style="font-size: 12px; color: #1f1f1f;">演奏曲数</span>
-                        </div>
+                    <!-- アクションボタン：プロフィール編集・シェアボタン風 -->
+                    <div style="display: flex; gap: 8px;">
+                        <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">share</span>でメンバーを追加</button>
+                        <button id="btnSubmitCueInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">description</span>Cueシートを提出</button>
                     </div>
                 </div>
 
-                <!-- プロフィール詳細：名前とイベント名 -->
-                <div style="margin-bottom: 16px;">
-                    <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 15px; font-weight: bold; border: none; background: transparent; width: 100%; color: #1f1f1f; padding: 0; outline: none; margin-bottom: 4px;">
-                    <div id="detailBandEventName" style="font-size: 13px; color: #536471;"></div>
-                </div>
-                
-                <!-- アクションボタン：プロフィール編集・シェアボタン風 -->
-                <div style="display: flex; gap: 8px;">
-                    <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">share</span>でメンバーを追加</button>
-                    <button id="btnSubmitCueInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">description</span>Cueシートを提出</button>
-                </div>
-            </div>
-            <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
-                <input type="hidden" id="detailBandId">
+                <div style="padding: 16px;">
+                    <input type="hidden" id="detailBandId">
                 <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top: 0;">メンバー</h4>
                 <div class="card" style="padding: 0; overflow: hidden;">
                     <div id="detailMemberList"></div>
