@@ -1083,33 +1083,46 @@
             document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bid, data.name);
 
             // 追加：メンバー数とイベント名の表示
-            document.getElementById('stat-member-count').innerText = data.memberIds ? data.memberIds.length : 0;
+            const statMemberEl = document.getElementById('stat-member-count');
+            if(statMemberEl) statMemberEl.innerText = data.memberIds ? data.memberIds.length : 0;
+            
             const eventNameEl = document.getElementById('detailBandEventName');
             let latestEventId = ""; // 直近のイベントIDを保持
             if (data.events && data.events.length > 0 && targetEvents) {
                 latestEventId = data.events[0];
                 const ev = targetEvents.find(e => e.id === latestEventId);
-                eventNameEl.innerText = ev ? ev.name : "アーカイブ";
+                if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "アーカイブ";
             } else {
-                eventNameEl.innerText = "";
+                if(eventNameEl) eventNameEl.innerText = "";
             }
 
             // Cueシート提出ボタンのリンク設定
-            document.getElementById('btnSubmitCueInModal').onclick = () => {
-                window.location.href = `https://lmc-mobile.sorairosystem.com/dev/cue.html?bandID=${bid}&eventID=${latestEventId}`;
-            };
+            const btnSubmitCue = document.getElementById('btnSubmitCueInModal');
+            if(btnSubmitCue) {
+                btnSubmitCue.onclick = () => {
+                    window.location.href = `https://lmc-mobile.sorairosystem.com/dev/cue.html?bandID=${bid}&eventID=${latestEventId}`;
+                };
+            }
 
             renderBandMembersInModal(data);
 
-            const songs = data.songs || []; document.getElementById('stat-song-count').innerText = songs.length;
-            const songList = document.getElementById('bandSongsList'); songList.innerHTML = "";
-            songs.forEach(s => {
-                const div = document.createElement('div'); div.className = 'member-row-rich';
-                const sTitle = s.title || s;
-                div.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:8px; color:#0b57d0;">music_note</span><div style="flex:1; font-size:13px;">${sTitle}</div>${canE?`<button class="btn-outline" style="padding:2px 8px; font-size:10px;" onclick="removeSongFromBand('${sTitle}')">削除</button>`:''}`;
-                songList.appendChild(div);
-            });
-            document.getElementById('bandSongAddArea').classList.toggle('hidden', !canE);
+            const songs = data.songs || []; 
+            const statSongEl = document.getElementById('stat-song-count');
+            if(statSongEl) statSongEl.innerText = songs.length;
+            
+            const songList = document.getElementById('bandSongsList'); 
+            if(songList) {
+                songList.innerHTML = "";
+                songs.forEach(s => {
+                    const div = document.createElement('div'); div.className = 'member-row-rich';
+                    const sTitle = s.title || s;
+                    div.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:8px; color:#0b57d0;">music_note</span><div style="flex:1; font-size:13px;">${sTitle}</div>${canE?`<button class="btn-outline" style="padding:2px 8px; font-size:10px;" onclick="removeSongFromBand('${sTitle}')">削除</button>`:''}`;
+                    songList.appendChild(div);
+                });
+            }
+            
+            const bandSongAddArea = document.getElementById('bandSongAddArea');
+            if(bandSongAddArea) bandSongAddArea.classList.toggle('hidden', !canE);
 
             // Cueシートの表示設定
             const cueContent = document.getElementById('detailCuesheetContent');
@@ -1118,18 +1131,18 @@
             const cueUploadArea = document.getElementById('cueUploadArea');
             
             if (data.latestCuesheetUrl) {
-                cueImage.src = data.latestCuesheetUrl;
-                cueContent.classList.remove('hidden');
-                cueEmpty.classList.add('hidden');
+                if(cueImage) cueImage.src = data.latestCuesheetUrl;
+                if(cueContent) cueContent.classList.remove('hidden');
+                if(cueEmpty) cueEmpty.classList.add('hidden');
             } else {
-                cueImage.src = "";
-                cueContent.classList.add('hidden');
-                cueEmpty.classList.remove('hidden');
+                if(cueImage) cueImage.src = "";
+                if(cueContent) cueContent.classList.add('hidden');
+                if(cueEmpty) cueEmpty.classList.remove('hidden');
             }
-            cueUploadArea.classList.toggle('hidden', !canE);
+            if(cueUploadArea) cueUploadArea.classList.toggle('hidden', !canE);
 
             // タブを初期状態（メンバー）にリセット
-            window.switchDetailTab('members');
+            if(window.switchDetailTab) window.switchDetailTab('members');
             openModal('modal-band-detail');
         };
 
