@@ -398,11 +398,6 @@
                     </div>
                 </div>
 
-                <div id="bandBookingsArea" style="margin-top:16px;">
-                    <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px;">直近の履歴</h4>
-                    <div class="card" style="padding:0;"><div id="adminBandBookingsList"></div></div>
-                </div>
-
                 <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
                     <button class="btn-primary" onclick="updateBandName()">バンド名を保存</button>
                     <div style="display:flex; gap:8px;">
@@ -1090,7 +1085,7 @@
             }
             cueUploadArea.classList.toggle('hidden', !canE);
 
-            loadBandBookings(bid); openModal('modal-band-detail');
+            openModal('modal-band-detail');
         };
 
         function renderBandMembersInModal(data) {
@@ -1218,13 +1213,6 @@
             await updateDoc(doc(db, "bands", bid), { songs: newSongs });
             showCustomAlert("削除しました。");
         };
-        async function loadBandBookings(bid){
-            const list = document.getElementById('adminBandBookingsList'); list.innerHTML = "<div style='padding:10px; color:#999; font-size:12px;'>読み込み中...</div>";
-            const qs = await getDocs(query(collection(db, "bookings"), where("bandId", "==", bid)));
-            if(qs.empty) { list.innerHTML = "<div style='padding:12px; font-size:12px; color:#999;'>履歴はありません</div>"; return; }
-            let h = ""; qs.forEach(d => { const bk = d.data(); h += `<div style="padding:10px; font-size:12px; border-bottom:1px solid #eee;">${bk.startTime.toDate().toLocaleDateString()} ${bk.type==='event'?'(イベント)':''}</div>`; });
-            list.innerHTML = h;
-        }
        
         // --- 招待ロジック ---
        window.shareBandInvite = async (bid, bn) => {
