@@ -357,8 +357,8 @@
                 
                 <!-- アクションボタン：プロフィール編集・シェアボタン風 -->
                 <div style="display: flex; gap: 8px;">
-                    <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">share</span>シェア</button>
-                    <button id="btnAddMemberToBand" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center;" onclick="shareBandInvite(document.getElementById('detailBandId').value, document.getElementById('detailBandName').value)">メンバー追加</button>
+                    <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">share</span>でメンバーを追加</button>
+                    <button id="btnSubmitCueInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">description</span>Cueシートを提出</button>
                 </div>
             </div>
             <div style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #fafafa;">
@@ -1047,12 +1047,19 @@
             // 追加：メンバー数とイベント名の表示
             document.getElementById('stat-member-count').innerText = data.memberIds ? data.memberIds.length : 0;
             const eventNameEl = document.getElementById('detailBandEventName');
+            let latestEventId = ""; // 直近のイベントIDを保持
             if (data.events && data.events.length > 0 && targetEvents) {
-                const ev = targetEvents.find(e => e.id === data.events[0]);
+                latestEventId = data.events[0];
+                const ev = targetEvents.find(e => e.id === latestEventId);
                 eventNameEl.innerText = ev ? ev.name : "アーカイブ";
             } else {
                 eventNameEl.innerText = "";
             }
+
+            // Cueシート提出ボタンのリンク設定
+            document.getElementById('btnSubmitCueInModal').onclick = () => {
+                window.location.href = `https://lmc-mobile.sorairosystem.com/dev/cue.html?bandID=${bid}&eventID=${latestEventId}`;
+            };
 
             renderBandMembersInModal(data);
 
