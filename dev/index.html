@@ -309,122 +309,119 @@
         </div>
     </div>
 
-    <!-- バンド詳細 -->
+   <!-- バンド詳細 -->
     <div id="modal-band-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-detail')">
-        <style>
-            /* インスタ風フルスクリーン＆スライドアニメーション */
-            .slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.25, 1, 0.5, 1); }
-            @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        <!-- ▼ Apple Liquid Glass風の角丸・すりガラスデザイン ▼ -->
+        <div class="modal-content" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; max-height: 92vh; background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-radius: 32px 32px 0 0; border-top: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 -10px 40px rgba(0,0,0,0.1);">
             
-            /* リストやアイコンを洗練させる微調整 */
-            #modal-band-detail .member-row-rich { border-bottom: none; padding: 10px 16px; }
-            #modal-band-detail .member-avatar-small { width: 44px; height: 44px; margin-right: 14px; border: 1px solid #efefef; }
-            #modal-band-detail .member-name-rich { font-weight: 600; color: #000; font-size: 14px; }
-        </style>
-        
-        <div class="modal-content slide-in-right" style="padding: 0; overflow: hidden; display: flex; flex-direction: column; width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; background: white;">
-            
-            <!-- ▼ ヘッダー (インスタ風トップバー) ▼ -->
-            <div style="background: white; padding: 0 16px; height: 44px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; border-bottom: 1px solid #dbdbdb; flex-shrink: 0;">
-                <button onclick="closeModal('modal-band-detail')" style="background: transparent; border: none; padding: 8px 0; cursor: pointer; display: flex; align-items: center; margin-left: -8px;">
-                    <span class="material-icons" style="font-size: 32px; color: #000;">chevron_left</span>
-                </button>
-                <div id="detailTopBarName" style="font-size: 16px; font-weight: 700; color: #000;"></div>
-                <div style="width: 32px;"></div> <!-- 配置バランス用 -->
+            <!-- ▼ ドラッグハンドル (Apple風のトップバー) ▼ -->
+            <div style="display: flex; justify-content: center; padding-top: 12px; position: absolute; width: 100%; top: 0; z-index: 30; pointer-events: none;">
+                <div style="width: 40px; height: 5px; background: rgba(0, 0, 0, 0.15); border-radius: 10px;"></div>
             </div>
 
-            <div style="overflow-y: auto; flex-grow: 1; background: white; padding-bottom: 40px;">
-                
-                <!-- プロフィール上部 -->
-                <div style="padding: 12px 16px 16px;">
-                    <div style="display: flex; align-items: center; margin-bottom: 16px;">
-                        <!-- 左：丸アイコン (ストーリーリング風) -->
-                        <div style="position: relative; width: 78px; height: 78px; margin-right: 28px; flex-shrink: 0;">
-                            <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0; padding: 3px; border: 1px solid #dbdbdb; background: transparent;">
+            <!-- ▼ タイトルバー (スクロール時に透ける) ▼ -->
+            <div style="padding: 24px 16px 12px; border-bottom: 1px solid rgba(0, 0, 0, 0.05); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                <button onclick="closeModal('modal-band-detail')" style="background: rgba(0,0,0,0.05); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s;"><span class="material-icons" style="font-size: 20px; color: #1f1f1f;">close</span></button>
+                <div id="detailTopBarName" style="font-size: 16px; font-weight: 700; color: #1f1f1f;"></div>
+                <div style="width: 32px;"></div> <!-- バランス用 -->
+            </div>
+
+            <!-- ▼ スクロール領域 ▼ -->
+            <div style="overflow-y: auto; flex-grow: 1; padding-bottom: 40px;">
+                <!-- プロフィール部分 -->
+                <div style="padding: 16px;">
+                    <!-- アイコンとスタッツ -->
+                    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                        <div style="position: relative; width: 84px; height: 84px; margin-right: 20px; flex-shrink: 0;">
+                            <div class="image-picker" id="detailIconPicker" style="width: 100%; height: 100%; border-radius: 50%; margin: 0; padding: 4px; border: 2px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                                 <img id="detailBandIcon" src="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                             </div>
-                            <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: #0095f6; color: white; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10;"><span class="material-icons" style="font-size: 14px;">add</span></div>
+                            <div id="detailIconEditBadge" style="position: absolute; bottom: 0; right: 0; background: rgba(255,255,255,0.9); color: #1f1f1f; width: 28px; height: 28px; border-radius: 50%; display:flex; align-items:center; justify-content:center; pointer-events: none; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);"><span class="material-icons" style="font-size: 16px;">edit</span></div>
                             <input type="file" id="editBandIconInput" accept="image/*" hidden onchange="handleImageEdit(this)">
                         </div>
                         
-                        <!-- 右：スタッツ -->
-                        <div style="flex: 1; display: flex; justify-content: space-between; padding-right: 8px;">
+                        <!-- スタッツ (少し丸みを帯びた半透明コンテナ) -->
+                        <div style="flex: 1; display: flex; justify-content: space-around; background: rgba(255,255,255,0.5); padding: 12px 0; border-radius: 24px; border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
                             <div style="display: flex; flex-direction: column; align-items: center;">
-                                <span id="stat-member-count" style="font-size: 18px; font-weight: 700; color: #000;">--</span>
-                                <span style="font-size: 13px; color: #000;">メンバー</span>
+                                <span id="stat-member-count" style="font-size: 18px; font-weight: 800; color: #1f1f1f;">--</span>
+                                <span style="font-size: 11px; color: #5f6368; font-weight: 600;">メンバー</span>
                             </div>
                             <div style="display: flex; flex-direction: column; align-items: center;">
-                                <span id="stat-booking-count" style="font-size: 18px; font-weight: 700; color: #000;">--</span>
-                                <span style="font-size: 13px; color: #000;">演奏回数</span>
+                                <span id="stat-booking-count" style="font-size: 18px; font-weight: 800; color: #1f1f1f;">--</span>
+                                <span style="font-size: 11px; color: #5f6368; font-weight: 600;">演奏回数</span>
                             </div>
                             <div style="display: flex; flex-direction: column; align-items: center;">
-                                <span id="stat-song-count" style="font-size: 18px; font-weight: 700; color: #000;">--</span>
-                                <span style="font-size: 13px; color: #000;">曲数</span>
+                                <span id="stat-song-count" style="font-size: 18px; font-weight: 800; color: #1f1f1f;">--</span>
+                                <span style="font-size: 11px; color: #5f6368; font-weight: 600;">曲数</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 名前とイベント名 (Bio風) -->
-                    <div style="margin-bottom: 16px;">
-                        <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 14px; font-weight: 700; border: none; background: transparent; width: 100%; color: #000; padding: 0; outline: none; margin-bottom: 2px;">
-                        <div id="detailBandEventName" style="font-size: 14px; color: #000;"></div>
+                    <!-- 名前とイベント名 -->
+                    <div style="margin-bottom: 20px; text-align: center;">
+                        <input type="text" id="detailBandName" class="band-name-input" readonly style="font-size: 20px; font-weight: 800; border: none; background: transparent; width: 100%; color: #1f1f1f; padding: 0; outline: none; margin-bottom: 4px; text-align: center;">
+                        <div id="detailBandEventName" style="font-size: 13px; color: #5f6368; font-weight: 500;"></div>
                     </div>
                     
-                    <!-- アクションボタン (Edit Profile等と同スタイル) -->
-                    <div style="display: flex; gap: 8px;">
-                        <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">メンバーを追加</button>
-                        <button id="btnSubmitCueInModal" style="flex: 1; background: #efefef; color: #000; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;">Cueシートを提出</button>
+                    <!-- アクションボタン (Apple風の半透明ボタン) -->
+                    <div style="display: flex; gap: 12px;">
+                        <button id="btnInviteInModal" style="flex: 1; background: rgba(255,255,255,0.8); color: #0b57d0; border: 1px solid rgba(255,255,255,0.9); padding: 12px; border-radius: 16px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; gap: 6px;"><span class="material-icons" style="font-size: 18px;">person_add</span>メンバー追加</button>
+                        <button id="btnSubmitCueInModal" style="flex: 1; background: rgba(255,255,255,0.8); color: #0b57d0; border: 1px solid rgba(255,255,255,0.9); padding: 12px; border-radius: 16px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.04); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; gap: 6px;"><span class="material-icons" style="font-size: 18px;">description</span>Cueシート提出</button>
                     </div>
                 </div>
 
-                <!-- ▼ タブバー ▼ -->
-                <div style="display: flex; border-bottom: 1px solid #dbdbdb; position: sticky; top: 0; z-index: 15; background: white;">
-                    <div id="tab-btn-members" onclick="switchDetailTab('members')" style="flex:1; text-align:center; padding: 12px 0; cursor:pointer; display:flex; justify-content:center; align-items:center;">
-                        <span class="material-icons" style="font-size: 26px;">grid_on</span>
-                    </div>
-                    <div id="tab-btn-cuesheet" onclick="switchDetailTab('cuesheet')" style="flex:1; text-align:center; padding: 12px 0; cursor:pointer; display:flex; justify-content:center; align-items:center;">
-                        <span class="material-icons" style="font-size: 26px;">description</span>
-                    </div>
-                    <div id="tab-btn-songs" onclick="switchDetailTab('songs')" style="flex:1; text-align:center; padding: 12px 0; cursor:pointer; display:flex; justify-content:center; align-items:center;">
-                        <span class="material-icons" style="font-size: 26px;">music_note</span>
+                <!-- ▼ タブバー (Apple iOSのセグメントコントロール風) ▼ -->
+                <div style="padding: 0 16px 16px; position: sticky; top: 61px; z-index: 15;">
+                    <div style="display: flex; background: rgba(0,0,0,0.05); padding: 4px; border-radius: 16px; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+                        <div id="tab-btn-members" onclick="switchDetailTab('members')" style="flex:1; text-align:center; padding: 8px 0; cursor:pointer; border-radius: 12px; background: white; color: #1f1f1f; font-weight: 700; font-size: 13px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.2s;">
+                            メンバー
+                        </div>
+                        <div id="tab-btn-cuesheet" onclick="switchDetailTab('cuesheet')" style="flex:1; text-align:center; padding: 8px 0; cursor:pointer; border-radius: 12px; background: transparent; color: #5f6368; font-weight: 600; font-size: 13px; transition: all 0.2s;">
+                            Cueシート
+                        </div>
+                        <div id="tab-btn-songs" onclick="switchDetailTab('songs')" style="flex:1; text-align:center; padding: 8px 0; cursor:pointer; border-radius: 12px; background: transparent; color: #5f6368; font-weight: 600; font-size: 13px; transition: all 0.2s;">
+                            演奏曲
+                        </div>
                     </div>
                 </div>
 
-                <!-- ▼ コンテンツ領域 (フチなし) ▼ -->
-                <div style="min-height: 200px;">
+                <!-- ▼ コンテンツ領域 ▼ -->
+                <div style="padding: 0 16px; min-height: 200px;">
                     <!-- メンバー -->
                     <div id="tab-content-members">
                         <input type="hidden" id="detailBandId">
-                        <div id="detailMemberList"></div>
+                        <div style="background: rgba(255,255,255,0.6); border-radius: 24px; padding: 8px; border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 16px rgba(0,0,0,0.02);">
+                            <div id="detailMemberList"></div>
+                        </div>
                         
-                        <div id="bandCreatorActions" class="hidden" style="padding: 24px 16px; display:flex; flex-direction:column; gap:8px;">
-                            <button class="btn-primary" onclick="updateBandName()" style="border-radius: 8px; font-weight: 600;">バンド名を保存</button>
+                        <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
+                            <button class="btn-primary" onclick="updateBandName()" style="border-radius: 16px; padding: 14px;">バンド名を保存</button>
                             <div style="display:flex; gap:8px;">
-                                <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0; border-radius: 8px; font-weight: 600;" onclick="archiveBand()">アーカイブ</button>
-                                <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0; border-radius: 8px; font-weight: 600;" onclick="restoreBand()">復元</button>
-                                <button class="btn-danger" style="flex:1; margin:0; border-radius: 8px; font-weight: 600;" onclick="deleteBand()">解散</button>
+                                <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0; border-radius: 16px; padding: 14px; background: rgba(0,0,0,0.05);" onclick="archiveBand()">アーカイブ</button>
+                                <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0; border-radius: 16px; padding: 14px; background: rgba(0,0,0,0.05);" onclick="restoreBand()">復元</button>
+                                <button class="btn-danger" style="flex:1; margin:0; border-radius: 16px; padding: 14px; background: #fee2e2;" onclick="deleteBand()">解散</button>
                             </div>
                         </div>
-                        <div id="bandMemberActions" class="hidden" style="padding: 24px 16px;">
-                            <button class="btn-danger" onclick="leaveBand()" style="width:100%; border-radius: 8px; font-weight: 600;">バンドを脱退する</button>
+                        <div id="bandMemberActions" class="hidden" style="margin-top:24px;">
+                            <button class="btn-danger" onclick="leaveBand()" style="width:100%; border-radius: 16px; padding: 14px; background: #fee2e2;">バンドを脱退する</button>
                         </div>
                     </div>
 
                     <!-- Cueシート -->
                     <div id="tab-content-cuesheet" class="hidden">
-                        <div style="padding: 16px; text-align: center;">
+                        <div style="background: rgba(255,255,255,0.6); border-radius: 24px; padding: 24px 16px; border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 16px rgba(0,0,0,0.02); text-align: center;">
                             <div id="detailCuesheetContent" class="hidden">
-                                <img id="detailCuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; max-height: 300px; object-fit: contain; border: 1px solid #efefef; border-radius: 4px; cursor: pointer;" onclick="openFullscreenViewer(this.src)">
+                                <img id="detailCuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; max-height: 250px; object-fit: contain; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05);" onclick="openFullscreenViewer(this.src)">
                             </div>
-                            <div id="detailCuesheetEmpty" style="padding: 32px 0;">
-                                <div style="width: 64px; height: 64px; border-radius: 50%; border: 2px solid #000; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
-                                    <span class="material-icons" style="font-size: 32px; color: #000;">description</span>
+                            <div id="detailCuesheetEmpty" style="padding: 20px 0;">
+                                <div style="width: 56px; height: 56px; border-radius: 20px; background: rgba(0,0,0,0.05); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                                    <span class="material-icons" style="font-size: 28px; color: #5f6368;">description</span>
                                 </div>
-                                <div style="font-size:16px; font-weight: 700; color:#000; margin-bottom:8px;">未提出</div>
+                                <div style="font-size:14px; font-weight: 700; color:#1f1f1f; margin-bottom:4px;">未提出</div>
                             </div>
                             <div id="cueUploadArea" class="hidden">
                                 <input type="file" id="detailCueUploadInput" accept="image/*" hidden onchange="handleCueImageUpload(this)">
-                                <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="margin-top: 8px; background: transparent; color: #0095f6; font-weight: 700; border: none; padding: 0;">
+                                <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="margin-top: 12px; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.1); border-radius: 16px; padding: 12px 20px; font-weight: 700; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
                                     画像をアップロード
                                 </button>
                             </div>
@@ -433,10 +430,12 @@
 
                     <!-- 演奏曲 -->
                     <div id="tab-content-songs" class="hidden">
-                        <div id="bandSongsList"></div>
-                        <div id="bandSongAddArea" class="hidden" style="display:flex; padding:16px; gap:8px; border-top:1px solid #dbdbdb;">
-                            <input type="text" id="inputNewSong" class="form-input" style="padding:10px 16px; font-size:14px; flex:1; border-radius: 20px; border: 1px solid #dbdbdb; background: #fafafa;" placeholder="曲名を追加...">
-                            <button class="btn-primary" style="width:auto; padding:0 20px; font-size:14px; border-radius: 20px; font-weight: 600;" onclick="addSongToBand()">追加</button>
+                        <div style="background: rgba(255,255,255,0.6); border-radius: 24px; padding: 8px; border: 1px solid rgba(255,255,255,0.8); box-shadow: 0 4px 16px rgba(0,0,0,0.02);">
+                            <div id="bandSongsList"></div>
+                            <div id="bandSongAddArea" class="hidden" style="display:flex; padding:12px; gap:8px;">
+                                <input type="text" id="inputNewSong" class="form-input" style="padding:12px 16px; font-size:14px; flex:1; border-radius: 16px; border: 1px solid rgba(0,0,0,0.05); background: rgba(255,255,255,0.8);" placeholder="曲名を追加...">
+                                <button class="btn-primary" style="width:auto; padding:0 20px; font-size:14px; border-radius: 16px; font-weight: 700;" onclick="addSongToBand()">追加</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -593,19 +592,21 @@
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
 
-        // --- タブ切り替えロジック ---
+       // --- タブ切り替えロジック ---
         window.switchDetailTab = (tabId) => {
             ['members', 'cuesheet', 'songs'].forEach(id => {
                 const btn = document.getElementById(`tab-btn-${id}`);
                 const content = document.getElementById(`tab-content-${id}`);
                 if (!btn || !content) return;
                 if (id === tabId) {
-                    btn.style.borderBottom = '1px solid #000';
-                    btn.style.color = '#000';
+                    btn.style.background = 'white';
+                    btn.style.color = '#1f1f1f';
+                    btn.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)';
                     content.classList.remove('hidden');
                 } else {
-                    btn.style.borderBottom = '1px solid transparent';
-                    btn.style.color = '#a8a8a8';
+                    btn.style.background = 'transparent';
+                    btn.style.color = '#5f6368';
+                    btn.style.boxShadow = 'none';
                     content.classList.add('hidden');
                 }
             });
