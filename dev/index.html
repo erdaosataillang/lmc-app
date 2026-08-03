@@ -361,57 +361,77 @@
                     
                     <!-- アクションボタン：プロフィール編集・シェアボタン風 -->
                     <div style="display: flex; gap: 8px;">
-                        <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">share</span>でメンバーを追加</button>
-                        <button id="btnSubmitCueInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px;"><span class="material-icons" style="font-size: 16px;">description</span>Cueシートを提出</button>
+                        <button id="btnInviteInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px; transition: background 0.2s;"><span class="material-icons" style="font-size: 16px;">share</span>メンバーを追加</button>
+                        <button id="btnSubmitCueInModal" style="flex: 1; background: #efefef; color: #1f1f1f; border: none; padding: 8px; border-radius: 8px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 4px; transition: background 0.2s;"><span class="material-icons" style="font-size: 16px;">description</span>Cueシートを提出</button>
                     </div>
                 </div>
 
-                <div style="padding: 16px;">
-                    <input type="hidden" id="detailBandId">
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top: 0;">メンバー</h4>
-                <div class="card" style="padding: 0; overflow: hidden;">
-                    <div id="detailMemberList"></div>
-                    <button id="btnAddMemberToBand" class="btn-secondary" style="border:none; background:white; width:100%; color:#0b57d0; font-size:13px; padding:12px; border-top:1px solid #f0f0f0; margin-top:0;" onclick="shareBandInvite(document.getElementById('detailBandId').value, document.getElementById('detailBandName').value)">＋ メンバーを招待</button>
+                <!-- ▼ インスタ風タブバー ▼ -->
+                <div style="display: flex; border-top: 1px solid #dbdbdb; border-bottom: 1px solid #dbdbdb; background: white; position: sticky; top: 0; z-index: 15;">
+                    <div id="tab-btn-members" onclick="switchDetailTab('members')" style="flex:1; text-align:center; padding: 10px 0; cursor:pointer; border-bottom: 2px solid #1f1f1f; color: #1f1f1f; display:flex; justify-content:center; align-items:center;">
+                        <span class="material-icons" style="font-size: 26px;">group</span>
+                    </div>
+                    <div id="tab-btn-cuesheet" onclick="switchDetailTab('cuesheet')" style="flex:1; text-align:center; padding: 10px 0; cursor:pointer; border-bottom: 2px solid transparent; color: #8e8e8e; display:flex; justify-content:center; align-items:center;">
+                        <span class="material-icons" style="font-size: 26px;">description</span>
+                    </div>
+                    <div id="tab-btn-songs" onclick="switchDetailTab('songs')" style="flex:1; text-align:center; padding: 10px 0; cursor:pointer; border-bottom: 2px solid transparent; color: #8e8e8e; display:flex; justify-content:center; align-items:center;">
+                        <span class="material-icons" style="font-size: 26px;">music_note</span>
+                    </div>
                 </div>
-                
-                <!-- 統合されたCueシートセクション -->
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">Cueシート</h4>
-                <div class="card" style="padding: 16px; text-align: center; overflow: hidden;">
-                    <div id="detailCuesheetContent" class="hidden">
-                        <img id="detailCuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; max-height: 200px; object-fit: contain; border-radius:12px; border: 1px solid #f0f0f0; cursor: pointer;" onclick="openFullscreenViewer(this.src)">
-                        <div style="margin-top:8px; font-size:11px; color:#5f6368; font-weight:bold; display: flex; align-items: center; justify-content: center; gap: 4px;">
-                            <span class="material-icons" style="font-size:14px;">zoom_in</span> タップで全画面表示
+
+                <!-- ▼ タブコンテンツ ▼ -->
+                <div style="min-height: 200px; padding: 16px;">
+                    <!-- メンバー -->
+                    <div id="tab-content-members">
+                        <input type="hidden" id="detailBandId">
+                        <div class="card" style="padding: 0; overflow: hidden; border-radius: 12px; border: 1px solid #f0f0f0;">
+                            <div id="detailMemberList"></div>
+                        </div>
+                        <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
+                            <button class="btn-primary" onclick="updateBandName()" style="border-radius: 8px;">バンド名を保存</button>
+                            <div style="display:flex; gap:8px;">
+                                <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0; border-radius: 8px;" onclick="archiveBand()">アーカイブ</button>
+                                <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0; border-radius: 8px;" onclick="restoreBand()">復元</button>
+                                <button class="btn-danger" style="flex:1; margin:0; border-radius: 8px;" onclick="deleteBand()">解散</button>
+                            </div>
+                        </div>
+                        <div id="bandMemberActions" class="hidden" style="margin-top:16px;">
+                            <button class="btn-danger" onclick="leaveBand()" style="width:100%; border-radius: 8px;">バンドを脱退する</button>
                         </div>
                     </div>
-                    <div id="detailCuesheetEmpty" style="padding: 12px 0;">
-                        <div style="font-size:13px; color:#999; margin-bottom:8px;">Cueシートは未登録です</div>
-                    </div>
-                    <div id="cueUploadArea" class="hidden">
-                        <input type="file" id="detailCueUploadInput" accept="image/*" hidden onchange="handleCueImageUpload(this)">
-                        <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="margin-top: 8px; border: 1px solid #dadce0; background: white;">
-                            <span class="material-icons" style="font-size: 16px; margin-right: 4px;">upload_file</span> 画像を登録・更新
-                        </button>
-                    </div>
-                </div>
 
-                <h4 style="font-size: 13px; color: #5f6368; margin-bottom: 8px; margin-top:16px;">演奏曲</h4>
-                <div class="card" style="padding: 0; overflow: hidden;">
-                    <div id="bandSongsList"></div>
-                    <div id="bandSongAddArea" class="hidden" style="display:flex; padding:8px; gap:8px; background:#fff; border-top:1px solid #f0f0f0;">
-                        <input type="text" id="inputNewSong" class="form-input" style="padding:8px; font-size:13px; flex:1;" placeholder="曲名を入力...">
-                        <button class="btn-primary" style="width:auto; padding:0 16px; font-size:12px;" onclick="addSongToBand()">追加</button>
+                    <!-- Cueシート -->
+                    <div id="tab-content-cuesheet" class="hidden">
+                        <div class="card" style="padding: 16px; text-align: center; overflow: hidden; border-radius: 12px; border: 1px solid #f0f0f0;">
+                            <div id="detailCuesheetContent" class="hidden">
+                                <img id="detailCuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; max-height: 200px; object-fit: contain; border-radius:12px; border: 1px solid #f0f0f0; cursor: pointer;" onclick="openFullscreenViewer(this.src)">
+                                <div style="margin-top:8px; font-size:11px; color:#5f6368; font-weight:bold; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    <span class="material-icons" style="font-size:14px;">zoom_in</span> タップで全画面表示
+                                </div>
+                            </div>
+                            <div id="detailCuesheetEmpty" style="padding: 12px 0;">
+                                <div style="font-size:13px; color:#999; margin-bottom:8px;">Cueシートは未登録です</div>
+                            </div>
+                            <div id="cueUploadArea" class="hidden">
+                                <input type="file" id="detailCueUploadInput" accept="image/*" hidden onchange="handleCueImageUpload(this)">
+                                <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="margin-top: 8px; border: 1px solid #dadce0; background: white; border-radius: 8px;">
+                                    <span class="material-icons" style="font-size: 16px; margin-right: 4px;">upload_file</span> 画像を登録・更新
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div id="bandCreatorActions" class="hidden" style="margin-top:24px; display:flex; flex-direction:column; gap:8px;">
-                    <button class="btn-primary" onclick="updateBandName()">バンド名を保存</button>
-                    <div style="display:flex; gap:8px;">
-                        <button id="btnArchive" class="btn-secondary" style="flex:1; margin:0;" onclick="archiveBand()">アーカイブ</button>
-                        <button id="btnRestore" class="btn-secondary hidden" style="flex:1; margin:0;" onclick="restoreBand()">復元</button>
-                        <button class="btn-danger" style="flex:1; margin:0;" onclick="deleteBand()">解散</button>
+                    <!-- 演奏曲 -->
+                    <div id="tab-content-songs" class="hidden">
+                        <div class="card" style="padding: 0; overflow: hidden; border-radius: 12px; border: 1px solid #f0f0f0;">
+                            <div id="bandSongsList"></div>
+                            <div id="bandSongAddArea" class="hidden" style="display:flex; padding:12px; gap:8px; background:#fff; border-top:1px solid #f0f0f0;">
+                                <input type="text" id="inputNewSong" class="form-input" style="padding:8px 12px; font-size:13px; flex:1; border-radius: 8px;" placeholder="曲名を入力...">
+                                <button class="btn-primary" style="width:auto; padding:0 16px; font-size:12px; border-radius: 8px;" onclick="addSongToBand()">追加</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div id="bandMemberActions" class="hidden" style="margin-top:16px;"><button class="btn-danger" onclick="leaveBand()" style="width:100%;">バンドを脱退する</button></div>
             </div>
         </div>
     </div>
@@ -564,6 +584,24 @@
         window.goToMyPage = () => location.href = MY_PAGE_URL;
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
+
+        // --- タブ切り替えロジック ---
+        window.switchDetailTab = (tabId) => {
+            ['members', 'cuesheet', 'songs'].forEach(id => {
+                const btn = document.getElementById(`tab-btn-${id}`);
+                const content = document.getElementById(`tab-content-${id}`);
+                if (!btn || !content) return;
+                if (id === tabId) {
+                    btn.style.borderBottom = '2px solid #1f1f1f';
+                    btn.style.color = '#1f1f1f';
+                    content.classList.remove('hidden');
+                } else {
+                    btn.style.borderBottom = '2px solid transparent';
+                    btn.style.color = '#8e8e8e';
+                    content.classList.add('hidden');
+                }
+            });
+        };
 
 
 
@@ -1090,6 +1128,8 @@
             }
             cueUploadArea.classList.toggle('hidden', !canE);
 
+            // タブを初期状態（メンバー）にリセット
+            window.switchDetailTab('members');
             openModal('modal-band-detail');
         };
 
