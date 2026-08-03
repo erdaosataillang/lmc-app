@@ -1,0 +1,151 @@
+/* Google Fontsの読み込み */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* 基本スタイル */
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    text-align: left;
+    /* ちらつき防止 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* カスタムスクロールバー（全体） */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* ナビゲーションボタンの基本遷移 */
+.nav-btn {
+    color: #64748b;
+    transition: all 0.2s ease;
+}
+.nav-btn:hover {
+    background-color: #f1f5f9;
+    color: #1e293b;
+}
+
+/* トグルスイッチ (Switch Toggle Style) */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e2e8f0;
+    transition: .4s;
+    border-radius: 20px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+input:checked + .slider {
+    background-color: #3b82f6; /* Blue-500 */
+}
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* アニメーション定義 */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* モーダル関連 */
+.modal-active {
+    display: flex !important;
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* ドロップダウンやモーダル内のスクロールバー */
+.custom-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 4px;
+}
+
+/* アップロード中のオーバーレイ */
+.uploading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: inherit;
+    backdrop-filter: blur(2px);
+}
+
+/* ログイン画面用スタイル */
+#login-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease;
+}
+#login-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+    display: none; /* hiddenクラスがついたら完全に消す */
+}
+
+/* ユーティリティ: hiddenクラスの強制 */
+.hidden {
+    display: none !important;
+}
