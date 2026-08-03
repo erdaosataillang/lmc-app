@@ -1082,7 +1082,7 @@
             
             document.getElementById('btnInviteInModal').onclick = () => shareBandInvite(bid, data.name);
 
-            // 追加：メンバー数とイベント名の表示
+            // メンバー数とイベント名の表示
             const statMemberEl = document.getElementById('stat-member-count');
             if(statMemberEl) statMemberEl.innerText = data.memberIds ? data.memberIds.length : 0;
             
