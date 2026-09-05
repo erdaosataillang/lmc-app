@@ -123,9 +123,13 @@
 
         /* 全画面画像ビューア */
         #fullscreen-viewer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 9999; display: none; justify-content: center; align-items: center; flex-direction: column; opacity: 0; transition: opacity 0.3s ease; }
-        #fullscreen-viewer.open { display: flex; opacity: 1; }
         #fullscreen-img { max-width: 100%; max-height: 80vh; object-fit: contain; }
         .viewer-close-btn { position: absolute; top: env(safe-area-inset-top, 20px); right: 20px; color: white; background: rgba(255,255,255,0.2); border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+
+        /* Cueシート表示用テーブルスタイル */
+        .cuesheet-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+        .cuesheet-table th { background: #f8f9fa; border: 1px solid #e0e0e0; padding: 6px 8px; text-align: left; font-weight: 600; color: #444; }
+        .cuesheet-table td { border: 1px solid #e0e0e0; padding: 6px 8px; color: #222; }
     </style>
     <!-- ▼ ここに外部CSSの読み込みを追記 (優先させるためstyleタグの下に置きます) ▼ -->
     <link rel="stylesheet" href="/css/style.css">
@@ -398,21 +402,76 @@
 
                     <!-- Cueシート -->
                     <div id="tab-content-cuesheet" class="hidden">
-                        <div style="padding: 16px; text-align: center;">
-                            <div id="detailCuesheetContent" class="hidden">
-                                <img id="detailCuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; max-height: 300px; object-fit: contain; border: 1px solid #efefef; border-radius: 4px; cursor: pointer;" onclick="openFullscreenViewer(this.src)">
+                        <div style="padding: 16px;">
+                            <div id="digitalCueLoading" class="hidden" style="text-align:center; padding: 30px; color:#666; font-size:13px;">
+                                <span class="material-icons" style="animation:spin 1s linear infinite; vertical-align:middle; margin-right:4px;">sync</span>
+                                データを読み込み中...
                             </div>
-                            <div id="detailCuesheetEmpty" style="padding: 32px 0;">
+
+                            <div id="digitalCueContainer" class="hidden" style="background:#fafafa; border:1px solid #e0e0e0; border-radius:12px; padding:14px; margin-bottom:16px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:10px;">
+                                    <div style="font-weight:bold; font-size:14px; color:#111;">デジタルCueシート</div>
+                                    <a id="btnOpenDigitalCueUrl" href="#" target="_blank" style="font-size:12px; color:#0b57d0; text-decoration:none; font-weight:bold; display:inline-flex; align-items:center; gap:2px;">
+                                        全画面・編集 <span class="material-icons" style="font-size:14px;">open_in_new</span>
+                                    </a>
+                                </div>
+
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; font-size:12px; margin-bottom:10px;">
+                                    <div><span style="color:#666;">出演回数:</span> <strong id="cueMetaCount">-</strong></div>
+                                    <div><span style="color:#666;">同期音源:</span> <strong id="cueMetaSync">-</strong></div>
+                                    <div style="grid-column: span 2;" id="cueNgRow">
+                                        <span style="color:#d93025;">NG日:</span> <span id="cueMetaNg">なし</span>
+                                    </div>
+                                </div>
+
+                                <div style="font-size:12px; font-weight:bold; margin-top:8px; color:#333;">演奏曲リスト</div>
+                                <table class="cuesheet-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:30px; text-align:center;">#</th>
+                                            <th>曲名</th>
+                                            <th style="width:65px; text-align:center;">時間</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cueSongsBody"></tbody>
+                                </table>
+
+                                <div style="font-size:12px; font-weight:bold; margin-top:12px; color:#333;">メンバー</div>
+                                <table class="cuesheet-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:45px;">学年</th>
+                                            <th style="width:55px;">パート</th>
+                                            <th>名前</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cueMembersBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div id="detailCuesheetContent" class="hidden" style="margin-bottom:16px;">
+                                <div style="font-size:12px; font-weight:bold; color:#666; margin-bottom:6px;">登録画像</div>
+                                <img id="detailCuesheetImage" src="" referrerpolicy="no-referrer" style="width:100%; max-height: 280px; object-fit: contain; border: 1px solid #efefef; border-radius: 8px; cursor: pointer;" onclick="openFullscreenViewer(this.src)">
+                            </div>
+
+                            <div id="detailCuesheetEmpty" style="padding: 32px 0; text-align:center;">
                                 <div style="width: 64px; height: 64px; border-radius: 50%; border: 2px solid #000; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
                                     <span class="material-icons" style="font-size: 32px; color: #000;">description</span>
                                 </div>
-                                <div style="font-size:16px; font-weight: 700; color:#000; margin-bottom:8px;">未提出</div>
+                                <div style="font-size:16px; font-weight: 700; color:#000; margin-bottom:4px;">Cueシート未提出</div>
+                                <div style="font-size:12px; color:#666;">デジタル入力または画像で提出できます</div>
                             </div>
-                            <div id="cueUploadArea" class="hidden">
-                                <input type="file" id="detailCueUploadInput" accept="image/*" hidden onchange="handleCueImageUpload(this)">
-                                <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="margin-top: 8px; background: transparent; color: #0095f6; font-weight: 700; border: none; padding: 0;">
-                                    画像をアップロード
+
+                            <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+                                <button class="btn-primary" style="padding:10px; font-size:13px;" onclick="goToWebCueSheet()">
+                                    デジタルCueシートを作成・編集する
                                 </button>
+                                <div id="cueUploadArea" class="hidden" style="text-align:center;">
+                                    <input type="file" id="detailCueUploadInput" accept="image/*" hidden onchange="handleCueImageUpload(this)">
+                                    <button class="btn-secondary" id="btnUploadCue" onclick="document.getElementById('detailCueUploadInput').click()" style="background: transparent; color: #0095f6; font-weight: 700; border: none; padding: 6px; font-size:12px;">
+                                        画像ファイルを別途アップロード
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -552,6 +611,7 @@
         import { signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         
         const MY_PAGE_URL = "https://lmc-mobile.sorairosystem.com/userregist?sec=LMC&jumpedurl=https://lmc-mobile.sorairosystem.com/";
+        const CUE_WEB_URL = "https://lmc-mobile.sorairosystem.com/cue.html";
 
         // キャッシュキー
         const CACHE_KEY_USER = 'lmc_user_cache';
@@ -567,6 +627,7 @@
         let tempBandIconBlob=null, currentEditingBandId=null, currentEditingBandMembers=[];
         let cropper = null;
         let currentCropResolver = null;
+        let currentBandLatestEventId = "";
 
 
         
@@ -611,6 +672,111 @@
                 }
             });
         };
+
+        window.goToWebCueSheet = () => {
+            if (!currentEditingBandId) return;
+            window.location.href = `${CUE_WEB_URL}?bandID=${currentEditingBandId}&eventID=${currentBandLatestEventId}`;
+        };
+
+        async function fetchAndRenderCueSheet(bandId, eventId, fallbackImageUrl) {
+            const loading = document.getElementById('digitalCueLoading');
+            const container = document.getElementById('digitalCueContainer');
+            const emptyArea = document.getElementById('detailCuesheetEmpty');
+            const imgContent = document.getElementById('detailCuesheetContent');
+            const cueImg = document.getElementById('detailCuesheetImage');
+            const openLink = document.getElementById('btnOpenDigitalCueUrl');
+
+            loading.classList.remove('hidden');
+            container.classList.add('hidden');
+            emptyArea.classList.add('hidden');
+            imgContent.classList.add('hidden');
+
+            try {
+                let cueData = null;
+                let targetCueId = "";
+
+                if (bandId && eventId) {
+                    targetCueId = `${bandId}_${eventId}`;
+                    const docSnap = await getDoc(doc(db, "cuesheets", targetCueId));
+                    if (docSnap.exists()) cueData = docSnap.data();
+                }
+
+                if (!cueData && bandId) {
+                    const q = query(collection(db, "cuesheets"), where("bandId", "==", bandId));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        const firstDoc = snap.docs[0];
+                        cueData = firstDoc.data();
+                        targetCueId = firstDoc.id;
+                    }
+                }
+
+                if (cueData) {
+                    container.classList.remove('hidden');
+                    openLink.href = `${CUE_WEB_URL}?cueID=${encodeURIComponent(targetCueId)}`;
+
+                    document.getElementById('cueMetaCount').innerText = cueData.existingCount ? `${cueData.existingCount}回目` : "新規";
+                    document.getElementById('cueMetaSync').innerText = cueData.syncVal || "無";
+
+                    const ngRow = document.getElementById('cueNgRow');
+                    const ngText = document.getElementById('cueMetaNg');
+                    if (cueData.ngDate) {
+                        ngRow.style.display = "block";
+                        ngText.innerText = `${cueData.ngDate} ${cueData.ngReason ? `(${cueData.ngReason})` : ''}`;
+                    } else {
+                        ngText.innerText = "なし";
+                    }
+
+                    const sBody = document.getElementById('cueSongsBody');
+                    sBody.innerHTML = "";
+                    if (cueData.songs && cueData.songs.length > 0) {
+                        cueData.songs.forEach((s, idx) => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td style="text-align:center; color:#888;">${idx + 1}</td>
+                                <td style="font-weight:bold;">${s.title || '-'}</td>
+                                <td style="text-align:center; font-family:monospace;">${s.duration || '--:--'}</td>
+                            `;
+                            sBody.appendChild(tr);
+                        });
+                    } else {
+                        sBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">登録曲なし</td></tr>`;
+                    }
+
+                    const mBody = document.getElementById('cueMembersBody');
+                    mBody.innerHTML = "";
+                    if (cueData.members && cueData.members.length > 0) {
+                        cueData.members.forEach(m => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td style="color:#555;">${m.grade || '-'}</td>
+                                <td style="font-weight:bold; color:#0b57d0;">${m.part || '-'}</td>
+                                <td>${m.name || '-'}</td>
+                            `;
+                            mBody.appendChild(tr);
+                        });
+                    } else {
+                        mBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">メンバー情報なし</td></tr>`;
+                    }
+
+                } else if (fallbackImageUrl) {
+                    cueImg.src = fallbackImageUrl;
+                    imgContent.classList.remove('hidden');
+                } else {
+                    emptyArea.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error("CueSheet Fetch Error:", err);
+                if (fallbackImageUrl) {
+                    cueImg.src = fallbackImageUrl;
+                    imgContent.classList.remove('hidden');
+                } else {
+                    emptyArea.classList.remove('hidden');
+                }
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
 
         function checkIsAdmin(userData) {
             if (!userData) return false;
@@ -1096,10 +1262,10 @@
             if(statMemberEl) statMemberEl.innerText = data.memberIds ? data.memberIds.length : 0;
             
             const eventNameEl = document.getElementById('detailBandEventName');
-            let latestEventId = ""; // 直近のイベントIDを保持
+            currentBandLatestEventId = "";
             if (data.events && data.events.length > 0 && targetEvents) {
-                latestEventId = data.events[0];
-                const ev = targetEvents.find(e => e.id === latestEventId);
+                currentBandLatestEventId = data.events[0];
+                const ev = targetEvents.find(e => e.id === currentBandLatestEventId);
                 if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "アーカイブ";
             } else {
                 if(eventNameEl) eventNameEl.innerText = "";
@@ -1109,7 +1275,7 @@
             const btnSubmitCue = document.getElementById('btnSubmitCueInModal');
             if(btnSubmitCue) {
                 btnSubmitCue.onclick = () => {
-                    window.location.href = `https://lmc-mobile.sorairosystem.com/cue.html?bandID=${bid}&eventID=${latestEventId}`;
+                    window.location.href = `${CUE_WEB_URL}?bandID=${bid}&eventID=${currentBandLatestEventId}`;
                 };
             }
 
@@ -1133,22 +1299,11 @@
             const bandSongAddArea = document.getElementById('bandSongAddArea');
             if(bandSongAddArea) bandSongAddArea.classList.toggle('hidden', !canE);
 
-            // Cueシートの表示設定
-            const cueContent = document.getElementById('detailCuesheetContent');
-            const cueEmpty = document.getElementById('detailCuesheetEmpty');
-            const cueImage = document.getElementById('detailCuesheetImage');
             const cueUploadArea = document.getElementById('cueUploadArea');
-            
-            if (data.latestCuesheetUrl) {
-                if(cueImage) cueImage.src = data.latestCuesheetUrl;
-                if(cueContent) cueContent.classList.remove('hidden');
-                if(cueEmpty) cueEmpty.classList.add('hidden');
-            } else {
-                if(cueImage) cueImage.src = "";
-                if(cueContent) cueContent.classList.add('hidden');
-                if(cueEmpty) cueEmpty.classList.remove('hidden');
-            }
             if(cueUploadArea) cueUploadArea.classList.toggle('hidden', !canE);
+
+            // デジタルCueシート取得・描画を実行
+            fetchAndRenderCueSheet(bid, currentBandLatestEventId, data.latestCuesheetUrl || data.cueSheetUrl);
 
             // タブを初期状態（メンバー）にリセット
             if(window.switchDetailTab) window.switchDetailTab('members');
