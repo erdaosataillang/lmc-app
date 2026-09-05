@@ -67,7 +67,7 @@
         input:focus {
             background-color: #fefce8;
         }
-
+/* 検索候補リストのスタイル */
         .suggest-list {
             position: absolute;
             top: 100%;
@@ -75,15 +75,16 @@
             right: 0;
             background: white;
             border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
             z-index: 50;
-            max-height: 200px;
+            max-height: 280px;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             display: none;
         }
         .suggest-item {
-            padding: 0.75rem 1rem;
+            padding: 0.6rem 0.8rem;
             border-bottom: 1px solid #f3f4f6;
             cursor: pointer;
             font-size: 0.875rem;
@@ -91,7 +92,29 @@
             transition: background-color 0.15s;
         }
         .suggest-item:active {
-            background-color: #e5e7eb;
+            background-color: #f3f4f6;
+        }
+        .suggest-hint-toggle {
+            padding: 0.6rem 0.8rem;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.75rem;
+            text-align: center;
+            cursor: pointer;
+            border-top: 1px solid #e2e8f0;
+            user-select: none;
+        }
+        .suggest-hint-toggle:hover {
+            color: #2563eb;
+            background: #f1f5f9;
+        }
+        .suggest-hint-content {
+            padding: 0.6rem 0.8rem;
+            background: #f8fafc;
+            font-size: 0.75rem;
+            color: #475569;
+            line-height: 1.5;
+            border-top: 1px dashed #cbd5e1;
         }
 
         .segment-control {
@@ -550,7 +573,7 @@
         });
 
         // ==========================================
-        // Apple Music検索（media=music を除外して精度向上）
+        // Apple Music検索（ジャケット表示・複数件スクロール・ヒント付き）
         // ==========================================
         window.searchSong = async (btn, index) => {
             const row = btn.closest('tr');
@@ -567,31 +590,69 @@
             btn.disabled = true;
 
             try {
-                // media=music を省き entity=song のみにすることで確実にヒット
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&country=jp&limit=5`;
+                // limitを10件にしてスクロール選択できるように取得
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&country=jp&limit=10`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 const data = await response.json();
-                const results = data.results;
+                const results = data.results || [];
 
-                if (results && results.length > 0) {
-                    suggestBox.innerHTML = '';
+                suggestBox.innerHTML = '';
+
+                // ヒントHTMLパーツを生成する関数
+                const createHintElement = () => {
+                    const hintWrap = document.createElement('div');
+                    hintWrap.innerHTML = `
+                        <div class="suggest-hint-toggle flex items-center justify-center gap-1 font-medium">
+                            <span>見つかりませんか...？</span>
+                            <span class="text-[10px] transform transition-transform" id="hint-arrow-${index}">▼</span>
+                        </div>
+                        <div class="suggest-hint-content hidden" id="hint-body-${index}">
+                            <ul class="list-disc pl-4 space-y-1">
+                                <li><strong>アーティスト名を含めてみる</strong>（例: 「曲名 アーティスト名」）</li>
+                                <li><strong>英語/カタカナ表記を変えてみる</strong>（例: 「Official髭男dism」→「ヒゲダン」等）</li>
+                                <li><strong>正しいスペル・誤字脱字を確認する</strong></li>
+                            </ul>
+                        </div>
+                    `;
+                    const toggleBtn = hintWrap.querySelector('.suggest-hint-toggle');
+                    const hintBody = hintWrap.querySelector(`#hint-body-${index}`);
+                    const hintArrow = hintWrap.querySelector(`#hint-arrow-${index}`);
+
+                    const toggleHandler = (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const isHidden = hintBody.classList.contains('hidden');
+                        hintBody.classList.toggle('hidden');
+                        hintArrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+                    };
+
+                    toggleBtn.addEventListener('click', toggleHandler);
+                    toggleBtn.addEventListener('touchend', toggleHandler);
+                    return hintWrap;
+                };
+
+                if (results.length > 0) {
                     results.forEach(song => {
                         const div = document.createElement('div');
-                        div.className = 'suggest-item';
+                        div.className = 'suggest-item flex items-center gap-2.5';
                         
                         const totalSeconds = Math.floor(song.trackTimeMillis / 1000);
                         const mins = Math.floor(totalSeconds / 60);
                         const secs = totalSeconds % 60;
                         const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                         
+                        // 100x100の高解像度アートワークに置換（なければデフォルト）
+                        const artwork = song.artworkUrl100 || song.artworkUrl60 || '';
+
                         div.innerHTML = `
-                            <div class="font-bold text-black">${song.trackName}</div>
-                            <div class="text-xs text-gray-500 flex justify-between">
-                                <span>${song.artistName}</span>
-                                <span class="font-mono bg-gray-100 px-1 rounded">${timeStr}</span>
+                            <img src="${artwork}" alt="" class="w-10 h-10 rounded-md object-cover bg-gray-100 flex-shrink-0 shadow-sm">
+                            <div class="flex-grow min-w-0">
+                                <div class="font-bold text-black text-xs truncate">${song.trackName}</div>
+                                <div class="text-[11px] text-gray-500 truncate">${song.artistName}</div>
                             </div>
+                            <span class="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex-shrink-0">${timeStr}</span>
                         `;
 
                         const applySelection = (e) => {
@@ -607,10 +668,18 @@
 
                         suggestBox.appendChild(div);
                     });
+
+                    // 候補一覧の最下部にヒントを追加
+                    suggestBox.appendChild(createHintElement());
                     suggestBox.style.display = 'block';
                 } else {
-                    showToast("曲が見つかりませんでした", 'error');
-                    suggestBox.style.display = 'none';
+                    // 0件のときもヒントを表示して案内
+                    const emptyMsg = document.createElement('div');
+                    emptyMsg.className = 'p-3 text-xs text-gray-500 text-center font-medium';
+                    emptyMsg.innerText = '一致する曲が見つかりませんでした';
+                    suggestBox.appendChild(emptyMsg);
+                    suggestBox.appendChild(createHintElement());
+                    suggestBox.style.display = 'block';
                 }
             } catch (error) {
                 console.error("Search Error:", error);
