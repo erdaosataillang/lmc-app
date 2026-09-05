@@ -70,17 +70,18 @@
 /* 検索候補リストのスタイル */
         .suggest-list {
             position: absolute;
-            top: calc(100% + 4px);
+            top: calc(100% + 2px);
             left: 0;
-            width: max-content;
-            min-width: 280px;
-            max-width: 82vw;
+            /* 「曲の長さ」列まで（セル幅 + 隣の列の幅約80〜110px分）に収まる幅設定 */
+            width: calc(100% + 5.5rem);
+            max-width: calc(100% + 6.5rem);
+            box-sizing: border-box;
             background: white;
             border: 1px solid #cbd5e1;
-            border-radius: 0.75rem;
-            box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.2);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.18);
             z-index: 100;
-            max-height: 260px;
+            max-height: 220px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             display: none;
