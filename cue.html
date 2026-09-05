@@ -460,13 +460,24 @@
 
                         applyFormData(cueData);
 
-                        // イベント名があれば反映
+                        // イベント名があればプルダウンに反映（なければoptionを追加して選択）
                         if (eventId) {
-                            const eventDocSnap = await getDoc(doc(db, 'events', eventId));
-                            if (eventDocSnap.exists()) {
-                                const evName = eventDocSnap.data().event || "";
-                                const match = evName.match(/(\d{1,2})月/);
-                                document.getElementById('event-title').innerText = match ? `${match[1]}月定演` : evName;
+                            const eventSelect = document.getElementById('event-select');
+                            if (eventSelect) {
+                                let hasOption = Array.from(eventSelect.options).some(opt => opt.value === eventId);
+                                if (!hasOption) {
+                                    const eventDocSnap = await getDoc(doc(db, 'events', eventId));
+                                    if (eventDocSnap.exists()) {
+                                        const evName = eventDocSnap.data().event || eventDocSnap.data().name || "";
+                                        const match = evName.match(/(\d{1,2})月/);
+                                        const displayName = match ? `${match[1]}月定演` : evName;
+                                        const opt = document.createElement('option');
+                                        opt.value = eventId;
+                                        opt.textContent = displayName;
+                                        eventSelect.appendChild(opt);
+                                    }
+                                }
+                                eventSelect.value = eventId;
                             }
                         }
 
