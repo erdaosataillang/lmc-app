@@ -222,6 +222,7 @@
             doc, 
             getDoc, 
             setDoc, 
+            updateDoc, 
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -735,6 +736,18 @@
 
                 const docRef = doc(db, 'cuesheets', targetDocId);
                 await setDoc(docRef, payload, { merge: true });
+
+                // バンドデータ側に最新のCueシートIDを保存
+                if (bandId) {
+                    try {
+                        await updateDoc(doc(db, 'bands', bandId), {
+                            latestCueSheetId: targetDocId,
+                            updatedAt: serverTimestamp()
+                        });
+                    } catch (bandErr) {
+                        console.warn("Band update warning:", bandErr);
+                    }
+                }
 
                 localStorage.removeItem(draftKey);
 
