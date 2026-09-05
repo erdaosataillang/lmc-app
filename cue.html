@@ -649,12 +649,11 @@
                         const artwork = song.artworkUrl100 || song.artworkUrl60 || '';
 
                         div.innerHTML = `
-                            <img src="${artwork}" alt="" class="w-10 h-10 rounded-md object-cover bg-gray-100 flex-shrink-0 shadow-sm">
-                            <div class="flex-grow min-w-0">
-                                <div class="font-bold text-black text-xs truncate">${song.trackName}</div>
-                                <div class="text-[11px] text-gray-500 truncate">${song.artistName}</div>
+                            <img src="${artwork}" alt="" class="w-9 h-9 rounded-md object-cover bg-gray-100 flex-shrink-0 shadow-sm">
+                            <div class="flex-grow min-w-0 pr-1">
+                                <div class="font-bold text-slate-900 text-xs truncate leading-snug">${song.trackName}</div>
+                                <div class="text-[11px] text-slate-500 truncate leading-snug mt-0.5">${song.artistName}</div>
                             </div>
-                            <span class="font-mono text-[11px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-600 flex-shrink-0">${timeStr}</span>
                         `;
 
                         const applySelection = (e) => {
