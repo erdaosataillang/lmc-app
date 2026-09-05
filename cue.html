@@ -2,18 +2,13 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <!-- スマホでの拡大縮小を防ぎ、アプリのような操作感にするための設定 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
-    <!-- Tailwind CSSの読み込み -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        /* ==========================================
-           Apple風 UIデザイン (Emil Kowalskiスタイル参考)
-           ========================================== */
-        
-        /* 検索ボタン */
+        /* Apple風 UIデザイン */
         .search-btn {
             background: linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%);
             border: 1px solid #d1d5db;
@@ -27,7 +22,6 @@
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        /* Toast（通知）アニメーション */
         @keyframes slideDown {
             from { transform: translate(-50%, -100%); opacity: 0; }
             to { transform: translate(-50%, 0); opacity: 1; }
@@ -36,9 +30,6 @@
             animation: slideDown 0.4s cubic-bezier(0.2, 0, 0, 1) forwards;
         }
 
-        /* ==========================================
-           基本のシートレイアウト
-           ========================================== */
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
             background-color: #f3f4f6;
@@ -63,7 +54,6 @@
             }
         }
 
-        /* テーブル共通スタイル */
         .border-black-2 { border: 2px solid #000; }
         .border-b-black-2 { border-bottom: 2px solid #000; }
         .border-r-black-2 { border-right: 2px solid #000; }
@@ -78,7 +68,6 @@
             background-color: #fefce8;
         }
 
-        /* 検索候補リストのスタイル */
         .suggest-list {
             position: absolute;
             top: 100%;
@@ -105,7 +94,6 @@
             background-color: #e5e7eb;
         }
 
-        /* iOS風セグメントコントロール（同期ボタン） */
         .segment-control {
             display: flex;
             background-color: #e5e7eb;
@@ -129,27 +117,15 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
-        /* 印刷・PDF保存用 */
         @media print {
-            .no-print {
-                display: none !important;
-            }
-            body {
-                background: white;
-                padding: 0;
-            }
-            .sheet-container {
-                box-shadow: none;
-                border: 2px solid #000;
-                margin: 0;
-                max-width: 100%;
-            }
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; }
+            .sheet-container { box-shadow: none; border: 2px solid #000; margin: 0; max-width: 100%; }
         }
     </style>
 </head>
 <body class="min-h-screen p-2 md:p-6">
 
-    <!-- Toast通知用コンテナ -->
     <div id="toast-container" class="fixed top-4 left-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <div id="capture-area" class="sheet-container relative">
@@ -182,7 +158,7 @@
             <input type="text" id="ng-date" class="flex-grow p-2" placeholder="特になし (ある場合は日付を入力)">
         </div>
 
-        <!-- NG理由 (NG日が入力された時だけ表示) -->
+        <!-- NG理由 -->
         <div id="ng-reason-row" class="flex border-black-2 mb-6 bg-white hidden">
             <div class="w-24 border-r-black-2 p-2 font-bold flex items-center justify-center bg-red-50 text-red-600 text-sm leading-tight text-center">
                 NGの理由
@@ -200,13 +176,12 @@
                 </tr>
             </thead>
             <tbody id="members-tbody">
-                <!-- JSで8行生成 -->
+                <!-- JSで生成 -->
             </tbody>
         </table>
 
         <!-- 曲目と同期 -->
         <div class="flex gap-2 mb-6">
-            <!-- 曲目表 -->
             <table class="flex-grow border-black-2 border-collapse bg-white table-fixed">
                 <thead>
                     <tr class="border-b-black-2 bg-gray-50">
@@ -216,11 +191,10 @@
                     </tr>
                 </thead>
                 <tbody id="songs-tbody">
-                    <!-- JSで5行生成 -->
+                    <!-- JSで生成 -->
                 </tbody>
             </table>
             
-            <!-- 同期 -->
             <div class="w-16 md:w-20 border-black-2 flex flex-col bg-white">
                 <div class="font-bold border-b-black-2 w-full text-center text-xs md:text-sm p-1 bg-gray-50">同期</div>
                 <div class="flex-grow flex flex-col justify-center segment-control">
@@ -251,7 +225,6 @@
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Immersive環境、または通常の環境用の設定
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
             ? JSON.parse(__firebase_config) 
             : {
@@ -270,12 +243,11 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            signInAnonymously(auth).catch(err => console.warn("Anonymous auth failed:", err));
+            signInAnonymously(auth).catch(err => console.warn("Anonymous auth warning:", err));
         } catch(e) {
             console.log("Firebase setup skipped or missing config.", e);
         }
 
-        // Toast（通知）を表示する関数
         window.showToast = function(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -294,7 +266,7 @@
             }, 3000);
         };
 
-        // メンバー表を8行生成
+        // メンバー表生成
         const membersTbody = document.getElementById('members-tbody');
         for (let i = 0; i < 8; i++) {
             const tr = document.createElement('tr');
@@ -307,14 +279,14 @@
             membersTbody.appendChild(tr);
         }
 
-        // 楽曲表の行生成関数
+        // 楽曲行生成
         const createSongRow = (i) => {
             const tr = document.createElement('tr');
             tr.className = 'border-b-black-1 h-12 relative';
             tr.innerHTML = `
                 <td class="border-r-black-2 p-1 text-center font-bold bg-gray-50">${i + 1}</td>
                 <td class="border-r-black-2 relative flex items-center pr-1">
-                    <input type="text" class="px-2 w-full text-sm song-title" placeholder="曲名を入力" oninput="showSuggest(this, ${i})">
+                    <input type="text" class="px-2 w-full text-sm song-title" placeholder="曲名を入力">
                     <button type="button" class="no-print search-btn ml-1 px-3 py-1 text-xs rounded-full font-bold whitespace-nowrap" onclick="searchSong(this, ${i})">
                         検索
                     </button>
@@ -331,13 +303,65 @@
         }
 
         const urlParams = new URLSearchParams(window.location.search);
-        const bandId = urlParams.get('bandID');
-        const eventId = urlParams.get('eventID');
-        const cueSheetIdParam = urlParams.get('cuesheetID') || urlParams.get('cueSheetID');
-        const draftKey = `draft_${bandId}_${eventId}`;
+        let bandId = urlParams.get('bandID');
+        let eventId = urlParams.get('eventID');
+        // cueID または cuesheetID どちらでも対応
+        const cueId = urlParams.get('cueID') || urlParams.get('cuesheetID') || urlParams.get('cueSheetID');
+        const draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
 
-        // 入力データをすべて収集してローカルストレージに保存する
+        // フォームにデータを流し込む汎用関数
+        const applyFormData = (data) => {
+            if (!data) return;
+
+            document.getElementById('band-name').value = data.bandName || data.name || '';
+            document.getElementById('existing-count').value = data.existingCount || '';
+            
+            const ngDateInput = document.getElementById('ng-date');
+            ngDateInput.value = data.ngDate || '';
+            if (data.ngDate && data.ngDate.trim() !== '') {
+                document.getElementById('ng-reason-row').classList.remove('hidden');
+                document.getElementById('ng-reason').value = data.ngReason || '';
+            }
+
+            if (data.syncVal) {
+                document.getElementById('sync-val').value = data.syncVal;
+                document.querySelectorAll('.sync-btn').forEach(btn => {
+                    if (btn.getAttribute('data-val') === data.syncVal) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            if (data.members && Array.isArray(data.members)) {
+                const membersTrs = document.querySelectorAll('#members-tbody tr');
+                data.members.forEach((m, i) => {
+                    if (membersTrs[i]) {
+                        membersTrs[i].querySelector('.grade-input').value = m.grade || '';
+                        membersTrs[i].querySelector('.part-input').value = m.part || '';
+                        membersTrs[i].querySelector('.name-input').value = m.name || '';
+                    }
+                });
+            }
+
+            if (data.songs && Array.isArray(data.songs)) {
+                songsTbody.innerHTML = '';
+                const rowCount = Math.max(5, data.songs.length);
+                for (let i = 0; i < rowCount; i++) {
+                    const tr = createSongRow(i);
+                    if (data.songs[i]) {
+                        tr.querySelector('.song-title').value = data.songs[i].title || '';
+                        tr.querySelector('.song-duration').value = data.songs[i].duration || '';
+                    }
+                    if (i === rowCount - 1) tr.classList.remove('border-b-black-1');
+                    songsTbody.appendChild(tr);
+                }
+            }
+        };
+
         const saveDraft = () => {
+            if (cueId) return; // 既存Cueシート閲覧・編集時はローカル下書きで勝手に上書きさせない
             if (!bandId || !eventId) return;
 
             const data = {
@@ -368,54 +392,12 @@
             localStorage.setItem(draftKey, JSON.stringify(data));
         };
 
-        // ローカルストレージからデータを復元する
         const loadDraft = () => {
             const savedJson = localStorage.getItem(draftKey);
             if (!savedJson) return false;
-
             try {
                 const data = JSON.parse(savedJson);
-                
-                document.getElementById('band-name').value = data.bandName || '';
-                document.getElementById('existing-count').value = data.existingCount || '';
-                
-                const ngDateInput = document.getElementById('ng-date');
-                ngDateInput.value = data.ngDate || '';
-                if (data.ngDate && data.ngDate.trim() !== '') {
-                    document.getElementById('ng-reason-row').classList.remove('hidden');
-                    document.getElementById('ng-reason').value = data.ngReason || '';
-                }
-
-                if (data.syncVal) {
-                    document.getElementById('sync-val').value = data.syncVal;
-                    document.querySelectorAll('.sync-btn').forEach(btn => {
-                        if (btn.getAttribute('data-val') === data.syncVal) {
-                            btn.classList.add('active');
-                        }
-                    });
-                }
-
-                const membersTrs = document.querySelectorAll('#members-tbody tr');
-                data.members.forEach((m, i) => {
-                    if (membersTrs[i]) {
-                        membersTrs[i].querySelector('.grade-input').value = m.grade || '';
-                        membersTrs[i].querySelector('.part-input').value = m.part || '';
-                        membersTrs[i].querySelector('.name-input').value = m.name || '';
-                    }
-                });
-
-                songsTbody.innerHTML = '';
-                const rowCount = Math.max(5, data.songs.length);
-                for (let i = 0; i < rowCount; i++) {
-                    const tr = createSongRow(i);
-                    if (data.songs[i]) {
-                        tr.querySelector('.song-title').value = data.songs[i].title || '';
-                        tr.querySelector('.song-duration').value = data.songs[i].duration || '';
-                    }
-                    if (i === rowCount - 1) tr.classList.remove('border-b-black-1');
-                    songsTbody.appendChild(tr);
-                }
-                
+                applyFormData(data);
                 return true;
             } catch (e) {
                 console.error("Draft load error:", e);
@@ -424,29 +406,61 @@
         };
 
         window.addEventListener('DOMContentLoaded', async () => {
-            if (bandId && eventId && db) {
-                try {
-                    // 1. イベント情報の取得
+            if (!db) return;
+
+            try {
+                // ==========================================
+                // 1. ?cueID がある場合: cuesheetsから既存データを再読み込み
+                // ==========================================
+                if (cueId) {
+                    const cueDocRef = doc(db, 'cuesheets', cueId);
+                    const cueDocSnap = await getDoc(cueDocRef);
+
+                    if (cueDocSnap.exists()) {
+                        const cueData = cueDocSnap.data();
+                        
+                        // cueシート内のメタ情報を補完
+                        if (!bandId && cueData.bandId) bandId = cueData.bandId;
+                        if (!eventId && cueData.eventId) eventId = cueData.eventId;
+
+                        applyFormData(cueData);
+
+                        // イベント名があれば反映
+                        if (eventId) {
+                            const eventDocSnap = await getDoc(doc(db, 'events', eventId));
+                            if (eventDocSnap.exists()) {
+                                const evName = eventDocSnap.data().event || "";
+                                const match = evName.match(/(\d{1,2})月/);
+                                document.getElementById('event-title').innerText = match ? `${match[1]}月定演` : evName;
+                            }
+                        }
+
+                        showToast('Cueシートを読み込みました', 'info');
+                        return; // 再読み込み完了のためここで終了
+                    } else {
+                        showToast('指定されたCueシートが見つかりませんでした', 'error');
+                    }
+                }
+
+                // ==========================================
+                // 2. 通常読み込みフロー (bandID, eventID 起因)
+                // ==========================================
+                if (eventId) {
                     const eventDocRef = doc(db, 'events', eventId);
                     const eventDocSnap = await getDoc(eventDocRef);
                     if (eventDocSnap.exists()) {
-                        const eventData = eventDocSnap.data();
-                        const eventName = eventData.event || "";
+                        const eventName = eventDocSnap.data().event || "";
                         const monthMatch = eventName.match(/(\d{1,2})月/);
-                        if (monthMatch) {
-                            document.getElementById('event-title').innerText = `${monthMatch[1]}月定演`;
-                        } else {
-                            document.getElementById('event-title').innerText = eventName;
-                        }
+                        document.getElementById('event-title').innerText = monthMatch ? `${monthMatch[1]}月定演` : eventName;
                     }
+                }
 
-                    // 2. 下書きがあれば読み込み
-                    if (loadDraft()) {
-                        showToast('入力途中のデータを復元しました', 'info');
-                        return;
-                    }
+                if (loadDraft()) {
+                    showToast('入力途中のデータを復元しました', 'info');
+                    return;
+                }
 
-                    // 3. なければFirestoreから既存情報を取得
+                if (bandId) {
                     const bandDocRef = doc(db, 'bands', bandId);
                     const bandDocSnap = await getDoc(bandDocRef);
                     
@@ -471,9 +485,7 @@
                                 if (idx >= 8) return null;
                                 const userRef = doc(db, 'users', uid);
                                 return getDoc(userRef).then(userSnap => {
-                                    if (userSnap.exists()) {
-                                        return { idx: idx, data: userSnap.data() };
-                                    }
+                                    if (userSnap.exists()) return { idx: idx, data: userSnap.data() };
                                     return null;
                                 }).catch(() => null);
                             });
@@ -506,19 +518,17 @@
                         saveDraft();
                         showToast('バンド情報を読み込みました', 'success');
                     }
-                } catch (error) {
-                    console.error("Fetch Error:", error);
-                    showToast('データの読み込みに失敗しました', 'error');
                 }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                showToast('データの読み込みに失敗しました', 'error');
             }
         });
 
-        // 入力時の自動保存
         document.addEventListener('input', () => {
             saveDraft();
         });
 
-        // NG日の表示制御
         document.getElementById('ng-date').addEventListener('input', function() {
             const reasonRow = document.getElementById('ng-reason-row');
             if (this.value.trim() !== '') {
@@ -529,7 +539,6 @@
             }
         });
 
-        // 同期ボタン
         document.querySelectorAll('.sync-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('active'));
@@ -539,7 +548,9 @@
             });
         });
 
-        // 曲検索
+        // ==========================================
+        // Apple Music検索（media=music を除外して精度向上）
+        // ==========================================
         window.searchSong = async (btn, index) => {
             const row = btn.closest('tr');
             const titleInput = row.querySelector('.song-title');
@@ -555,6 +566,7 @@
             btn.disabled = true;
 
             try {
+                // media=music を省き entity=song のみにすることで確実にヒット
                 const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&country=jp&limit=5`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -616,7 +628,6 @@
         document.addEventListener('click', closeSuggests);
         document.addEventListener('touchstart', closeSuggests, {passive: true});
 
-        // 最後の行に入力があった場合の自動行追加
         document.addEventListener('input', function(e) {
             const timeInput = e.target.closest('tr')?.querySelector('input[placeholder="00:00"]');
             if (!timeInput) return;
@@ -645,11 +656,9 @@
                     const newIndex = rows.length;
                     const searchBtn = newRow.querySelector('.search-btn');
                     const suggestDiv = newRow.querySelector('.suggest-list');
-                    const songTitleInput = newRow.querySelector('.song-title');
                     
                     if (searchBtn) searchBtn.setAttribute('onclick', `searchSong(this, ${newIndex})`);
                     if (suggestDiv) suggestDiv.id = `suggest-${newIndex}`;
-                    if (songTitleInput) songTitleInput.setAttribute('oninput', `showSuggest(this, ${newIndex})`);
                     
                     tbody.appendChild(newRow);
                 }
@@ -657,16 +666,17 @@
         });
 
         // ==========================================
-        // Firestoreへのアップロード処理
+        // 送信・更新処理
         // ==========================================
         const submitCueSheet = async () => {
             if (!db) {
-                showToast('データベースへの接続が初期化されていません', 'error');
+                showToast('データベースが初期化されていません', 'error');
                 return;
             }
 
-            if (!bandId || !eventId) {
-                showToast('URLパラメータ（bandID, eventID）が指定されていません', 'error');
+            const targetDocId = cueId || (bandId && eventId ? `${bandId}_${eventId}` : null);
+            if (!targetDocId) {
+                showToast('URLパラメータ（cueID または bandID & eventID）が必要です', 'error');
                 return;
             }
 
@@ -691,7 +701,6 @@
             submitBtn.innerText = '登録中...';
 
             try {
-                // メンバー情報
                 const members = [];
                 document.querySelectorAll('#members-tbody tr').forEach(tr => {
                     const grade = tr.querySelector('.grade-input').value.trim();
@@ -702,7 +711,6 @@
                     }
                 });
 
-                // 楽曲情報
                 const songs = [];
                 document.querySelectorAll('#songs-tbody tr').forEach(tr => {
                     const title = tr.querySelector('.song-title').value.trim();
@@ -712,10 +720,9 @@
                     }
                 });
 
-                // 送信ペイロード
                 const payload = {
-                    bandId: bandId,
-                    eventId: eventId,
+                    bandId: bandId || '',
+                    eventId: eventId || '',
                     bandName: bandName,
                     existingCount: document.getElementById('existing-count').value.trim(),
                     ngDate: ngDate,
@@ -726,17 +733,13 @@
                     updatedAt: serverTimestamp()
                 };
 
-                // cuesheetIDの決定（URLパラメータ優先、なければ bandID_eventID をIDに設定）
-                const targetDocId = cueSheetIdParam || `${bandId}_${eventId}`;
                 const docRef = doc(db, 'cuesheets', targetDocId);
-
                 await setDoc(docRef, payload, { merge: true });
 
-                // 下書きを削除
                 localStorage.removeItem(draftKey);
 
-                showToast('Cueシートを正常に登録しました！', 'success');
-                submitBtn.innerText = '送信完了（登録済み）';
+                showToast('Cueシートを正常に登録・更新しました！', 'success');
+                submitBtn.innerText = '更新完了（登録済み）';
                 submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
                 submitBtn.classList.add('bg-green-600');
             } catch (error) {
