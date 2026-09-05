@@ -1229,9 +1229,13 @@
             document.querySelectorAll('.band-slide').forEach(s => { 
                 if(!s.children.length) {
                     s.innerHTML = `
-                        <div style="grid-column: span 2; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding-bottom:80px; opacity:0.6;">
-                            <img src="https://file.sorairosystem.com/images/hiyokoGuitar.png" style="width:100px; height:auto; margin-bottom:16px;">
-                            <div style="color:#5f6368; font-size:14px; font-weight:bold;">表示するバンドがありません</div>
+                        <div style="grid-column: span 2; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding-bottom:80px;">
+                            <img src="https://file.sorairosystem.com/images/hiyokoGuitar.png" style="width:100px; height:auto; margin-bottom:16px; opacity:0.8;">
+                            <div style="color:#1f1f1f; font-size:15px; font-weight:bold; margin-bottom:6px;">登録されているバンドがありません</div>
+                            <div style="color:#5f6368; font-size:12px; text-align:center; line-height:1.6;">
+                                右下の <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; background:#c2e7ff; color:#001d35; border-radius:50%; font-weight:bold; font-size:13px; vertical-align:middle; margin:0 2px;">＋</span> ボタンから<br>
+                                バンドの新規結成またはイベント登録ができます
+                            </div>
                         </div>
                     `;
                 }
