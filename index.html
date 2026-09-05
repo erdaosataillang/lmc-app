@@ -1271,10 +1271,13 @@
             
             const eventNameEl = document.getElementById('detailBandEventName');
             currentBandLatestEventId = "";
-            if (data.events && data.events.length > 0 && targetEvents) {
-                currentBandLatestEventId = data.events[0];
-                const ev = targetEvents.find(e => e.id === currentBandLatestEventId);
-                if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "アーカイブ";
+            if (data.events && data.events.length > 0) {
+                // 配列の末尾（最新のイベントID）を取得
+                currentBandLatestEventId = data.events[data.events.length - 1];
+                if (targetEvents) {
+                    const ev = targetEvents.find(e => e.id === currentBandLatestEventId);
+                    if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "アーカイブ";
+                }
             } else {
                 if(eventNameEl) eventNameEl.innerText = "";
             }
