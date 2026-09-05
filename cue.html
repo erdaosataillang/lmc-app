@@ -156,10 +156,13 @@
 
     <div id="capture-area" class="sheet-container relative">
         
-        <!-- タイトル部分 -->
+        <!-- タイトル部分（タップで直近イベントを選択可能なプルダウン） -->
         <div class="flex justify-end mb-6">
-            <div id="event-title" class="border-black-2 px-8 py-1 font-bold text-2xl tracking-widest bg-gray-50">
-                月定演
+            <div class="border-black-2 bg-gray-50 flex items-center relative pr-2 hover:bg-gray-100 transition-colors">
+                <select id="event-select" class="appearance-none bg-transparent font-bold text-xl md:text-2xl tracking-wider py-1 pl-4 pr-6 outline-none cursor-pointer text-center">
+                    <option value="">読み込み中...</option>
+                </select>
+                <span class="pointer-events-none absolute right-2 text-xs text-gray-500 font-bold">▼</span>
             </div>
         </div>
 
@@ -249,6 +252,11 @@
             getDoc, 
             setDoc, 
             updateDoc, 
+            collection, 
+            query, 
+            orderBy, 
+            limit, 
+            getDocs, 
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -472,15 +480,47 @@
                 // ==========================================
                 // 2. 通常読み込みフロー (bandID, eventID 起因)
                 // ==========================================
-                if (eventId) {
-                    const eventDocRef = doc(db, 'events', eventId);
-                    const eventDocSnap = await getDoc(eventDocRef);
-                    if (eventDocSnap.exists()) {
-                        const eventName = eventDocSnap.data().event || "";
-                        const monthMatch = eventName.match(/(\d{1,2})月/);
-                        document.getElementById('event-title').innerText = monthMatch ? `${monthMatch[1]}月定演` : eventName;
+                // ==========================================
+                // イベント直近3件の取得とプルダウン初期化
+                // ==========================================
+                const eventSelect = document.getElementById('event-select');
+                try {
+                    const eventsQuery = query(collection(db, 'events'), orderBy('startDate', 'desc'), limit(3));
+                    const eventsSnap = await getDocs(eventsQuery);
+
+                    if (!eventsSnap.empty) {
+                        eventSelect.innerHTML = '';
+                        eventsSnap.docs.forEach(d => {
+                            const data = d.data();
+                            const rawName = data.event || data.name || "";
+                            const monthMatch = rawName.match(/(\d{1,2})月/);
+                            const displayName = monthMatch ? `${monthMatch[1]}月定演` : rawName;
+
+                            const opt = document.createElement('option');
+                            opt.value = d.id;
+                            opt.textContent = displayName;
+                            eventSelect.appendChild(opt);
+                        });
+
+                        // URLのeventIdがあればそれを初期選択、なければ最新（先頭）を選択
+                        if (eventId) {
+                            eventSelect.value = eventId;
+                        } else {
+                            eventId = eventSelect.value;
+                        }
                     }
+                } catch (e) {
+                    console.error("Events fetch error:", e);
                 }
+
+                // プルダウンを切り替えたら eventId を即座に更新し、URLパラメータも書き換え
+                eventSelect.addEventListener('change', (e) => {
+                    eventId = e.target.value;
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('eventID', eventId);
+                    window.history.replaceState(null, '', newUrl);
+                    saveDraft();
+                });
 
                 if (loadDraft()) {
                     showToast('入力途中のデータを復元しました', 'info');
