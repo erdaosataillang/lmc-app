@@ -786,12 +786,16 @@
                 return;
             }
 
-            const targetDocId = cueId || (bandId && eventId ? `${bandId}_${eventId}` : null);
-            if (!targetDocId) {
-                showToast('URLパラメータ（cueID または bandID & eventID）が必要です', 'error');
+            // 1. イベント選択のチェック
+            const eventSelect = document.getElementById('event-select');
+            const selectedEventId = eventSelect ? eventSelect.value : eventId;
+            if (!selectedEventId) {
+                showToast('イベントを選択してください', 'error');
+                if (eventSelect) eventSelect.focus();
                 return;
             }
 
+            // 2. バンド名のチェック
             const bandName = document.getElementById('band-name').value.trim();
             if (!bandName) {
                 showToast('バンド名を入力してください', 'error');
@@ -799,11 +803,84 @@
                 return;
             }
 
+            // 3. 出演NG日がある場合のNG理由チェック
             const ngDate = document.getElementById('ng-date').value.trim();
             const ngReason = document.getElementById('ng-reason').value.trim();
             if (ngDate !== '' && ngReason === '') {
-                showToast('NG日がある場合は理由を記入してください', 'error');
+                showToast('NG日がある場合は理由を入力してください', 'error');
                 document.getElementById('ng-reason').focus();
+                return;
+            }
+
+            // 4. メンバー情報のチェック（学年・パート・名前が3つ揃った人が1人以上いるか）
+            const members = [];
+            let hasIncompleteMember = false;
+            document.querySelectorAll('#members-tbody tr').forEach(tr => {
+                const grade = tr.querySelector('.grade-input').value.trim();
+                const part = tr.querySelector('.part-input').value.trim();
+                const name = tr.querySelector('.name-input').value.trim();
+
+                if (grade || part || name) {
+                    // どれか1つでも入力されているのに欠けがある場合は不備と判定
+                    if (!grade || !part || !name) {
+                        hasIncompleteMember = true;
+                    } else {
+                        members.push({ grade, part, name });
+                    }
+                }
+            });
+
+            if (members.length === 0) {
+                showToast('メンバー（学年・パート・名前）を1人以上完全に入力してください', 'error');
+                return;
+            }
+            if (hasIncompleteMember) {
+                showToast('メンバーの学年・パート・名前に未入力の項目があります', 'error');
+                return;
+            }
+
+            // 5. 楽曲リストのチェック（1曲以上、かつ入力された曲すべてに曲名と長さが存在するか）
+            const songs = [];
+            let hasMissingDuration = false;
+            let hasMissingTitle = false;
+
+            document.querySelectorAll('#songs-tbody tr').forEach(tr => {
+                const title = tr.querySelector('.song-title').value.trim();
+                const duration = tr.querySelector('.song-duration').value.trim();
+
+                if (title || duration) {
+                    if (!title) hasMissingTitle = true;
+                    if (!duration) hasMissingDuration = true;
+                    if (title && duration) {
+                        songs.push({ title, duration });
+                    }
+                }
+            });
+
+            if (songs.length === 0) {
+                showToast('曲を1曲以上入力してください', 'error');
+                return;
+            }
+            if (hasMissingTitle) {
+                showToast('曲名が入力されていない楽曲があります', 'error');
+                return;
+            }
+            if (hasMissingDuration) {
+                showToast('曲の長さ（00:00）が入力されていない楽曲があります', 'error');
+                return;
+            }
+
+            // 6. 同期の有無チェック
+            const syncVal = document.getElementById('sync-val').value.trim();
+            if (!syncVal) {
+                showToast('同期の有無（無 または 有）を選択してください', 'error');
+                return;
+            }
+
+            // 送信用ドキュメントIDの確定
+            const targetDocId = cueId || (bandId && selectedEventId ? `${bandId}_${selectedEventId}` : null);
+            if (!targetDocId) {
+                showToast('バンドIDまたはイベントIDが正しく取得できていません', 'error');
                 return;
             }
 
@@ -813,24 +890,6 @@
             submitBtn.innerText = '登録中...';
 
             try {
-                const members = [];
-                document.querySelectorAll('#members-tbody tr').forEach(tr => {
-                    const grade = tr.querySelector('.grade-input').value.trim();
-                    const part = tr.querySelector('.part-input').value.trim();
-                    const name = tr.querySelector('.name-input').value.trim();
-                    if (grade || part || name) {
-                        members.push({ grade, part, name });
-                    }
-                });
-
-                const songs = [];
-                document.querySelectorAll('#songs-tbody tr').forEach(tr => {
-                    const title = tr.querySelector('.song-title').value.trim();
-                    const duration = tr.querySelector('.song-duration').value.trim();
-                    if (title || duration) {
-                        songs.push({ title, duration });
-                    }
-                });
 
                 const payload = {
                     bandId: bandId || '',
