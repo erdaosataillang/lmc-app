@@ -678,7 +678,7 @@
             window.location.href = `${CUE_WEB_URL}?bandID=${currentEditingBandId}&eventID=${currentBandLatestEventId}`;
         };
 
-        async function fetchAndRenderCueSheet(bandId, eventId, fallbackImageUrl) {
+        async function fetchAndRenderCueSheet(bandId, cueSheetId, eventId, fallbackImageUrl) {
             const loading = document.getElementById('digitalCueLoading');
             const container = document.getElementById('digitalCueContainer');
             const emptyArea = document.getElementById('detailCuesheetEmpty');
@@ -693,14 +693,22 @@
 
             try {
                 let cueData = null;
-                let targetCueId = "";
+                let targetCueId = cueSheetId || "";
 
-                if (bandId && eventId) {
+                // 1. バンド情報に紐付く最新CueシートIDから直接取得
+                if (targetCueId) {
+                    const docSnap = await getDoc(doc(db, "cuesheets", targetCueId));
+                    if (docSnap.exists()) cueData = docSnap.data();
+                }
+
+                // 2. ID未登録時のフォールバック（{bandId}_{eventId}）
+                if (!cueData && bandId && eventId) {
                     targetCueId = `${bandId}_${eventId}`;
                     const docSnap = await getDoc(doc(db, "cuesheets", targetCueId));
                     if (docSnap.exists()) cueData = docSnap.data();
                 }
 
+                // 3. bandId 一致のクエリ検索
                 if (!cueData && bandId) {
                     const q = query(collection(db, "cuesheets"), where("bandId", "==", bandId));
                     const snap = await getDocs(q);
@@ -1302,8 +1310,9 @@
             const cueUploadArea = document.getElementById('cueUploadArea');
             if(cueUploadArea) cueUploadArea.classList.toggle('hidden', !canE);
 
-            // デジタルCueシート取得・描画を実行
-            fetchAndRenderCueSheet(bid, currentBandLatestEventId, data.latestCuesheetUrl || data.cueSheetUrl);
+            // バンドデータに保持されている latestCueSheetId を渡して描画
+            const cueId = data.latestCueSheetId || data.cueSheetId || "";
+            fetchAndRenderCueSheet(bid, cueId, currentBandLatestEventId, data.latestCuesheetUrl || data.cueSheetUrl);
 
             // タブを初期状態（メンバー）にリセット
             if(window.switchDetailTab) window.switchDetailTab('members');
