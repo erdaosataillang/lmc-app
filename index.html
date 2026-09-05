@@ -1191,20 +1191,32 @@
                 card.className = 'card band-card';
                 card.onclick = () => openBandDetail(b.id, b); 
                 
-                // 画像表示 (iconがあれば表示)
+                // 画像表示
                 const img = b.icon ? `<img src="${b.icon}" class="band-card-img">` : `<div class="band-card-img" style="display:flex; justify-content:center; align-items:center; color:#ccc; font-size:40px;">${(b.name||"?")[0]}</div>`;
                 
-                // 日付表示の仮ロジック (イベントがある場合はその日付、なければ「-」)
-                const dateText = "日付未定"; // ※現在は仮。必要に応じて日付データを結合してください
+                const dateText = "日付未定";
+
+                // 自分がいいね済みかどうかを判定
+                const isLiked = Array.isArray(b.likes) && b.likes.includes(currentUser);
+                const heartIcon = isLiked ? 'favorite' : 'favorite_border';
+                const heartColor = isLiked ? '#ef4444' : 'white';
 
                 card.innerHTML = `
                     ${img}
-                    <span class="material-icons like-icon">favorite_border</span>
+                    <span class="material-icons like-icon" style="color: ${heartColor};">${heartIcon}</span>
                     <div class="band-card-content">
                         <div class="band-name">${b.name}</div>
                         <div class="band-date">${dateText}</div>
                     </div>
                 `;
+
+                // ハートアイコンのクリック処理
+                const likeBtn = card.querySelector('.like-icon');
+                likeBtn.onclick = (e) => {
+                    e.stopPropagation(); // 詳細モーダルが開くのを防止
+                    toggleBandLike(b.id, isLiked);
+                };
+
                 return card;
             };
 
@@ -1242,6 +1254,27 @@
             });
         }
 
+        // バンドのお気に入り（いいね）切り替え処理
+        window.toggleBandLike = async (bandId, isCurrentlyLiked) => {
+            if (!currentUser) return;
+
+            try {
+                const bandRef = doc(db, "bands", bandId);
+                if (isCurrentlyLiked) {
+                    await updateDoc(bandRef, {
+                        likes: arrayRemove(currentUser)
+                    });
+                } else {
+                    await updateDoc(bandRef, {
+                        likes: arrayUnion(currentUser)
+                    });
+                }
+                // onSnapshot (loadMyBands) により自動で再描画されます
+            } catch (err) {
+                console.error("Like Error:", err);
+                showCustomAlert("お気に入りの更新に失敗しました。");
+            }
+        };
         // --- バンド詳細ロジック ---
         window.openBandDetail = async (bid, data) => {
             currentEditingBandId = bid; currentEditingBandMembers = data.memberIds;
