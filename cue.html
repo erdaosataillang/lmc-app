@@ -128,6 +128,23 @@
             color: black;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
+
+        /* 印刷・PDF保存用 */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white;
+                padding: 0;
+            }
+            .sheet-container {
+                box-shadow: none;
+                border: 2px solid #000;
+                margin: 0;
+                max-width: 100%;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen p-2 md:p-6">
@@ -183,7 +200,7 @@
                 </tr>
             </thead>
             <tbody id="members-tbody">
-                <!-- JSで8行生成します -->
+                <!-- JSで8行生成 -->
             </tbody>
         </table>
 
@@ -199,7 +216,7 @@
                     </tr>
                 </thead>
                 <tbody id="songs-tbody">
-                    <!-- JSで5行生成します -->
+                    <!-- JSで5行生成 -->
                 </tbody>
             </table>
             
@@ -213,13 +230,26 @@
                 </div>
             </div>
         </div>
+
+        <!-- 送信ボタンエリア -->
+        <div class="mt-8 no-print">
+            <button type="button" id="submit-btn" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-base rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                Cueシートを送信・登録する
+            </button>
+        </div>
     </div>
 
     <!-- Firebase SDK (ES Modules形式) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc, 
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Immersive環境、または通常の環境用の設定
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
@@ -235,12 +265,14 @@
             };
 
         let db = null;
+        let auth = null;
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
-            const auth = getAuth(app);
+            auth = getAuth(app);
+            signInAnonymously(auth).catch(err => console.warn("Anonymous auth failed:", err));
         } catch(e) {
-            console.log("Firebase setup skipped or missing config.");
+            console.log("Firebase setup skipped or missing config.", e);
         }
 
         // Toast（通知）を表示する関数
@@ -260,7 +292,7 @@
                 toast.style.transition = 'all 0.3s ease';
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
-        }
+        };
 
         // メンバー表を8行生成
         const membersTbody = document.getElementById('members-tbody');
@@ -275,7 +307,7 @@
             membersTbody.appendChild(tr);
         }
 
-        // 楽曲表の行生成関数（動的追加に対応するため関数化）
+        // 楽曲表の行生成関数
         const createSongRow = (i) => {
             const tr = document.createElement('tr');
             tr.className = 'border-b-black-1 h-12 relative';
@@ -301,11 +333,12 @@
         const urlParams = new URLSearchParams(window.location.search);
         const bandId = urlParams.get('bandID');
         const eventId = urlParams.get('eventID');
-        const draftKey = `draft_${bandId}_${eventId}`; // バンド＆イベントごとの固有キー
+        const cueSheetIdParam = urlParams.get('cuesheetID') || urlParams.get('cueSheetID');
+        const draftKey = `draft_${bandId}_${eventId}`;
 
         // 入力データをすべて収集してローカルストレージに保存する
         const saveDraft = () => {
-            if (!bandId || !eventId) return; // IDがない場合は保存しない
+            if (!bandId || !eventId) return;
 
             const data = {
                 bandName: document.getElementById('band-name').value,
@@ -317,7 +350,6 @@
                 songs: []
             };
 
-            // メンバーデータの収集
             document.querySelectorAll('#members-tbody tr').forEach(tr => {
                 data.members.push({
                     grade: tr.querySelector('.grade-input').value,
@@ -326,7 +358,6 @@
                 });
             });
 
-            // 楽曲データの収集
             document.querySelectorAll('#songs-tbody tr').forEach(tr => {
                 data.songs.push({
                     title: tr.querySelector('.song-title').value,
@@ -364,7 +395,6 @@
                     });
                 }
 
-                // メンバーの復元
                 const membersTrs = document.querySelectorAll('#members-tbody tr');
                 data.members.forEach((m, i) => {
                     if (membersTrs[i]) {
@@ -374,16 +404,14 @@
                     }
                 });
 
-                // 楽曲の復元（行が足りなければ増やす）
-                songsTbody.innerHTML = ''; // 一旦クリア
-                const rowCount = Math.max(5, data.songs.length); // 最低5行は維持
+                songsTbody.innerHTML = '';
+                const rowCount = Math.max(5, data.songs.length);
                 for (let i = 0; i < rowCount; i++) {
                     const tr = createSongRow(i);
                     if (data.songs[i]) {
                         tr.querySelector('.song-title').value = data.songs[i].title || '';
                         tr.querySelector('.song-duration').value = data.songs[i].duration || '';
                     }
-                    // 最後の行のボーダー調整
                     if (i === rowCount - 1) tr.classList.remove('border-b-black-1');
                     songsTbody.appendChild(tr);
                 }
@@ -398,7 +426,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             if (bandId && eventId && db) {
                 try {
-                    // 1. イベント情報の取得（常に取得してタイトルを更新）
+                    // 1. イベント情報の取得
                     const eventDocRef = doc(db, 'events', eventId);
                     const eventDocSnap = await getDoc(eventDocRef);
                     if (eventDocSnap.exists()) {
@@ -412,13 +440,13 @@
                         }
                     }
 
-                    // 2. 下書き(ローカルストレージ)があればそれを優先して読み込む
+                    // 2. 下書きがあれば読み込み
                     if (loadDraft()) {
                         showToast('入力途中のデータを復元しました', 'info');
-                        return; // 下書きがある場合はFirestoreの上書きはしない
+                        return;
                     }
 
-                    // 3. 下書きがない場合はFirestoreから初期情報を取得
+                    // 3. なければFirestoreから既存情報を取得
                     const bandDocRef = doc(db, 'bands', bandId);
                     const bandDocSnap = await getDoc(bandDocRef);
                     
@@ -426,15 +454,10 @@
                         const data = bandDocSnap.data();
                         document.getElementById('band-name').value = data.name || '';
                         
-                        // 出演回数の自動計算・入力
                         const existingCountInput = document.getElementById('existing-count');
                         if (data.events && Array.isArray(data.events)) {
                             const eventCount = data.events.length;
-                            if (eventCount <= 1) {
-                                existingCountInput.value = '新規';
-                            } else {
-                                existingCountInput.value = eventCount;
-                            }
+                            existingCountInput.value = eventCount <= 1 ? '新規' : eventCount;
                         } else {
                             existingCountInput.value = '新規';
                         }
@@ -443,7 +466,6 @@
                         const grades = document.querySelectorAll('.grade-input');
                         const parts = document.querySelectorAll('.part-input');
                         
-                        // メンバー詳細をusersコレクションから取得
                         if (data.memberIds && Array.isArray(data.memberIds)) {
                             const userPromises = data.memberIds.map((uid, idx) => {
                                 if (idx >= 8) return null;
@@ -481,7 +503,6 @@
                             });
                         }
                         
-                        // 初期読み込みが終わったら、その状態を保存しておく
                         saveDraft();
                         showToast('バンド情報を読み込みました', 'success');
                     }
@@ -492,13 +513,12 @@
             }
         });
 
-        
-        // 画面内の入力（文字入力、削除など）があったら自動保存
+        // 入力時の自動保存
         document.addEventListener('input', () => {
             saveDraft();
         });
 
-        // NG日に入力があったら「NG理由」の行を表示する
+        // NG日の表示制御
         document.getElementById('ng-date').addEventListener('input', function() {
             const reasonRow = document.getElementById('ng-reason-row');
             if (this.value.trim() !== '') {
@@ -509,17 +529,17 @@
             }
         });
 
-        // 同期ボタンのトグル
+        // 同期ボタン
         document.querySelectorAll('.sync-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.sync-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
                 document.getElementById('sync-val').value = e.target.getAttribute('data-val');
-                saveDraft(); // 選択後に自動保存
+                saveDraft();
             });
         });
 
-        // Apple Music (iTunes API) 検索
+        // 曲検索
         window.searchSong = async (btn, index) => {
             const row = btn.closest('tr');
             const titleInput = row.querySelector('.song-title');
@@ -566,8 +586,6 @@
                             titleInput.value = song.trackName;
                             row.querySelector('.song-duration').value = timeStr;
                             suggestBox.style.display = 'none';
-                            
-                            // 検索入力後もイベントを発火させ、行追加と保存をトリガーする
                             titleInput.dispatchEvent(new Event('input', { bubbles: true }));
                         };
 
@@ -590,7 +608,6 @@
             }
         };
 
-        // サジェストボックス以外をタップしたら閉じる
         const closeSuggests = (e) => {
             if (!e.target.closest('.suggest-list') && !e.target.closest('.search-btn')) {
                 document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
@@ -599,6 +616,7 @@
         document.addEventListener('click', closeSuggests);
         document.addEventListener('touchstart', closeSuggests, {passive: true});
 
+        // 最後の行に入力があった場合の自動行追加
         document.addEventListener('input', function(e) {
             const timeInput = e.target.closest('tr')?.querySelector('input[placeholder="00:00"]');
             if (!timeInput) return;
@@ -621,11 +639,9 @@
                         numTd.textContent = rows.length + 1;
                     }
 
-                    // ボーダーの再調整
                     lastRow.classList.add('border-b-black-1');
                     newRow.classList.remove('border-b-black-1');
 
-                    // 検索用のID等を更新
                     const newIndex = rows.length;
                     const searchBtn = newRow.querySelector('.search-btn');
                     const suggestDiv = newRow.querySelector('.suggest-list');
@@ -639,6 +655,100 @@
                 }
             }
         });
+
+        // ==========================================
+        // Firestoreへのアップロード処理
+        // ==========================================
+        const submitCueSheet = async () => {
+            if (!db) {
+                showToast('データベースへの接続が初期化されていません', 'error');
+                return;
+            }
+
+            if (!bandId || !eventId) {
+                showToast('URLパラメータ（bandID, eventID）が指定されていません', 'error');
+                return;
+            }
+
+            const bandName = document.getElementById('band-name').value.trim();
+            if (!bandName) {
+                showToast('バンド名を入力してください', 'error');
+                document.getElementById('band-name').focus();
+                return;
+            }
+
+            const ngDate = document.getElementById('ng-date').value.trim();
+            const ngReason = document.getElementById('ng-reason').value.trim();
+            if (ngDate !== '' && ngReason === '') {
+                showToast('NG日がある場合は理由を記入してください', 'error');
+                document.getElementById('ng-reason').focus();
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+            submitBtn.innerText = '登録中...';
+
+            try {
+                // メンバー情報
+                const members = [];
+                document.querySelectorAll('#members-tbody tr').forEach(tr => {
+                    const grade = tr.querySelector('.grade-input').value.trim();
+                    const part = tr.querySelector('.part-input').value.trim();
+                    const name = tr.querySelector('.name-input').value.trim();
+                    if (grade || part || name) {
+                        members.push({ grade, part, name });
+                    }
+                });
+
+                // 楽曲情報
+                const songs = [];
+                document.querySelectorAll('#songs-tbody tr').forEach(tr => {
+                    const title = tr.querySelector('.song-title').value.trim();
+                    const duration = tr.querySelector('.song-duration').value.trim();
+                    if (title || duration) {
+                        songs.push({ title, duration });
+                    }
+                });
+
+                // 送信ペイロード
+                const payload = {
+                    bandId: bandId,
+                    eventId: eventId,
+                    bandName: bandName,
+                    existingCount: document.getElementById('existing-count').value.trim(),
+                    ngDate: ngDate,
+                    ngReason: ngReason,
+                    syncVal: document.getElementById('sync-val').value,
+                    members: members,
+                    songs: songs,
+                    updatedAt: serverTimestamp()
+                };
+
+                // cuesheetIDの決定（URLパラメータ優先、なければ bandID_eventID をIDに設定）
+                const targetDocId = cueSheetIdParam || `${bandId}_${eventId}`;
+                const docRef = doc(db, 'cuesheets', targetDocId);
+
+                await setDoc(docRef, payload, { merge: true });
+
+                // 下書きを削除
+                localStorage.removeItem(draftKey);
+
+                showToast('Cueシートを正常に登録しました！', 'success');
+                submitBtn.innerText = '送信完了（登録済み）';
+                submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                submitBtn.classList.add('bg-green-600');
+            } catch (error) {
+                console.error("Firestore Submit Error:", error);
+                showToast('登録に失敗しました: ' + error.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                submitBtn.innerText = 'Cueシートを送信・登録する';
+            }
+        };
+
+        document.getElementById('submit-btn').addEventListener('click', submitCueSheet);
     </script>
 </body>
 </html>
