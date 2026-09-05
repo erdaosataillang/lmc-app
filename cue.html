@@ -555,7 +555,7 @@
             btn.disabled = true;
 
             try {
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=song&country=jp&limit=5`;
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&country=jp&limit=5`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
