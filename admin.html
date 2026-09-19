@@ -235,9 +235,6 @@
                                 <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
                                 <input type="text" oninput="handleCueSearch(event)" placeholder="バンド名で検索..." class="bg-transparent border-none outline-none text-sm w-full font-bold placeholder:font-medium placeholder:text-gray-300">
                             </div>
-                            <button onclick="openAddCuesheetModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-emerald-100 text-left">
-                                <i class="fa-solid fa-plus"></i> Cueシートを追加
-                            </button>
                         </div>
                     </div>
                     <div id="cuesheets-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
@@ -393,33 +390,6 @@
         <div onclick="event.stopPropagation()" class="bg-white w-full max-w-xl rounded-[40px] shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200 text-left max-h-[90vh] flex flex-col">
             <button onclick="closeBandDetail()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors z-20 shadow-sm text-center"><i class="fa-solid fa-xmark"></i></button>
             <div id="band-modal-content" class="overflow-y-auto flex-1 p-0 custom-scroll text-left"></div>
-        </div>
-    </div>
-
-    <!-- New Cue Sheet Modal -->
-    <div id="add-cuesheet-modal" onclick="closeAddCuesheetModal()" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto text-left">
-        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-[32px] shadow-2xl overflow-hidden relative animate-in fade-in zoom-in duration-200 text-left flex flex-col p-8">
-            <button onclick="closeAddCuesheetModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500 transition-colors shadow-sm text-center"><i class="fa-solid fa-xmark"></i></button>
-            <h3 class="text-xl font-black text-gray-800 mb-6 text-left">Cueシートの新規登録</h3>
-            <div class="space-y-6 text-left">
-                <div>
-                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2 text-left">提出対象のバンド</label>
-                    <select id="new-cue-band-id" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none focus:ring-2 focus:ring-emerald-100 transition-all text-left"></select>
-                </div>
-                <div>
-                    <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2 text-left">ファイル (PDF等)</label>
-                    <div class="relative w-full h-32 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition-colors group text-center">
-                        <i class="fa-solid fa-file-arrow-up text-gray-300 text-2xl group-hover:text-emerald-400 transition-colors"></i>
-                        <span id="file-name-label" class="text-xs font-bold text-gray-400">ファイルをタップして選択</span>
-                        <input type="file" id="new-cue-file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="updateFileNameLabel(this)">
-                    </div>
-                </div>
-                <button id="upload-cue-btn" onclick="handleNewCuesheetSubmit()" class="w-full bg-emerald-600 text-white py-4 rounded-[22px] font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 text-center">登録を実行する</button>
-            </div>
-            <div id="add-cuesheet-loader" class="uploading-overlay hidden flex-col gap-3 text-center">
-                <i class="fa-solid fa-spinner fa-spin text-emerald-600 text-3xl"></i>
-                <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Uploading...</span>
-            </div>
         </div>
     </div>
 
@@ -828,8 +798,18 @@
                     </td>
                     <td class="px-8 py-5 text-xs text-gray-500 font-medium">${membersNames}</td>
                     <td class="px-8 py-5">
-                        ${band.latestCuesheetUrl ? `<a href="${band.latestCuesheetUrl}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold hover:bg-emerald-200 transition gap-1.5" onclick="event.stopPropagation()"><i class="fa-solid fa-file-pdf"></i> 開く</a>` : `<span class="text-gray-300 text-[10px] font-bold">未提出</span>`}
-                    </td>
+    ${(() => {
+        // このバンドのCueシートが存在するか探す
+        const bandCues = cuesheetsData.filter(c => c.bandId === band.id);
+        if (bandCues.length > 0) {
+            // とりあえず見つかった最初のCueシートへのリンクを生成 (複数ある場合は詳細画面などで対応)
+            const cue = bandCues[0];
+            return `<a href="https://lmc-mobile.sorairosystem.com/cue.html?bandID=${cue.bandId}&eventID=${cue.eventId}" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-bold hover:bg-emerald-200 transition gap-1.5" onclick="event.stopPropagation()"><i class="fa-solid fa-up-right-from-square"></i> 確認</a>`;
+        } else {
+            return `<span class="text-gray-300 text-[10px] font-bold">未提出</span>`;
+        }
+    })()}
+</td>
                     <td class="px-8 py-5 text-right"><button class="text-blue-600 font-bold text-xs hover:underline">Detail</button></td>
                 </tr>`}).join('');
         };
@@ -853,7 +833,7 @@
                         <div class="text-left"><h4 class="font-bold text-gray-800">${cue.bandName}</h4><p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest">提出日時: ${dateStr}</p></div>
                     </div>
                     <div class="flex gap-2">
-                        <a href="${cue.fileUrl}" target="_blank" class="flex-1 bg-emerald-50 text-emerald-600 text-center py-3 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all">表示</a>
+                        <a href="https://lmc-mobile.sorairosystem.com/cue.html?bandID=${cue.bandId}&eventID=${cue.eventId}" target="_blank" class="flex-1 bg-emerald-50 text-emerald-600 text-center py-3 rounded-2xl text-[10px] font-extrabold uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all">フォームを開く</a>
                         <button onclick="requestDeleteCue('${cue.id}')" class="w-12 h-12 flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
