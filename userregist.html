@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>アカウント新規登録</title>
     
-    <!-- ファビコンの追加 -->
     <link rel="icon" href="https://ul.h3z.jp/hWMQAhTT.png">
     <link rel="apple-touch-icon" href="https://ul.h3z.jp/hWMQAhTT.png">
     
@@ -41,7 +40,7 @@
         }
         .step-container {
             display: flex;
-            width: 900%; /* 最大9ステップ分 */
+            width: 900%; 
             transition: transform 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
             will-change: transform;
         }
@@ -179,7 +178,7 @@
         <div class="overflow-hidden">
             <div class="step-container" id="step-container">
                 
-                <!-- 新規: ステップ0 (LINEログイン) -->
+                <!-- ステップ0 (LINEログイン) -->
                 <div class="step active" id="step0">
                     <div class="flex flex-col items-center justify-center text-center py-4">
                         <div class="w-16 h-16 bg-[#06C755]/10 rounded-full flex items-center justify-center mb-6 text-[#06C755]">
@@ -200,7 +199,6 @@
                 <!-- ステップ1: お名前 (本名) -->
                 <div class="step" id="step1">
                     <form onsubmit="handleGenericNext(event)">
-                        <!-- 最初の入力画面なので「戻る」は非表示にします -->
                         <div class="input-group mt-4">
                             <input type="text" id="name" placeholder=" " required autocomplete="name" autocapitalize="off" autocorrect="off">
                             <label for="name">お名前 (本名)</label>
@@ -296,7 +294,7 @@
                     </form>
                 </div>
 
-                <!-- ステップ6: 学部・学科 (軽音モード専用) -->
+                <!-- ステップ6: 学部・学科 または 学外 (軽音モード専用) -->
                 <div class="step" id="step6">
                     <form onsubmit="handleGenericNext(event)">
                         <div class="flex items-center mb-6 text-sm text-blue-600 cursor-pointer w-fit" onclick="goToPrevStep()">
@@ -305,8 +303,13 @@
                         </div>
                         <div class="input-group">
                             <input type="text" id="department" placeholder=" " required autocomplete="off" oninput="filterDepartments(this)" onfocus="filterDepartments(this)">
-                            <label for="department">学部・学科 (サジェスト選択)</label>
+                            <label for="department">学部・学科 または 学外 (サジェスト選択)</label>
                             <div id="dept-suggestions" class="suggestions-list hidden"></div>
+                        </div>
+                        <!-- 学校名入力フォーム（「学外」選択時に表示） -->
+                        <div class="input-group hidden" id="school-name-group">
+                            <input type="text" id="school_name" placeholder=" " autocomplete="off">
+                            <label for="school_name">学校名</label>
                         </div>
                         <div class="mt-8 flex justify-end">
                             <button type="submit" class="btn bg-blue-600 text-white font-medium py-3 px-6 rounded-full flex items-center gap-2 shadow-lg hover:bg-blue-700 w-full justify-center sm:w-auto">
@@ -367,8 +370,8 @@
                                     <span class="text-xs text-gray-700 font-medium">ドラム</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors" onclick="window.handleInstrumentChange(this)">
-                                    <input type="checkbox" name="instrument" value="キーボード・ピアノ" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
-                                    <span class="text-xs text-gray-700 font-medium">キーボード・ピアノ</span>
+                                    <input type="checkbox" name="instrument" value="Key." class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                                    <span class="text-xs text-gray-700 font-medium">Key.</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded-xl border border-blue-100 bg-blue-50/30 hover:bg-blue-50 cursor-pointer transition-colors col-span-2" onclick="window.handleNoneInstrument(this)">
                                     <input type="checkbox" id="inst-none" name="instrument" value="なし" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
@@ -467,62 +470,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
-        // ==========================================
-        // URLパラメータの取得と保持ロジックの改善
-        // ==========================================
-        let secParam = null;
-        let jumpedUrl = null;
-
-        // URLをチェックして必要なパラメーターを抽出・保存、なければセッションを確認する関数
-        function processAndStoreParameters() {
-            const currentUrlParams = new URLSearchParams(window.location.search);
-            
-            const urlSec = currentUrlParams.get('sec');
-            const urlJumpedUrl = currentUrlParams.get('jumpedurl');
-
-            // 1. URLに必要なパラメーターが存在する場合
-            if (urlSec && urlJumpedUrl) {
-                secParam = urlSec;
-                jumpedUrl = urlJumpedUrl;
-                // セッションストレージに保存して、リダイレクト後でも復旧できるようにする
-                sessionStorage.setItem('secParam', secParam);
-                sessionStorage.setItem('jumpedUrl', jumpedUrl);
-            } 
-            // 2. URLにはないが、セッションストレージに保存されている場合
-            else if (sessionStorage.getItem('secParam') && sessionStorage.getItem('jumpedUrl')) {
-                secParam = sessionStorage.getItem('secParam');
-                jumpedUrl = sessionStorage.getItem('jumpedUrl');
-            }
-            // 3. どちらにも存在しない場合はエラーを出す
-            else {
-                alert("エラー: 必要なパラメーター（?sec= & ?jumpedurl=）が指定されていません。正しいリンクからアクセスしてください。");
-                // エラー時は安全のために処理を止めるか、デフォルトの挙動にするなどを検討
-            }
-        }
-
-        // 初期化時に実行
-        processAndStoreParameters();
-
-        // モードの判定
-        const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
-
-        if (isLmcMode) {
-            document.getElementById('main-title').textContent = '軽音サークル 新規登録';
-        }
-
-        // 完了ボタン押下時の遷移関数
-        window.finishRegistration = function() {
-            if (jumpedUrl) {
-                // 不要になったセッションを掃除
-                sessionStorage.removeItem('secParam');
-                sessionStorage.removeItem('jumpedUrl');
-                
-                window.location.href = jumpedUrl;
-            } else {
-                alert("遷移先のURLが不明なため、移動できません。");
-            }
-        };
-
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
             authDomain: "urakata-app.firebaseapp.com",
@@ -537,12 +484,33 @@
         const db = getFirestore(app);
 
         // ==========================================
+        // URLパラメータとセッションの処理
+        // ==========================================
+        const urlParams = new URLSearchParams(window.location.search);
+        let secParam = urlParams.get('sec');
+        let jumpedUrl = urlParams.get('jumpedurl');
+
+        // URLにパラメータがあればセッションに保存し、なければセッションから復元
+        if (secParam && jumpedUrl) {
+            sessionStorage.setItem('secParam', secParam);
+            sessionStorage.setItem('jumpedUrl', jumpedUrl);
+        } else {
+            secParam = sessionStorage.getItem('secParam');
+            jumpedUrl = sessionStorage.getItem('jumpedUrl');
+            
+            // どちらにも無い場合はエラー
+            if (!secParam || !jumpedUrl) {
+                alert("エラー: 必要なパラメーターが指定されていません。正しいリンクからアクセスしてください。");
+            }
+        }
+
+        const isLmcMode = (secParam === 'LMC' || secParam === 'LP' || secParam === 'lmc' || secParam === 'lp');
+
+        // ==========================================
         // LIFF (LINE連携) の初期化と処理
         // ==========================================
-        const MY_LIFF_ID = "2008162165-cVfrU588"; // 発行したLIFF ID
-        
+        const MY_LIFF_ID = "2008162165-cVfrU588"; 
         let globalLineProfile = null;
-        let lineUserId = null;
 
         async function initializeLiff() {
             try {
@@ -551,7 +519,7 @@
                 if (liff.isLoggedIn()) {
                     const profile = await liff.getProfile();
                     globalLineProfile = profile;
-                    lineUserId = profile.userId;
+                    const lineUserId = profile.userId;
                     
                     const docRef = doc(db, "users", lineUserId);
                     const docSnap = await getDoc(docRef);
@@ -559,14 +527,15 @@
                     if (docSnap.exists()) {
                         alert("すでに登録済みのLINEアカウントです。アプリへ移動します。");
                         if (jumpedUrl) {
+                            sessionStorage.removeItem('secParam');
+                            sessionStorage.removeItem('jumpedUrl');
                             window.location.href = jumpedUrl;
                         } else {
-                            alert("エラー: ジャンプ元のURL（?jumpedurl=）がありません。");
+                            alert("エラー: ジャンプ元のURLが見つかりません。");
                         }
-                        return; 
+                        return;
                     }
 
-                    // 新規の場合はステップ1へ進める
                     currentStepIndex = 1; 
                     updateStepDisplay();
                 }
@@ -578,14 +547,8 @@
         initializeLiff();
 
         window.startLineLogin = function() {
-            if (MY_LIFF_ID === "ここにLINE Developersで発行したLIFF IDを入力") {
-                alert("LINE DevelopersでLIFF IDを発行し、コード内の MY_LIFF_ID に設定してください。");
-                return;
-            }
-
             if (!liff.isLoggedIn()) {
-                // 400 Bad Request を防ぐため、redirectUriの指定を削除
-                // セッションストレージでパラメータを保持しているので、これだけで正常に復帰できます
+                // リダイレクトURIを指定せず、シンプルなログインにすることで400エラーを回避
                 liff.login();
             } else {
                 location.reload();
@@ -595,6 +558,9 @@
         // ==========================================
         // UI・アニメーション・フォーム制御
         // ==========================================
+        if (isLmcMode) {
+            document.getElementById('main-title').textContent = '軽音サークル 新規登録';
+        }
 
         if (!isLmcMode) {
             ['step5', 'step6', 'step7', 'step-instrument'].forEach(id => {
@@ -672,11 +638,13 @@
             "準備が完了しました"
         ];
 
+        // 「学外」を追加
         const departmentList = [
             "文学部 歴史学科", "文学部 日本文化学科", "文学部 宗教文化学科", "文学部 英語英米文化学科", "文学部 グローバル英語学科",
             "心理学部 心理学科", "健康科学部 健康科学科", "健康科学部 健康栄養学科",
             "総合政策学部 総合政策学科", "商学部 商学科", "経営学部 経営学科", "経済学部 経済学科",
-            "法学部 法律学科", "法学部 現代社会法学科", "薬学部 医療薬学科", "歯学部 歯学科"
+            "法学部 法律学科", "法学部 現代社会法学科", "薬学部 医療薬学科", "歯学部 歯学科",
+            "学外"
         ];
         const yearList = ["1年生", "2年生", "3年生", "4年生", "5年生", "6年生", "院生・その他"];
 
@@ -689,9 +657,23 @@
                 listEl.classList.remove('hidden');
             } else { listEl.classList.add('hidden'); }
         }
+
+        // 学外が選ばれた際の連動処理
         window.selectDepartment = function(val) {
             document.getElementById('department').value = val;
             document.getElementById('dept-suggestions').classList.add('hidden');
+
+            const schoolNameGroup = document.getElementById('school-name-group');
+            const schoolNameInput = document.getElementById('school_name');
+            
+            if (val === '学外') {
+                schoolNameGroup.classList.remove('hidden');
+                schoolNameInput.required = true;
+            } else {
+                schoolNameGroup.classList.add('hidden');
+                schoolNameInput.required = false;
+                schoolNameInput.value = '';
+            }
         }
 
         window.filterYears = function(input) {
@@ -804,7 +786,10 @@
                 };
                 if (codeMap[code]) {
                     const deptInput = document.getElementById('department');
-                    if (deptInput && !deptInput.value) deptInput.value = codeMap[code];
+                    if (deptInput && !deptInput.value) {
+                        // 連携によって学外がリセットされる場合も考慮し、通常設定のみ行う
+                        window.selectDepartment(codeMap[code]);
+                    }
                 }
             }
             if (val.length > 0 && val.length < 5) errorElement.classList.remove('hidden');
@@ -817,6 +802,7 @@
             goToNextStep();
         };
 
+        // Firestoreへのデータ登録処理 (LINEのIDを使用)
         window.handleSubmit = async function(e) {
             e.preventDefault();
             
@@ -841,8 +827,8 @@
                 const formKana = document.getElementById('furigana').value;
                 const formPhone = document.getElementById('phone').value;
                 const formBirthdate = document.getElementById('birthdate').value;
-                const formPassword = document.getElementById('password').value;
-                const roleValue = isLmcMode ? "LMC_normal" : "user_normal";
+                
+                const roleValue = isLmcMode && secParam ? `${secParam.toLowerCase()}_normal` : "user_normal";
                 
                 const userData = {
                     affiliations: ["urakata"],
@@ -868,9 +854,14 @@
                 };
 
                 if (isLmcMode) {
-                    userData.affiliations.push(secParam.toLowerCase());
+                    userData.affiliations.push(secParam.toLowerCase()); 
                     userData.studentId = document.getElementById('student_id').value;
                     userData.faculty = document.getElementById('department').value;
+                    
+                    // 学外が選択された場合の学校名を保存
+                    if (userData.faculty === "学外") {
+                        userData.schoolName = document.getElementById('school_name').value;
+                    }
                     
                     const gradeRaw = document.getElementById('school_year').value;
                     const numMatch = gradeRaw.match(/\d+/);
@@ -878,8 +869,6 @@
                     
                     const instruments = Array.from(document.querySelectorAll('input[name="instrument"]:checked')).map(cb => cb.value);
                     userData.part = instruments.join(", "); 
-
-                    userData.roll = [`${secParam.toLowerCase()}_normal`];
                 }
 
                 await setDoc(doc(db, "users", lineUserId), userData, { merge: true });
@@ -899,6 +888,17 @@
                 btnLoader.style.display = 'none';
                 submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
                 submitBtn.disabled = false;
+            }
+        };
+
+        // 完了ボタン押下時の処理
+        window.finishRegistration = function() {
+            if (jumpedUrl) {
+                sessionStorage.removeItem('secParam');
+                sessionStorage.removeItem('jumpedUrl');
+                window.location.href = jumpedUrl;
+            } else {
+                alert("アプリのホーム画面へ移動します（URL設定漏れ）");
             }
         };
 
@@ -923,5 +923,4 @@
         });
     </script>
 </body>
-    
 </html>
