@@ -234,6 +234,14 @@
             </div>
         </div>
 
+        <!-- 備考欄 -->
+        <div class="flex border-black-2 mb-6 bg-white">
+            <div class="w-24 border-r-black-2 p-2 font-bold flex items-center justify-center bg-gray-50 text-sm leading-tight text-center">
+                備考欄
+            </div>
+            <textarea id="band-remarks" class="flex-grow p-2 resize-none outline-none text-sm" rows="3" placeholder="転換時の注意事項や、マイク・イスの希望数などがあれば記入してください"></textarea>
+        </div>
+
         <!-- 送信ボタンエリア -->
         <div class="mt-8 no-print">
             <button type="button" id="submit-btn" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-bold text-base rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
@@ -350,6 +358,7 @@
 
             document.getElementById('band-name').value = data.bandName || data.name || '';
             document.getElementById('existing-count').value = data.existingCount || '';
+            document.getElementById('band-remarks').value = data.remarks || '';
             
             const ngDateInput = document.getElementById('ng-date');
             ngDateInput.value = data.ngDate || '';
@@ -405,6 +414,7 @@
                 ngDate: document.getElementById('ng-date').value,
                 ngReason: document.getElementById('ng-reason').value,
                 syncVal: document.getElementById('sync-val').value,
+                remarks: document.getElementById('band-remarks').value,
                 members: [],
                 songs: []
             };
@@ -440,8 +450,19 @@
             }
         };
 
-        window.addEventListener('DOMContentLoaded', async () => {
+       window.addEventListener('DOMContentLoaded', async () => {
             if (!db) return;
+
+            // ==========================================
+            // パラメーター不正時のリダイレクト処理
+            // ==========================================
+            if (!cueId && (!bandId || !eventId)) {
+                showToast('パラメーターが不正です。ホーム画面へ戻ります。', 'error');
+                setTimeout(() => {
+                    window.location.replace("https://liff.line.me/2008162165-vVODNp12");
+                }, 2500);
+                return;
+            }
 
             try {
                 // ==========================================
@@ -904,12 +925,13 @@
 
                 const payload = {
                     bandId: bandId || '',
-                    eventId: eventId || '',
+                    eventId: selectedEventId || '',
                     bandName: bandName,
                     existingCount: document.getElementById('existing-count').value.trim(),
                     ngDate: ngDate,
                     ngReason: ngReason,
                     syncVal: document.getElementById('sync-val').value,
+                    remarks: document.getElementById('band-remarks').value.trim(),
                     members: members,
                     songs: songs,
                     updatedAt: serverTimestamp()
