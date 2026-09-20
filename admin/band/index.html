@@ -269,9 +269,13 @@
                         ${eventNames || '<span class="text-gray-300 text-[10px] font-bold italic">No Events</span>'}
                     </td>
                     <td class="px-8 py-5 text-right">
-                        ${band.latestCuesheetUrl ? 
+                        ${band.latestCueSheetId ? 
+                            `<a href="https://lmc-mobile.sorairosystem.com/cue.html?cueID=${band.latestCueSheetId}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm">
+                                <i class="fa-solid fa-file-code"></i> Web Cue
+                            </a>` : 
+                        band.latestCuesheetUrl ? 
                             `<a href="${band.latestCuesheetUrl}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 shadow-sm">
-                                <i class="fa-solid fa-file-pdf"></i> Cue
+                                <i class="fa-solid fa-image"></i> 画像
                             </a>` : 
                             `<span class="text-gray-300 text-[10px] font-bold italic px-4">未提出</span>`
                         }
@@ -339,24 +343,37 @@
                         <div class="mb-8">
                             <div class="flex items-center justify-between mb-4 px-1">
                                 <h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-file-lines mr-2"></i>Cue Sheet</h4>
-                                <button onclick="window.editCueSheetUrl('${band.id}')" class="text-[10px] font-bold text-blue-600 hover:underline">URLを登録/編集</button>
+                                <button onclick="window.editCueSheetUrl('${band.id}')" class="text-[10px] font-bold text-blue-400 hover:underline">画像URL手動登録</button>
                             </div>
-                            <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm p-4 flex items-center justify-between">
-                                ${band.latestCuesheetUrl ?
-                                    `<div class="flex items-center gap-3 overflow-hidden">
-                                        <div class="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex shrink-0 items-center justify-center text-lg"><i class="fa-solid fa-file-pdf"></i></div>
-                                        <div class="min-w-0">
-                                            <p class="font-bold text-gray-800 text-sm">Cueシート登録済み</p>
-                                            <a href="${band.latestCuesheetUrl}" target="_blank" class="text-[10px] text-blue-500 hover:underline truncate block">${band.latestCuesheetUrl}</a>
+                            
+                            <div class="flex flex-col gap-3">
+                                <!-- デジタルCueシート -->
+                                <div class="bg-white rounded-[24px] border border-blue-100 shadow-sm p-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex shrink-0 items-center justify-center text-lg"><i class="fa-solid fa-file-code"></i></div>
+                                        <div>
+                                            <p class="font-bold text-gray-800 text-sm">デジタルCueシート</p>
+                                            <p class="text-[10px] text-gray-400 font-bold">${band.latestCueSheetId ? '提出済み' : '未提出'}</p>
                                         </div>
                                     </div>
-                                    <a href="${band.latestCuesheetUrl}" target="_blank" class="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 shadow-md transition-all shrink-0 ml-2">開く</a>`
-                                :
-                                    `<div class="flex items-center gap-3">
-                                        <div class="w-10 h-10 bg-gray-50 text-gray-400 rounded-xl flex shrink-0 items-center justify-center text-lg"><i class="fa-solid fa-file-circle-xmark"></i></div>
-                                        <p class="font-bold text-gray-400 text-sm">Cueシート未提出</p>
+                                    <a href="https://lmc-mobile.sorairosystem.com/cue.html?${band.latestCueSheetId ? `cueID=${band.latestCueSheetId}` : `bandID=${band.id}&eventID=${band.events && band.events.length > 0 ? band.events[band.events.length - 1] : ''}`}" target="_blank" class="px-4 py-2 ${band.latestCueSheetId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-800 hover:bg-black'} text-white text-xs font-bold rounded-xl shadow-md transition-all shrink-0 ml-2">
+                                        ${band.latestCueSheetId ? '開く' : '作成'}
+                                    </a>
+                                </div>
+
+                                <!-- 従来の画像URL -->
+                                ${band.latestCuesheetUrl ?
+                                    `<div class="bg-white rounded-[24px] border border-gray-100 shadow-sm p-4 flex items-center justify-between mt-2">
+                                        <div class="flex items-center gap-3 overflow-hidden">
+                                            <div class="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex shrink-0 items-center justify-center text-lg"><i class="fa-solid fa-image"></i></div>
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-gray-800 text-sm">画像/PDF Cueシート</p>
+                                                <a href="${band.latestCuesheetUrl}" target="_blank" class="text-[10px] text-blue-500 hover:underline truncate block">${band.latestCuesheetUrl}</a>
+                                            </div>
+                                        </div>
+                                        <a href="${band.latestCuesheetUrl}" target="_blank" class="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 shadow-md transition-all shrink-0 ml-2">開く</a>
                                     </div>`
-                                }
+                                : ''}
                             </div>
                         </div>
 
