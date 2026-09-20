@@ -294,6 +294,22 @@
             modal.classList.remove('modal-active');
             setTimeout(() => modal.classList.add('hidden'), 200);
         };
+        // CueシートのURLを登録・編集する関数
+        window.editCueSheetUrl = async (bid) => {
+            const band = bandsData.find(b => b.id === bid);
+            const currentUrl = band.latestCuesheetUrl || '';
+            const newUrl = prompt('CueシートのURLを入力してください:\n(例: https://... または /cuesheet.html?bandId=...)', currentUrl);
+            
+            if (newUrl !== null) {
+                try {
+                    await updateDoc(doc(db, 'bands', bid), { latestCuesheetUrl: newUrl.trim() });
+                    // Firestoreが更新されると onSnapshot が反応し、自動的にモーダル内も再描画されます
+                } catch (e) {
+                    console.error(e);
+                    alert('URLの保存に失敗しました');
+                }
+            }
+        };
 
         function renderBandDetailContent(bandId) {
             const band = bandsData.find(b => b.id === bandId);
@@ -301,6 +317,7 @@
             const members = (band.memberIds || []).map(id => usersData.find(u => u.id === id)).filter(u => u);
             const participatingEvents = (band.events || []).map(eid => eventsData.find(e => e.id === eid)).filter(e => e);
             const content = document.getElementById('band-modal-content');
+            
             content.innerHTML = `
                 <div class="relative w-full">
                     <div class="h-32 w-full bg-gradient-to-r from-slate-800 to-slate-900 relative">
@@ -317,6 +334,32 @@
                                 <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold">${members.length} Members</span>
                             </div>
                         </div>
+
+                        <!-- Cue Sheet セクション -->
+                        <div class="mb-8">
+                            <div class="flex items-center justify-between mb-4 px-1">
+                                <h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-file-lines mr-2"></i>Cue Sheet</h4>
+                                <button onclick="window.editCueSheetUrl('${band.id}')" class="text-[10px] font-bold text-blue-600 hover:underline">URLを登録/編集</button>
+                            </div>
+                            <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm p-4 flex items-center justify-between">
+                                ${band.latestCuesheetUrl ?
+                                    `<div class="flex items-center gap-3 overflow-hidden">
+                                        <div class="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex shrink-0 items-center justify-center text-lg"><i class="fa-solid fa-file-pdf"></i></div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-gray-800 text-sm">Cueシート登録済み</p>
+                                            <a href="${band.latestCuesheetUrl}" target="_blank" class="text-[10px] text-blue-500 hover:underline truncate block">${band.latestCuesheetUrl}</a>
+                                        </div>
+                                    </div>
+                                    <a href="${band.latestCuesheetUrl}" target="_blank" class="px-4 py-2 bg-emerald-500 text-white text-xs font-bold rounded-xl hover:bg-emerald-600 shadow-md transition-all shrink-0 ml-2">開く</a>`
+                                :
+                                    `<div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-gray-50 text-gray-400 rounded-xl flex shrink-0 items-center justify-center text-lg"><i class="fa-solid fa-file-circle-xmark"></i></div>
+                                        <p class="font-bold text-gray-400 text-sm">Cueシート未提出</p>
+                                    </div>`
+                                }
+                            </div>
+                        </div>
+
                         <div class="mb-8">
                             <div class="flex items-center justify-between mb-4 px-1"><h4 class="text-xs font-extrabold text-gray-400 uppercase tracking-widest"><i class="fa-solid fa-calendar-star mr-2"></i>Participating Events</h4><button onclick="window.openAddBandEventModal()" class="text-[10px] font-bold text-sky-600 hover:underline">イベント登録</button></div>
                             <div class="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden divide-y divide-gray-50">
