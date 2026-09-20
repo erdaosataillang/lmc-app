@@ -309,6 +309,25 @@
             }, 3000);
         };
 
+        // 共通のパート名フォーマット関数
+        window.formatPart = (partName) => {
+            if (!partName) return '';
+            const lower = partName.toLowerCase().replace(/ /g, ' ').trim();
+            const partMap = {
+                'vocal': 'Vo.', 'vocals': 'Vo.', 'ボーカル': 'Vo.', 'ヴォーカル': 'Vo.', 'vo': 'Vo.', 'vo.': 'Vo.',
+                'guitar': 'Gt.', 'ギター': 'Gt.', 'gt': 'Gt.', 'gt.': 'Gt.',
+                'bass': 'Ba.', 'ベース': 'Ba.', 'ba': 'Ba.', 'ba.': 'Ba.',
+                'drums': 'Dr.', 'drum': 'Dr.', 'ドラム': 'Dr.', 'dr': 'Dr.', 'dr.': 'Dr.',
+                'keyboard': 'Key.', 'keyboards': 'Key.', 'キーボード': 'Key.', 'key': 'Key.', 'key.': 'Key.',
+                'piano': 'Pf.', 'ピアノ': 'Pf.', 'pf': 'Pf.', 'pf.': 'Pf.',
+                'chorus': 'Cho.', 'コーラス': 'Cho.', 'cho': 'Cho.', 'cho.': 'Cho.',
+                'synthesizer': 'Syn.', 'シンセサイザー': 'Syn.', 'シンセ': 'Syn.', 'syn': 'Syn.', 'syn.': 'Syn.',
+                'percussion': 'Per.', 'パーカッション': 'Per.', 'per': 'Per.', 'per.': 'Per.',
+                'dj': 'DJ'
+            };
+            return partMap[lower] || partName;
+        };
+
         // メンバー表生成
         const membersTbody = document.getElementById('members-tbody');
         for (let i = 0; i < 8; i++) {
@@ -319,6 +338,12 @@
                 <td class="border-r-black-2"><input type="text" class="px-2 text-center text-sm part-input" data-index="${i}"></td>
                 <td><input type="text" class="px-2 text-sm name-input" data-index="${i}"></td>
             `;
+            // パート入力欄からフォーカスが外れた時に自動変換
+            const partInput = tr.querySelector('.part-input');
+            partInput.addEventListener('blur', (e) => {
+                e.target.value = window.formatPart(e.target.value);
+                if (typeof saveDraft === 'function') saveDraft();
+            });
             membersTbody.appendChild(tr);
         }
 
@@ -422,7 +447,7 @@
             document.querySelectorAll('#members-tbody tr').forEach(tr => {
                 data.members.push({
                     grade: tr.querySelector('.grade-input').value,
-                    part: tr.querySelector('.part-input').value,
+                    part: window.formatPart(tr.querySelector('.part-input').value),
                     name: tr.querySelector('.name-input').value
                 });
             });
@@ -844,12 +869,12 @@
                 return;
             }
 
-            // 4. メンバー情報のチェック（学年・パート・名前が3つ揃った人が1人以上いるか）
+           // 4. メンバー情報のチェック（学年・パート・名前が3つ揃った人が1人以上いるか）
             const members = [];
             let hasIncompleteMember = false;
             document.querySelectorAll('#members-tbody tr').forEach(tr => {
                 const grade = tr.querySelector('.grade-input').value.trim();
-                const part = tr.querySelector('.part-input').value.trim();
+                const part = window.formatPart(tr.querySelector('.part-input').value.trim());
                 const name = tr.querySelector('.name-input').value.trim();
 
                 if (grade || part || name) {
