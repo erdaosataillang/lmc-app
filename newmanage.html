@@ -87,11 +87,16 @@
         .edit-toggle-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #0b57d0; transition: background 0.2s; }
         .edit-toggle-btn:hover { background: rgba(11, 87, 208, 0.08); }
 
+        /* モーダル共通 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: center; } 
         .modal-overlay.open { display: flex; }
         .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; }
         .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f1f1f; }
         .dialog-message { font-size: 13px; color: #444746; margin-bottom: 20px; line-height: 1.5; white-space: pre-wrap; }
+
+        /* ユーザー詳細ポップアップモーダル */
+        .user-modal-content { background: white; width: 90%; max-width: 360px; border-radius: 24px; padding: 24px; position: relative; box-shadow: 0 8px 30px rgba(0,0,0,0.15); animation: zoomIn 0.2s ease; box-sizing: border-box; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -116,6 +121,36 @@
             <div id="dialogTitle" class="dialog-title">通知</div>
             <div id="dialogMessage" class="dialog-message">メッセージ</div>
             <button id="dialogBtnOk" class="btn-primary" style="margin:0;">OK</button>
+        </div>
+    </div>
+
+    <!-- メンバー詳細ポップアップモーダル -->
+    <div id="modal-user-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-detail')">
+        <div class="user-modal-content">
+            <button onclick="closeModal('modal-user-detail')" style="position: absolute; top: 16px; right: 16px; background: none; border: none; cursor: pointer; color: #5f6368; display:flex; align-items:center; justify-content:center;"><span class="material-icons">close</span></button>
+            
+            <div style="display:flex; align-items:center; gap:16px; margin-bottom:16px;">
+                <img id="popup-user-icon" src="" style="width:68px; height:68px; border-radius:50%; object-fit:cover; border:3px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.1); flex-shrink:0;">
+                <div style="flex-grow:1; min-width:0;">
+                    <div id="popup-user-name" style="font-size:18px; font-weight:bold; color:#1f1f1f; line-height:1.2;">名前</div>
+                    <div id="popup-user-sub" style="font-size:12px; color:#5f6368; margin-top:4px;">3年 | Key | @ふりがな</div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-around; background:#f8f9fa; border-radius:16px; padding:12px; margin-bottom:16px; text-align:center;">
+                <div>
+                    <div id="popup-user-bands-count" style="font-size:16px; font-weight:bold; color:#1f1f1f;">0</div>
+                    <div style="font-size:10px; color:#5f6368; margin-top:2px;">バンド</div>
+                </div>
+                <div>
+                    <div style="font-size:16px; font-weight:bold; color:#1f1f1f;">0</div>
+                    <div style="font-size:10px; color:#5f6368; margin-top:2px;">いいね</div>
+                </div>
+            </div>
+
+            <div id="popup-user-roles" style="display:flex; flex-wrap:wrap; gap:6px;">
+                <!-- 権限バッジが動的に入ります -->
+            </div>
         </div>
     </div>
 
@@ -410,6 +445,8 @@
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
         window.closePage = (id) => { document.getElementById('page-' + id).classList.remove('open'); };
+        window.openModal = (id) => { document.getElementById(id).classList.add('open'); };
+        window.closeModal = (id) => { document.getElementById(id).classList.remove('open'); };
 
         window.showCustomAlert = async (message, title = "通知") => {
             return new Promise((resolve) => {
@@ -668,7 +705,7 @@
         }
 
         // ==========================
-        // 2. バンドの管理 ＆ 詳細ロジック（メンバー・曲名・フリガナ対応検索含む）
+        // 2. バンドの管理 ＆ 詳細・メンバープロフィール表示
         // ==========================
         window.openAdminBands = async () => {
             openPage('admin-bands');
@@ -694,7 +731,6 @@
 
                 document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
 
-                // 全バンドデータの取得
                 const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                 allBandsCache = [];
                 
@@ -702,7 +738,6 @@
                     const bData = docSnap.data();
                     const bandId = docSnap.id;
                     
-                    // 検索用に各バンドのCuesheet情報（メンバー・楽曲など）も事前に取得してキャッシュに保持する
                     let cueData = null;
                     try {
                         const cueSheetId = bData.latestCueSheetId || `${bandId}_${currentActiveEventId}`;
@@ -742,16 +777,13 @@
                 }
 
                 if (searchKeyword !== "") {
-                    // 1. バンド名でのマッチ
                     const nameMatch = b.name && b.name.toLowerCase().includes(searchKeyword);
                     if (nameMatch) return true;
 
-                    // 2. メンバー名・フリガナでのマッチ (Cuesheetのmembers または usersのキャッシュを照合)
                     let memberMatch = false;
                     if (b.cueData && b.cueData.members && Array.isArray(b.cueData.members)) {
                         memberMatch = b.cueData.members.some(m => {
                             const mName = (m.name || "").toLowerCase();
-                            // ユーザーマスター側からフリガナも検索できるようにチェック
                             const uObj = allUsersCache.find(u => u.name === m.name);
                             const mKana = uObj && uObj.kana ? uObj.kana.toLowerCase() : "";
                             return mName.includes(searchKeyword) || (mKana && mKana.includes(searchKeyword));
@@ -768,7 +800,6 @@
                     }
                     if (memberMatch) return true;
 
-                    // 3. 曲名 (songs) でのマッチ
                     let songMatch = false;
                     if (b.cueData && b.cueData.songs && Array.isArray(b.cueData.songs)) {
                         songMatch = b.cueData.songs.some(s => {
@@ -832,7 +863,7 @@
             filterAndRenderBands();
         });
 
-        // 3. バンド詳細（Cueシートデータ取得）ページを開く
+        // 3. バンド詳細ページ
         async function openAdminBandDetail(band) {
             openPage('admin-band-detail');
             
@@ -851,7 +882,6 @@
             const membersContainer = document.getElementById('bd-detail-members-list');
             const songsContainer = document.getElementById('bd-detail-songs-list');
             
-            // 既にキャッシュされている場合はそれを活用し、無ければ再取得
             let cData = band.cueData;
             if (!cData) {
                 membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
@@ -870,12 +900,23 @@
                 document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
                 document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
 
+                // メンバー一覧 (タップするとプロフィール詳細モーダルが開くように変更)
                 if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
-                    let mHtml = "<ul style='padding-left:20px; margin:0;'>";
+                    let mHtml = "<div style='display:flex; flex-direction:column; gap:8px;'>";
                     cData.members.forEach(m => {
-                        mHtml += `<li style="margin-bottom:6px;"><strong>${m.name || '不明'}</strong> (${m.grade || '-'}年) - ${m.part || '-'}</li>`;
+                        // ユーザーマスターから該当ユーザーを探す
+                        const uObj = allUsersCache.find(x => x.name === m.name) || {};
+                        const uid = uObj.id || '';
+                        mHtml += `
+                            <div onclick="showUserProfile('${uid}', '${m.name}', '${m.grade}', '${m.part}')" style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:10px 12px; border-radius:12px; cursor:pointer; transition:background 0.2s;">
+                                <div>
+                                    <strong style="color:#1f1f1f;">${m.name || '不明'}</strong> 
+                                    <span style="font-size:12px; color:#5f6368; margin-left:4px;">(${m.grade || '-'}年 | ${m.part || '-'})</span>
+                                </div>
+                                <span class="material-icons" style="font-size:18px; color:#c4c7c5;">chevron_right</span>
+                            </div>`;
                     });
-                    mHtml += "</ul>";
+                    mHtml += "</div>";
                     membersContainer.innerHTML = mHtml;
                 } else {
                     membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
@@ -899,6 +940,62 @@
                 document.getElementById('bd-detail-ng').innerText = "-";
             }
         }
+
+        // 4. メンバータップ時の詳細ポップアップ表示用関数
+        window.showUserProfile = async (uid, fallbackName, fallbackGrade, fallbackPart) => {
+            let uData = allUsersCache.find(x => x.id === uid);
+            if (!uData && fallbackName) {
+                uData = allUsersCache.find(x => x.name === fallbackName) || { name: fallbackName, year: fallbackGrade, part: [fallbackPart] };
+            }
+            if (!uData) return;
+
+            document.getElementById('popup-user-icon').src = uData.icon || "https://ul.h3z.jp/Vnukmtvq.jpg";
+            document.getElementById('popup-user-name').innerText = uData.name || "名称未設定";
+            
+            const gradeStr = uData.year ? `${uData.year}年` : (fallbackGrade ? `${fallbackGrade}年` : "-年");
+            const partStr = getPartLabel(uData.part) || fallbackPart || "-";
+            const kanaStr = uData.kana ? `@${uData.kana}` : "";
+            document.getElementById('popup-user-sub').innerText = `${gradeStr} | ${partStr} ${kanaStr}`;
+
+            // 所属バンド数のカウント
+            let bandCount = 0;
+            if (uData.id) {
+                const bQ = query(collection(db, "bands"), where("memberIds", "array-contains", uData.id));
+                const bSnap = await getDocs(bQ);
+                bandCount = bSnap.size;
+            }
+            document.getElementById('popup-user-bands-count').innerText = bandCount;
+
+            // 権限・役割タグの表示
+            const rolesContainer = document.getElementById('popup-user-roles');
+            rolesContainer.innerHTML = "";
+            const roles = Array.isArray(uData.role) ? uData.role : (uData.role ? [uData.role] : []);
+            
+            if (roles.length > 0) {
+                roles.forEach(r => {
+                    const tag = document.createElement('span');
+                    tag.style.cssText = "font-size:11px; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:999px; font-weight:bold;";
+                    tag.innerText = r;
+                    rolesContainer.appendChild(tag);
+                });
+            }
+
+            // 裏方やLMCのバッジ
+            if (hasRoleKeyword(uData.role, 'urakata')) {
+                const tag = document.createElement('span');
+                tag.style.cssText = "font-size:11px; background:#fce8e6; color:#d93025; padding:4px 10px; border-radius:999px; font-weight:bold;";
+                tag.innerText = "裏方";
+                rolesContainer.appendChild(tag);
+            }
+            if (hasRoleKeyword(uData.role, 'lmc')) {
+                const tag = document.createElement('span');
+                tag.style.cssText = "font-size:11px; background:#f1f3f4; color:#5f6368; padding:4px 10px; border-radius:999px; font-weight:bold;";
+                tag.innerText = "LMC";
+                rolesContainer.appendChild(tag);
+            }
+
+            openModal('modal-user-detail');
+        };
 
         async function initAuth() {
             try {
