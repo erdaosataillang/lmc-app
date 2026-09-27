@@ -1501,18 +1501,18 @@
         }
         
         function openEditBookingModal(id, data, e){ 
-            if(data.creatorId!==currentUser){ 
+            const isAdmin=hasAdminAccess(currentUserData);
+            if(data.creatorId!==currentUser && !isAdmin){
                 if(data.type==='event')showCustomAlert(`【${data.title}】\n既に予定が入っています。`, "予約不可"); 
                 else showCustomAlert("他のユーザーが作成した予約は編集できません。", "編集不可"); 
                 return; 
             } 
-            document.getElementById('bookingModalTitle').innerText="予約の確認"; 
+            document.getElementById('bookingModalTitle').innerText=data.creatorId!==currentUser ? "予約を管理者として編集" : "予約の確認";
             document.getElementById('btnSaveBooking').innerText="変更を保存する"; 
             document.getElementById('btnDeleteBooking').classList.remove('hidden'); 
             document.getElementById('btnAddToGCal').classList.remove('hidden'); 
             document.getElementById('editingBookingId').value=id; 
             editingBookingData=data; 
-            const isAdmin=hasAdminAccess(currentUserData);
             document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); 
             if(isAdmin) {
                 if (data.type === 'event') document.getElementById('typeEvent').checked = true;
@@ -1527,7 +1527,13 @@
             setupTimeSelects(sStr,eStr); 
             toggleAllDay(); 
             if(data.type==='event')document.getElementById('inputEventTitle').value=data.title||""; 
-            else updateBandSelect(data.bandId); 
+            else {
+                updateBandSelect(data.bandId);
+                const bandSelect = document.getElementById('selectBookingBand');
+                if (data.bandId && ![...bandSelect.options].some(option => option.value === data.bandId)) {
+                    bandSelect.appendChild(new Option(data.bandName || '予約中のバンド', data.bandId, true, true));
+                }
+            }
             
             setModalOrigin('modal-booking', e);
             openModal('modal-booking'); 
@@ -1643,6 +1649,10 @@
         window.saveBooking=async()=>{ 
             const eid=document.getElementById('editingBookingId').value, t=document.querySelector('input[name="bookingType"]:checked')?.value||'normal'; 
             let bd={creatorId:currentUser,userName:currentProfile.displayName,type:t,createdAt:new Date()}; 
+            if(eid && editingBookingData) {
+                bd.creatorId = editingBookingData.creatorId || currentUser;
+                bd.userName = editingBookingData.userName || currentProfile.displayName;
+            }
             
             if(t==='normal'){
                 const bS=document.getElementById('selectBookingBand'); 

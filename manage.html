@@ -301,7 +301,7 @@
                     <div class="menu-content"><span class="menu-title">個人の管理</span><span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-                <button class="menu-btn" onclick="location.href='#'">
+                <button class="menu-btn" onclick="openAdminEvents()">
                     <div class="menu-icon-wrapper icon-admin-event"><span class="material-icons">event</span></div>
                     <div class="menu-content"><span class="menu-title">イベントの管理</span><span class="menu-subtitle">ライブや合宿などのイベント作成・編集</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
@@ -365,6 +365,53 @@
             </div>
 
             <div style="font-size:12px; color:#c7c7cc; text-align:center; margin-top:24px; font-weight:500;">Event ID: <span id="concert-event-id">-</span></div>
+        </div>
+    </div>
+
+    <!-- イベントの管理ページ -->
+    <div id="page-admin-events" class="page-container">
+        <div class="page-header">
+            <div class="page-header-left">
+                <button class="back-btn" onclick="closePage('admin-events')"><span class="material-icons">arrow_back</span></button>
+                <div class="page-title">イベントの管理</div>
+            </div>
+            <button class="edit-toggle-btn" onclick="openAdminEventEditor()" aria-label="イベントを追加"><span class="material-icons">add</span></button>
+        </div>
+        <div class="content-area" style="padding-top:12px;">
+            <button class="btn-primary" style="margin-bottom:20px;" onclick="openAdminEventEditor()"><span class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:6px;">add</span>新しいイベントを作成</button>
+            <div id="adminEventList"><div style="text-align:center; padding:40px; color:#8e8e93;">読み込み中...</div></div>
+        </div>
+    </div>
+
+    <!-- イベント作成・編集ページ -->
+    <div id="page-admin-event-edit" class="page-container">
+        <div class="page-header">
+            <div class="page-header-left">
+                <button class="back-btn" onclick="closePage('admin-event-edit')"><span class="material-icons">arrow_back</span></button>
+                <div class="page-title" id="admin-event-edit-title">イベントを作成</div>
+            </div>
+        </div>
+        <div class="content-area" style="padding-top:16px;">
+            <div class="card">
+                <div class="form-group">
+                    <label class="form-label">イベント名</label>
+                    <input type="text" id="admin-event-name" class="form-input" placeholder="例: 2027年度 定期演奏会">
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group"><label class="form-label">開始日</label><input type="date" id="admin-event-start" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">終了日</label><input type="date" id="admin-event-end" class="form-input"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">詳細・備考</label>
+                    <textarea id="admin-event-desc" class="form-input" style="height:120px; resize:none;" placeholder="会場、集合時間、備考など"></textarea>
+                </div>
+                <label class="card" style="margin:20px 0; padding:18px; display:flex; align-items:center; gap:14px; box-shadow:none; border:1px solid rgba(0,0,0,0.05); cursor:pointer;">
+                    <input type="checkbox" id="admin-event-active" style="transform:scale(1.3);">
+                    <div><div style="font-size:15px; font-weight:600;">定期演奏会として設定</div><div style="font-size:12px; color:#8e8e93; margin-top:4px;">バンド管理などの対象イベントになります</div></div>
+                </label>
+                <button id="admin-event-save-btn" class="btn-primary" onclick="saveAdminEvent()">イベントを保存</button>
+            </div>
+            <div id="admin-event-document-id" style="font-size:12px; color:#c7c7cc; text-align:center; margin-top:20px;"></div>
         </div>
     </div>
 
@@ -610,7 +657,7 @@
     <!-- Firebase 連携スクリプト -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, where, updateDoc, serverTimestamp, writeBatch, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, orderBy, where, setDoc, updateDoc, serverTimestamp, writeBatch, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
@@ -632,6 +679,11 @@
         let currentActiveEventName = "なし";
         let currentSystemSettings = { bookingMode: 'first_come', lotteryConfig: { mode: 'auto', daysBefore: 2, time: 0 } };
         let tempLotterySchedule = null;
+        let eventsCache = [];
+        let eventsLoaded = false;
+        let editingEventId = null;
+        let concertLoadPromise = null;
+        let concertLoadedEventId = null;
 
         const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         const DIGITAL_CUE_PATH = 'cuesheet.html';
@@ -749,71 +801,79 @@
             const contentEl = document.getElementById('concert-content-area');
             const emptyEl = document.getElementById('concert-empty-area');
 
+            emptyEl.classList.add('hidden');
+            if (concertLoadPromise) return concertLoadPromise;
+            if (concertLoadedEventId && concertLoadedEventId === currentActiveEventId) {
+                loadingEl.classList.add('hidden');
+                contentEl.classList.remove('hidden');
+                return;
+            }
+
+            loadingEl.innerHTML = 'イベント情報を読み込み中...';
             loadingEl.classList.remove('hidden');
             contentEl.classList.add('hidden');
-            emptyEl.classList.add('hidden');
 
-            try {
-                const settingsSnap = await getDoc(doc(db, "system", "settings"));
-                if (settingsSnap.exists()) {
-                    currentActiveEventId = settingsSnap.data().activeEventId || null;
-                }
+            concertLoadPromise = (async () => {
+                try {
+                    if (!currentActiveEventId) {
+                        const settingsSnap = await getDoc(doc(db, "system", "settings"));
+                        currentActiveEventId = settingsSnap.exists() ? settingsSnap.data().activeEventId || null : null;
+                    }
+                    document.getElementById('concert-event-id').innerText = currentActiveEventId || "-";
+                    if (!currentActiveEventId) {
+                        loadingEl.classList.add('hidden');
+                        emptyEl.classList.remove('hidden');
+                        return;
+                    }
 
-                document.getElementById('concert-event-id').innerText = currentActiveEventId || "-";
+                    const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
+                    if (!eventSnap.exists()) {
+                        loadingEl.classList.add('hidden');
+                        emptyEl.classList.remove('hidden');
+                        return;
+                    }
 
-                if (!currentActiveEventId) {
-                    loadingEl.classList.add('hidden');
-                    emptyEl.classList.remove('hidden');
-                    return;
-                }
-
-                const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
-                if (eventSnap.exists()) {
                     const ev = eventSnap.data();
                     document.getElementById('concert-event-name').value = ev.event || ev.name || "";
                     document.getElementById('concert-event-date').value = ev.startDate || "";
                     document.getElementById('concert-event-desc').value = ev.desc || "";
-
-                    const bandQs = await getDocs(collection(db, "bands"));
-                    let matchedBandsCount = 0;
-                    let totalSongsCount = 0;
-                    const uniqueMembersSet = new Set();
-
-                    for (const bDoc of bandQs.docs) {
-                        const bData = bDoc.data();
-                        const bandEvents = Array.isArray(bData.events) ? bData.events : [];
-                        if (bandEvents.includes(currentActiveEventId)) {
-                            matchedBandsCount++;
-                            if (bData.memberIds && Array.isArray(bData.memberIds)) {
-                                bData.memberIds.forEach(uid => uniqueMembersSet.add(uid));
-                            }
-
-                            try {
-                                const cueSheetId = bData.latestCueSheetId || `${bDoc.id}_${currentActiveEventId}`;
-                                const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
-                                if (cueSnap.exists()) {
-                                    const cData = cueSnap.data();
-                                    if (cData.songs && Array.isArray(cData.songs)) {
-                                        totalSongsCount += cData.songs.length;
-                                    }
-                                }
-                            } catch(e) {}
-                        }
-                    }
-
-                    document.getElementById('metric-band-count').innerText = matchedBandsCount;
-                    document.getElementById('metric-song-count').innerText = totalSongsCount;
-                    document.getElementById('metric-member-count').innerText = uniqueMembersSet.size;
-
+                    document.getElementById('metric-band-count').innerText = '…';
+                    document.getElementById('metric-song-count').innerText = '…';
+                    document.getElementById('metric-member-count').innerText = '…';
                     loadingEl.classList.add('hidden');
                     contentEl.classList.remove('hidden');
-                } else {
-                    loadingEl.classList.add('hidden');
-                    emptyEl.classList.remove('hidden');
+
+                    // 対象イベントのバンドだけを取得し、Cueシートは同時並行で集計する。
+                    const bandQs = await getDocs(query(collection(db, "bands"), where("events", "array-contains", currentActiveEventId)));
+                    const uniqueMembersSet = new Set();
+                    bandQs.docs.forEach(bDoc => {
+                        const memberIds = bDoc.data().memberIds;
+                        if (Array.isArray(memberIds)) memberIds.forEach(uid => uniqueMembersSet.add(uid));
+                    });
+                    document.getElementById('metric-band-count').innerText = bandQs.size;
+                    document.getElementById('metric-member-count').innerText = uniqueMembersSet.size;
+
+                    const songCounts = await Promise.all(bandQs.docs.map(async bDoc => {
+                        const bData = bDoc.data();
+                        const cueSheetId = bData.cueSheetId || bData.latestCueSheetId || `${bDoc.id}_${currentActiveEventId}`;
+                        try {
+                            const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
+                            const songs = cueSnap.exists() ? cueSnap.data().songs : null;
+                            return Array.isArray(songs) ? songs.length : 0;
+                        } catch (error) {
+                            return 0;
+                        }
+                    }));
+                    document.getElementById('metric-song-count').innerText = songCounts.reduce((sum, count) => sum + count, 0);
+                    concertLoadedEventId = currentActiveEventId;
+                } catch (e) {
+                    loadingEl.classList.remove('hidden');
+                    loadingEl.innerHTML = `<div style="color:#ff3b30;">読み込みエラー: ${e.message}</div>`;
+                } finally {
+                    concertLoadPromise = null;
                 }
-            } catch (e) {
-                loadingEl.innerHTML = `<div style="color:#ff3b30;">読み込みエラー: ${e.message}</div>`;
-            }
+            })();
+            return concertLoadPromise;
         };
 
         window.saveCurrentConcertEvent = async () => {
@@ -834,9 +894,118 @@
                     desc: desc,
                     updatedAt: serverTimestamp()
                 });
+                concertLoadedEventId = null;
+                eventsLoaded = false;
                 await showCustomAlert("定期演奏会の情報を保存しました！");
             } catch (e) {
                 await showCustomAlert("保存エラー: " + e.message, "エラー");
+            }
+        };
+
+        // ==========================
+        // イベントの管理ロジック
+        // ==========================
+        window.openAdminEvents = async (forceRefresh = false) => {
+            openPage('admin-events');
+            const container = document.getElementById('adminEventList');
+            if (eventsLoaded && !forceRefresh) {
+                renderAdminEvents();
+                return;
+            }
+            container.innerHTML = '<div style="text-align:center; padding:40px; color:#8e8e93;">イベントを読み込み中...</div>';
+            try {
+                const snapshot = await getDocs(collection(db, "events"));
+                eventsCache = snapshot.docs.map(eventDoc => ({id:eventDoc.id, ...eventDoc.data()}));
+                eventsCache.sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
+                eventsLoaded = true;
+                renderAdminEvents();
+            } catch (error) {
+                container.innerHTML = `<div style="padding:40px 20px; color:#ff3b30; text-align:center;">読み込みに失敗しました<br><button class="btn-outline" style="margin-top:16px;" onclick="openAdminEvents(true)">再試行</button></div>`;
+            }
+        };
+
+        function renderAdminEvents() {
+            const container = document.getElementById('adminEventList');
+            if (eventsCache.length === 0) {
+                container.innerHTML = '<div style="padding:60px 20px; text-align:center; color:#8e8e93;">イベントはまだありません</div>';
+                return;
+            }
+            container.innerHTML = '';
+            eventsCache.forEach(eventData => {
+                const isActive = eventData.id === currentActiveEventId;
+                const start = eventData.startDate || '日付未設定';
+                const end = eventData.endDate && eventData.endDate !== eventData.startDate ? ` 〜 ${eventData.endDate}` : '';
+                const item = document.createElement('button');
+                item.className = 'menu-btn';
+                item.style.width = '100%';
+                item.onclick = () => openAdminEventEditor(eventData.id);
+                item.innerHTML = `
+                    <div class="menu-icon-wrapper icon-admin-event"><span class="material-icons">event</span></div>
+                    <div class="menu-content">
+                        <span class="menu-title">${eventData.event || eventData.name || '名称未設定'} ${isActive ? '<span style="font-size:10px; color:#1a73e8; background:#e5f0ff; padding:3px 8px; border-radius:999px; margin-left:6px;">定期演奏会</span>' : ''}</span>
+                        <span class="menu-subtitle">${start}${end}</span>
+                    </div>
+                    <span class="material-icons menu-arrow">edit</span>`;
+                container.appendChild(item);
+            });
+        }
+
+        window.openAdminEventEditor = (eventId = null) => {
+            editingEventId = eventId;
+            const eventData = eventId ? eventsCache.find(item => item.id === eventId) : null;
+            document.getElementById('admin-event-edit-title').innerText = eventData ? 'イベントを編集' : 'イベントを作成';
+            document.getElementById('admin-event-name').value = eventData?.event || eventData?.name || '';
+            document.getElementById('admin-event-start').value = eventData?.startDate || '';
+            document.getElementById('admin-event-end').value = eventData?.endDate || eventData?.startDate || '';
+            document.getElementById('admin-event-desc').value = eventData?.desc || '';
+            document.getElementById('admin-event-active').checked = !!eventId && eventId === currentActiveEventId;
+            document.getElementById('admin-event-save-btn').innerText = eventData ? '変更を保存' : 'イベントを作成';
+            document.getElementById('admin-event-document-id').innerText = eventId ? `Event ID: ${eventId}` : '';
+            openPage('admin-event-edit');
+        };
+
+        window.saveAdminEvent = async () => {
+            const name = document.getElementById('admin-event-name').value.trim();
+            const startDate = document.getElementById('admin-event-start').value;
+            const endDate = document.getElementById('admin-event-end').value || startDate;
+            const desc = document.getElementById('admin-event-desc').value.trim();
+            const makeActive = document.getElementById('admin-event-active').checked;
+            if (!name || !startDate) return showCustomAlert('イベント名と開始日は必須です。', '入力エラー');
+            if (endDate < startDate) return showCustomAlert('終了日は開始日以降にしてください。', '入力エラー');
+
+            const saveButton = document.getElementById('admin-event-save-btn');
+            saveButton.disabled = true;
+            saveButton.innerText = '保存中...';
+            try {
+                const payload = {event:name, name, startDate, endDate, desc, updatedAt:serverTimestamp()};
+                let savedId = editingEventId;
+                if (editingEventId) {
+                    await updateDoc(doc(db, "events", editingEventId), payload);
+                } else {
+                    const created = await addDoc(collection(db, "events"), {...payload, createdAt:serverTimestamp()});
+                    savedId = created.id;
+                }
+
+                if (makeActive) {
+                    await setDoc(doc(db, "system", "settings"), {activeEventId:savedId}, {merge:true});
+                    currentActiveEventId = savedId;
+                } else if (editingEventId && currentActiveEventId === editingEventId) {
+                    await setDoc(doc(db, "system", "settings"), {activeEventId:null}, {merge:true});
+                    currentActiveEventId = null;
+                }
+
+                eventsLoaded = false;
+                concertLoadedEventId = null;
+                bandsLoaded = false;
+                bandsLoadPromise = null;
+                closePage('admin-event-edit');
+                await openAdminEvents(true);
+                await showCustomAlert(editingEventId ? 'イベントを更新しました。' : 'イベントを作成しました。');
+            } catch (error) {
+                await showCustomAlert('保存に失敗しました: ' + error.message, 'エラー');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.innerText = editingEventId ? '変更を保存' : 'イベントを作成';
             }
         };
 
@@ -1332,22 +1501,26 @@
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#8e8e93;">読み込み中...</div>';
             bandsLoadPromise = (async () => {
                 try {
-                    const settingsSnap = await getDoc(doc(db, "system", "settings"));
+                    const usersPromise = allUsersCache.length === 0 ? getDocs(collection(db, "users")) : Promise.resolve(null);
+                    const [settingsSnap, userQs] = await Promise.all([
+                        getDoc(doc(db, "system", "settings")),
+                        usersPromise
+                    ]);
                     currentActiveEventId = settingsSnap.exists() ? settingsSnap.data().activeEventId || null : null;
+                    if (userQs) allUsersCache = userQs.docs.map(snap => ({ ...snap.data(), id: snap.id }));
                     currentActiveEventName = "設定されていません";
-                    if (currentActiveEventId) {
-                        const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
+                    const eventPromise = currentActiveEventId
+                        ? getDoc(doc(db, "events", currentActiveEventId))
+                        : Promise.resolve(null);
+                    const bandsPromise = getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
+                    const [eventSnap, bandQs] = await Promise.all([eventPromise, bandsPromise]);
+                    if (eventSnap) {
                         currentActiveEventName = eventSnap.exists()
                             ? eventSnap.data().event || eventSnap.data().name || currentActiveEventId
                             : currentActiveEventId + " (詳細不明)";
                     }
                     document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
-                    const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                     allBandsCache = bandQs.docs.map(snap => ({ ...snap.data(), id: snap.id, cueData: null }));
-                    if (allUsersCache.length === 0) {
-                        const userQs = await getDocs(collection(db, "users"));
-                        allUsersCache = userQs.docs.map(snap => ({ ...snap.data(), id: snap.id }));
-                    }
                     bandsLoaded = true;
                     filterAndRenderBands();
                 } catch (e) {
