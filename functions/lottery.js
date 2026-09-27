@@ -121,12 +121,27 @@ function calculateLottery(bookings, random = Math.random) {
   const bands = [...grouped.values()];
   let result = tryAllocate(bands, 60, locked, random);
   if (result.failedBands.length > 0) result = tryAllocate(bands, 30, locked, random);
-  return {...result, candidateCount: candidates.length, bandCount: bands.length};
+  return {
+    ...result,
+    candidateCount: candidates.length,
+    candidateDocIds: candidates.map((candidate) => candidate.id),
+    bandCount: bands.length,
+  };
 }
 
-function configuredHour(value) {
-  const hour = Number.parseInt(String(value ?? "0").split(":")[0], 10);
-  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 0;
+function configuredTime(value) {
+  const [rawHour, rawMinute = "0"] = String(value ?? "0:00").split(":");
+  const hour = Number.parseInt(rawHour, 10);
+  const minute = Number.parseInt(rawMinute, 10);
+  return {
+    hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 0,
+    minute: Number.isInteger(minute) && minute >= 0 && minute <= 59 ? minute : 0,
+  };
+}
+
+function configuredTimeMatches(value, dateParts) {
+  const configured = configuredTime(value);
+  return dateParts.hour === configured.hour && dateParts.minute === configured.minute;
 }
 
 function targetDateKey(now, daysBefore) {
@@ -142,4 +157,4 @@ function tokyoDayBounds(dateKey) {
   return {start, end};
 }
 
-module.exports = {calculateLottery, configuredHour, targetDateKey, tokyoDateParts, tokyoDayBounds, tryAllocate};
+module.exports = {calculateLottery, configuredTime, configuredTimeMatches, targetDateKey, tokyoDateParts, tokyoDayBounds, tryAllocate};

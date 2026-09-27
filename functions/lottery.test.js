@@ -2,11 +2,13 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {calculateLottery, configuredHour, targetDateKey, tokyoDayBounds} = require("./lottery");
+const {calculateLottery, configuredTime, configuredTimeMatches, targetDateKey, tokyoDayBounds} = require("./lottery");
 
 test("reads numeric and HH:MM configured hours", () => {
-  assert.equal(configuredHour(9), 9);
-  assert.equal(configuredHour("18:00"), 18);
+  assert.deepEqual(configuredTime(9), {hour: 9, minute: 0});
+  assert.deepEqual(configuredTime("18:35"), {hour: 18, minute: 35});
+  assert.equal(configuredTimeMatches("18:35", {hour: 18, minute: 35}), true);
+  assert.equal(configuredTimeMatches("18:35", {hour: 18, minute: 34}), false);
 });
 
 test("calculates the target date in Japan time", () => {
@@ -26,6 +28,7 @@ test("allocates one confirmed slot per band and respects locked time", () => {
   ];
   const result = calculateLottery(bookings, () => 0.5);
   assert.equal(result.assignments.length, 2);
+  assert.deepEqual(result.candidateDocIds.sort(), ["a1", "a2", "b1"]);
   assert.equal(new Set(result.assignments.map((item) => item.bandId)).size, 2);
   assert.ok(result.assignments.every((item) => item.start >= at(10)));
   assert.deepEqual(result.assignments.find((item) => item.bandId === "a").originalDocIds, ["a1", "a2"]);

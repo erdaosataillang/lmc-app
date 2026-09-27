@@ -6,7 +6,7 @@ const {logger} = require("firebase-functions");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {
   calculateLottery,
-  configuredHour,
+  configuredTimeMatches,
   targetDateKey,
   tokyoDateParts,
   tokyoDayBounds,
@@ -16,7 +16,7 @@ initializeApp();
 const db = getFirestore();
 
 exports.runScheduledLottery = onSchedule({
-  schedule: "0 * * * *",
+  schedule: "* * * * *",
   timeZone: "Asia/Tokyo",
   region: "asia-northeast1",
   memory: "256MiB",
@@ -35,10 +35,10 @@ exports.runScheduledLottery = onSchedule({
 
   const settings = settingsSnapshot.data();
   const lotteryConfig = settings.lotteryConfig || {};
-  const bookingMode = settings.bookingMode || settings.reservationMode || "first_come";
+  const bookingMode = settings.reservationMode || settings.bookingMode || "first_come";
   const nowInTokyo = tokyoDateParts(now);
   if (bookingMode !== "lottery" || lotteryConfig.mode !== "auto" ||
-      nowInTokyo.hour !== configuredHour(lotteryConfig.time)) {
+      !configuredTimeMatches(lotteryConfig.time, nowInTokyo)) {
     return;
   }
 
@@ -65,8 +65,7 @@ exports.runScheduledLottery = onSchedule({
     };
   });
   const result = calculateLottery(bookings);
-  const operationCount = 1 + result.assignments.length +
-      result.assignments.reduce((sum, assignment) => sum + assignment.originalDocIds.length, 0);
+  const operationCount = 1 + result.assignments.length + result.candidateDocIds.length;
   if (operationCount > 500) {
     throw new Error(`Lottery requires ${operationCount} writes; Firestore batch limit is 500`);
   }
@@ -80,6 +79,16 @@ exports.runScheduledLottery = onSchedule({
     bandCount: result.bandCount,
     successCount: result.assignments.length,
     failedBandIds: result.failedBands.map((band) => band.id),
+    bandIds: [...new Set([
+      ...result.assignments.map((assignment) => assignment.bandId),
+      ...result.failedBands.map((band) => band.id),
+    ])],
+    assignments: result.assignments.map((assignment) => ({
+      bandId: assignment.bandId,
+      bandName: assignment.bandName,
+      startTime: Timestamp.fromDate(assignment.start),
+      endTime: Timestamp.fromDate(assignment.end),
+    })),
     executedAt: FieldValue.serverTimestamp(),
     scheduleTime: event.scheduleTime || null,
   });
@@ -99,9 +108,9 @@ exports.runScheduledLottery = onSchedule({
       lotteryDate: dateKey,
       createdAt: FieldValue.serverTimestamp(),
     });
-    for (const originalId of assignment.originalDocIds) {
-      batch.delete(db.doc(`bookings/${originalId}`));
-    }
+  }
+  for (const candidateId of result.candidateDocIds) {
+    batch.delete(db.doc(`bookings/${candidateId}`));
   }
 
   try {

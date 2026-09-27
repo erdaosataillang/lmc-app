@@ -519,7 +519,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
@@ -534,6 +534,7 @@
         const CACHE_KEY_SYSTEM_SETTINGS_UPDATED = 'lmc_system_settings_updated';
         const CACHE_KEY_ALL_USERS_UPDATED = 'lmc_all_users_updated';
         const CACHE_KEY_LAST_LOGIN_UPDATED = 'lmc_last_login_updated';
+        const CACHE_KEY_SEEN_LOTTERY_RUNS = 'lmc_seen_lottery_runs';
         const CACHE_FRESH_MS = 30 * 60 * 1000;
 
         let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date(), selectedTimeSlot=null, selectionStartHour=null, selectionEndHour=null;
@@ -547,9 +548,12 @@
         let cropper = null;
         let currentCropResolver = null;
         let isLotteryDay = false; // その日が抽選確定済み（先着順モード）かどうかのフラグ
+        let currentLotteryRunData = null;
+        let lotteryNotificationsCache = [];
         let currentMonthUnsub = null;
         let currentDayUnsub = null;
         let currentBandsUnsub = null;
+        let currentLotteryRunUnsub = null;
         let monthSyncToken = null;
         let daySyncToken = null;
 
@@ -832,7 +836,8 @@
                     return;
                 }
 
-                loadMyBands(); 
+                loadMyBands();
+                loadLotteryNotifications();
                 
                 // キャッシュ済みの内容で先に画面を表示し、補助データは裏で更新する
                 updateViewMenuUI();
@@ -879,6 +884,7 @@
                 myBandsAll=[];
                 snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()}));
                 localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
+                checkNotifications();
             }, (error) => console.warn("Band refresh failed:", error));
         }
         
@@ -1010,6 +1016,10 @@
                 currentDayUnsub();
                 currentDayUnsub = null;
             }
+            if (currentLotteryRunUnsub) {
+                currentLotteryRunUnsub();
+                currentLotteryRunUnsub = null;
+            }
             if (daySyncToken) {
                 hideSyncIndicator(daySyncToken);
                 daySyncToken = null;
@@ -1072,10 +1082,6 @@
 
         function renderDayEvents(evs) {
             document.querySelectorAll('.event-block').forEach(el=>el.remove()); 
-            
-            // 抽選確定済み（紫色の source: "lottery"）が1つでもあるかチェック
-            isLotteryDay = evs.some(e => e.source === 'lottery');
-            updateDayBanner(); // バナーを更新
 
             if(evs.length===0) return; 
             
@@ -1136,6 +1142,17 @@
         function loadDayBookings(){ 
             const sD=new Date(displayDate), eD=new Date(displayDate); 
             sD.setHours(0,0,0,0); eD.setHours(23,59,59,999); 
+            const selectedDateKey = formatDateKey(displayDate);
+            isLotteryDay = false;
+            currentLotteryRunData = null;
+            updateDayBanner();
+            if (currentLotteryRunUnsub) currentLotteryRunUnsub();
+            currentLotteryRunUnsub = onSnapshot(doc(db, "lotteryRuns", selectedDateKey), (snapshot) => {
+                currentLotteryRunData = snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null;
+                isLotteryDay = snapshot.exists();
+                updateDayBanner();
+                if (snapshot.exists()) loadLotteryNotifications();
+            }, (error) => console.warn("Lottery status refresh failed:", error));
             
             // キャッシュからの先行描画
             const sDTime = sD.getTime();
@@ -1190,6 +1207,27 @@
             });
         }
 
+        function formatDateKey(dateObj) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        async function resolveBookingModeForDate(dateObj) {
+            const dateKey = formatDateKey(dateObj);
+            const [settingsSnapshot, runSnapshot] = await Promise.all([
+                getDoc(doc(db, "system", "settings")),
+                getDoc(doc(db, "lotteryRuns", dateKey))
+            ]);
+            if (!settingsSnapshot.exists()) throw new Error("予約設定を確認できませんでした。");
+            currentSystemSettings = settingsSnapshot.data();
+            localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
+            localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS_UPDATED, String(Date.now()));
+            const configuredMode = currentSystemSettings.reservationMode || currentSystemSettings.bookingMode || 'first_come';
+            return configuredMode === 'lottery' && !runSnapshot.exists() ? 'lottery' : 'first_come';
+        }
+
         // 過去日判定関数
         function isPastDate(dateObj) {
             const today = new Date();
@@ -1210,8 +1248,8 @@
                 return;
             }
 
-            let mode = currentSystemSettings.bookingMode || currentSystemSettings.reservationMode || 'first_come';
-            // 抽選モードであっても、既にその日に抽選確定済みの予約（lottery）があれば先着モードに切り替え
+            let mode = currentSystemSettings.reservationMode || currentSystemSettings.bookingMode || 'first_come';
+            // 抽選の実行記録が作られた日だけ、空き枠を先着順へ切り替える
             if (mode === 'lottery' && isLotteryDay) {
                 mode = 'first_come';
             }
@@ -1225,7 +1263,8 @@
                 banner.style.backgroundColor = '#e8f0fe'; 
                 banner.style.color = '#1967d2'; 
                 banner.style.border = '1px solid #d2e3fc'; 
-                banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">即時確定します。</div>`;
+                const detail = isLotteryDay ? '抽選は終了しました。空いている時間は即時確定します。' : '即時確定します。';
+                banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">${detail}</div>`;
             }
         }
 
@@ -1596,11 +1635,14 @@
             if(st>=et)return await showCustomAlert("終了時間は開始時間より後の時間を設定してください。", "時間不正"); 
             bd.startTime=st; bd.endTime=et; 
 
-            // ここが重要なモード判定ロジック
-            // 「isLotteryDay（その日に紫の抽選確定済み枠がある）」の場合は、自動的に先着順（first_come）にする
-            let mode = currentSystemSettings.bookingMode || currentSystemSettings.reservationMode || 'first_come';
-            if (mode === 'lottery' && isLotteryDay) {
-                mode = 'first_come';
+            // 保存直前にサーバー上の設定と抽選実行記録を確認する。
+            // 抽選実行記録がない日は、空き枠があっても先着確定にはしない。
+            let mode;
+            try {
+                mode = await resolveBookingModeForDate(st);
+            } catch (error) {
+                console.warn("Booking mode check failed:", error);
+                return await showCustomAlert("抽選状況を確認できませんでした。通信状態を確認して、もう一度お試しください。", "予約できません");
             }
 
             if(mode==='first_come'){ 
@@ -1627,7 +1669,7 @@
                     await showCustomAlert("予約内容を保存しました。");
                 } else {
                     await addDoc(collection(db,"bookings"),bd); 
-                    await showCustomAlert(mode==='lottery'?"希望を提出しました。管理者の承認をお待ちください。":"予約が完了しました。");
+                    await showCustomAlert(mode==='lottery'?"抽選希望を受け付けました。設定時刻に自動抽選されます。":"予約が完了しました。");
                 } 
                 closeModal('modal-booking'); 
             }catch(e){await showCustomAlert(e.message, "エラー")} 
@@ -1667,12 +1709,85 @@
         }
 
         // --- メール・通知ロジック ---
+        function getRelevantLotteryRuns() {
+            const myBandIds = new Set(myBandsAll.map(band => band.id));
+            return lotteryNotificationsCache.filter(run =>
+                Array.isArray(run.bandIds) && run.bandIds.some(bandId => myBandIds.has(bandId))
+            );
+        }
+
+        function getSeenLotteryRunIds() {
+            try { return new Set(JSON.parse(localStorage.getItem(CACHE_KEY_SEEN_LOTTERY_RUNS) || '[]')); }
+            catch (error) { return new Set(); }
+        }
+
+        async function loadLotteryNotifications() {
+            if (!currentUser) return;
+            try {
+                const snapshot = await getDocs(query(collection(db, "lotteryRuns"), orderBy("executedAt", "desc"), limit(20)));
+                lotteryNotificationsCache = snapshot.docs.map(runDoc => ({id:runDoc.id, ...runDoc.data()}));
+                checkNotifications();
+            } catch (error) {
+                console.warn("Lottery notifications could not be loaded:", error);
+            }
+        }
+
+        function lotteryNotificationHtml() {
+            const myBandIds = new Set(myBandsAll.map(band => band.id));
+            let html = '';
+            for (const run of getRelevantLotteryRuns()) {
+                const assignments = Array.isArray(run.assignments) ? run.assignments : [];
+                const failedBandIds = Array.isArray(run.failedBandIds) ? run.failedBandIds : [];
+                for (const bandId of (run.bandIds || []).filter(id => myBandIds.has(id))) {
+                    const band = myBandsAll.find(item => item.id === bandId);
+                    const assignment = assignments.find(item => item.bandId === bandId);
+                    const bandName = band?.name || assignment?.bandName || '参加バンド';
+                    let resultText = '抽選が完了しました。';
+                    let icon = 'campaign';
+                    let iconColor = '#0b57d0';
+                    let iconBg = '#e8f0fe';
+                    if (assignment?.startTime && assignment?.endTime) {
+                        const start = assignment.startTime.toDate ? assignment.startTime.toDate() : new Date(assignment.startTime);
+                        const end = assignment.endTime.toDate ? assignment.endTime.toDate() : new Date(assignment.endTime);
+                        resultText = `${start.getMonth()+1}月${start.getDate()}日 ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}〜${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')} に決まりました。`;
+                        icon = 'event_available';
+                        iconColor = '#137333';
+                        iconBg = '#e6f4ea';
+                    } else if (failedBandIds.includes(bandId)) {
+                        resultText = '今回は枠を確保できませんでした。空いている時間は先着で予約できます。';
+                        icon = 'event_busy';
+                        iconColor = '#b06000';
+                        iconBg = '#fef7e0';
+                    }
+                    html += `<div class="notification-item clickable" onclick="openLotteryResult('${run.id}')">
+                        <div class="notif-icon-box" style="background:${iconBg}; color:${iconColor};"><span class="material-icons">${icon}</span></div>
+                        <div class="notif-content">
+                            <div class="notif-text" style="font-weight:bold;">${bandName} の抽選結果</div>
+                            <div style="font-size:12px; color:#536471; margin-top:4px; line-height:1.5;">${resultText}</div>
+                        </div>
+                    </div>`;
+                }
+            }
+            return html;
+        }
+
+        window.openLotteryResult = (dateKey) => {
+            const [year, month, day] = dateKey.split('-').map(Number);
+            displayDate = new Date(year, month - 1, day);
+            closeModal('modal-notification');
+            switchCalendarView('day', true);
+        };
+
         function checkNotifications() { 
             let hasNotification = false;
             if(!(currentUserData?.Email || currentUserData?.email)) {
                 hasNotification = true;
             }
             if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
+                hasNotification = true;
+            }
+            const seenRunIds = getSeenLotteryRunIds();
+            if (getRelevantLotteryRuns().some(run => !seenRunIds.has(run.id))) {
                 hasNotification = true;
             }
             
@@ -1702,6 +1817,8 @@
                     </div>
                 </div>`;
             }
+
+            html += lotteryNotificationHtml();
 
             if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 for (const bid of currentUserData.pendingInvites) {
@@ -1744,6 +1861,12 @@
             }
             
             list.innerHTML = html;
+            const relevantRunIds = getRelevantLotteryRuns().map(run => run.id);
+            if (relevantRunIds.length > 0) {
+                const seenRunIds = getSeenLotteryRunIds();
+                relevantRunIds.forEach(id => seenRunIds.add(id));
+                localStorage.setItem(CACHE_KEY_SEEN_LOTTERY_RUNS, JSON.stringify([...seenRunIds].slice(-100)));
+            }
             checkNotifications(); 
         };
 
@@ -1802,6 +1925,7 @@
             if (currentMonthUnsub) currentMonthUnsub();
             if (currentDayUnsub) currentDayUnsub();
             if (currentBandsUnsub) currentBandsUnsub();
+            if (currentLotteryRunUnsub) currentLotteryRunUnsub();
             activeSyncTokens.clear();
         });
         
