@@ -229,9 +229,16 @@
             </button>
         </div>
         <div class="content-area" style="padding-top:16px;">
-            <div style="text-align:center; margin-bottom:16px;">
-                <img id="admin-user-icon" src="" style="width:72px; height:72px; border-radius:50%; object-fit:cover; background:#eee; border:3px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-                <div id="admin-user-lineName" style="font-size:12px; color:#5f6368; margin-top:6px; font-weight:500;"></div>
+            <!-- アイコン左寄せ・右側にフリガナ、名前（さん小さめ）、学年 -->
+            <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px;">
+                <img id="admin-user-icon" src="" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: #eee; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.08); flex-shrink: 0;">
+                <div style="flex-grow: 1; min-width: 0;">
+                    <div id="admin-user-kana" style="font-size: 11px; color: #5f6368; margin-bottom: 2px;">ふりがな</div>
+                    <div style="display: flex; align-items: baseline; gap: 6px;">
+                        <span id="admin-user-name" style="font-size: 18px; font-weight: bold; color: #1f1f1f;">名前</span><span style="font-size: 12px; font-weight: normal; color: #5f6368;">さん</span>
+                    </div>
+                    <div id="admin-user-year-badge" style="font-size: 11px; color: #0b57d0; background: #e8f0fe; display: inline-block; padding: 2px 8px; border-radius: 10px; font-weight: bold; margin-top: 4px;">-年</div>
+                </div>
             </div>
 
             <!-- 基本情報カード（閲覧モード / 編集モードで切り替え） -->
@@ -240,10 +247,7 @@
                 
                 <!-- 閲覧モード用ビュー -->
                 <div id="view-mode-info">
-                    <div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div>
-                    <div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div>
                     <div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div>
-                    <div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div>
                     <div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div>
                     <div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div>
                 </div>
@@ -439,8 +443,6 @@
             updateEditModeUI();
 
             openPage('admin-edit'); 
-            document.getElementById('admin-user-icon').src = u.icon || "https://ul.h3z.jp/Vnukmtvq.jpg"; 
-            document.getElementById('admin-user-lineName').innerText = "@" + (u.lineDisplayName || "LINE_User"); 
             document.getElementById('admin-edit-docId').innerText = u.id; 
             
             fillViewMode(u);
@@ -451,10 +453,12 @@
 
         // 閲覧モードのテキストに反映
         function fillViewMode(u) {
-            document.getElementById('admin-show-name').innerText = u.name || "-"; 
-            document.getElementById('admin-show-kana').innerText = u.kana || "-"; 
+            document.getElementById('admin-user-icon').src = u.icon || "https://ul.h3z.jp/Vnukmtvq.jpg"; 
+            document.getElementById('admin-user-kana').innerText = u.kana || "ふりがななし"; 
+            document.getElementById('admin-user-name').innerText = u.name || "名称未設定"; 
+            document.getElementById('admin-user-year-badge').innerText = (u.year || "-") + "年生"; 
+
             document.getElementById('admin-show-studentId').innerText = u.studentId || "-"; 
-            document.getElementById('admin-show-year').innerText = (u.year || "-") + "年"; 
             
             const isUrakata = hasRoleKeyword(u.role, 'urakata');
             const isLmc = hasRoleKeyword(u.role, 'lmc');
@@ -487,7 +491,7 @@
             if (isEditMode) {
                 viewDiv.classList.add('hidden');
                 formDiv.classList.remove('hidden');
-                iconSpan.innerText = "close"; // 編集中はバツ印などに切り替え可能
+                iconSpan.innerText = "close";
                 titleEl.innerText = "ユーザー編集";
             } else {
                 viewDiv.classList.remove('hidden');
