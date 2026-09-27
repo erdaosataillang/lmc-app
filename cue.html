@@ -67,7 +67,7 @@
         input:focus {
             background-color: #fefce8;
         }
-/* 検索候補リストのスタイル */
+        /* 検索候補リストのスタイル */
         .suggest-list {
             position: absolute;
             top: calc(100% + 2px);
@@ -353,6 +353,87 @@
             return partMap[lower] || partName;
         };
 
+        // ユーザー一覧キャッシュとサジェスト機能
+        let systemUsersCache = [];
+
+        async function preloadSystemUsers() {
+            if (!db) return;
+            try {
+                const snap = await getDocs(collection(db, 'users'));
+                systemUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (e) {
+                console.error("Users cache error:", e);
+            }
+        }
+
+        window.showNameSuggest = (inputEl, index) => {
+            const queryVal = inputEl.value.trim().toLowerCase();
+            const suggestBox = document.getElementById(`name-suggest-${index}`);
+            if (!suggestBox) return;
+
+            if (!queryVal || systemUsersCache.length === 0) {
+                suggestBox.style.display = 'none';
+                return;
+            }
+
+            const matches = systemUsersCache.filter(u => {
+                const name = (u.name || '').toLowerCase();
+                const kana = (u.kana || u.furigana || '').toLowerCase();
+                const lineName = (u.lineDisplayName || '').toLowerCase();
+                return name.includes(queryVal) || kana.includes(queryVal) || lineName.includes(queryVal);
+            }).slice(0, 5);
+
+            if (matches.length > 0) {
+                suggestBox.innerHTML = '';
+                matches.forEach(user => {
+                    const div = document.createElement('div');
+                    div.className = 'name-suggest-item flex items-center justify-between';
+                    div.innerHTML = `
+                        <span class="font-bold text-gray-800">${user.name}</span>
+                        <span class="text-[10px] text-gray-400">${user.year ? user.year + '年' : ''} ${user.part ? window.formatPart(user.part) : ''}</span>
+                    `;
+
+                    const selectUser = (e) => {
+                        e.preventDefault();
+                        inputEl.value = user.name;
+                        
+                        const row = inputEl.closest('tr');
+                        const gradeInput = row.querySelector('.grade-input');
+                        const partInput = row.querySelector('.part-input');
+                        
+                        if (gradeInput && !gradeInput.value && user.year) {
+                            gradeInput.value = user.year;
+                        }
+                        if (partInput && !partInput.value && user.part) {
+                            partInput.value = window.formatPart(user.part);
+                        }
+
+                        suggestBox.style.display = 'none';
+                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        if (typeof saveDraft === 'function') saveDraft();
+                    };
+
+                    div.addEventListener('mousedown', selectUser);
+                    div.addEventListener('touchstart', selectUser, { passive: false });
+                    suggestBox.appendChild(div);
+                });
+                suggestBox.style.display = 'block';
+            } else {
+                suggestBox.style.display = 'none';
+            }
+        };
+
+        const closeAllSuggests = (e) => {
+            if (!e.target.closest('.name-suggest-list') && !e.target.closest('.name-input')) {
+                document.querySelectorAll('.name-suggest-list').forEach(box => box.style.display = 'none');
+            }
+            if (!e.target.closest('.suggest-list') && !e.target.closest('.search-btn')) {
+                document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
+            }
+        };
+        document.addEventListener('click', closeAllSuggests);
+        document.addEventListener('touchstart', closeAllSuggests, { passive: true });
+
         // メンバー表生成
         const membersTbody = document.getElementById('members-tbody');
         for (let i = 0; i < 8; i++) {
@@ -367,27 +448,17 @@
                 </td>
             `;
             
-            // パート入力欄のフォーカス外れた時の自動変換
             const partInput = tr.querySelector('.part-input');
             partInput.addEventListener('blur', (e) => {
                 e.target.value = window.formatPart(e.target.value);
                 if (typeof saveDraft === 'function') saveDraft();
             });
 
-            // 名前入力欄のインプット時にユーザー一覧からサジェスト表示
             const nameInput = tr.querySelector('.name-input');
             nameInput.addEventListener('input', (e) => {
                 showNameSuggest(e.target, i);
             });
 
-            membersTbody.appendChild(tr);
-        }
-            // パート入力欄からフォーカスが外れた時に自動変換
-            const partInput = tr.querySelector('.part-input');
-            partInput.addEventListener('blur', (e) => {
-                e.target.value = window.formatPart(e.target.value);
-                if (typeof saveDraft === 'function') saveDraft();
-            });
             membersTbody.appendChild(tr);
         }
 
@@ -417,11 +488,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         let bandId = urlParams.get('bandID');
         let eventId = urlParams.get('eventID');
-        // cueID または cuesheetID どちらでも対応
         const cueId = urlParams.get('cueID') || urlParams.get('cuesheetID') || urlParams.get('cueSheetID');
         const draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
 
-        // フォームにデータを流し込む汎用関数
         const applyFormData = (data) => {
             if (!data) return;
 
@@ -474,7 +543,7 @@
         };
 
         const saveDraft = () => {
-            if (cueId) return; // 既存Cueシート閲覧・編集時はローカル下書きで勝手に上書きさせない
+            if (cueId) return;
             if (!bandId || !eventId) return;
 
             const data = {
@@ -519,12 +588,9 @@
             }
         };
 
-       window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             if (!db) return;
 
-            // ==========================================
-            // パラメーター不正時のリダイレクト処理
-            // ==========================================
             if (!cueId && (!bandId || !eventId)) {
                 showToast('パラメーターが不正です。ホーム画面へ戻ります。', 'error');
                 setTimeout(() => {
@@ -533,141 +599,10 @@
                 return;
             }
 
+            // ユーザーキャッシュの事前読み込み
+            await preloadSystemUsers();
+
             try {
-                // ==========================================
-                // 1. ?cueID がある場合: cuesheetsから既存データを再読み込み
-                // ==========================================
-                if (cueId) {
-                    const cueDocRef = doc(db, 'cuesheets', cueId);
-                    const cueDocSnap = await getDoc(cueDocRef);
-
-                    if (cueDocSnap.exists()) {
-                        const cueData = cueDocSnap.data();
-                        
-                        // cueシート内のメタ情報を補完
-                        if (!bandId && cueData.bandId) bandId = cueData.bandId;
-                        if (!eventId && cueData.eventId) eventId = cueData.eventId;
-
-                        applyFormData(cueData);
-
-                        // イベント名があればプルダウンに反映（なければoptionを追加して選択）
-                        if (eventId) {
-                            const eventSelect = document.getElementById('event-select');
-                            if (eventSelect) {
-                                let hasOption = Array.from(eventSelect.options).some(opt => opt.value === eventId);
-                                if (!hasOption) {
-                                    const eventDocSnap = await getDoc(doc(db, 'events', eventId));
-                                    if (eventDocSnap.exists()) {
-                                        const evName = eventDocSnap.data().event || eventDocSnap.data().name || "";
-                                        const match = evName.match(/(\d{1,2})月/);
-                                        const displayName = match ? `${match[1]}月定演` : evName;
-                                        const opt = document.createElement('option');
-                                        opt.value = eventId;
-                                        opt.textContent = displayName;
-                                        eventSelect.appendChild(opt);
-                                    }
-                                }
-                                eventSelect.value = eventId;
-                            }
-                        }
-
-                        showToast('Cueシートを読み込みました', 'info');
-                        return; // 再読み込み完了のためここで終了
-                    } else {
-                        showToast('指定されたCueシートが見つかりませんでした', 'error');
-                    }
-                }
-
-                // ユーザー一覧キャッシュ
-        let systemUsersCache = [];
-
-        // 起動時にusersコレクションを取得しておく
-        async function preloadSystemUsers() {
-            if (!db) return;
-            try {
-                const snap = await getDocs(collection(db, 'users'));
-                systemUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            } catch (e) {
-                console.error("Users cache error:", e);
-            }
-        }
-        // DOMContentLoaded内、あるいは初期化のタイミングで preloadSystemUsers(); を呼び出してください。
-
-        // 名前のサジェスト表示ロジック
-        window.showNameSuggest = (inputEl, index) => {
-            const queryVal = inputEl.value.trim().toLowerCase();
-            const suggestBox = document.getElementById(`name-suggest-${index}`);
-            if (!suggestBox) return;
-
-            if (!queryVal || systemUsersCache.length === 0) {
-                suggestBox.style.display = 'none';
-                return;
-            }
-
-            // 名前やフリガナなどに部分一致するユーザーを抽出
-            const matches = systemUsersCache.filter(u => {
-                const name = (u.name || '').toLowerCase();
-                const kana = (u.kana || u.furigana || '').toLowerCase();
-                const lineName = (u.lineDisplayName || '').toLowerCase();
-                return name.includes(queryVal) || kana.includes(queryVal) || lineName.includes(queryVal);
-            }).slice(0, 5); // 最大5件
-
-            if (matches.length > 0) {
-                suggestBox.innerHTML = '';
-                matches.forEach(user => {
-                    const div = document.createElement('div');
-                    div.className = 'name-suggest-item flex items-center justify-between';
-                    div.innerHTML = `
-                        <span class="font-bold text-gray-800">${user.name}</span>
-                        <span class="text-[10px] text-gray-400">${user.year ? user.year + '年' : ''} ${user.part ? window.formatPart(user.part) : ''}</span>
-                    `;
-
-                    const selectUser = (e) => {
-                        e.preventDefault();
-                        inputEl.value = user.name;
-                        
-                        // もし同じ行の学年やパートが空欄であれば、ユーザーデータから自動補完する
-                        const row = inputEl.closest('tr');
-                        const gradeInput = row.querySelector('.grade-input');
-                        const partInput = row.querySelector('.part-input');
-                        
-                        if (gradeInput && !gradeInput.value && user.year) {
-                            gradeInput.value = user.year;
-                        }
-                        if (partInput && !partInput.value && user.part) {
-                            partInput.value = window.formatPart(user.part);
-                        }
-
-                        suggestBox.style.display = 'none';
-                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-                        if (typeof saveDraft === 'function') saveDraft();
-                    };
-
-                    div.addEventListener('mousedown', selectUser);
-                    div.addEventListener('touchstart', selectUser, { passive: false });
-                    suggestBox.appendChild(div);
-                });
-                suggestBox.style.display = 'block';
-            } else {
-                suggestBox.style.display = 'none';
-            }
-        };
-
-        // サジェスト枠外をタップしたら閉じる処理（既存の closeSuggests に名前用も含める）
-        const closeAllSuggests = (e) => {
-            if (!e.target.closest('.name-suggest-list') && !e.target.closest('.name-input')) {
-                document.querySelectorAll('.name-suggest-list').forEach(box => box.style.display = 'none');
-            }
-        };
-        document.addEventListener('click', closeAllSuggests);
-        document.addEventListener('touchstart', closeAllSuggests, { passive: true });
-
-                // ==========================================
-                // 2. 通常読み込みフロー (bandID, eventID 起因)
-                // ==========================================
-                // ==========================================
-                // イベント直近3件の取得とプルダウン初期化
-                // ==========================================
                 const eventSelect = document.getElementById('event-select');
                 try {
                     const eventsQuery = query(collection(db, 'events'), orderBy('startDate', 'desc'), limit(3));
@@ -687,7 +622,6 @@
                             eventSelect.appendChild(opt);
                         });
 
-                        // URLのeventIdがあればそれを初期選択、なければ最新（先頭）を選択
                         if (eventId) {
                             eventSelect.value = eventId;
                         } else {
@@ -698,7 +632,6 @@
                     console.error("Events fetch error:", e);
                 }
 
-                // プルダウンを切り替えたら eventId を即座に更新し、URLパラメータも書き換え
                 eventSelect.addEventListener('change', (e) => {
                     eventId = e.target.value;
                     const newUrl = new URL(window.location);
@@ -706,6 +639,44 @@
                     window.history.replaceState(null, '', newUrl);
                     saveDraft();
                 });
+
+                if (cueId) {
+                    const cueDocRef = doc(db, 'cuesheets', cueId);
+                    const cueDocSnap = await getDoc(cueDocRef);
+
+                    if (cueDocSnap.exists()) {
+                        const cueData = cueDocSnap.data();
+                        
+                        if (!bandId && cueData.bandId) bandId = cueData.bandId;
+                        if (!eventId && cueData.eventId) eventId = cueData.eventId;
+
+                        applyFormData(cueData);
+
+                        if (eventId) {
+                            if (eventSelect) {
+                                let hasOption = Array.from(eventSelect.options).some(opt => opt.value === eventId);
+                                if (!hasOption) {
+                                    const eventDocSnap = await getDoc(doc(db, 'events', eventId));
+                                    if (eventDocSnap.exists()) {
+                                        const evName = eventDocSnap.data().event || eventDocSnap.data().name || "";
+                                        const match = evName.match(/(\d{1,2})月/);
+                                        const displayName = match ? `${match[1]}月定演` : evName;
+                                        const opt = document.createElement('option');
+                                        opt.value = eventId;
+                                        opt.textContent = displayName;
+                                        eventSelect.appendChild(opt);
+                                    }
+                                }
+                                eventSelect.value = eventId;
+                            }
+                        }
+
+                        showToast('Cueシートを読み込みました', 'info');
+                        return;
+                    } else {
+                        showToast('指定されたCueシートが見つかりませんでした', 'error');
+                    }
+                }
 
                 if (loadDraft()) {
                     showToast('入力途中のデータを復元しました', 'info');
@@ -744,25 +715,11 @@
 
                             const fetchedUsers = await Promise.all(userPromises);
                             
-                            const formatPart = (partName) => {
-                                if (!partName) return '';
-                                const lower = partName.toLowerCase();
-                                const partMap = {
-                                    'vocal': 'Vo.', 'vocals': 'Vo.',
-                                    'guitar': 'Gt.', 'bass': 'Ba.',
-                                    'drums': 'Dr.', 'drum': 'Dr.',
-                                    'keyboard': 'Key.', 'keyboards': 'Key.', 'key': 'Key.',
-                                    'piano': 'Pf.', 'chorus': 'Cho.',
-                                    'synthesizer': 'Syn.', 'percussion': 'Per.', 'dj': 'DJ'
-                                };
-                                return partMap[lower] || partName;
-                            };
-
                             fetchedUsers.forEach(result => {
                                 if (result && result.idx < 8) {
                                     names[result.idx].value = result.data.name || '';
                                     grades[result.idx].value = result.data.year || '';
-                                    parts[result.idx].value = formatPart(result.data.part);
+                                    parts[result.idx].value = window.formatPart(result.data.part);
                                 }
                             });
                         }
@@ -800,16 +757,13 @@
             });
         });
 
-        // ==========================================
-        // Apple Music検索（ジャケット表示・複数件スクロール・ヒント付き）
-        // ==========================================
         window.searchSong = async (btn, index) => {
             const row = btn.closest('tr');
             const titleInput = row.querySelector('.song-title');
-            const query = titleInput.value.trim();
+            const queryVal = titleInput.value.trim();
             const suggestBox = document.getElementById(`suggest-${index}`);
             
-            if (!query) {
+            if (!queryVal) {
                 showToast("曲名を入力してから検索してください", 'info');
                 return;
             }
@@ -818,8 +772,7 @@
             btn.disabled = true;
 
             try {
-                // limitを10件にしてスクロール選択できるように取得
-                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&country=jp&limit=10`;
+                const url = `https://itunes.apple.com/search?term=${encodeURIComponent(queryVal)}&entity=song&country=jp&limit=10`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
@@ -828,7 +781,6 @@
 
                 suggestBox.innerHTML = '';
 
-                // ヒントHTMLパーツを生成する関数
                 const createHintElement = () => {
                     const hintWrap = document.createElement('div');
                     hintWrap.innerHTML = `
@@ -871,7 +823,6 @@
                         const secs = totalSeconds % 60;
                         const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
                         
-                        // 100x100の高解像度アートワークに置換（なければデフォルト）
                         const artwork = song.artworkUrl100 || song.artworkUrl60 || '';
 
                         div.innerHTML = `
@@ -896,11 +847,9 @@
                         suggestBox.appendChild(div);
                     });
 
-                    // 候補一覧の最下部にヒントを追加
                     suggestBox.appendChild(createHintElement());
                     suggestBox.style.display = 'block';
                 } else {
-                    // 0件のときもヒントを表示して案内
                     const emptyMsg = document.createElement('div');
                     emptyMsg.className = 'p-3 text-xs text-gray-500 text-center font-medium';
                     emptyMsg.innerText = '一致する曲が見つかりませんでした';
@@ -916,14 +865,6 @@
                 btn.disabled = false;
             }
         };
-
-        const closeSuggests = (e) => {
-            if (!e.target.closest('.suggest-list') && !e.target.closest('.search-btn')) {
-                document.querySelectorAll('.suggest-list').forEach(box => box.style.display = 'none');
-            }
-        };
-        document.addEventListener('click', closeSuggests);
-        document.addEventListener('touchstart', closeSuggests, {passive: true});
 
         document.addEventListener('input', function(e) {
             const timeInput = e.target.closest('tr')?.querySelector('input[placeholder="00:00"]');
@@ -962,16 +903,12 @@
             }
         });
 
-        // ==========================================
-        // 送信・更新処理
-        // ==========================================
         const submitCueSheet = async () => {
             if (!db) {
                 showToast('データベースが初期化されていません', 'error');
                 return;
             }
 
-            // 1. イベント選択のチェック
             const eventSelect = document.getElementById('event-select');
             const selectedEventId = eventSelect ? eventSelect.value : eventId;
             if (!selectedEventId) {
@@ -980,7 +917,6 @@
                 return;
             }
 
-            // 2. バンド名のチェック
             const bandName = document.getElementById('band-name').value.trim();
             if (!bandName) {
                 showToast('バンド名を入力してください', 'error');
@@ -988,16 +924,14 @@
                 return;
             }
 
-            // 3. 出演NG日がある場合のNG理由チェック
             const ngDate = document.getElementById('ng-date').value.trim();
             const ngReason = document.getElementById('ng-reason').value.trim();
             if (ngDate !== '' && ngReason === '') {
-                showToast('NG日がある場合は理由を入力してください', 'error');
+                showToast('NG日がある場合は理由を記入してください', 'error');
                 document.getElementById('ng-reason').focus();
                 return;
             }
 
-           // 4. メンバー情報のチェック（学年・パート・名前が3つ揃った人が1人以上いるか）
             const members = [];
             let hasIncompleteMember = false;
             document.querySelectorAll('#members-tbody tr').forEach(tr => {
@@ -1006,7 +940,6 @@
                 const name = tr.querySelector('.name-input').value.trim();
 
                 if (grade || part || name) {
-                    // どれか1つでも入力されているのに欠けがある場合は不備と判定
                     if (!grade || !part || !name) {
                         hasIncompleteMember = true;
                     } else {
@@ -1024,7 +957,6 @@
                 return;
             }
 
-            // 5. 楽曲リストのチェック（1曲以上、かつ入力された曲すべてに曲名と長さが存在するか）
             const songs = [];
             let hasMissingDuration = false;
             let hasMissingTitle = false;
@@ -1055,14 +987,12 @@
                 return;
             }
 
-            // 6. 同期の有無チェック
             const syncVal = document.getElementById('sync-val').value.trim();
             if (!syncVal) {
                 showToast('同期の有無（無 または 有）を選択してください', 'error');
                 return;
             }
 
-            // 送信用ドキュメントIDの確定
             const targetDocId = cueId || (bandId && selectedEventId ? `${bandId}_${selectedEventId}` : null);
             if (!targetDocId) {
                 showToast('バンドIDまたはイベントIDが正しく取得できていません', 'error');
@@ -1075,7 +1005,6 @@
             submitBtn.innerText = '登録中...';
 
             try {
-
                 const payload = {
                     bandId: bandId || '',
                     eventId: selectedEventId || '',
@@ -1093,7 +1022,6 @@
                 const docRef = doc(db, 'cuesheets', targetDocId);
                 await setDoc(docRef, payload, { merge: true });
 
-                // バンドデータ側に最新のCueシートIDを保存
                 if (bandId) {
                     try {
                         await updateDoc(doc(db, 'bands', bandId), {
