@@ -97,6 +97,14 @@
         .user-info-main, .band-info { flex-grow: 1; min-width: 0; } 
         .user-name, .band-name { font-size: 17px; font-weight: 600; color: #1c1c1e; margin-bottom:4px; } 
         .user-sub, .band-members { font-size: 13px; color: #8e8e93; font-weight: 500; }
+
+        /* 個人の管理: ユーザー情報を横並びにして一覧をコンパクトに */
+        #adminUserList .user-list-item { display: flex; align-items: center; padding: 12px 16px; margin-bottom: 8px; border-radius: 20px; }
+        #adminUserList .mini-icon { width: 44px; height: 44px; margin-right: 12px; border-radius: 16px; }
+        #adminUserList .user-name { margin-bottom: 2px; overflow-wrap: anywhere; }
+        #adminUserList .user-info-main { overflow-wrap: anywhere; }
+        #adminUserList .user-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
+        #adminUserList .user-list-item > .material-icons { flex-shrink: 0; margin-left: 8px; }
         
         .info-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); } 
         .info-row:last-child { border-bottom: none; }
