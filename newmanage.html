@@ -896,6 +896,7 @@
                 const uid = auth.currentUser ? auth.currentUser.uid : "admin";
                 await updateDoc(doc(db, "system", "settings"), {
                     bookingMode: mode,
+                    reservationMode: mode,
                     lotteryConfig: { mode: eMode, daysBefore: days, time: time },
                     updatedAt: serverTimestamp(),
                     updatedBy: uid

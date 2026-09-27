@@ -303,6 +303,7 @@
         window.saveBookingSettings = async () => {
             settings.lotteryConfig.daysBefore = parseInt(document.getElementById('days-before').value) || 7;
             settings.lotteryConfig.time = document.getElementById('exec-time').value || '12:00';
+            settings.bookingMode = settings.reservationMode;
             try { await setDoc(doc(db, 'system', 'settings'), settings, { merge: true }); alert("Saved"); } catch(e) { console.error(e); }
         };
 

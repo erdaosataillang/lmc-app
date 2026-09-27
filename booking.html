@@ -1088,7 +1088,7 @@
                 return;
             }
 
-            let mode = currentSystemSettings.bookingMode || 'first_come';
+            let mode = currentSystemSettings.bookingMode || currentSystemSettings.reservationMode || 'first_come';
             // 抽選モードであっても、既にその日に抽選確定済みの予約（lottery）があれば先着モードに切り替え
             if (mode === 'lottery' && isLotteryDay) {
                 mode = 'first_come';
@@ -1476,7 +1476,7 @@
 
             // ここが重要なモード判定ロジック
             // 「isLotteryDay（その日に紫の抽選確定済み枠がある）」の場合は、自動的に先着順（first_come）にする
-            let mode = currentSystemSettings.bookingMode || 'first_come'; 
+            let mode = currentSystemSettings.bookingMode || currentSystemSettings.reservationMode || 'first_come';
             if (mode === 'lottery' && isLotteryDay) {
                 mode = 'first_come';
             }
