@@ -148,6 +148,31 @@
             body { background: white; padding: 0; }
             .sheet-container { box-shadow: none; border: 2px solid #000; margin: 0; max-width: 100%; }
         }
+        /* 名前の検索候補リストのスタイル */
+        .name-suggest-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 60;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        .name-suggest-item {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #f3f4f6;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: background-color 0.15s;
+        }
+        .name-suggest-item:hover, .name-suggest-item:active {
+            background-color: #e5e7eb;
+        }
     </style>
 </head>
 <body class="min-h-screen p-2 md:p-6">
@@ -336,8 +361,27 @@
             tr.innerHTML = `
                 <td class="border-r-black-2"><input type="text" class="px-2 text-center text-sm grade-input" data-index="${i}"></td>
                 <td class="border-r-black-2"><input type="text" class="px-2 text-center text-sm part-input" data-index="${i}"></td>
-                <td><input type="text" class="px-2 text-sm name-input" data-index="${i}"></td>
+                <td class="relative">
+                    <input type="text" class="px-2 text-sm name-input" data-index="${i}" placeholder="名前を入力" autocomplete="off">
+                    <div id="name-suggest-${i}" class="name-suggest-list"></div>
+                </td>
             `;
+            
+            // パート入力欄のフォーカス外れた時の自動変換
+            const partInput = tr.querySelector('.part-input');
+            partInput.addEventListener('blur', (e) => {
+                e.target.value = window.formatPart(e.target.value);
+                if (typeof saveDraft === 'function') saveDraft();
+            });
+
+            // 名前入力欄のインプット時にユーザー一覧からサジェスト表示
+            const nameInput = tr.querySelector('.name-input');
+            nameInput.addEventListener('input', (e) => {
+                showNameSuggest(e.target, i);
+            });
+
+            membersTbody.appendChild(tr);
+        }
             // パート入力欄からフォーカスが外れた時に自動変換
             const partInput = tr.querySelector('.part-input');
             partInput.addEventListener('blur', (e) => {
@@ -533,6 +577,90 @@
                         showToast('指定されたCueシートが見つかりませんでした', 'error');
                     }
                 }
+
+                // ユーザー一覧キャッシュ
+        let systemUsersCache = [];
+
+        // 起動時にusersコレクションを取得しておく
+        async function preloadSystemUsers() {
+            if (!db) return;
+            try {
+                const snap = await getDocs(collection(db, 'users'));
+                systemUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (e) {
+                console.error("Users cache error:", e);
+            }
+        }
+        // DOMContentLoaded内、あるいは初期化のタイミングで preloadSystemUsers(); を呼び出してください。
+
+        // 名前のサジェスト表示ロジック
+        window.showNameSuggest = (inputEl, index) => {
+            const queryVal = inputEl.value.trim().toLowerCase();
+            const suggestBox = document.getElementById(`name-suggest-${index}`);
+            if (!suggestBox) return;
+
+            if (!queryVal || systemUsersCache.length === 0) {
+                suggestBox.style.display = 'none';
+                return;
+            }
+
+            // 名前やフリガナなどに部分一致するユーザーを抽出
+            const matches = systemUsersCache.filter(u => {
+                const name = (u.name || '').toLowerCase();
+                const kana = (u.kana || u.furigana || '').toLowerCase();
+                const lineName = (u.lineDisplayName || '').toLowerCase();
+                return name.includes(queryVal) || kana.includes(queryVal) || lineName.includes(queryVal);
+            }).slice(0, 5); // 最大5件
+
+            if (matches.length > 0) {
+                suggestBox.innerHTML = '';
+                matches.forEach(user => {
+                    const div = document.createElement('div');
+                    div.className = 'name-suggest-item flex items-center justify-between';
+                    div.innerHTML = `
+                        <span class="font-bold text-gray-800">${user.name}</span>
+                        <span class="text-[10px] text-gray-400">${user.year ? user.year + '年' : ''} ${user.part ? window.formatPart(user.part) : ''}</span>
+                    `;
+
+                    const selectUser = (e) => {
+                        e.preventDefault();
+                        inputEl.value = user.name;
+                        
+                        // もし同じ行の学年やパートが空欄であれば、ユーザーデータから自動補完する
+                        const row = inputEl.closest('tr');
+                        const gradeInput = row.querySelector('.grade-input');
+                        const partInput = row.querySelector('.part-input');
+                        
+                        if (gradeInput && !gradeInput.value && user.year) {
+                            gradeInput.value = user.year;
+                        }
+                        if (partInput && !partInput.value && user.part) {
+                            partInput.value = window.formatPart(user.part);
+                        }
+
+                        suggestBox.style.display = 'none';
+                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        if (typeof saveDraft === 'function') saveDraft();
+                    };
+
+                    div.addEventListener('mousedown', selectUser);
+                    div.addEventListener('touchstart', selectUser, { passive: false });
+                    suggestBox.appendChild(div);
+                });
+                suggestBox.style.display = 'block';
+            } else {
+                suggestBox.style.display = 'none';
+            }
+        };
+
+        // サジェスト枠外をタップしたら閉じる処理（既存の closeSuggests に名前用も含める）
+        const closeAllSuggests = (e) => {
+            if (!e.target.closest('.name-suggest-list') && !e.target.closest('.name-input')) {
+                document.querySelectorAll('.name-suggest-list').forEach(box => box.style.display = 'none');
+            }
+        };
+        document.addEventListener('click', closeAllSuggests);
+        document.addEventListener('touchstart', closeAllSuggests, { passive: true });
 
                 // ==========================================
                 // 2. 通常読み込みフロー (bandID, eventID 起因)
