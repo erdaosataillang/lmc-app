@@ -164,9 +164,10 @@
         <!-- スクロールコンテンツ（メインメニュー） -->
         <div class="scroll-content">
             <div class="menu-list">
-                <button class="menu-btn" onclick="location.href='#'">
+                <!-- 定期演奏会（現在のイベント情報）ボタン -->
+                <button class="menu-btn" onclick="openAdminConcert()">
                     <div class="menu-icon-wrapper icon-admin-concert"><span class="material-icons">event_note</span></div>
-                    <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">定期演奏会の詳細・各種設定</span></div>
+                    <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">現在のイベント情報の表示・編集</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
                 <button class="menu-btn" onclick="location.href='#'">
@@ -190,6 +191,48 @@
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- 定期演奏会（現在のイベント）ページ -->
+    <div id="page-admin-concert" class="page-container">
+        <div class="page-header">
+            <div class="page-header-left">
+                <button class="back-btn" onclick="closePage('admin-concert')"><span class="material-icons">arrow_back</span></button>
+                <div class="page-title">定期演奏会 (現在のイベント)</div>
+            </div>
+        </div>
+        <div class="content-area" style="padding-top:16px;">
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">イベント情報</h3>
+                
+                <div id="concert-loading" style="text-align:center; padding:20px; color:#999;">読み込み中...</div>
+
+                <div id="concert-form-area" class="hidden">
+                    <div class="form-group">
+                        <label class="form-label">イベント名</label>
+                        <input type="text" id="concert-event-name" class="form-input" placeholder="例: 2026年度 定期演奏会">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">開催日</label>
+                        <input type="date" id="concert-event-date" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">詳細・備考</label>
+                        <textarea id="concert-event-desc" class="form-input" style="height:100px; resize:none;" placeholder="場所や備考など"></textarea>
+                    </div>
+
+                    <button class="btn-primary" style="margin-top:12px;" onclick="saveCurrentConcertEvent()">変更を保存する</button>
+                </div>
+
+                <div id="concert-empty-area" class="hidden" style="text-align:center; padding:30px; color:#5f6368;">
+                    <span class="material-icons" style="font-size:48px; color:#dadce0; margin-bottom:8px;">event_busy</span>
+                    <div style="font-weight:bold; font-size:15px; color:#1f1f1f;">現在のイベントが設定されていません</div>
+                    <div style="font-size:12px; margin-top:4px;">「基本の設定」または「イベントの管理」から有効なイベントを設定してください。</div>
+                </div>
+            </div>
+            
+            <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">Active Event ID: <span id="concert-event-id">-</span></div>
         </div>
     </div>
 
@@ -412,7 +455,78 @@
         });
 
         // ==========================
-        // 1. 個人の管理ロジック（LMC所属者のみ抽出）
+        // 0. 定期演奏会（現在のイベント）ロジック
+        // ==========================
+        window.openAdminConcert = async () => {
+            openPage('admin-concert');
+            const loadingEl = document.getElementById('concert-loading');
+            const formEl = document.getElementById('concert-form-area');
+            const emptyEl = document.getElementById('concert-empty-area');
+
+            loadingEl.classList.remove('hidden');
+            formEl.classList.add('hidden');
+            emptyEl.classList.add('hidden');
+
+            try {
+                // system/settings から activeEventId を取得
+                const settingsSnap = await getDoc(doc(db, "system", "settings"));
+                if (settingsSnap.exists()) {
+                    currentActiveEventId = settingsSnap.data().activeEventId || null;
+                }
+
+                document.getElementById('concert-event-id').innerText = currentActiveEventId || "-";
+
+                if (!currentActiveEventId) {
+                    loadingEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                    return;
+                }
+
+                // events コレクションから該当イベントデータを取得
+                const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
+                if (eventSnap.exists()) {
+                    const ev = eventSnap.data();
+                    document.getElementById('concert-event-name').value = ev.event || ev.name || "";
+                    document.getElementById('concert-event-date').value = ev.startDate || "";
+                    document.getElementById('concert-event-desc').value = ev.desc || "";
+
+                    loadingEl.classList.add('hidden');
+                    formEl.classList.remove('hidden');
+                } else {
+                    loadingEl.classList.add('hidden');
+                    emptyEl.classList.remove('hidden');
+                }
+            } catch (e) {
+                loadingEl.innerHTML = `<div style="color:#d93025;">読み込みエラー: ${e.message}</div>`;
+            }
+        };
+
+        window.saveCurrentConcertEvent = async () => {
+            if (!currentActiveEventId) return;
+            const name = document.getElementById('concert-event-name').value.trim();
+            const date = document.getElementById('concert-event-date').value;
+            const desc = document.getElementById('concert-event-desc').value.trim();
+
+            if (!name || !date) {
+                return await showCustomAlert("イベント名と開催日は必須です。", "入力エラー");
+            }
+
+            try {
+                await updateDoc(doc(db, "events", currentActiveEventId), {
+                    event: name,
+                    startDate: date,
+                    endDate: date,
+                    desc: desc,
+                    updatedAt: serverTimestamp()
+                });
+                await showCustomAlert("定期演奏会の情報を保存しました！");
+            } catch (e) {
+                await showCustomAlert("保存エラー: " + e.message, "エラー");
+            }
+        };
+
+        // ==========================
+        // 1. 個人の管理ロジック
         // ==========================
         window.openAdminUsers = async () => { 
             openPage('admin-users'); 
@@ -424,7 +538,6 @@
                     const qs = await getDocs(q); 
                     qs.forEach(docSnap => { 
                         const d = docSnap.data(); 
-                        // 所属にlmcが含まれる人のみ抽出
                         if (hasRoleKeyword(d.role, 'lmc')) {
                             allUsersCache.push({ id: docSnap.id, ...d }); 
                         }
