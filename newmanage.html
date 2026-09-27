@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LMC Admin</title>
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
+        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        .container { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; } 
+        .hidden { display: none !important; }
+        
+        /* ヘッダー */
+        .app-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: rgb(241, 244, 249); flex-shrink: 0; z-index: 500; }
+        .header-title { font-size: 20px; font-weight: bold; color: #1f1f1f; display: flex; align-items: center; gap: 8px; }
+        .header-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; justify-content: center; align-items: center; background: #dadce0; cursor: pointer; position: relative; }
+        .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
+        
+        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; -webkit-overflow-scrolling: touch; }
+        
+        /* メニューリスト */
+        .menu-list { display: flex; flex-direction: column; gap: 12px; }
+        .menu-btn { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #ffffff; border: none; width: 100%; text-align: left; cursor: pointer; border-radius: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); transition: transform 0.1s; } 
+        .menu-btn:active { transform: scale(0.98); background-color: #f8f9fa; }
+        .menu-icon-wrapper { width: 48px; height: 48px; border-radius: 50%; display: flex; justify-content: center; align-items: center; margin-right: 16px; flex-shrink: 0; } 
+        .menu-icon-wrapper .material-icons { font-size: 24px; }
+        .menu-content { flex-grow: 1; } 
+        .menu-title { font-size: 16px; font-weight: 500; color: #1f1f1f; display: block; margin-bottom: 4px; } 
+        .menu-subtitle { font-size: 12px; color: #444746; display: block; line-height: 1.4; }
+        .menu-arrow { color: #c4c7c5; font-size: 24px; }
+
+        /* アイコンカラーテーマ */
+        .icon-admin-cal { background-color: #fce4ec; color: #c2185b; } 
+        .icon-admin-user { background-color: #e8eaf6; color: #283593; } 
+        .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; } 
+        .icon-admin-event { background-color: #e3f2fd; color: #1976d2; }
+        .icon-admin-concert { background-color: #fbe9e7; color: #d84315; }
+
+        /* ナビゲーション (グラスモーフィズム) */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
+        .nav-item.active { color: #1f1f1f; transform: translateY(-4px); }
+        .nav-item.active .nav-icon { background-color: #ffd8e4; color: #31111d; padding: 4px 20px; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); transform: scale(1.05); margin-bottom: 0; } 
+        .nav-item.active span:not(.nav-icon) { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ヘッダー -->
+        <div class="app-header">
+            <div class="header-title">データの管理</div>
+            <div class="header-right" style="display:flex; align-items:center; gap:16px;">
+                <div class="header-avatar" id="headerIconAdmin">
+                    <img src="https://ul.h3z.jp/Vnukmtvq.jpg" alt="Avatar">
+                </div>
+            </div>
+        </div>
+
+        <!-- スクロールコンテンツ（メインメニュー） -->
+        <div class="scroll-content">
+            <div class="menu-list">
+                <!-- 1. 定期演奏会 -->
+                <button class="menu-btn" onclick="location.href='#'">
+                    <div class="menu-icon-wrapper icon-admin-concert">
+                        <span class="material-icons">event_note</span>
+                    </div>
+                    <div class="menu-content">
+                        <span class="menu-title">定期演奏会</span>
+                        <span class="menu-subtitle">定期演奏会の詳細・各種設定</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+
+                <!-- 2. 予約システムの管理 -->
+                <button class="menu-btn" onclick="location.href='#'">
+                    <div class="menu-icon-wrapper icon-admin-cal">
+                        <span class="material-icons">edit_calendar</span>
+                    </div>
+                    <div class="menu-content">
+                        <span class="menu-title">予約システムの管理</span>
+                        <span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+
+                <!-- 3. バンドの管理 -->
+                <button class="menu-btn" onclick="location.href='#'">
+                    <div class="menu-icon-wrapper icon-admin-band">
+                        <span class="material-icons">groups</span>
+                    </div>
+                    <div class="menu-content">
+                        <span class="menu-title">バンドの管理</span>
+                        <span class="menu-subtitle">全バンドの編集、合わせ状況の確認</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+
+                <!-- 4. 個人の管理 -->
+                <button class="menu-btn" onclick="location.href='#'">
+                    <div class="menu-icon-wrapper icon-admin-user">
+                        <span class="material-icons">manage_accounts</span>
+                    </div>
+                    <div class="menu-content">
+                        <span class="menu-title">個人の管理</span>
+                        <span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+
+                <!-- 5. イベントの管理 -->
+                <button class="menu-btn" onclick="location.href='#'">
+                    <div class="menu-icon-wrapper icon-admin-event">
+                        <span class="material-icons">event</span>
+                    </div>
+                    <div class="menu-content">
+                        <span class="menu-title">イベントの管理</span>
+                        <span class="menu-subtitle">ライブや合宿などのイベント作成・編集</span>
+                    </div>
+                    <span class="material-icons menu-arrow">chevron_right</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 下部ナビゲーションバー -->
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="location.href='/index.html'">
+            <span class="material-icons nav-icon">groups</span>
+            <span>マイバンド</span>
+        </div>
+        <div class="nav-item" onclick="location.href='/booking.html'">
+            <span class="material-icons nav-icon">calendar_month</span>
+            <span>合わせ予約</span>
+        </div>
+        <div class="nav-item active" id="nav-admin" onclick="location.href='/manage.html'">
+            <span class="material-icons nav-icon">admin_panel_settings</span>
+            <span>管理</span>
+        </div>
+        <div class="nav-item" onclick="location.href='https://mypage.sorairosystem.com'">
+            <span class="material-icons nav-icon">account_circle</span>
+            <span>マイページ</span>
+        </div>
+    </div>
+
+</body>
+</html>
