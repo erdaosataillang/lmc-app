@@ -314,7 +314,7 @@
 
             <div class="search-bar" style="margin-bottom:12px;">
                 <span class="material-icons" style="color:#5f6368;">search</span>
-                <input type="text" id="adminBandSearchInput" placeholder="バンド名で検索...">
+                <input type="text" id="adminBandSearchInput" placeholder="バンド名、メンバー名、曲名で検索...">
             </div>
             
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:white; padding:12px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
@@ -668,7 +668,7 @@
         }
 
         // ==========================
-        // 2. バンドの管理 ＆ 詳細ロジック
+        // 2. バンドの管理 ＆ 詳細ロジック（メンバー・曲名・フリガナ対応検索含む）
         // ==========================
         window.openAdminBands = async () => {
             openPage('admin-bands');
@@ -694,11 +694,28 @@
 
                 document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
 
+                // 全バンドデータの取得
                 const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                 allBandsCache = [];
-                bandQs.forEach(docSnap => {
-                    allBandsCache.push({ id: docSnap.id, ...docSnap.data() });
-                });
+                
+                for (const docSnap of bandQs.docs) {
+                    const bData = docSnap.data();
+                    const bandId = docSnap.id;
+                    
+                    // 検索用に各バンドのCuesheet情報（メンバー・楽曲など）も事前に取得してキャッシュに保持する
+                    let cueData = null;
+                    try {
+                        const cueSheetId = bData.latestCueSheetId || `${bandId}_${currentActiveEventId}`;
+                        const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
+                        if (cueSnap.exists()) {
+                            cueData = cueSnap.data();
+                        }
+                    } catch(err) {
+                        console.warn("Cueシート読み込みスキップ:", err);
+                    }
+
+                    allBandsCache.push({ id: bandId, ...bData, cueData });
+                }
 
                 if (allUsersCache.length === 0) {
                     const userQs = await getDocs(collection(db, "users"));
@@ -723,9 +740,47 @@
                     const bandEvents = Array.isArray(b.events) ? b.events : [];
                     if (!bandEvents.includes(currentActiveEventId)) return false;
                 }
+
                 if (searchKeyword !== "") {
-                    return (b.name && b.name.toLowerCase().includes(searchKeyword));
+                    // 1. バンド名でのマッチ
+                    const nameMatch = b.name && b.name.toLowerCase().includes(searchKeyword);
+                    if (nameMatch) return true;
+
+                    // 2. メンバー名・フリガナでのマッチ (Cuesheetのmembers または usersのキャッシュを照合)
+                    let memberMatch = false;
+                    if (b.cueData && b.cueData.members && Array.isArray(b.cueData.members)) {
+                        memberMatch = b.cueData.members.some(m => {
+                            const mName = (m.name || "").toLowerCase();
+                            // ユーザーマスター側からフリガナも検索できるようにチェック
+                            const uObj = allUsersCache.find(u => u.name === m.name);
+                            const mKana = uObj && uObj.kana ? uObj.kana.toLowerCase() : "";
+                            return mName.includes(searchKeyword) || (mKana && mKana.includes(searchKeyword));
+                        });
+                    }
+                    if (!memberMatch && b.memberIds && Array.isArray(b.memberIds)) {
+                        memberMatch = b.memberIds.some(uid => {
+                            const u = allUsersCache.find(x => x.id === uid);
+                            if (!u) return false;
+                            const uName = (u.name || "").toLowerCase();
+                            const uKana = (u.kana || "").toLowerCase();
+                            return uName.includes(searchKeyword) || uKana.includes(searchKeyword);
+                        });
+                    }
+                    if (memberMatch) return true;
+
+                    // 3. 曲名 (songs) でのマッチ
+                    let songMatch = false;
+                    if (b.cueData && b.cueData.songs && Array.isArray(b.cueData.songs)) {
+                        songMatch = b.cueData.songs.some(s => {
+                            const sTitle = (s.title || "").toLowerCase();
+                            return sTitle.includes(searchKeyword);
+                        });
+                    }
+                    if (songMatch) return true;
+
+                    return false;
                 }
+
                 return true;
             });
 
@@ -777,15 +832,14 @@
             filterAndRenderBands();
         });
 
-        // 3. バンド詳細（Cueシートデータ取得）ページを開く（バンド側から名称やアイコンを取得）
+        // 3. バンド詳細（Cueシートデータ取得）ページを開く
         async function openAdminBandDetail(band) {
             openPage('admin-band-detail');
             
-            // バンド側オブジェクト（band）から直接名称やアイコンを取得してセット
             document.getElementById('band-detail-title').innerText = band.name || "バンド詳細";
             document.getElementById('bd-detail-name').innerText = band.name || "名称未設定";
             document.getElementById('bd-detail-id').innerText = band.id;
-            document.getElementById('bd-detail-event',).innerText = `イベントID: ${currentActiveEventId || '-'}`;
+            document.getElementById('bd-detail-event').innerText = `イベントID: ${currentActiveEventId || '-'}`;
 
             const iconContainer = document.getElementById('bd-detail-icon');
             if (band.icon) {
@@ -796,54 +850,53 @@
 
             const membersContainer = document.getElementById('bd-detail-members-list');
             const songsContainer = document.getElementById('bd-detail-songs-list');
-            membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
-            songsContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
             
-            document.getElementById('bd-detail-existing').innerText = "-";
-            document.getElementById('bd-detail-sync').innerText = "-";
-            document.getElementById('bd-detail-ng').innerText = "-";
+            // 既にキャッシュされている場合はそれを活用し、無ければ再取得
+            let cData = band.cueData;
+            if (!cData) {
+                membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
+                songsContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
+                try {
+                    const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
+                    const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
+                    if (cueSnap.exists()) cData = cueSnap.data();
+                } catch(e) {
+                    console.error(e);
+                }
+            }
 
-            try {
-                const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
-                const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
+            if (cData) {
+                document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
+                document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
+                document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
 
-                if (cueSnap.exists()) {
-                    const cData = cueSnap.data();
-
-                    document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
-                    document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
-                    document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
-
-                    if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
-                        let mHtml = "<ul style='padding-left:20px; margin:0;'>";
-                        cData.members.forEach(m => {
-                            mHtml += `<li style="margin-bottom:6px;"><strong>${m.name || '不明'}</strong> (${m.grade || '-'}年) - ${m.part || '-'}</li>`;
-                        });
-                        mHtml += "</ul>";
-                        membersContainer.innerHTML = mHtml;
-                    } else {
-                        membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
-                    }
-
-                    if (cData.songs && Array.isArray(cData.songs) && cData.songs.length > 0) {
-                        let sHtml = "<ul style='padding-left:20px; margin:0;'>";
-                        cData.songs.forEach(s => {
-                            sHtml += `<li style="margin-bottom:6px;"><strong>${s.title || '無題'}</strong> <span style="color:#5f6368; font-size:12px;">(${s.duration || '-'})</span></li>`;
-                        });
-                        sHtml += "</ul>";
-                        songsContainer.innerHTML = sHtml;
-                    } else {
-                        songsContainer.innerHTML = '<div style="color:#999;">楽曲が登録されていません</div>';
-                    }
-
+                if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
+                    let mHtml = "<ul style='padding-left:20px; margin:0;'>";
+                    cData.members.forEach(m => {
+                        mHtml += `<li style="margin-bottom:6px;"><strong>${m.name || '不明'}</strong> (${m.grade || '-'}年) - ${m.part || '-'}</li>`;
+                    });
+                    mHtml += "</ul>";
+                    membersContainer.innerHTML = mHtml;
                 } else {
-                    membersContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
-                    songsContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
+                    membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
                 }
 
-            } catch (e) {
-                membersContainer.innerHTML = `<div style="color:#d93025;">取得エラー: ${e.message}</div>`;
-                songsContainer.innerHTML = `<div style="color:#d93025;">取得エラー: ${e.message}</div>`;
+                if (cData.songs && Array.isArray(cData.songs) && cData.songs.length > 0) {
+                    let sHtml = "<ul style='padding-left:20px; margin:0;'>";
+                    cData.songs.forEach(s => {
+                        sHtml += `<li style="margin-bottom:6px;"><strong>${s.title || '無題'}</strong> <span style="color:#5f6368; font-size:12px;">(${s.duration || '-'})</span></li>`;
+                    });
+                    sHtml += "</ul>";
+                    songsContainer.innerHTML = sHtml;
+                } else {
+                    songsContainer.innerHTML = '<div style="color:#999;">楽曲が登録されていません</div>';
+                }
+            } else {
+                membersContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
+                songsContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
+                document.getElementById('bd-detail-existing').innerText = "-";
+                document.getElementById('bd-detail-sync').innerText = "-";
+                document.getElementById('bd-detail-ng').innerText = "-";
             }
         }
 
