@@ -748,7 +748,6 @@
             bands.forEach(b => {
                 const div = document.createElement('div');
                 div.className = 'band-card';
-                // バンドクリックで詳細（Cueシート情報）ページを開く
                 div.onclick = () => openAdminBandDetail(b);
 
                 let memberNamesHtml = '<span style="color:#ccc;">メンバー情報なし</span>';
@@ -778,13 +777,15 @@
             filterAndRenderBands();
         });
 
-        // 3. バンド詳細（Cueシートデータ取得）ページを開く
+        // 3. バンド詳細（Cueシートデータ取得）ページを開く（バンド側から名称やアイコンを取得）
         async function openAdminBandDetail(band) {
             openPage('admin-band-detail');
+            
+            // バンド側オブジェクト（band）から直接名称やアイコンを取得してセット
             document.getElementById('band-detail-title').innerText = band.name || "バンド詳細";
             document.getElementById('bd-detail-name').innerText = band.name || "名称未設定";
             document.getElementById('bd-detail-id').innerText = band.id;
-            document.getElementById('bd-detail-event').innerText = `イベントID: ${currentActiveEventId || '-'}`;
+            document.getElementById('bd-detail-event',).innerText = `イベントID: ${currentActiveEventId || '-'}`;
 
             const iconContainer = document.getElementById('bd-detail-icon');
             if (band.icon) {
@@ -803,19 +804,16 @@
             document.getElementById('bd-detail-ng').innerText = "-";
 
             try {
-                // latestCueSheetId または 組合わせID（例: bandId_eventId）で cuesheets コレクションから取得
                 const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
                 const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
 
                 if (cueSnap.exists()) {
                     const cData = cueSnap.data();
 
-                    // existingCount, syncVal, ngReason
                     document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
                     document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
                     document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
 
-                    // members 配列の表示 (grade, name, part)
                     if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
                         let mHtml = "<ul style='padding-left:20px; margin:0;'>";
                         cData.members.forEach(m => {
@@ -827,7 +825,6 @@
                         membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
                     }
 
-                    // songs 配列の表示 (title, duration)
                     if (cData.songs && Array.isArray(cData.songs) && cData.songs.length > 0) {
                         let sHtml = "<ul style='padding-left:20px; margin:0;'>";
                         cData.songs.forEach(s => {
