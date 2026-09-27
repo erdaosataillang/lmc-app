@@ -307,7 +307,6 @@
             </div>
         </div>
         <div class="content-area">
-            <!-- 現在のイベント名表示エリア -->
             <div id="currentEventInfoBanner" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); color: #0d47a1; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
                 <span class="material-icons" style="font-size: 18px;">event</span>
                 <span id="currentEventNameText">対象イベント: 読み込み中...</span>
@@ -327,6 +326,45 @@
             </div>
 
             <div id="adminBandList">読み込み中...</div>
+        </div>
+    </div>
+
+    <!-- 4. バンド詳細・Cueシート情報ページ -->
+    <div id="page-admin-band-detail" class="page-container">
+        <div class="page-header">
+            <div class="page-header-left">
+                <button class="back-btn" onclick="closePage('admin-band-detail')"><span class="material-icons">arrow_back</span></button>
+                <div class="page-title" id="band-detail-title">バンド詳細</div>
+            </div>
+        </div>
+        <div class="content-area" style="padding-top:16px;">
+            <div style="text-align:center; margin-bottom:16px;">
+                <div id="bd-detail-icon" style="width:72px; height:72px; background:#e0e3e7; border-radius:50%; display:inline-flex; justify-content:center; align-items:center; font-size:28px; color:#5f6368; font-weight:bold; overflow:hidden; border:2px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,0.1);"></div>
+                <h3 id="bd-detail-name" style="margin:10px 0 4px; font-size:18px;">バンド名</h3>
+                <div id="bd-detail-event" style="font-size:12px; color:#5f6368;">イベントID: -</div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">メンバー一覧</h3>
+                <div id="bd-detail-members-list" style="font-size:14px; line-height:1.6;">読み込み中...</div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">楽曲一覧 (Songs)</h3>
+                <div id="bd-detail-songs-list" style="font-size:14px; line-height:1.6;">読み込み中...</div>
+            </div>
+
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">その他情報</h3>
+                <div class="info-row"><span class="label">既存曲数 (existingCount)</span><span id="bd-detail-existing" class="value">-</span></div>
+                <div class="info-row"><span class="label">syncVal</span><span id="bd-detail-sync" class="value">-</span></div>
+                <div class="info-row" style="flex-direction:column; align-items:flex-start; gap:4px;">
+                    <span class="label">NG理由 (ngReason)</span>
+                    <span id="bd-detail-ng" class="value" style="text-align:left; font-weight:normal; color:#5f6368;">-</span>
+                </div>
+            </div>
+            
+            <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">Band ID: <span id="bd-detail-id"></span></div>
         </div>
     </div>
 
@@ -630,7 +668,7 @@
         }
 
         // ==========================
-        // 2. バンドの管理ロジック
+        // 2. バンドの管理 ＆ 詳細ロジック
         // ==========================
         window.openAdminBands = async () => {
             openPage('admin-bands');
@@ -638,13 +676,11 @@
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>';
 
             try {
-                // 1. system/settings から activeEventId を取得
                 const settingsSnap = await getDoc(doc(db, "system", "settings"));
                 if (settingsSnap.exists()) {
                     currentActiveEventId = settingsSnap.data().activeEventId || null;
                 }
 
-                // 2. events コレクションから現在のイベント名を取得
                 if (currentActiveEventId) {
                     const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
                     if (eventSnap.exists()) {
@@ -658,7 +694,6 @@
 
                 document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
 
-                // 3. 全バンドデータの取得
                 const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                 allBandsCache = [];
                 bandQs.forEach(docSnap => {
@@ -685,7 +720,6 @@
             let filtered = allBandsCache.filter(b => {
                 if (currentEventOnly) {
                     if (!currentActiveEventId) return false;
-                    // バンド側の `events` 配列に currentActiveEventId が含まれているかチェック
                     const bandEvents = Array.isArray(b.events) ? b.events : [];
                     if (!bandEvents.includes(currentActiveEventId)) return false;
                 }
@@ -714,6 +748,8 @@
             bands.forEach(b => {
                 const div = document.createElement('div');
                 div.className = 'band-card';
+                // バンドクリックで詳細（Cueシート情報）ページを開く
+                div.onclick = () => openAdminBandDetail(b);
 
                 let memberNamesHtml = '<span style="color:#ccc;">メンバー情報なし</span>';
                 if (b.memberIds && Array.isArray(b.memberIds) && b.memberIds.length > 0) {
@@ -741,6 +777,78 @@
         document.getElementById('adminBandSearchInput')?.addEventListener('input', () => {
             filterAndRenderBands();
         });
+
+        // 3. バンド詳細（Cueシートデータ取得）ページを開く
+        async function openAdminBandDetail(band) {
+            openPage('admin-band-detail');
+            document.getElementById('band-detail-title').innerText = band.name || "バンド詳細";
+            document.getElementById('bd-detail-name').innerText = band.name || "名称未設定";
+            document.getElementById('bd-detail-id').innerText = band.id;
+            document.getElementById('bd-detail-event').innerText = `イベントID: ${currentActiveEventId || '-'}`;
+
+            const iconContainer = document.getElementById('bd-detail-icon');
+            if (band.icon) {
+                iconContainer.innerHTML = `<img src="${band.icon}" style="width:100%; height:100%; object-fit:cover;">`;
+            } else {
+                iconContainer.innerHTML = (band.name || "?")[0];
+            }
+
+            const membersContainer = document.getElementById('bd-detail-members-list');
+            const songsContainer = document.getElementById('bd-detail-songs-list');
+            membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
+            songsContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
+            
+            document.getElementById('bd-detail-existing').innerText = "-";
+            document.getElementById('bd-detail-sync').innerText = "-";
+            document.getElementById('bd-detail-ng').innerText = "-";
+
+            try {
+                // latestCueSheetId または 組合わせID（例: bandId_eventId）で cuesheets コレクションから取得
+                const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
+                const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
+
+                if (cueSnap.exists()) {
+                    const cData = cueSnap.data();
+
+                    // existingCount, syncVal, ngReason
+                    document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
+                    document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
+                    document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
+
+                    // members 配列の表示 (grade, name, part)
+                    if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
+                        let mHtml = "<ul style='padding-left:20px; margin:0;'>";
+                        cData.members.forEach(m => {
+                            mHtml += `<li style="margin-bottom:6px;"><strong>${m.name || '不明'}</strong> (${m.grade || '-'}年) - ${m.part || '-'}</li>`;
+                        });
+                        mHtml += "</ul>";
+                        membersContainer.innerHTML = mHtml;
+                    } else {
+                        membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
+                    }
+
+                    // songs 配列の表示 (title, duration)
+                    if (cData.songs && Array.isArray(cData.songs) && cData.songs.length > 0) {
+                        let sHtml = "<ul style='padding-left:20px; margin:0;'>";
+                        cData.songs.forEach(s => {
+                            sHtml += `<li style="margin-bottom:6px;"><strong>${s.title || '無題'}</strong> <span style="color:#5f6368; font-size:12px;">(${s.duration || '-'})</span></li>`;
+                        });
+                        sHtml += "</ul>";
+                        songsContainer.innerHTML = sHtml;
+                    } else {
+                        songsContainer.innerHTML = '<div style="color:#999;">楽曲が登録されていません</div>';
+                    }
+
+                } else {
+                    membersContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
+                    songsContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
+                }
+
+            } catch (e) {
+                membersContainer.innerHTML = `<div style="color:#d93025;">取得エラー: ${e.message}</div>`;
+                songsContainer.innerHTML = `<div style="color:#d93025;">取得エラー: ${e.message}</div>`;
+            }
+        }
 
         async function initAuth() {
             try {
