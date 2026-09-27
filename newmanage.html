@@ -76,7 +76,6 @@
         .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
         .form-input { width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: white; outline: none; }
         
-        /* パート複数選択用チェックボックス群 */
         .part-checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
         .part-chip { display: inline-flex; align-items: center; gap: 4px; background: #f1f3f4; padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer; user-select: none; border: 1px solid transparent; transition: all 0.2s; }
         .part-chip input { display: none; }
@@ -85,18 +84,15 @@
         .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
 
-        /* 編集切替用鉛筆ボタン */
         .edit-toggle-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #0b57d0; transition: background 0.2s; }
         .edit-toggle-btn:hover { background: rgba(11, 87, 208, 0.08); }
 
-        /* カスタムダイアログ */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: center; } 
         .modal-overlay.open { display: flex; }
         .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; }
         .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f1f1f; }
         .dialog-message { font-size: 13px; color: #444746; margin-bottom: 20px; line-height: 1.5; white-space: pre-wrap; }
 
-        /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 20px; }
@@ -104,7 +100,6 @@
         input:checked + .slider { background-color: #3b82f6; }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* ナビゲーション (グラスモーフィズム) */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
@@ -312,6 +307,12 @@
             </div>
         </div>
         <div class="content-area">
+            <!-- 現在のイベント名表示エリア -->
+            <div id="currentEventInfoBanner" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); color: #0d47a1; padding: 12px 16px; border-radius: 16px; margin-bottom: 12px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+                <span class="material-icons" style="font-size: 18px;">event</span>
+                <span id="currentEventNameText">対象イベント: 読み込み中...</span>
+            </div>
+
             <div class="search-bar" style="margin-bottom:12px;">
                 <span class="material-icons" style="color:#5f6368;">search</span>
                 <input type="text" id="adminBandSearchInput" placeholder="バンド名で検索...">
@@ -367,7 +368,7 @@
         let currentUserObj = null;
 
         let currentActiveEventId = null;
-        let eventRegisteredBandIds = [];
+        let currentActiveEventName = "なし";
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
         window.closePage = (id) => { document.getElementById('page-' + id).classList.remove('open'); };
@@ -624,7 +625,7 @@
                     container.innerHTML = h; 
                 } 
             } catch(e) { 
-                container.innerHTML = '<div style="color:#d93025;">エラーが発生しました</div>'; 
+                container.innerHTML = `<div style="color:#d93025;">エラーが発生しました</div>`; 
             } 
         }
 
@@ -637,26 +638,27 @@
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>';
 
             try {
-                // system/settings から activeEventId を取得
+                // 1. system/settings から activeEventId を取得
                 const settingsSnap = await getDoc(doc(db, "system", "settings"));
                 if (settingsSnap.exists()) {
                     currentActiveEventId = settingsSnap.data().activeEventId || null;
                 }
 
-                eventRegisteredBandIds = [];
+                // 2. events コレクションから現在のイベント名を取得
                 if (currentActiveEventId) {
-                    const eventDocSnap = await getDoc(doc(db, "events", currentActiveEventId));
-                    if (eventDocSnap.exists() && eventDocSnap.data().bandIds) {
-                        eventRegisteredBandIds = eventDocSnap.data().bandIds;
+                    const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
+                    if (eventSnap.exists()) {
+                        currentActiveEventName = eventSnap.data().event || eventSnap.data().name || currentActiveEventId;
                     } else {
-                        const bQuery = query(collection(db, "bookings"), where("eventId", "==", currentActiveEventId));
-                        const bSnap = await getDocs(bQuery);
-                        bSnap.forEach(bDoc => {
-                            if (bDoc.data().bandId) eventRegisteredBandIds.push(bDoc.data().bandId);
-                        });
+                        currentActiveEventName = currentActiveEventId + " (詳細不明)";
                     }
+                } else {
+                    currentActiveEventName = "設定されていません";
                 }
 
+                document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
+
+                // 3. 全バンドデータの取得
                 const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                 allBandsCache = [];
                 bandQs.forEach(docSnap => {
@@ -683,7 +685,9 @@
             let filtered = allBandsCache.filter(b => {
                 if (currentEventOnly) {
                     if (!currentActiveEventId) return false;
-                    if (!eventRegisteredBandIds.includes(b.id)) return false;
+                    // バンド側の `events` 配列に currentActiveEventId が含まれているかチェック
+                    const bandEvents = Array.isArray(b.events) ? b.events : [];
+                    if (!bandEvents.includes(currentActiveEventId)) return false;
                 }
                 if (searchKeyword !== "") {
                     return (b.name && b.name.toLowerCase().includes(searchKeyword));
@@ -699,7 +703,7 @@
             container.innerHTML = "";
 
             if (bands.length === 0) {
-                if (currentEventOnly && (!currentActiveEventId || eventRegisteredBandIds.length === 0)) {
+                if (currentEventOnly) {
                     container.innerHTML = '<div style="padding:40px; text-align:center; color:#999;">現在のイベントに登録されたバンドがありません</div>';
                 } else {
                     container.innerHTML = '<div style="padding:40px; text-align:center; color:#999;">バンドが見つかりません</div>';
