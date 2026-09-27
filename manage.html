@@ -2,15 +2,16 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LMC Admin</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* ベース設定: コンテンツ部分はモダンなフォント */
-        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", sans-serif; background-color: rgb(241, 244, 249); color: #1c1c1e; min-height: 100vh; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
-        .container { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; background: rgb(241, 244, 249); }
+        html { width: 100%; height: 100%; overflow: hidden; background: rgb(241, 244, 249); overscroll-behavior: none; }
+        body { margin: 0; padding: 0; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", sans-serif; background-color: rgb(241, 244, 249); color: #1c1c1e; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
+        .container { max-width: 480px; margin: 0 auto; width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; background: rgb(241, 244, 249); }
         .hidden { display: none !important; }
 
         /* ---------------------------------------------------
@@ -32,7 +33,7 @@
         /* ---------------------------------------------------
            オリジナルのナビゲーション (グラスモーフィズムとポップアップ)
            --------------------------------------------------- */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); transform: translateZ(0); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; }
         .nav-item.active { color: #1f1f1f; transform: translateY(-4px); }
@@ -43,7 +44,7 @@
         /* ---------------------------------------------------
            ここから下はモダン(Apple/Google混合)なコンテンツUI
            --------------------------------------------------- */
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px 16px 40px; -webkit-overflow-scrolling: touch; }
+        .scroll-content { flex-grow: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 16px 16px 40px; -webkit-overflow-scrolling: touch; }
         .content-area { padding: 0 16px 40px; min-height: 100%; }
 
         /* カード・ボタン類 (Liquid Glass & Appleの丸み) */
@@ -75,7 +76,7 @@
         .icon-admin-event { background-color: #e6f4ea; color: #1e8e3e; }
         .icon-admin-concert { background-color: #fef7e0; color: #f9ab00; }
 
-        .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25, 1, 0.3, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; box-sizing: border-box; }
+        .page-container { position: fixed; top: 0; left: 0; right: 0; height: 100vh; height: 100dvh; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.25, 1, 0.3, 1); overflow-y: auto; overscroll-behavior-y: contain; max-width: 480px; margin: 0 auto; box-sizing: border-box; }
         .page-container.open { transform: translateX(0); }
 
         /* サブページのヘッダーはオリジナルに合わせつつ、少しだけモダンに */
