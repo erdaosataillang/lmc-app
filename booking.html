@@ -548,12 +548,14 @@
         let cropper = null;
         let currentCropResolver = null;
         let isLotteryDay = false; // その日が抽選確定済み（先着順モード）かどうかのフラグ
+        let systemSettingsReady = false;
         let currentLotteryRunData = null;
         let lotteryNotificationsCache = [];
         let currentMonthUnsub = null;
         let currentDayUnsub = null;
         let currentBandsUnsub = null;
         let currentLotteryRunUnsub = null;
+        let currentSettingsUnsub = null;
         let monthSyncToken = null;
         let daySyncToken = null;
 
@@ -574,6 +576,26 @@
                     localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS_UPDATED, String(Date.now()));
                 }
             }catch(e){ console.warn("System settings refresh failed:", e); }
+        }
+
+        function startSystemSettingsListener() {
+            if (currentSettingsUnsub) currentSettingsUnsub();
+            currentSettingsUnsub = onSnapshot(doc(db, "system", "settings"), (snapshot) => {
+                if (!snapshot.exists()) {
+                    systemSettingsReady = false;
+                    updateDayBanner();
+                    return;
+                }
+                currentSystemSettings = snapshot.data();
+                systemSettingsReady = true;
+                localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
+                localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS_UPDATED, String(Date.now()));
+                updateDayBanner();
+            }, (error) => {
+                systemSettingsReady = false;
+                console.warn("System settings listener failed:", error);
+                updateDayBanner();
+            });
         }
 
         // ユーザー情報を取得してフルネーム解決用にキャッシュする
@@ -838,13 +860,14 @@
 
                 loadMyBands();
                 loadLotteryNotifications();
+                startSystemSettingsListener();
                 
                 // キャッシュ済みの内容で先に画面を表示し、補助データは裏で更新する
                 updateViewMenuUI();
                 renderCalendar(); 
                 renderNav();
 
-                Promise.allSettled([loadAllUsers(), loadSystemConfig()]);
+                Promise.allSettled([loadAllUsers()]);
                 checkNotifications();
 
                 setInterval(updateCurrentTimeLine, 60000);
@@ -1222,6 +1245,7 @@
             ]);
             if (!settingsSnapshot.exists()) throw new Error("予約設定を確認できませんでした。");
             currentSystemSettings = settingsSnapshot.data();
+            systemSettingsReady = true;
             localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
             localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS_UPDATED, String(Date.now()));
             const configuredMode = currentSystemSettings.reservationMode || currentSystemSettings.bookingMode || 'first_come';
@@ -1245,6 +1269,14 @@
                 banner.style.color = '#5f6368'; 
                 banner.style.border = '1px solid #dadce0'; 
                 banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px; vertical-align:middle;">history</span> 過去の予約</div><div style="font-size:11px;">この日の新規予約は終了しています。</div>`;
+                return;
+            }
+
+            if (!systemSettingsReady) {
+                banner.style.backgroundColor = '#f1f3f4';
+                banner.style.color = '#5f6368';
+                banner.style.border = '1px solid #dadce0';
+                banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px; vertical-align:middle;">sync</span> 予約方式を確認中</div><div style="font-size:11px;">最新の抽選設定を読み込んでいます。</div>`;
                 return;
             }
 
@@ -1926,6 +1958,7 @@
             if (currentDayUnsub) currentDayUnsub();
             if (currentBandsUnsub) currentBandsUnsub();
             if (currentLotteryRunUnsub) currentLotteryRunUnsub();
+            if (currentSettingsUnsub) currentSettingsUnsub();
             activeSyncTokens.clear();
         });
         
