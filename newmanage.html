@@ -542,7 +542,7 @@
 
             <div class="search-bar">
                 <span class="material-icons">search</span>
-                <input type="text" id="adminBandSearchInput" placeholder="バンド、メンバー、曲名で検索...">
+                <input type="text" id="adminBandSearchInput" placeholder="バンド、メンバーで検索...">
             </div>
             
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; background:rgba(255,255,255,0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.8); padding:16px 20px; border-radius:20px; box-shadow:0 4px 16px rgba(0,0,0,0.03);">
@@ -550,6 +550,7 @@
                 <label class="switch"><input type="checkbox" id="currentEventBandsToggle" checked onchange="filterAndRenderBands()"><span class="slider"></span></label>
             </div>
 
+            <button id="loadBandCuesButton" class="btn-outline" style="margin-bottom:12px;" onclick="loadBandCuesForSearch()">曲名検索用のデータを読み込む</button>
             <div id="adminBandList">読み込み中...</div>
         </div>
     </div>
@@ -1296,62 +1297,77 @@
         // ==========================
         // 2. バンドの管理 ＆ 詳細・無限ループ防止版ロジック
         // ==========================
+        let bandsLoaded = false;
+        let bandsLoadPromise = null;
+        let bandCuesLoadPromise = null;
+        const bandCueRequests = new Map();
+        let bandDetailVersion = 0;
+
+        function loadBandCue(band) {
+            const cueId = band.cueSheetId || band.latestCueSheetId ||
+                (currentActiveEventId ? `${band.id}_${currentActiveEventId}` : null);
+            if (!cueId) return Promise.resolve(null);
+            if (!bandCueRequests.has(cueId)) {
+                // 存在しないシートと取得失敗も保持し、自動再試行を行わない。
+                bandCueRequests.set(cueId, getDoc(doc(db, "cuesheets", cueId)).then(snap =>
+                    snap.exists() ? snap.data() : null));
+            }
+            return bandCueRequests.get(cueId).then(data => {
+                band.cueData = data;
+                return data;
+            });
+        }
+
         window.openAdminBands = async () => {
             openPage('admin-bands');
+            if (bandsLoaded) { filterAndRenderBands(); return; }
+            if (bandsLoadPromise) return bandsLoadPromise;
             const container = document.getElementById('adminBandList');
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#8e8e93;">読み込み中...</div>';
-
-            try {
-                const settingsSnap = await getDoc(doc(db, "system", "settings"));
-                if (settingsSnap.exists()) {
-                    currentActiveEventId = settingsSnap.data().activeEventId || null;
-                }
-
-                if (currentActiveEventId) {
-                    const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
-                    if (eventSnap.exists()) {
-                        currentActiveEventName = eventSnap.data().event || eventSnap.data().name || currentActiveEventId;
-                    } else {
-                        currentActiveEventName = currentActiveEventId + " (詳細不明)";
-                    }
-                } else {
+            bandsLoadPromise = (async () => {
+                try {
+                    const settingsSnap = await getDoc(doc(db, "system", "settings"));
+                    currentActiveEventId = settingsSnap.exists() ? settingsSnap.data().activeEventId || null : null;
                     currentActiveEventName = "設定されていません";
-                }
-
-                document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
-
-                const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
-                allBandsCache = [];
-                
-                for (const docSnap of bandQs.docs) {
-                    const bData = docSnap.data();
-                    const bandId = docSnap.id;
-                    
-                    let cueData = null;
-                    try {
-                        const cueSheetId = bData.latestCueSheetId || `${bandId}_${currentActiveEventId}`;
-                        const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
-                        if (cueSnap.exists()) {
-                            cueData = cueSnap.data();
-                        }
-                    } catch(err) {
-                        console.warn("Cueシート読み込みスキップ:", err);
+                    if (currentActiveEventId) {
+                        const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
+                        currentActiveEventName = eventSnap.exists()
+                            ? eventSnap.data().event || eventSnap.data().name || currentActiveEventId
+                            : currentActiveEventId + " (詳細不明)";
                     }
-
-                    allBandsCache.push({ id: bandId, ...bData, cueData });
+                    document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
+                    const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
+                    allBandsCache = bandQs.docs.map(snap => ({ ...snap.data(), id: snap.id, cueData: null }));
+                    if (allUsersCache.length === 0) {
+                        const userQs = await getDocs(collection(db, "users"));
+                        allUsersCache = userQs.docs.map(snap => ({ ...snap.data(), id: snap.id }));
+                    }
+                    bandsLoaded = true;
+                    filterAndRenderBands();
+                } catch (e) {
+                    container.textContent = '読み込みに失敗しました。自動再試行は停止しています。再試行するにはページを再読み込みしてください。';
+                    console.error('バンド一覧の読み込み失敗:', e);
                 }
+            })();
+            return bandsLoadPromise;
+        };
 
-                if (allUsersCache.length === 0) {
-                    const userQs = await getDocs(collection(db, "users"));
-                    userQs.forEach(docSnap => {
-                        allUsersCache.push({ id: docSnap.id, ...docSnap.data() });
-                    });
+        window.loadBandCuesForSearch = async () => {
+            if (bandCuesLoadPromise) return bandCuesLoadPromise;
+            if (!bandsLoaded) return;
+            const button = document.getElementById('loadBandCuesButton');
+            button.disabled = true;
+            button.textContent = '曲名検索用のデータを読み込み中...';
+            bandCuesLoadPromise = (async () => {
+                let failures = 0;
+                for (const band of allBandsCache) {
+                    try { await loadBandCue(band); } catch (e) { failures++; }
                 }
-
+                button.textContent = failures ? '一部のデータを取得できませんでした（自動再試行なし）' : '曲名検索の準備完了';
+                document.getElementById('adminBandSearchInput').placeholder = 'バンド、メンバー、曲名で検索...';
                 filterAndRenderBands();
-            } catch(e) {
-                container.innerHTML = `<div style="padding:20px; color:#ff3b30; text-align:center;">エラー: ${e.message}</div>`;
-            }
+            })();
+            return bandCuesLoadPromise;
         };
 
         window.filterAndRenderBands = () => {
@@ -1454,6 +1470,7 @@
 
         // 3. バンド詳細ページ
         async function openAdminBandDetail(band) {
+            const detailVersion = ++bandDetailVersion;
             openPage('admin-band-detail');
             
             document.getElementById('band-detail-title').innerText = band.name || "バンド詳細";
@@ -1481,12 +1498,8 @@
             document.getElementById('bd-detail-ng').innerText = "-";
 
             try {
-                let cData = band.cueData;
-                if (!cData) {
-                    const cueSheetId = band.cueSheetId || band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
-                    const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
-                    if (cueSnap.exists()) cData = cueSnap.data();
-                }
+                const cData = await loadBandCue(band);
+                if (detailVersion !== bandDetailVersion) return;
 
                 if (band.cueSheetId) {
                     cueArea.innerHTML = `
