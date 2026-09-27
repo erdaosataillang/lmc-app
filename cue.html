@@ -352,6 +352,13 @@
             };
             return partMap[lower] || partName;
         };
+        // カタカナをひらがなに変換する関数
+        window.toHiragana = (str) => {
+            if (!str) return '';
+            return str.replace(/[\u30a1-\u30f6]/g, match => {
+                return String.fromCharCode(match.charCodeAt(0) - 0x60);
+            });
+        };
 
         // ユーザー一覧キャッシュとサジェスト機能
         let systemUsersCache = [];
@@ -395,7 +402,8 @@
 
                     const selectUser = (e) => {
                         e.preventDefault();
-                        inputEl.value = user.name;
+                        // サジェスト選択時もひらがなにして代入
+                        inputEl.value = window.toHiragana(user.name || '');
                         
                         const row = inputEl.closest('tr');
                         const gradeInput = row.querySelector('.grade-input');
@@ -522,7 +530,8 @@
                     if (membersTrs[i]) {
                         membersTrs[i].querySelector('.grade-input').value = m.grade || '';
                         membersTrs[i].querySelector('.part-input').value = m.part || '';
-                        membersTrs[i].querySelector('.name-input').value = m.name || '';
+                        // 読み込み時にひらがな化
+                        membersTrs[i].querySelector('.name-input').value = window.toHiragana(m.name || '');
                     }
                 });
             }
@@ -561,7 +570,7 @@
                 data.members.push({
                     grade: tr.querySelector('.grade-input').value,
                     part: window.formatPart(tr.querySelector('.part-input').value),
-                    name: tr.querySelector('.name-input').value
+                    name: window.toHiragana(tr.querySelector('.name-input').value)
                 });
             });
 
@@ -717,7 +726,8 @@
                             
                             fetchedUsers.forEach(result => {
                                 if (result && result.idx < 8) {
-                                    names[result.idx].value = result.data.name || '';
+                                    // ユーザーデータの名前もひらがな化してセット
+                                    names[result.idx].value = window.toHiragana(result.data.name || '');
                                     grades[result.idx].value = result.data.year || '';
                                     parts[result.idx].value = window.formatPart(result.data.part);
                                 }
@@ -937,7 +947,8 @@
             document.querySelectorAll('#members-tbody tr').forEach(tr => {
                 const grade = tr.querySelector('.grade-input').value.trim();
                 const part = window.formatPart(tr.querySelector('.part-input').value.trim());
-                const name = tr.querySelector('.name-input').value.trim();
+                // 保存時に確実にひらがな化
+                const name = window.toHiragana(tr.querySelector('.name-input').value.trim());
 
                 if (grade || part || name) {
                     if (!grade || !part || !name) {
