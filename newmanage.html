@@ -63,6 +63,14 @@
 
         .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
 
+        /* Toggle Switch */
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e2e8f0; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #3b82f6; }
+        input:checked + .slider:before { transform: translateX(20px); }
+
         /* ナビゲーション (グラスモーフィズム) */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
@@ -158,10 +166,22 @@
                 <span class="material-icons" style="color:#5f6368;">search</span>
                 <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
             </div>
-            <div style="display:flex; gap:8px; margin-bottom:16px;">
-                <button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button>
-                <button class="btn-outline" onclick="sortUsers('kana')"><span class="material-icons" style="font-size:14px;">sort_by_alpha</span> 五十音順</button>
+            
+            <!-- ソートボタン ＆ 現役生のみ表示トグル -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button>
+                    <button class="btn-outline" onclick="sortUsers('kana')"><span class="material-icons" style="font-size:14px;">sort_by_alpha</span> 五十音順</button>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <label class="switch">
+                        <input type="checkbox" id="activeOnlyToggle" checked onchange="filterAndRenderUsers()">
+                        <span class="slider"></span>
+                    </label>
+                    <span style="font-size:12px; color:#5f6368; font-weight:bold;">現役生のみ</span>
+                </div>
             </div>
+
             <div id="adminUserList">読み込み中...</div>
         </div>
     </div>
@@ -248,10 +268,33 @@
                     d.affiliations = d.affiliations || (d.org ? [d.org] : []); 
                     allUsersCache.push({ id: docSnap.id, ...d }); 
                 }); 
-                renderAdminList(allUsersCache); 
+                filterAndRenderUsers(); 
             } catch(e) { 
                 container.innerHTML = `<div style="padding:20px; color:#d93025; text-align:center;">エラー: ${e.message}</div>`; 
             } 
+        };
+
+        // フィルター（現役生のみ ＆ 検索キーワード）を適用して描画
+        window.filterAndRenderUsers = () => {
+            const searchKeyword = document.getElementById('adminSearchInput')?.value.trim().toLowerCase() || "";
+            const activeOnly = document.getElementById('activeOnlyToggle')?.checked ?? true;
+
+            let filtered = allUsersCache.filter(u => {
+                // 現役生（学年 1〜4）フィルター
+                if (activeOnly) {
+                    const grade = parseInt(u.year, 10);
+                    if (isNaN(grade) || grade < 1 || grade > 4) return false;
+                }
+                // 検索キーワードフィルター
+                if (searchKeyword !== "") {
+                    const nameMatch = u.name && u.name.toLowerCase().includes(searchKeyword);
+                    const kanaMatch = u.kana && u.kana.toLowerCase().includes(searchKeyword);
+                    if (!nameMatch && !kanaMatch) return false;
+                }
+                return true;
+            });
+
+            renderAdminList(filtered);
         };
 
         // ユーザー一覧を描画
@@ -284,17 +327,16 @@
             }); 
         }
 
-        // 検索機能
-        document.getElementById('adminSearchInput')?.addEventListener('input', (e) => { 
-            const t = e.target.value.trim(); 
-            renderAdminList(t ? allUsersCache.filter(u => (u.name && u.name.includes(t)) || (u.kana && u.kana.includes(t))) : allUsersCache); 
+        // 検索入力時のイベント
+        document.getElementById('adminSearchInput')?.addEventListener('input', () => {
+            filterAndRenderUsers();
         });
 
         // ソート機能
         window.sortUsers = (type) => { 
             if(type === 'year') allUsersCache.sort((a, b) => (a.year || 99) - (b.year || 99)); 
             else if(type === 'kana') allUsersCache.sort((a, b) => (a.kana || "").localeCompare(b.kana || "", "ja")); 
-            renderAdminList(allUsersCache); 
+            filterAndRenderUsers(); 
         };
 
         // ユーザー詳細ページを開く
