@@ -56,12 +56,20 @@
         .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } 
         .user-sub { font-size: 12px; color: #5f6368; }
         
-        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; } 
-        .info-row:last-child { border-bottom: none; }
-        .info-row .label { color: #5f6368; font-size: 13px; } 
-        .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
-
+        /* フォーム部品 */
+        .form-group { margin-bottom: 14px; } 
+        .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
+        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: white; outline: none; }
+        
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
         .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
+
+        /* カスタムダイアログ */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: center; } 
+        .modal-overlay.open { display: flex; }
+        .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; }
+        .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f1f1f; }
+        .dialog-message { font-size: 13px; color: #444746; margin-bottom: 20px; line-height: 1.5; white-space: pre-wrap; }
 
         /* Toggle Switch */
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
@@ -81,6 +89,15 @@
     </style>
 </head>
 <body>
+
+    <!-- カスタムダイアログ -->
+    <div id="modal-custom-dialog" class="modal-overlay">
+        <div class="dialog-content">
+            <div id="dialogTitle" class="dialog-title">通知</div>
+            <div id="dialogMessage" class="dialog-message">メッセージ</div>
+            <button id="dialogBtnOk" class="btn-primary" style="margin:0;">OK</button>
+        </div>
+    </div>
 
     <div class="container">
         <!-- ヘッダー -->
@@ -190,26 +207,52 @@
     <div id="page-admin-edit" class="page-container">
         <div class="page-header">
             <button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button>
-            <div class="page-title">ユーザー詳細</div>
+            <div class="page-title">ユーザー詳細・編集</div>
         </div>
-        <div class="content-area">
-            <div style="text-align:center; margin:20px 0;">
-                <img id="admin-user-icon" src="" style="width:88px; height:88px; border-radius:50%; object-fit:cover; background:#eee; border:4px solid white; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-                <div id="admin-user-lineName" style="font-size:13px; color:#5f6368; margin-top:12px; font-weight:500;"></div>
+        <div class="content-area" style="padding-top:16px;">
+            <div style="text-align:center; margin-bottom:16px;">
+                <img id="admin-user-icon" src="" style="width:72px; height:72px; border-radius:50%; object-fit:cover; background:#eee; border:3px solid white; box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                <div id="admin-user-lineName" style="font-size:12px; color:#5f6368; margin-top:6px; font-weight:500;"></div>
             </div>
+
             <div class="card">
-                <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">基本情報</h3>
-                <div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div>
-                <div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div>
-                <div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div>
-                <div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div>
-                <div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div>
-                <div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div>
+                <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">基本情報の編集</h3>
+                
+                <div class="form-group">
+                    <label class="form-label">氏名</label>
+                    <input type="text" id="edit-user-name" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ふりがな</label>
+                    <input type="text" id="edit-user-kana" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">学籍番号</label>
+                    <input type="text" id="edit-user-studentId" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">学年</label>
+                    <input type="number" id="edit-user-year" class="form-input" min="1" max="6">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">パート</label>
+                    <select id="edit-user-part" class="form-input">
+                        <option value="vocal">Vocal</option>
+                        <option value="guitar">Guitar</option>
+                        <option value="bass">Bass</option>
+                        <option value="drums">Drums</option>
+                        <option value="keyboard">Keyboard</option>
+                    </select>
+                </div>
+
+                <button class="btn-primary" style="margin-top:8px;" onclick="saveAdminUserEdit()">変更を保存する</button>
             </div>
+
             <div class="card">
                 <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">所属バンド</h3>
                 <div id="admin-user-band-list" style="font-size:14px; line-height:1.6;">読み込み中...</div>
             </div>
+            
             <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">ID: <span id="admin-edit-docId"></span></div>
         </div>
     </div>
@@ -237,7 +280,7 @@
     <!-- Firebase 連携スクリプト -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, query, orderBy, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
@@ -246,12 +289,27 @@
         const auth = getAuth(app);
 
         let allUsersCache = [];
+        let adminEditingUserId = null;
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
         window.closePage = (id) => { document.getElementById('page-' + id).classList.remove('open'); };
 
-        function getPartLabel(p){ 
-            return { vocal: "Vocal", guitar: "Guitar", bass: "Bass", drums: "Drums", keyboard: "Keyboard" }[p] || p || ""; 
+        window.showCustomAlert = async (message, title = "通知") => {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('modal-custom-dialog');
+                document.getElementById('dialogTitleinnerText').innerText = title; // fixed safe
+                document.getElementById('dialogMessage').innerText = message;
+                const okBtn = document.getElementById('dialogBtnOk');
+                okBtn.onclick = () => { modal.classList.remove('open'); resolve(); };
+                modal.classList.add('open');
+            });
+        };
+
+        // ロールに指定キーワードが含まれているか判定するヘルパー
+        function hasRoleKeyword(role, keyword) {
+            if (!role) return false;
+            const roles = Array.isArray(role) ? role : [role];
+            return roles.some(r => typeof r === 'string' && r.toLowerCase().includes(keyword.toLowerCase()));
         }
 
         // 個人の管理画面を開く・データ取得
@@ -265,7 +323,6 @@
                 allUsersCache = []; 
                 qs.forEach(docSnap => { 
                     const d = docSnap.data(); 
-                    d.affiliations = d.affiliations || (d.org ? [d.org] : []); 
                     allUsersCache.push({ id: docSnap.id, ...d }); 
                 }); 
                 filterAndRenderUsers(); 
@@ -310,8 +367,12 @@
                 div.className = 'user-list-item'; 
                 div.onclick = () => openAdminEdit(u); 
                 
-                const badges = (u.affiliations?.includes('urakata') ? '<span style="color:#ea4335; font-weight:bold; font-size:10px; margin-right:6px; background:#fce8e6; padding:2px 6px; border-radius:10px;">裏方</span>' : '') + 
-                               (u.affiliations?.includes('lmc') ? '<span style="color:#5f6368; font-weight:bold; font-size:10px; background:#f1f3f4; padding:2px 6px; border-radius:10px;">LMC</span>' : ''); 
+                // roleに基づく判定
+                const isUrakata = hasRoleKeyword(u.role, 'urakata');
+                const isLmc = hasRoleKeyword(u.role, 'lmc');
+
+                let badges = (isUrakata ? '<span style="color:#ea4335; font-weight:bold; font-size:10px; margin-right:6px; background:#fce8e6; padding:2px 6px; border-radius:10px;">裏方</span>' : '') + 
+                               (isLmc ? '<span style="color:#5f6368; font-weight:bold; font-size:10px; background:#f1f3f4; padding:2px 6px; border-radius:10px;">LMC</span>' : ''); 
                 const kanaHtml = u.kana ? `<div style="font-size:10px; color:#999; margin-bottom:2px;">${u.kana}</div>` : ''; 
                 
                 div.innerHTML = `
@@ -341,21 +402,56 @@
 
         // ユーザー詳細ページを開く
         async function openAdminEdit(u) { 
+            adminEditingUserId = u.id;
             openPage('admin-edit'); 
             document.getElementById('admin-user-icon').src = u.icon || "https://ul.h3z.jp/Vnukmtvq.jpg"; 
             document.getElementById('admin-user-lineName').innerText = "@" + (u.lineDisplayName || "LINE_User"); 
             document.getElementById('admin-edit-docId').innerText = u.id; 
-            document.getElementById('admin-show-name').innerText = u.name || "-"; 
-            document.getElementById('admin-show-kana').innerText = u.kana || "-"; 
-            document.getElementById('admin-show-studentId').innerText = u.studentId || "-"; 
-            document.getElementById('admin-show-year').innerText = (u.year || "-") + "年"; 
             
-            const affText = (u.affiliations?.includes('urakata') ? "裏方部 " : "") + (u.affiliations?.includes('lmc') ? "LMC " : ""); 
-            document.getElementById('admin-show-aff').innerText = affText || "-"; 
-            document.getElementById('admin-show-part').innerText = getPartLabel(u.part) || "-"; 
-            
+            document.getElementById('edit-user-name').value = u.name || "";
+            document.getElementById('edit-user-kana').value = u.kana || "";
+            document.getElementById('edit-user-studentId').value = u.studentId || "";
+            document.getElementById('edit-user-year').value = u.year || 1;
+            document.getElementById('edit-user-part').value = u.part || "vocal";
+
             loadAdminUserBands(u.id); 
         }
+
+        // 基本情報の保存処理
+        window.saveAdminUserEdit = async () => {
+            if (!adminEditingUserId) return;
+            const name = document.getElementById('edit-user-name').value.trim();
+            const kana = document.getElementById('edit-user-kana').value.trim();
+            const studentId = document.getElementById('edit-user-studentId').value.trim();
+            const year = parseInt(document.getElementById('edit-user-year').value, 10);
+            const part = document.getElementById('edit-user-part').value;
+
+            try {
+                await updateDoc(doc(db, "users", adminEditingUserId), {
+                    name: name,
+                    kana: kana,
+                    studentId: studentId,
+                    year: isNaN(year) ? 1 : year,
+                    part: part,
+                    updatedAt: serverTimestamp()
+                });
+
+                // キャッシュの更新
+                const target = allUsersCache.find(x => x.id === adminEditingUserId);
+                if (target) {
+                    target.name = name;
+                    target.kana = kana;
+                    target.studentId = studentId;
+                    target.year = year;
+                    target.part = part;
+                }
+
+                alert("ユーザー情報を保存しました。");
+                filterAndRenderUsers();
+            } catch(e) {
+                alert("保存エラー: " + e.message);
+            }
+        };
 
         // ユーザーの所属バンドを取得して表示
         async function loadAdminUserBands(uid) { 
