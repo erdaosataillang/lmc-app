@@ -120,6 +120,7 @@
             <div id="dialogTitle" class="dialog-title">通知</div>
             <div id="dialogMessage" class="dialog-message">メッセージ</div>
             <button id="dialogBtnOk" class="btn-primary" style="margin:0;">OK</button>
+            <button id="dialogBtnCancel" class="btn-outline hidden" style="margin-top:8px; width:100%;">キャンセル</button>
         </div>
     </div>
 
@@ -167,10 +168,10 @@
             <div class="menu-list">
                 <button class="menu-btn" onclick="openAdminConcert()">
                     <div class="menu-icon-wrapper icon-admin-concert"><span class="material-icons">event_note</span></div>
-                    <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">現在のイベント情報の表示・管理</span></div>
+                    <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">現在のイベント情報の表示・編集</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-                <button class="menu-btn" onclick="location.href='#'">
+                <button class="menu-btn" onclick="openAdminBookingSettings()">
                     <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
                     <div class="menu-content"><span class="menu-title">予約システムの管理</span><span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
@@ -194,7 +195,7 @@
         </div>
     </div>
 
-    <!-- 定期演奏会（現在のイベント）ページ -->
+    <!-- 0. 定期演奏会（現在のイベント）ページ -->
     <div id="page-admin-concert" class="page-container">
         <div class="page-header">
             <div class="page-header-left">
@@ -206,7 +207,6 @@
             <div id="concert-loading" style="text-align:center; padding:40px; color:#999;">読み込み中...</div>
             
             <div id="concert-content-area" class="hidden">
-                <!-- メトリクス（モダンな数値カード） -->
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
                     <div class="card" style="margin:0; padding:16px 12px; text-align:center; background:linear-gradient(135deg, #e3f2fd, #ffffff);">
                         <div style="font-size: 10px; font-weight: bold; color: #5f6368; margin-bottom: 4px;">登録バンド</div>
@@ -222,13 +222,11 @@
                     </div>
                 </div>
 
-                <!-- イベント概要カード (表示・編集) -->
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">
                         <h3 style="font-size:15px; margin:0; color:#1f1f1f; font-weight:bold;">イベント概要</h3>
                         <span id="concert-status-badge" style="font-size: 10px; background: #e8f0fe; color: #0b57d0; padding: 2px 10px; border-radius: 999px; font-weight: bold;">開催予定</span>
                     </div>
-
                     <div class="form-group">
                         <label class="form-label">イベント名</label>
                         <input type="text" id="concert-event-name" class="form-input" placeholder="例: 2026年度 定期演奏会">
@@ -241,7 +239,6 @@
                         <label class="form-label">詳細・備考</label>
                         <textarea id="concert-event-desc" class="form-input" style="height:90px; resize:none;" placeholder="場所や備考など"></textarea>
                     </div>
-
                     <button class="btn-primary" onclick="saveCurrentConcertEvent()">変更を保存する</button>
                 </div>
             </div>
@@ -253,6 +250,87 @@
             </div>
             
             <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">Active Event ID: <span id="concert-event-id">-</span></div>
+        </div>
+    </div>
+
+    <!-- 0.5 予約システムの管理 ページ -->
+    <div id="page-admin-booking-settings" class="page-container">
+        <div class="page-header">
+            <div class="page-header-left">
+                <button class="back-btn" onclick="closePage('admin-booking-settings')"><span class="material-icons">arrow_back</span></button>
+                <div class="page-title">予約システム管理</div>
+            </div>
+        </div>
+        <div class="content-area" style="padding-top:16px;">
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; display:flex; align-items:center; border-bottom:1px solid #eee; padding-bottom:8px;">
+                    <span class="material-icons" style="margin-right:8px; font-size:20px;">tune</span>現在の予約モード
+                </h3>
+                <div class="form-group">
+                    <div class="radio-group" style="display:flex; flex-direction: column; gap: 16px;">
+                        <label class="radio-label" style="background:#f8f9fa; padding:16px; border-radius:16px; border:1px solid #dadce0; display:flex; align-items:center; cursor:pointer;">
+                            <input type="radio" name="adminBookingMode" value="first_come" checked onchange="toggleLotterySettings()" style="margin-right:12px; transform:scale(1.2);">
+                            <div>
+                                <div style="font-weight:bold; font-size:15px; color:#1f1f1f;">早い者勝ち (即時確定)</div>
+                                <div style="font-size:12px; color:#5f6368; margin-top:4px; line-height:1.4;">予約を入れるとすぐに確定します。<br>時間が被る予約はできません。</div>
+                            </div>
+                        </label>
+                        <label class="radio-label" style="background:#f8f9fa; padding:16px; border-radius:16px; border:1px solid #dadce0; display:flex; align-items:center; cursor:pointer;">
+                            <input type="radio" name="adminBookingMode" value="lottery" onchange="toggleLotterySettings()" style="margin-right:12px; transform:scale(1.2);">
+                            <div>
+                                <div style="font-weight:bold; font-size:15px; color:#1f1f1f;">抽選式 (希望提出)</div>
+                                <div style="font-size:12px; color:#5f6368; margin-top:4px; line-height:1.4;">ユーザーは「希望」を提出します。<br>時間が被っていても提出でき、管理者が後で確定させます。</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="lotterySettingsArea" class="hidden" style="margin-top:24px; border-top:1px solid #eee; padding-top:20px;">
+                    <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0;">抽選実行設定</h3>
+                    <div class="form-group">
+                        <label class="form-label">実行タイミング</label>
+                        <div class="radio-group" style="display:flex; flex-direction: column; gap: 12px;">
+                            <label class="radio-label" style="display:flex; align-items:center; cursor:pointer; font-size:14px; font-weight:bold; color:#1f1f1f;">
+                                <input type="radio" name="lotteryExecMode" value="auto" checked onchange="toggleLotteryExecUI()" style="margin-right:8px;">
+                                自動 (指定日時に実行)
+                            </label>
+                            <div id="lotteryAutoConfig" style="padding-left: 28px; margin-bottom: 12px; font-size:14px; color:#1f1f1f;">
+                                <select id="lotteryAutoDays" class="form-input" style="width:auto; display:inline-block; padding:8px; margin-right:4px;">
+                                    <option value="1">1日前</option>
+                                    <option value="2" selected>2日前</option>
+                                    <option value="3">3日前</option>
+                                    <option value="7">7日前</option>
+                                </select> の 
+                                <select id="lotteryAutoTime" class="form-input" style="width:auto; display:inline-block; padding:8px; margin-left:4px; margin-right:4px;">
+                                    <option value="0">0:00</option>
+                                    <option value="9">9:00</option>
+                                    <option value="12">12:00</option>
+                                    <option value="18">18:00</option>
+                                    <option value="21">21:00</option>
+                                </select> に確定
+                            </div>
+                            
+                            <label class="radio-label" style="display:flex; align-items:center; cursor:pointer; font-size:14px; font-weight:bold; color:#1f1f1f;">
+                                <input type="radio" name="lotteryExecMode" value="manual" onchange="toggleLotteryExecUI()" style="margin-right:8px;">
+                                手動 (管理者がボタンで実行)
+                            </label>
+                            <div id="lotteryManualConfig" class="hidden" style="padding-left: 28px; background:#fff3e0; padding:16px; border-radius:16px;">
+                                <div style="font-size:13px; margin-bottom:8px; font-weight:bold; color:#e65100;">対象日を選んで実行します</div>
+                                <input type="date" id="manualLotteryDate" class="form-input">
+                                <button class="btn-primary" style="margin-top:12px; background:#e65100; box-shadow: 0 4px 12px rgba(230, 81, 0, 0.2);" onclick="runManualLottery()">今すぐ抽選を実行</button>
+                                
+                                <div id="lotteryLog" style="margin-top:16px; font-size:12px; background:white; padding:10px; border-radius:8px; border:1px solid #ffe0b2;" class="hidden"></div>
+                                <button id="btnApplyLottery" class="btn-primary hidden" style="margin-top:16px; background:#2e7d32; box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);" onclick="applyLotteryResults()">この結果で確定する</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" style="margin-top:20px;" onclick="saveSystemSettings()">設定を保存</button>
+            </div>
+            <div style="margin-top:16px; font-size:12px; color:#5f6368; padding:0 10px; text-align:center;">
+                ※ 設定を変更すると部員全員のアプリの挙動が切り替わります。
+            </div>
         </div>
     </div>
 
@@ -383,11 +461,6 @@
             </div>
 
             <div class="card">
-                <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">Cueシート</h3>
-                <div id="bd-detail-cuesheet-area" style="font-size:14px;"><span style="color:#999;">読み込み中...</span></div>
-            </div>
-
-            <div class="card">
                 <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">メンバー一覧</h3>
                 <div id="bd-detail-members-list" style="font-size:14px; line-height:1.6;">読み込み中...</div>
             </div>
@@ -422,7 +495,7 @@
     <!-- Firebase 連携スクリプト -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, where, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, getDoc, query, orderBy, where, updateDoc, serverTimestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
@@ -438,6 +511,9 @@
 
         let currentActiveEventId = null;
         let currentActiveEventName = "なし";
+        let currentSystemSettings = { bookingMode: 'first_come', lotteryConfig: { mode: 'auto', daysBefore: 2, time: 0 } };
+        let tempLotterySchedule = null;
+
         const DIGITAL_CUE_PATH = 'cuesheet.html';
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
@@ -451,7 +527,23 @@
                 document.getElementById('dialogTitle').innerText = title;
                 document.getElementById('dialogMessage').innerText = message;
                 const okBtn = document.getElementById('dialogBtnOk');
+                const cancelBtn = document.getElementById('dialogBtnCancel');
+                cancelBtn.classList.add('hidden');
                 okBtn.onclick = () => { modal.classList.remove('open'); resolve(); };
+                modal.classList.add('open');
+            });
+        };
+
+        window.showCustomConfirm = async (message, title = "確認") => {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('modal-custom-dialog');
+                document.getElementById('dialogTitle').innerText = title;
+                document.getElementById('dialogMessage').innerText = message;
+                const okBtn = document.getElementById('dialogBtnOk');
+                const cancelBtn = document.getElementById('dialogBtnCancel');
+                cancelBtn.classList.remove('hidden');
+                okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); };
+                cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); };
                 modal.classList.add('open');
             });
         };
@@ -514,7 +606,6 @@
                     document.getElementById('concert-event-date').value = ev.startDate || "";
                     document.getElementById('concert-event-desc').value = ev.desc || "";
 
-                    // メトリクス（バンド数・総曲数・参加メンバー数）の算出
                     const bandQs = await getDocs(collection(db, "bands"));
                     let matchedBandsCount = 0;
                     let totalSongsCount = 0;
@@ -570,6 +661,237 @@
                 await showCustomAlert("定期演奏会の情報を保存しました！");
             } catch (e) {
                 await showCustomAlert("保存エラー: " + e.message, "エラー");
+            }
+        };
+
+        // ==========================
+        // 0.5 予約システムの管理ロジック
+        // ==========================
+        window.openAdminBookingSettings = async () => {
+            openPage('admin-booking-settings');
+            try {
+                const docSnap = await getDoc(doc(db, "system", "settings"));
+                if (docSnap.exists()) {
+                    currentSystemSettings = docSnap.data();
+                }
+                const mode = currentSystemSettings.bookingMode || 'first_come';
+                document.getElementsByName('adminBookingMode').forEach(r => {
+                    if (r.value === mode) r.checked = true;
+                });
+                if (currentSystemSettings.lotteryConfig) {
+                    const lc = currentSystemSettings.lotteryConfig;
+                    document.getElementsByName('lotteryExecMode').forEach(r => {
+                        if (r.value === (lc.mode || 'auto')) r.checked = true;
+                    });
+                    document.getElementById('lotteryAutoDays').value = lc.daysBefore || 2;
+                    document.getElementById('lotteryAutoTime').value = lc.time || 0;
+                }
+                window.toggleLotterySettings();
+            } catch (e) {
+                console.error("予約設定の読み込みエラー:", e);
+            }
+        };
+
+        window.toggleLotterySettings = () => {
+            const isLottery = document.querySelector('input[name="adminBookingMode"][value="lottery"]').checked;
+            const area = document.getElementById('lotterySettingsArea');
+            if (isLottery) {
+                area.classList.remove('hidden');
+                window.toggleLotteryExecUI();
+            } else {
+                area.classList.add('hidden');
+            }
+        };
+
+        window.toggleLotteryExecUI = () => {
+            const mode = document.querySelector('input[name="lotteryExecMode"]:checked').value;
+            const autoC = document.getElementById('lotteryAutoConfig');
+            const manuC = document.getElementById('lotteryManualConfig');
+            if (mode === 'auto') {
+                autoC.classList.remove('hidden');
+                manuC.classList.add('hidden');
+            } else {
+                autoC.classList.add('hidden');
+                manuC.classList.remove('hidden');
+            }
+        };
+
+        window.saveSystemSettings = async () => {
+            const mode = document.querySelector('input[name="adminBookingMode"]:checked').value;
+            const eMode = document.querySelector('input[name="lotteryExecMode"]:checked').value;
+            const days = parseInt(document.getElementById('lotteryAutoDays').value, 10);
+            const time = parseInt(document.getElementById('lotteryAutoTime').value, 10);
+            try {
+                const uid = auth.currentUser ? auth.currentUser.uid : "admin";
+                await updateDoc(doc(db, "system", "settings"), {
+                    bookingMode: mode,
+                    lotteryConfig: { mode: eMode, daysBefore: days, time: time },
+                    updatedAt: serverTimestamp(),
+                    updatedBy: uid
+                });
+                await showCustomAlert("システム設定を保存しました。");
+                closePage('admin-booking-settings');
+            } catch (e) {
+                await showCustomAlert("保存エラー: " + e.message, "エラー");
+            }
+        };
+
+        window.runManualLottery = async () => {
+            const dVal = document.getElementById('manualLotteryDate').value;
+            if (!dVal) return await showCustomAlert("日付を選択してください", "入力不足");
+
+            const isConfirmed = await showCustomConfirm(`${dVal} の抽選を実行しますか？`, "実行確認");
+            if (!isConfirmed) return;
+
+            const logB = document.getElementById('lotteryLog');
+            logB.innerHTML = '<div style="padding:4px; font-weight:bold;">データ取得中...</div>';
+            logB.classList.remove('hidden');
+            document.getElementById('btnApplyLottery').classList.add('hidden');
+
+            const targetD = new Date(dVal);
+            const startD = new Date(targetD); startD.setHours(0, 0, 0, 0);
+            const endD = new Date(targetD); endD.setHours(23, 59, 59, 999);
+
+            try {
+                const q = query(collection(db, "bookings"), where("startTime", ">=", startD), where("startTime", "<=", endD));
+                const snapshot = await getDocs(q);
+                let candidates = [], locked = [];
+                snapshot.forEach(docSnap => {
+                    const d = docSnap.data();
+                    if (d.status === 'pending' && d.type !== 'event') {
+                        candidates.push({ id: docSnap.id, ...d });
+                    } else if (d.status === 'confirmed' || d.type === 'event') {
+                        locked.push({ start: d.startTime.toDate(), end: d.endTime.toDate(), title: d.bandName || d.title });
+                    }
+                });
+
+                if (candidates.length === 0) {
+                    logB.innerHTML += '<div style="padding:4px; color:#f9ab00; font-weight:bold;">候補なし</div>';
+                    return;
+                }
+
+                const bandReqs = {};
+                candidates.forEach(c => {
+                    if (!bandReqs[c.bandId]) bandReqs[c.bandId] = { id: c.bandId, name: c.bandName, requests: [], docIds: [] };
+                    bandReqs[c.bandId].requests.push({ start: c.startTime.toDate(), end: c.endTime.toDate() });
+                    bandReqs[c.bandId].docIds.push(c.id);
+                });
+
+                const bands = Object.values(bandReqs);
+                logB.innerHTML += `<div style="padding:4px; border-bottom:1px solid #eee; margin-bottom:8px;">候補:${candidates.length} エントリー:${bands.length}</div>`;
+
+                let result = tryAllocate(bands, 60, locked);
+                if (result.failedBands.length > 0) {
+                    logB.innerHTML += `<div style="padding:4px; color:#f9ab00;">60分枠では全員確保不可(${result.failedBands.length}組落選) -> 30分枠で再抽選します</div>`;
+                    result = tryAllocate(bands, 30, locked);
+                } else {
+                    logB.innerHTML += `<div style="padding:4px; color:#1e8e3e; font-weight:bold;">全員60分枠で確保可能です</div>`;
+                }
+
+                logB.innerHTML += '<div style="margin-top:12px; font-weight:bold; color:#1f1f1f;">結果</div><div style="background:#fafafa; border-radius:8px; padding:8px; max-height:150px; overflow-y:auto; border:1px solid #eee; margin-top:8px;">';
+                result.assignments.forEach(a => {
+                    const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`;
+                    const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`;
+                    logB.innerHTML += `<div style="color:#1e8e3e; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">check_circle</span> ${a.bandName}: ${sStr}-${eStr} (${result.duration}分)</div>`;
+                });
+                result.failedBands.forEach(b => {
+                    logB.innerHTML += `<div style="color:#d93025; font-size:12px; margin-bottom:4px; border-bottom:1px dashed #ddd; padding-bottom:4px;"><span class="material-icons" style="font-size:14px; vertical-align:middle;">cancel</span> ${b.name}: 確保不可</div>`;
+                });
+                logB.innerHTML += '</div>';
+
+                tempLotterySchedule = result;
+                document.getElementById('btnApplyLottery').classList.remove('hidden');
+
+            } catch (e) {
+                console.error(e);
+                logB.innerHTML += '<div style="color:#d93025;">エラーが発生しました</div>';
+            }
+        };
+
+        function tryAllocate(bands, duration, lockedItems) {
+            const START_H = 9, END_H = 20, TOTAL_M = (END_H - START_H) * 60, SLOT_UNIT = 30, SLOTS = TOTAL_M / SLOT_UNIT;
+            const timeline = new Array(SLOTS).fill(null);
+
+            if (lockedItems) {
+                lockedItems.forEach(l => {
+                    const sM = (l.start.getHours() - START_H) * 60 + l.start.getMinutes();
+                    const eM = (l.end.getHours() - START_H) * 60 + l.end.getMinutes();
+                    const startSlot = Math.floor(Math.max(0, sM) / SLOT_UNIT);
+                    const endSlot = Math.ceil(Math.min(TOTAL_M, eM) / SLOT_UNIT);
+                    for (let i = startSlot; i < endSlot; i++) {
+                        if (i >= 0 && i < SLOTS) timeline[i] = "LOCKED";
+                    }
+                });
+            }
+
+            const assignments = [], failedBands = [];
+            const shuffledBands = [...bands].sort(() => Math.random() - 0.5);
+            const neededSlots = Math.ceil(duration / SLOT_UNIT);
+
+            for (const band of shuffledBands) {
+                let isAssigned = false;
+                const reqs = [...band.requests].sort(() => Math.random() - 0.5);
+                for (const req of reqs) {
+                    if (isAssigned) break;
+                    const reqStartM = (req.start.getHours() - START_H) * 60 + req.start.getMinutes();
+                    const reqEndM = (req.end.getHours() - START_H) * 60 + req.end.getMinutes();
+                    const reqStartSlot = Math.floor(reqStartM / SLOT_UNIT);
+                    const reqEndSlot = Math.floor(reqEndM / SLOT_UNIT);
+
+                    for (let t = reqStartSlot; t <= reqEndSlot - neededSlots; t++) {
+                        let isFree = true;
+                        for (let k = 0; k < neededSlots; k++) {
+                            if (t + k >= SLOTS || timeline[t + k] !== null) { isFree = false; break; }
+                        }
+                        if (isFree) {
+                            for (let k = 0; k < neededSlots; k++) timeline[t + k] = band.name;
+                            const assignedStart = new Date(req.start);
+                            assignedStart.setHours(START_H + Math.floor((t * SLOT_UNIT) / 60));
+                            assignedStart.setMinutes((t * SLOT_UNIT) % 60);
+                            assignedStart.setSeconds(0); assignedStart.setMilliseconds(0);
+                            const assignedEnd = new Date(assignedStart);
+                            assignedEnd.setMinutes(assignedStart.getMinutes() + duration);
+                            
+                            assignments.push({ bandId: band.id, bandName: band.name, start: assignedStart, end: assignedEnd, originalDocIds: band.docIds });
+                            isAssigned = true;
+                            break;
+                        }
+                    }
+                }
+                if (!isAssigned) failedBands.push(band);
+            }
+            return { duration, assignments, failedBands, successCount: assignments.length, totalCount: bands.length };
+        }
+
+        window.applyLotteryResults = async () => {
+            if (!tempLotterySchedule) return;
+            const isConfirmed = await showCustomConfirm("抽選結果をスケジュールに反映しますか？", "反映確認");
+            if (!isConfirmed) return;
+            
+            const batch = writeBatch(db);
+            tempLotterySchedule.assignments.forEach(a => {
+                const ref = doc(collection(db, "bookings"));
+                const uid = auth.currentUser ? auth.currentUser.uid : "admin";
+                batch.set(ref, {
+                    bandId: a.bandId,
+                    bandName: a.bandName,
+                    creatorId: uid,
+                    userName: "抽選確定",
+                    startTime: a.start,
+                    endTime: a.end,
+                    type: 'normal',
+                    status: 'confirmed',
+                    source: 'lottery',
+                    createdAt: serverTimestamp()
+                });
+                a.originalDocIds.forEach(oldId => batch.delete(doc(db, "bookings", oldId)));
+            });
+            try {
+                await batch.commit();
+                await showCustomAlert("抽選結果を反映しました。\n(落選した希望はそのまま残っています)");
+                closePage('admin-booking-settings');
+            } catch (e) {
+                await showCustomAlert(e.message, "エラー");
             }
         };
 
@@ -796,7 +1118,7 @@
         }
 
         // ==========================
-        // 2. バンドの管理ロジック
+        // 2. バンドの管理 ＆ 詳細・無限ループ防止版ロジック
         // ==========================
         window.openAdminBands = async () => {
             openPage('admin-bands');
@@ -941,54 +1263,20 @@
 
             const membersContainer = document.getElementById('bd-detail-members-list');
             const songsContainer = document.getElementById('bd-detail-songs-list');
-            const cueArea = document.getElementById('bd-detail-cuesheet-area');
-
             membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
             songsContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
-            cueArea.innerHTML = '<span style="color:#999;">読み込み中...</span>';
             
             document.getElementById('bd-detail-existing').innerText = "-";
             document.getElementById('bd-detail-sync').innerText = "-";
             document.getElementById('bd-detail-ng').innerText = "-";
 
             try {
-                const cueSheetId = band.cueSheetId || band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
-                let cData = null;
-
+                const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
                 const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
+
                 if (cueSnap.exists()) {
-                    cData = cueSnap.data();
-                }
+                    const cData = cueSnap.data();
 
-                if (band.cueSheetId) {
-                    cueArea.innerHTML = `
-                        <div style="display:flex; align-items:center; justify-content:space-between; background:#f0f7ff; padding:12px; border-radius:12px; border:1px solid #d0e3ff;">
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <i class="fa-solid fa-file-text" style="color:#0b57d0;"></i>
-                                <span style="font-weight:bold; color:#0b57d0; font-size:13px;">デジタルCueシート登録済み</span>
-                            </div>
-                            <a href="${DIGITAL_CUE_PATH}?cueID=${encodeURIComponent(band.cueSheetId)}" target="_blank" style="background:#0b57d0; color:white; padding:6px 14px; border-radius:999px; font-size:11px; font-weight:bold; text-decoration:none;">表示 (Web)</a>
-                        </div>`;
-                } else if (band.latestCuesheetUrl || band.cueSheetUrl) {
-                    const targetUrl = band.latestCuesheetUrl || band.cueSheetUrl;
-                    cueArea.innerHTML = `
-                        <div style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #dadce0;">
-                            <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
-                                <i class="fa-solid fa-image" style="color:#5f6368;"></i>
-                                <span style="font-weight:bold; color:#1f1f1f; font-size:13px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">画像Cueシート</span>
-                            </div>
-                            <a href="${targetUrl}" target="_blank" style="background:#f1f3f4; color:#1f1f1f; padding:6px 14px; border-radius:999px; font-size:11px; font-weight:bold; text-decoration:none; border:1px solid #dadce0; flex-shrink:0;">開く</a>
-                        </div>`;
-                } else if (cData) {
-                    cueArea.innerHTML = `
-                        <div style="display:flex; align-items:center; justify-content:space-between; background:#e6f4ea; padding:12px; border-radius:12px; border:1px solid #ceead6;">
-                            <span style="font-weight:bold; color:#137333; font-size:13px;">Cueシートデータあり</span>
-                        </div>`;
-                } else {
-                    cueArea.innerHTML = '<span style="color:#999; font-size:13px;">Cueシート未登録</span>';
-                }
-
-                if (cData) {
                     document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
                     document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
                     document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
