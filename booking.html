@@ -574,6 +574,23 @@
             return u && u.name ? u.name : fallbackName || '';
         }
         
+        function checkAdminRole(role) {
+            if (!role) return false;
+            const roles = Array.isArray(role) ? role : [role];
+            const now = Date.now();
+            return roles.some(r => {
+                if (typeof r !== 'string') return false;
+                if (r === 'lmc_all' || r === 'admin') return true;
+                if (!r.startsWith('lmc_limit_')) return false;
+                const limitTime = parseInt(r.replace('lmc_limit_', ''), 10);
+                return !isNaN(limitTime) && limitTime > now;
+            });
+        }
+
+        function hasAdminAccess(user) {
+            return !!user && (checkAdminRole(user.role) || checkAdminRole(user.roll));
+        }
+
         // ヘッダーアイコン制御 (管理者タブ表示制御を含む)
         function renderHeaderIcons(d){
             if(!d) return;
@@ -587,7 +604,7 @@
             if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
             
             // 管理者タブ表示制御
-            const hasAdminRole = d.roll && (Array.isArray(d.roll) ? (d.roll.includes('lmc_all') || d.roll.includes('admin')) : (d.roll === 'lmc_all' || d.roll === 'admin'));
+            const hasAdminRole = hasAdminAccess(d);
             if(hasAdminRole) {
                 document.getElementById('nav-admin').classList.remove('hidden');
             } else {
@@ -753,6 +770,7 @@
                     await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
                     currentUserData=userSnap.data(); 
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
+                    localStorage.setItem('lmc_is_admin', hasAdminAccess(currentUserData) ? 'true' : 'false');
                     renderHeaderIcons(currentUserData);
                 } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
                 
@@ -1293,7 +1311,7 @@
             document.getElementById('btnDeleteBooking').classList.add('hidden'); 
             document.getElementById('btnAddToGCal').classList.add('hidden'); 
             document.getElementById('editingBookingId').value=""; 
-            const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; 
+            const isAdmin=hasAdminAccess(currentUserData);
             document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); 
             if(isAdmin)document.getElementById('typeNormal').checked = true;
             toggleBookingInputs(); 
@@ -1319,7 +1337,7 @@
             document.getElementById('btnAddToGCal').classList.remove('hidden'); 
             document.getElementById('editingBookingId').value=id; 
             editingBookingData=data; 
-            const isAdmin=currentUserData?.affiliations.includes('urakata')&&currentUserData.role; 
+            const isAdmin=hasAdminAccess(currentUserData);
             document.getElementById('bookingTypeSelector').classList.toggle('hidden',!isAdmin); 
             if(isAdmin) {
                 if (data.type === 'event') document.getElementById('typeEvent').checked = true;
@@ -1519,7 +1537,7 @@
             const container = document.getElementById('nav-container');
             if(!container) return;
             const path = window.location.pathname;
-            const isAdmin = currentUserData?.roll && (Array.isArray(currentUserData.roll) ? (currentUserData.roll.includes('lmc_all') || currentUserData.roll.includes('admin')) : (currentUserData.roll === 'lmc_all' || currentUserData.roll === 'admin'));
+            const isAdmin = currentUserData ? hasAdminAccess(currentUserData) : (localStorage.getItem('lmc_is_admin') === 'true');
             const items = [
                 { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
                 { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
