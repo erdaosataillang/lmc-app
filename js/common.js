@@ -138,6 +138,7 @@ export function renderNav() {
     
     const items = [
         { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
+        { id: 'timetable', label: 'タイムテーブル', icon: 'view_timeline', href: '/timetable.html' },
         { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
         { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !isAdmin },
         { id: 'mypage', label: 'マイページ', icon: 'account_circle', onClick: 'window.location.href="https://mypage.sorairosystem.com"' }

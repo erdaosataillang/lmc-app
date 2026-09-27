@@ -308,11 +308,12 @@
 
         let db = null;
         let auth = null;
+        let authReady = Promise.resolve();
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            signInAnonymously(auth).catch(err => console.warn("Anonymous auth warning:", err));
+            authReady = signInAnonymously(auth);
         } catch(e) {
             console.log("Firebase setup skipped or missing config.", e);
         }
@@ -498,7 +499,7 @@
         let bandId = urlParams.get('bandID');
         let eventId = urlParams.get('eventID');
         const cueId = urlParams.get('cueID') || urlParams.get('cuesheetID') || urlParams.get('cueSheetID');
-        const draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
+        let draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
 
         const applyFormData = (data) => {
             if (!data) return;
@@ -601,7 +602,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             if (!db) return;
 
-            if (!cueId && (!bandId || !eventId)) {
+            if (!cueId && !bandId) {
                 showToast('パラメーターが不正です。ホーム画面へ戻ります。', 'error');
                 setTimeout(() => {
                     window.location.replace("https://liff.line.me/2008162165-vVODNp12");
@@ -609,10 +610,10 @@
                 return;
             }
 
-            // ユーザーキャッシュの事前読み込み
-            await preloadSystemUsers();
-
             try {
+                // Firestoreを読む前に認証を完了させ、初回表示時の権限エラーを防ぐ。
+                await authReady;
+                await preloadSystemUsers();
                 const eventSelect = document.getElementById('event-select');
                 try {
                     const eventsQuery = query(collection(db, 'events'), orderBy('startDate', 'desc'), limit(3));
@@ -632,10 +633,14 @@
                             eventSelect.appendChild(opt);
                         });
 
-                        if (eventId) {
+                        if (eventId && Array.from(eventSelect.options).some(option => option.value === eventId)) {
                             eventSelect.value = eventId;
                         } else {
                             eventId = eventSelect.value;
+                            draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
+                            const newUrl = new URL(window.location);
+                            newUrl.searchParams.set('eventID', eventId);
+                            window.history.replaceState(null, '', newUrl);
                         }
                     }
                 } catch (e) {
@@ -644,6 +649,7 @@
 
                 eventSelect.addEventListener('change', (e) => {
                     eventId = e.target.value;
+                    draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
                     const newUrl = new URL(window.location);
                     newUrl.searchParams.set('eventID', eventId);
                     window.history.replaceState(null, '', newUrl);
