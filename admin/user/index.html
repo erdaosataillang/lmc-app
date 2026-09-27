@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -141,29 +142,30 @@
             </div>
 
             <!-- テーブル表示 -->
-        <div id="users-table-container" class="hidden bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden mb-12">
-            <div class="overflow-x-auto">
-                <table class="w-full member-table border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50/50">
-                            <th class="pl-6 w-10">
-                                <input type="checkbox" id="select-all-checkbox" class="custom-checkbox">
-                            </th>
-                            <th>名前</th>
-                            <th>学年</th>
-                            <th>学部</th>
-                            <th>学籍番号</th>
-                            <th>パート</th>
-                            <th>権限</th>
-                            <th>誕生日</th>
-                            <th>電話番号</th>
-                            <th class="pr-8 text-center">操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-table-body">
-                        <!-- JSでデータが挿入されます -->
-                    </tbody>
-                </table>
+            <div id="users-table-container" class="hidden bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden mb-12">
+                <div class="overflow-x-auto">
+                    <table class="w-full member-table border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50/50">
+                                <th class="pl-6 w-10">
+                                    <input type="checkbox" id="select-all-checkbox" class="custom-checkbox">
+                                </th>
+                                <th>名前</th>
+                                <th>学年</th>
+                                <th>学部</th>
+                                <th>学籍番号</th>
+                                <th>パート</th>
+                                <th>権限</th>
+                                <th>誕生日</th>
+                                <th>電話番号</th>
+                                <th class="pr-8 text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- JSでデータが挿入されます -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
@@ -309,7 +311,7 @@
             if (typeof val === 'object') {
                 if (Array.isArray(val)) return val.map(toSafeString).join(' ');
                 return Object.entries(val)
-                    .filter(([_, v]) => Boolean(v))
+                    .filter(([_, v]) => Boolean(v)) // 値がtrueのものだけ（オブジェクト形式の場合を考慮）
                     .map(([k]) => k)
                     .join(' ');
             }
@@ -346,15 +348,24 @@
         const getUserRoles = (u) => {
             const raw = u?.role ?? u?.roll;
             if (!raw) return [];
+            
+            // すでに配列の場合
             if (Array.isArray(raw)) {
                 return raw.map(r => toSafeString(r).trim().toLowerCase()).filter(Boolean);
             }
+            
+            // カンマやスペース区切りの文字列の場合
             if (typeof raw === 'string') {
                 return raw.split(/[\s,]+/).map(r => r.trim().toLowerCase()).filter(Boolean);
             }
+            
+            // オブジェクト形式 { admin: true, lmc_user: true } の場合
             if (typeof raw === 'object') {
-                return Object.entries(raw).filter(([_, v]) => Boolean(v)).map(([k]) => k.toLowerCase());
+                return Object.entries(raw)
+                    .filter(([_, v]) => Boolean(v))
+                    .map(([k]) => k.toLowerCase());
             }
+            
             return [toSafeString(raw).toLowerCase()].filter(Boolean);
         };
 
@@ -424,8 +435,10 @@
                 const userRoles = getUserRoles(u);
                 const rolesText = userRoles.join(' ');
                 const rolesJapaneseText = userRoles.map(r => roleMap[r]?.label || r).join(' ');
+                
                 const telRaw = toSafeString(u.tel).replace(/\D/g, '');
                 const telFormatted = formatTel(u.tel);
+
                 return toSafeString(u.name).toLowerCase().includes(q) || 
                        toSafeString(u.kana).toLowerCase().includes(q) || 
                        toSafeString(u.studentId).toLowerCase().includes(q) ||
@@ -517,16 +530,19 @@
             }
             const allSelectedInFiltered = data.every(u => selectedUserIds.has(u.id));
             if (selectAllCheck) selectAllCheck.checked = data.length > 0 && allSelectedInFiltered;
+            
             tableBody.innerHTML = data.map(user => {
                 const isSelected = selectedUserIds.has(user.id);
                 const iconHtml = user.icon 
                     ? `<img src="${user.icon}" class="w-8 h-8 rounded-full object-cover">` 
                     : `<div class="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-400 font-bold text-[10px]">${(user.name||"?")[0]}</div>`;
+                
                 let birthStr = '-';
                 if (user.birthday) {
                     const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000 || user.birthday);
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
+                
                 const formattedTel = user.tel ? formatTel(user.tel) : '-';
                 const userRoles = getUserRoles(user);
 
@@ -621,15 +637,6 @@
 
             const formattedTel = user.tel ? formatTel(user.tel) : '未設定';
             const userRoles = getUserRoles(user);
-
-            if (!isEditing) {
-                content.innerHTML = `
-                    <div class="h-32 w-full relative overflow-hidden" style="${headerBackground}">
-                        ${!user.headerImage ? `<div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]"></div>` : `<div class="absolute inset-0 bg-black/10"></div>`}
-                    </div>
-                    <div class="px-8 pb-8 -mt-14 relative">
-
-            const roleInfo = getRoleInfo(user);
 
             if (!isEditing) {
                 content.innerHTML = `
@@ -732,6 +739,7 @@
                     { key: 'urakata_all', label: '裏方統括 (urakata_all)' },
                     { key: 'urakata_user', label: '裏方一般 (urakata_user)' }
                 ];
+                
                 const roleCheckboxesHtml = availableRoles.map(r => `
                     <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
                         <input type="checkbox" value="${r.key}" class="edit-role-checkbox custom-checkbox" ${userRoles.includes(r.key) ? 'checked' : ''}>
@@ -760,6 +768,7 @@
                                     <input type="text" id="edit-kana" value="${user.kana || ''}" class="edit-input" placeholder="かな">
                                 </div>
                             </div>
+                            
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">学年</label>
@@ -777,6 +786,7 @@
                                     <input type="text" id="edit-faculty" value="${user.faculty || ''}" class="edit-input" placeholder="学部名">
                                 </div>
                             </div>
+
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">学籍番号</label>
@@ -812,6 +822,7 @@
                                     <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
                                 </div>
                             </div>
+
                             <div>
                                 <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
                                 <input type="text" id="edit-headerImage" value="${user.headerImage || ''}" class="edit-input font-mono text-[10px]" placeholder="https://...">
@@ -819,6 +830,7 @@
                         </div>
                     </div>
                 `;
+
                 const saveBtn = document.getElementById('save-user-btn');
                 if (saveBtn) saveBtn.addEventListener('click', () => saveUserChanges(user.id));
             }
@@ -874,6 +886,7 @@
 
             let birthday = null;
             if (birthdayInput) birthday = Timestamp.fromDate(new Date(birthdayInput));
+            
             try {
                 await updateDoc(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, role, roll, tel, birthday, headerImage });
                 isEditing = false;
@@ -910,9 +923,12 @@
             document.getElementById('create-faculty').value = '';
             document.getElementById('create-studentId').value = '';
             document.getElementById('create-part').value = '';
+            
+            // ロールの初期化（デフォルトは lmc_user のみにチェック）
             document.querySelectorAll('.create-role-checkbox').forEach(cb => {
                 cb.checked = (cb.value === 'lmc_user');
             });
+
             document.getElementById('create-tel').value = '';
             document.getElementById('create-birthday').value = '';
             document.getElementById('create-headerImage').value = '';
@@ -965,8 +981,8 @@
                     faculty,
                     studentId,
                     part,
-                    role,
-                    roll,
+                    role, // 配列
+                    roll, // 配列
                     tel,
                     birthday,
                     headerImage,
@@ -1038,7 +1054,10 @@
             if (selectedUserIds.size === 0) return;
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
             selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
+            
+            // CSV ヘッダー (権限列を追加)
             const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '権限', '電話番号', '誕生日', 'システムID'];
+            
             const rows = selectedUsers.map(u => {
                 let birthStr = '';
                 if (u.birthday) {
@@ -1047,8 +1066,20 @@
                 }
                 const formattedTel = u.tel ? formatTel(u.tel) : '';
                 const userRoles = getUserRoles(u);
-                const roleValue = userRoles.join(', ');
-                return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), roleValue, formattedTel, birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
+                const roleValue = userRoles.join(', '); // カンマ区切り文字列にする
+                
+                return [ 
+                    u.name || '', 
+                    u.kana || '', 
+                    u.year ? u.year + '年' : '', 
+                    u.faculty || '', 
+                    u.studentId || '', 
+                    getPartName(u.part), 
+                    roleValue, 
+                    formattedTel, 
+                    birthStr, 
+                    u.id 
+                ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
             });
             const csvContent = "\ufeff" + [headers.join(','), ...rows].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
