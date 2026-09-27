@@ -141,29 +141,29 @@
             </div>
 
             <!-- テーブル表示 -->
-            <div id="users-table-container" class="hidden bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden mb-12">
-                <div class="overflow-x-auto">
-                    <table class="w-full member-table border-collapse">
-                        <thead>
-                            <tr class="bg-gray-50/50">
-                                <th class="pl-6 w-10">
-                                    <input type="checkbox" id="select-all-checkbox" class="custom-checkbox">
-                                </th>
-                                <th>名前</th>
-                                <th>学年</th>
-                                <th>学部</th>
-                                <th>学籍番号</th>
-                                <th>パート</th>
-                                <th>誕生日</th>
-                                <th>電話番号</th>
-                                <th class="pr-8 text-center">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table-body">
-                            <!-- JSでデータが挿入されます -->
-                        </tbody>
-                    </table>
-                </div>
+        <div id="users-table-container" class="hidden bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden mb-12">
+            <div class="overflow-x-auto">
+                <table class="w-full member-table border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/50">
+                            <th class="pl-6 w-10">
+                                <input type="checkbox" id="select-all-checkbox" class="custom-checkbox">
+                            </th>
+                            <th>名前</th>
+                            <th>学年</th>
+                            <th>学部</th>
+                            <th>学籍番号</th>
+                            <th>パート</th>
+                            <th>権限</th>
+                            <th>誕生日</th>
+                            <th>電話番号</th>
+                            <th class="pr-8 text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <!-- JSでデータが挿入されます -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
@@ -239,18 +239,30 @@
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">権限 (ロール)</label>
+                        <select id="create-role" class="edit-input">
+                            <option value="lmc_user">LMC一般 (lmc_user)</option>
+                            <option value="lmc_all">LMC全体 (lmc_all)</option>
+                            <option value="admin">管理者 (admin)</option>
+                            <option value="urakata_all">裏方統括 (urakata_all)</option>
+                            <option value="urakata_user">裏方一般 (urakata_user)</option>
+                        </select>
+                    </div>
+                    <div>
                         <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">電話番号 (11桁)</label>
                         <input type="tel" id="create-tel" maxlength="11" class="edit-input font-mono" placeholder="09012345678" oninput="this.value = this.value.replace(/\D/g, '')">
                     </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
                         <input type="date" id="create-birthday" class="edit-input">
                     </div>
-                </div>
-
-                <div>
-                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
-                    <input type="text" id="create-headerImage" class="edit-input font-mono text-[10px]" placeholder="https://...">
+                    <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
+                        <input type="text" id="create-headerImage" class="edit-input font-mono text-[10px]" placeholder="https://...">
+                    </div>
                 </div>
 
                 <div class="pt-4 flex justify-end gap-3">
@@ -289,6 +301,20 @@
             if (!p) return '未設定';
             const normalizedPart = p.toLowerCase();
             return partMap[normalizedPart] || p;
+        };
+
+        // 権限の表示マップ
+        const roleMap = {
+            'admin': { label: '管理者', color: 'bg-rose-50 text-rose-600 border-rose-200' },
+            'lmc_all': { label: 'LMC全体', color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+            'lmc_user': { label: 'LMC一般', color: 'bg-blue-50 text-blue-600 border-blue-200' },
+            'urakata_all': { label: '裏方統括', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+            'urakata_user': { label: '裏方一般', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' }
+        };
+
+        const getRoleInfo = (u) => {
+            const r = (u.role || u.roll || 'lmc_user').toLowerCase();
+            return roleMap[r] || { label: r, color: 'bg-gray-50 text-gray-500 border-gray-200' };
         };
 
         // 電話番号フォーマット（11桁ハイフン付き: 070-0000-0000 / 10桁対応）
@@ -343,6 +369,8 @@
             const q = userSearchQuery.toLowerCase();
             filteredData = usersData.filter(u => {
                 const partJapanese = getPartName(u.part);
+                const roleValue = (u.role || u.roll || "").toLowerCase();
+                const roleInfo = getRoleInfo(u);
                 const telRaw = (u.tel || "").replace(/\D/g, '');
                 const telFormatted = formatTel(u.tel);
                 return (u.name || "").toLowerCase().includes(q) || 
@@ -351,6 +379,8 @@
                        (u.faculty || "").toLowerCase().includes(q) ||
                        (u.part || "").toLowerCase().includes(q) ||
                        partJapanese.toLowerCase().includes(q) ||
+                       roleValue.includes(q) ||
+                       roleInfo.label.toLowerCase().includes(q) ||
                        telRaw.includes(q) ||
                        telFormatted.includes(q);
             });
@@ -429,7 +459,7 @@
             const tableBody = document.getElementById('users-table-body');
             const selectAllCheck = document.getElementById('select-all-checkbox');
             if (data.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="9" class="py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members found</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="10" class="py-20 text-center text-gray-300 font-bold text-[10px] tracking-widest uppercase">No members found</td></tr>`;
                 return;
             }
             const allSelectedInFiltered = data.every(u => selectedUserIds.has(u.id));
@@ -445,6 +475,8 @@
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
                 const formattedTel = user.tel ? formatTel(user.tel) : '-';
+                const roleInfo = getRoleInfo(user);
+
                 return `<tr class="transition-colors ${isSelected ? 'bg-indigo-50/30' : ''}">
                     <td class="pl-6"><input type="checkbox" class="user-checkbox custom-checkbox" data-id="${user.id}" ${isSelected ? 'checked' : ''}></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer">
@@ -457,6 +489,9 @@
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-gray-500 uppercase">${user.faculty || '-'}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-400">${user.studentId || '-'}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-indigo-500">${getPartName(user.part)}</span></td>
+                    <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer">
+                        <span class="text-[10px] font-black px-2 py-0.5 rounded-lg border ${roleInfo.color}">${roleInfo.label}</span>
+                    </td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs text-gray-500">${birthStr}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-500">${formattedTel}</span></td>
                     <td class="pr-8 text-center"><button onclick="window.showUserDetail('${user.id}')" class="w-8 h-8 rounded-full hover:bg-indigo-50 text-gray-300 hover:text-indigo-500 transition-colors"><i class="fa-solid fa-ellipsis"></i></button></td>
@@ -532,6 +567,8 @@
                 : `background-image: linear-gradient(to bottom right, #6366f1, #a855f7, #ec4899);`;
 
             const formattedTel = user.tel ? formatTel(user.tel) : '未設定';
+            const currentRole = user.role || user.roll || 'lmc_user';
+            const roleInfo = getRoleInfo(user);
 
             if (!isEditing) {
                 content.innerHTML = `
@@ -555,6 +592,7 @@
                             <div class="flex items-center gap-2">
                                 <h3 class="text-2xl font-black text-gray-800 tracking-tight">${user.name}</h3>
                                 <button onclick="window.copyInfo('${user.name}', this)" class="copy-btn"><i class="fa-regular fa-copy text-sm"></i></button>
+                                <span class="ml-2 text-[10px] font-black px-2 py-0.5 rounded-lg border ${roleInfo.color}">${roleInfo.label}</span>
                             </div>
                             <div class="flex items-center gap-2 mt-0.5">
                                 <p class="text-indigo-500 font-bold text-xs tracking-widest uppercase">${user.kana || ''}</p>
@@ -593,6 +631,17 @@
                                 <div class="font-bold text-gray-800 text-sm">${getPartName(user.part)}</div>
                             </div>
 
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.35s">
+                                <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fa-solid fa-shield-halved text-xs"></i>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">権限 (ロール)</span>
+                                    </div>
+                                    <button onclick="window.copyInfo('${currentRole}', this)" class="copy-btn"><i class="fa-regular fa-copy text-[10px]"></i></button>
+                                </div>
+                                <div class="font-bold text-gray-800 text-sm">${roleInfo.label} <span class="text-[10px] text-gray-400 font-mono">(${currentRole})</span></div>
+                            </div>
+
                             <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.4s">
                                 <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <div class="flex items-center gap-2">
@@ -604,7 +653,7 @@
                                 <div class="font-mono font-bold text-gray-800 text-sm">${formattedTel}</div>
                             </div>
 
-                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group col-span-full" style="animation-delay: 0.5s">
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.5s">
                                 <div class="flex items-center gap-2 mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <i class="fa-solid fa-cake-candles text-xs"></i>
                                     <span class="text-[9px] font-black uppercase tracking-widest">誕生日</span>
@@ -681,17 +730,29 @@
                             </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">権限 (ロール)</label>
+                                    <select id="edit-role" class="edit-input">
+                                        <option value="lmc_user" ${currentRole == 'lmc_user' ? 'selected' : ''}>LMC一般 (lmc_user)</option>
+                                        <option value="lmc_all" ${currentRole == 'lmc_all' ? 'selected' : ''}>LMC全体 (lmc_all)</option>
+                                        <option value="admin" ${currentRole == 'admin' ? 'selected' : ''}>管理者 (admin)</option>
+                                        <option value="urakata_all" ${currentRole == 'urakata_all' ? 'selected' : ''}>裏方統括 (urakata_all)</option>
+                                        <option value="urakata_user" ${currentRole == 'urakata_user' ? 'selected' : ''}>裏方一般 (urakata_user)</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">電話番号 (11桁)</label>
                                     <input type="tel" id="edit-tel" maxlength="11" value="${(user.tel || '').replace(/\D/g, '')}" class="edit-input font-mono" placeholder="09012345678" oninput="this.value = this.value.replace(/\D/g, '')">
                                 </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
                                     <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
                                 </div>
-                            </div>
-                            <div>
-                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
-                                <input type="text" id="edit-headerImage" value="${user.headerImage || ''}" class="edit-input font-mono text-[10px]" placeholder="https://...">
+                                <div>
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
+                                    <input type="text" id="edit-headerImage" value="${user.headerImage || ''}" class="edit-input font-mono text-[10px]" placeholder="https://...">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -738,6 +799,8 @@
             const faculty = document.getElementById('edit-faculty')?.value;
             const studentId = document.getElementById('edit-studentId')?.value;
             const part = document.getElementById('edit-part')?.value;
+            const role = document.getElementById('edit-role')?.value || 'lmc_user';
+            const roll = role; // roll と role の両方を同期保存
             const tel = document.getElementById('edit-tel')?.value?.replace(/\D/g, '');
             const birthdayInput = document.getElementById('edit-birthday')?.value;
             const headerImage = document.getElementById('edit-headerImage')?.value;
@@ -745,11 +808,11 @@
             let birthday = null;
             if (birthdayInput) birthday = Timestamp.fromDate(new Date(birthdayInput));
             try {
-                await updateDoc(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, tel, birthday, headerImage });
+                await updateDoc(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, role, roll, tel, birthday, headerImage });
                 isEditing = false;
                 const updatedUser = usersData.find(u => u.id === userId);
                 if (updatedUser) {
-                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, tel, birthday, headerImage });
+                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, role, roll, tel, birthday, headerImage });
                     renderModalContent(updatedUser);
                 }
             } catch (err) {
@@ -780,6 +843,7 @@
             document.getElementById('create-faculty').value = '';
             document.getElementById('create-studentId').value = '';
             document.getElementById('create-part').value = '';
+            document.getElementById('create-role').value = 'lmc_user';
             document.getElementById('create-tel').value = '';
             document.getElementById('create-birthday').value = '';
             document.getElementById('create-headerImage').value = '';
@@ -810,6 +874,8 @@
             const faculty = document.getElementById('create-faculty')?.value?.trim() || '';
             const studentId = document.getElementById('create-studentId')?.value?.trim() || '';
             const part = document.getElementById('create-part')?.value || '';
+            const role = document.getElementById('create-role')?.value || 'lmc_user';
+            const roll = role; // roll と role の両方を保存
             const tel = document.getElementById('create-tel')?.value?.replace(/\D/g, '') || '';
             const birthdayInput = document.getElementById('create-birthday')?.value;
             const headerImage = document.getElementById('create-headerImage')?.value?.trim() || '';
@@ -825,6 +891,8 @@
                     faculty,
                     studentId,
                     part,
+                    role,
+                    roll,
                     tel,
                     birthday,
                     headerImage,
@@ -896,7 +964,7 @@
             if (selectedUserIds.size === 0) return;
             const selectedUsers = usersData.filter(u => selectedUserIds.has(u.id));
             selectedUsers.sort((a, b) => (parseInt(a.year) || 99) - (parseInt(b.year) || 99));
-            const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '電話番号', '誕生日', 'システムID'];
+            const headers = ['名前', 'かな', '学年', '学部', '学籍番号', 'パート', '権限', '電話番号', '誕生日', 'システムID'];
             const rows = selectedUsers.map(u => {
                 let birthStr = '';
                 if (u.birthday) {
@@ -904,7 +972,8 @@
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
                 const formattedTel = u.tel ? formatTel(u.tel) : '';
-                return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), formattedTel, birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
+                const roleValue = u.role || u.roll || 'lmc_user';
+                return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), roleValue, formattedTel, birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
             });
             const csvContent = "\ufeff" + [headers.join(','), ...rows].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
