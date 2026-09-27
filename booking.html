@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LMC Mobile - 合わせ予約</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -10,10 +10,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <style>
         /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
-        body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
+        html { width: 100%; height: 100%; overflow: hidden; background: rgb(241, 244, 249); overscroll-behavior: none; }
+        body { margin: 0; padding: 0; width: 100%; height: 100vh; height: 100dvh; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; overflow: hidden; overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
         
         /* ボトムナビの分だけpaddingをあけてかぶらないようにする */
-        .container { max-width: 480px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; } 
+        .container { max-width: 480px; margin: 0 auto; width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
         .hidden { display: none !important; }
         
         /* ヘッダー */
@@ -35,7 +36,7 @@
         .ring-rainbow { background: linear-gradient(135deg, #EA4335, #FBBC05, #34A853, #4285F4); }
         .ring-birthday { background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000); background-size: 400%; box-shadow: 0 0 8px rgba(255, 215, 0, 0.8); }
 
-        .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 20px; -webkit-overflow-scrolling: touch; overflow-x: hidden; }
+        .scroll-content { flex-grow: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 16px; padding-bottom: 20px; -webkit-overflow-scrolling: touch; overflow-x: hidden; }
         
         /* カレンダーコントロール */
         .calendar-controls { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 16px; border-radius: 24px; margin: 0 16px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); flex-shrink: 0; z-index: 400; }
@@ -84,7 +85,7 @@
         .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; } .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
         
         /* ナビゲーション (グラスモーフィズムとポップアップアニメーション) */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; box-sizing: border-box; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); transform: translateZ(0); }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
         .nav-item.active { color: #1f1f1f; transform: translateY(-4px); }
@@ -530,6 +531,10 @@
         const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
         const CACHE_KEY_SYSTEM_SETTINGS = 'lmc_system_settings_cache';
         const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache'; // ユーザー本名動的取得用
+        const CACHE_KEY_SYSTEM_SETTINGS_UPDATED = 'lmc_system_settings_updated';
+        const CACHE_KEY_ALL_USERS_UPDATED = 'lmc_all_users_updated';
+        const CACHE_KEY_LAST_LOGIN_UPDATED = 'lmc_last_login_updated';
+        const CACHE_FRESH_MS = 30 * 60 * 1000;
 
         let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date(), selectedTimeSlot=null, selectionStartHour=null, selectionEndHour=null;
         let myBandsAll=[], calendarMode='month', isSelecting=false, selectionTimer=null, editingBookingData=null;
@@ -542,29 +547,40 @@
         let cropper = null;
         let currentCropResolver = null;
         let isLotteryDay = false; // その日が抽選確定済み（先着順モード）かどうかのフラグ
+        let currentMonthUnsub = null;
+        let currentDayUnsub = null;
+        let currentBandsUnsub = null;
+        let monthSyncToken = null;
+        let daySyncToken = null;
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
         window.openModal=(id)=>document.getElementById(id).classList.add('open');
         window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
         
+        const isCacheFresh = (key) => Date.now() - Number(localStorage.getItem(key) || 0) < CACHE_FRESH_MS;
+
         async function loadSystemConfig(){ 
+            if (isCacheFresh(CACHE_KEY_SYSTEM_SETTINGS_UPDATED)) return;
             try{ 
                 const snap=await getDoc(doc(db,"system","settings")); 
                 if(snap.exists()) {
                     currentSystemSettings=snap.data(); 
                     localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
+                    localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS_UPDATED, String(Date.now()));
                 }
-            }catch(e){} 
+            }catch(e){ console.warn("System settings refresh failed:", e); }
         }
 
         // ユーザー情報を取得してフルネーム解決用にキャッシュする
         async function loadAllUsers() {
+            if (isCacheFresh(CACHE_KEY_ALL_USERS_UPDATED)) return;
             try {
                 const qs = await getDocs(collection(db,"users")); 
                 allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); 
                 localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
-            } catch(e) {}
+                localStorage.setItem(CACHE_KEY_ALL_USERS_UPDATED, String(Date.now()));
+            } catch(e) { console.warn("User cache refresh failed:", e); }
         }
 
         // uidから本名を取得するヘルパー関数
@@ -753,41 +769,86 @@
             } catch (e) { console.warn("Cache render error:", e); }
         })();
 
-        const showSyncIndicator = () => document.getElementById('syncIndicator').classList.remove('hidden');
-        const hideSyncIndicator = () => document.getElementById('syncIndicator').classList.add('hidden');
+        const activeSyncTokens = new Set();
+        const showSyncIndicator = () => {
+            const token = Symbol('sync');
+            activeSyncTokens.add(token);
+            document.getElementById('syncIndicator')?.classList.remove('hidden');
+            setTimeout(() => hideSyncIndicator(token), 8000);
+            return token;
+        };
+        const hideSyncIndicator = (token) => {
+            if (token) activeSyncTokens.delete(token);
+            else activeSyncTokens.clear();
+            if (activeSyncTokens.size === 0) document.getElementById('syncIndicator')?.classList.add('hidden');
+        };
+        const withTimeout = (promise, timeoutMs, label) => {
+            let timer;
+            return Promise.race([
+                promise,
+                new Promise((_, reject) => {
+                    timer = setTimeout(() => reject(new Error(`${label} timed out`)), timeoutMs);
+                })
+            ]).finally(() => clearTimeout(timer));
+        };
+
+        function updateLastLoginInBackground(userRef) {
+            const lastUpdated = Number(localStorage.getItem(CACHE_KEY_LAST_LOGIN_UPDATED) || 0);
+            if (Date.now() - lastUpdated < 6 * 60 * 60 * 1000) return;
+            setDoc(userRef, {lastLogin:serverTimestamp()}, {merge:true})
+                .then(() => localStorage.setItem(CACHE_KEY_LAST_LOGIN_UPDATED, String(Date.now())))
+                .catch(e => console.warn("Last login update failed:", e));
+        }
 
         async function main(){ 
-            try{ 
-                showSyncIndicator();
-                try{ if(typeof __initial_auth_token!=='undefined'&&__initial_auth_token)await signInWithCustomToken(auth,__initial_auth_token); else await signInAnonymously(auth); }catch(ae){console.warn(ae)} 
+            const mainSyncToken = showSyncIndicator();
+            try{
+                try{
+                    const authPromise = typeof __initial_auth_token!=='undefined'&&__initial_auth_token
+                        ? signInWithCustomToken(auth,__initial_auth_token)
+                        : signInAnonymously(auth);
+                    await withTimeout(authPromise, 8000, 'Firebase authentication');
+                }catch(ae){console.warn(ae)}
                 try {
-                    await liff.init({liffId:MY_LIFF_ID}); 
+                    await withTimeout(liff.init({liffId:MY_LIFF_ID}), 8000, 'LIFF initialization');
                     if(!liff.isLoggedIn()){liff.login();return;} 
-                    const profile=await liff.getProfile(); 
+                    const profile=await withTimeout(liff.getProfile(), 8000, 'LIFF profile');
                     currentUser=profile.userId; currentProfile=profile; 
-                    const userRef=doc(db,"users",currentUser), userSnap=await getDoc(userRef); 
+                    const userRef=doc(db,"users",currentUser);
+                    const userSnap=await withTimeout(getDoc(userRef), 8000, 'User data');
                     if(!userSnap.exists()){ window.location.href=MY_PAGE_URL; return; } 
-                    await setDoc(userRef,{lastLogin:serverTimestamp()},{merge:true}); 
+                    updateLastLoginInBackground(userRef);
                     currentUserData=userSnap.data(); 
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                     localStorage.setItem('lmc_is_admin', hasAdminAccess(currentUserData) ? 'true' : 'false');
                     renderHeaderIcons(currentUserData);
-                } catch (e) { try { liff.login(); } catch (loginError) { window.location.href = MY_PAGE_URL; } return; }
-                
-                await loadAllUsers(); // 最新のユーザーリストを取得
-                await loadSystemConfig(); 
+                } catch (e) {
+                    console.error("Booking initialization failed:", e);
+                    try {
+                        if (!liff.isLoggedIn()) liff.login();
+                    } catch (loginError) {
+                        console.warn("LIFF login could not be started:", loginError);
+                    }
+                    return;
+                }
+
                 loadMyBands(); 
                 
-                // 初回のみ現在のモードで再描画（強制的に月表示に戻さない）
+                // キャッシュ済みの内容で先に画面を表示し、補助データは裏で更新する
                 updateViewMenuUI();
                 renderCalendar(); 
-
-                checkNotifications();
                 renderNav();
-                
+
+                Promise.allSettled([loadAllUsers(), loadSystemConfig()]);
+                checkNotifications();
+
                 setInterval(updateCurrentTimeLine, 60000);
                 setupSwipes();
-            }catch(e){console.error(e)} 
+            }catch(e){
+                console.error(e);
+            } finally {
+                hideSyncIndicator(mainSyncToken);
+            }
         }
 
         function setupSwipes() {
@@ -811,7 +872,15 @@
             }
         }
 
-        function loadMyBands(){ const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser)); onSnapshot(q,(snapshot)=>{ myBandsAll=[]; snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()})); localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll)); }); }
+        function loadMyBands(){
+            if (currentBandsUnsub) currentBandsUnsub();
+            const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser));
+            currentBandsUnsub = onSnapshot(q,(snapshot)=>{
+                myBandsAll=[];
+                snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()}));
+                localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
+            }, (error) => console.warn("Band refresh failed:", error));
+        }
         
         window.switchCalendarView=(m, keepDate = false)=>{ calendarMode=m; if(m==='day'){ if(!keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } } } updateViewMenuUI(); renderCalendar(); };
         function updateViewMenuUI(){ const isMonth = (calendarMode === 'month'); document.getElementById('calMonthView').classList.toggle('hidden', !isMonth); document.getElementById('calDayView').classList.toggle('hidden', isMonth); const switcher = document.getElementById('viewSwitcher'); switcher.classList.toggle('day-mode', !isMonth); document.querySelectorAll('.switcher-item').forEach(el => { el.classList.toggle('active', el.dataset.mode === calendarMode); }); }
@@ -937,12 +1006,31 @@
             const cached = localStorage.getItem(cacheKey);
             if(cached) { try { const data = JSON.parse(cached); loadedBookingsCache = data; applyBookingDataToMonth(data, y, displayM); } catch(e) {} }
             if (useCache) return;
-            showSyncIndicator();
-            onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{ 
+            if (currentDayUnsub) {
+                currentDayUnsub();
+                currentDayUnsub = null;
+            }
+            if (daySyncToken) {
+                hideSyncIndicator(daySyncToken);
+                daySyncToken = null;
+            }
+            if (currentMonthUnsub) currentMonthUnsub();
+            if (monthSyncToken) hideSyncIndicator(monthSyncToken);
+            const syncToken = showSyncIndicator();
+            monthSyncToken = syncToken;
+            currentMonthUnsub = onSnapshot(query(collection(db,"bookings"),where("startTime",">=",new Date(y,m,1)),where("startTime","<=",new Date(y,m+1,0,23,59,59))),(qs)=>{
                 const bookings = [];
                 qs.forEach(docSnap => { const d = docSnap.data(); bookings.push({ ...d, id: docSnap.id, startTime: d.startTime.toDate().toISOString(), endTime: d.endTime.toDate().toISOString(), type: d.type }); });
-                loadedBookingsCache = bookings; localStorage.setItem(cacheKey, JSON.stringify(bookings)); applyBookingDataToMonth(bookings, y, displayM); hideSyncIndicator();
-            }); 
+                loadedBookingsCache = bookings;
+                localStorage.setItem(cacheKey, JSON.stringify(bookings));
+                applyBookingDataToMonth(bookings, y, displayM);
+                hideSyncIndicator(syncToken);
+                if (monthSyncToken === syncToken) monthSyncToken = null;
+            }, (error) => {
+                console.warn("Monthly bookings refresh failed:", error);
+                hideSyncIndicator(syncToken);
+                if (monthSyncToken === syncToken) monthSyncToken = null;
+            });
         }
 
         function applyBookingDataToMonth(bookings, y, m) {
@@ -1045,7 +1133,6 @@
             } 
         }
 
-        let currentDayUnsub = null;
         function loadDayBookings(){ 
             const sD=new Date(displayDate), eD=new Date(displayDate); 
             sD.setHours(0,0,0,0); eD.setHours(23,59,59,999); 
@@ -1059,10 +1146,22 @@
             });
             renderDayEvents(cachedEvents);
 
-            showSyncIndicator();
+            if (currentMonthUnsub) {
+                currentMonthUnsub();
+                currentMonthUnsub = null;
+            }
+            if (monthSyncToken) {
+                hideSyncIndicator(monthSyncToken);
+                monthSyncToken = null;
+            }
             if (currentDayUnsub) {
                 currentDayUnsub();
             }
+            if (daySyncToken) hideSyncIndicator(daySyncToken);
+            const syncToken = showSyncIndicator();
+            daySyncToken = syncToken;
+            const cacheYear = displayDate.getFullYear();
+            const cacheMonth = displayDate.getMonth()+1;
             currentDayUnsub = onSnapshot(query(collection(db,"bookings"),where("startTime",">=",sD),where("startTime","<=",eD)),(qs)=>{ 
                 const evs=[]; 
                 qs.forEach(snap=>{
@@ -1078,12 +1177,17 @@
                     return bTime < sDTime || bTime > eDTime;
                 }).concat(evs);
                 loadedBookingsCache = newCache;
-                const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${displayDate.getFullYear()}_${displayDate.getMonth()+1}`;
+                const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${cacheYear}_${cacheMonth}`;
                 localStorage.setItem(cacheKey, JSON.stringify(newCache));
 
                 renderDayEvents(evs);
-                hideSyncIndicator();
-            }); 
+                hideSyncIndicator(syncToken);
+                if (daySyncToken === syncToken) daySyncToken = null;
+            }, (error) => {
+                console.warn("Daily bookings refresh failed:", error);
+                hideSyncIndicator(syncToken);
+                if (daySyncToken === syncToken) daySyncToken = null;
+            });
         }
 
         // 過去日判定関数
@@ -1693,6 +1797,13 @@
                 checkNotifications();
             } catch(e) { console.error(e); }
         };
+
+        window.addEventListener('pagehide', () => {
+            if (currentMonthUnsub) currentMonthUnsub();
+            if (currentDayUnsub) currentDayUnsub();
+            if (currentBandsUnsub) currentBandsUnsub();
+            activeSyncTokens.clear();
+        });
         
         // 即時実行用
         renderNav();
