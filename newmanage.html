@@ -7,6 +7,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
         .container { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; } 
@@ -57,7 +58,6 @@
         .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } 
         .user-sub { font-size: 12px; color: #5f6368; }
         
-        /* 情報行（閲覧用） */
         .info-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; } 
         .info-row:last-child { border-bottom: none; }
         .info-row .label { color: #5f6368; font-size: 13px; } 
@@ -71,7 +71,6 @@
         .band-name { font-weight: bold; font-size: 15px; color: #1f1f1f; } 
         .band-members { font-size: 12px; color: #5f6368; margin-top: 2px; }
 
-        /* フォーム部品（編集用） */
         .form-group { margin-bottom: 14px; } 
         .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
         .form-input { width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: white; outline: none; }
@@ -107,7 +106,7 @@
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #5f6368; font-size: 10px; flex: 1; cursor: pointer; gap: 4px; font-weight: 600; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .nav-icon { font-size: 22px; padding: 4px 12px; border-radius: 16px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); background-color: transparent; margin-bottom: -2px; } 
         .nav-item.active { color: #1f1f1f; transform: translateY(-4px); }
-        .nav-item.active .nav-icon { background-color: #ffd8e4; color: #31111d; padding: 4px 20px; box-shadow: 0 4px 12px rgba(255, 216, 228, 0.6); transform: scale(1.05); margin-bottom: 0; } 
+        .nav-item.active .nav-icon { background-color: #c2e7ff; color: #001d35; padding: 4px 20px; box-shadow: 0 4px 12px rgba(194, 231, 255, 0.6); transform: scale(1.05); margin-bottom: 0; } 
         .nav-item.active span:not(.nav-icon) { font-weight: bold; }
     </style>
 </head>
@@ -164,7 +163,6 @@
         <!-- スクロールコンテンツ（メインメニュー） -->
         <div class="scroll-content">
             <div class="menu-list">
-                <!-- 定期演奏会（現在のイベント情報）ボタン -->
                 <button class="menu-btn" onclick="openAdminConcert()">
                     <div class="menu-icon-wrapper icon-admin-concert"><span class="material-icons">event_note</span></div>
                     <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">現在のイベント情報の表示・編集</span></div>
@@ -205,33 +203,18 @@
         <div class="content-area" style="padding-top:16px;">
             <div class="card">
                 <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">イベント情報</h3>
-                
                 <div id="concert-loading" style="text-align:center; padding:20px; color:#999;">読み込み中...</div>
-
                 <div id="concert-form-area" class="hidden">
-                    <div class="form-group">
-                        <label class="form-label">イベント名</label>
-                        <input type="text" id="concert-event-name" class="form-input" placeholder="例: 2026年度 定期演奏会">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">開催日</label>
-                        <input type="date" id="concert-event-date" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">詳細・備考</label>
-                        <textarea id="concert-event-desc" class="form-input" style="height:100px; resize:none;" placeholder="場所や備考など"></textarea>
-                    </div>
-
+                    <div class="form-group"><label class="form-label">イベント名</label><input type="text" id="concert-event-name" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">開催日</label><input type="date" id="concert-event-date" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">詳細・備考</label><textarea id="concert-event-desc" class="form-input" style="height:100px; resize:none;"></textarea></div>
                     <button class="btn-primary" style="margin-top:12px;" onclick="saveCurrentConcertEvent()">変更を保存する</button>
                 </div>
-
                 <div id="concert-empty-area" class="hidden" style="text-align:center; padding:30px; color:#5f6368;">
                     <span class="material-icons" style="font-size:48px; color:#dadce0; margin-bottom:8px;">event_busy</span>
                     <div style="font-weight:bold; font-size:15px; color:#1f1f1f;">現在のイベントが設定されていません</div>
-                    <div style="font-size:12px; margin-top:4px;">「基本の設定」または「イベントの管理」から有効なイベントを設定してください。</div>
                 </div>
             </div>
-            
             <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">Active Event ID: <span id="concert-event-id">-</span></div>
         </div>
     </div>
@@ -249,7 +232,6 @@
                 <span class="material-icons" style="color:#5f6368;">search</span>
                 <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
             </div>
-            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <div style="display:flex; gap:8px;">
                     <button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button>
@@ -362,6 +344,14 @@
                 <div id="bd-detail-event" style="font-size:12px; color:#5f6368;">イベントID: -</div>
             </div>
 
+            <!-- Cueシート確認セクション -->
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">Cueシート</h3>
+                <div id="bd-detail-cuesheet-area" style="font-size:14px;">
+                    <span style="color:#999;">読み込み中...</span>
+                </div>
+            </div>
+
             <div class="card">
                 <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">メンバー一覧</h3>
                 <div id="bd-detail-members-list" style="font-size:14px; line-height:1.6;">読み込み中...</div>
@@ -413,6 +403,7 @@
 
         let currentActiveEventId = null;
         let currentActiveEventName = "なし";
+        const DIGITAL_CUE_PATH = 'cuesheet.html';
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
         window.closePage = (id) => { document.getElementById('page-' + id).classList.remove('open'); };
@@ -455,7 +446,7 @@
         });
 
         // ==========================
-        // 0. 定期演奏会（現在のイベント）ロジック
+        // 0. 定期演奏会ロジック
         // ==========================
         window.openAdminConcert = async () => {
             openPage('admin-concert');
@@ -468,7 +459,6 @@
             emptyEl.classList.add('hidden');
 
             try {
-                // system/settings から activeEventId を取得
                 const settingsSnap = await getDoc(doc(db, "system", "settings"));
                 if (settingsSnap.exists()) {
                     currentActiveEventId = settingsSnap.data().activeEventId || null;
@@ -482,7 +472,6 @@
                     return;
                 }
 
-                // events コレクションから該当イベントデータを取得
                 const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
                 if (eventSnap.exists()) {
                     const ev = eventSnap.data();
@@ -748,7 +737,7 @@
         }
 
         // ==========================
-        // 2. バンドの管理 ＆ 詳細・無限ループ防止版ロジック
+        // 2. バンドの管理 ＆ 詳細ロジック
         // ==========================
         window.openAdminBands = async () => {
             openPage('admin-bands');
@@ -875,7 +864,7 @@
             filterAndRenderBands();
         });
 
-        // 3. バンド詳細ページ（Cueシート情報の取得）
+        // 3. バンド詳細ページ（Cueシート情報の取得・表示機能強化）
         async function openAdminBandDetail(band) {
             openPage('admin-band-detail');
             
@@ -893,20 +882,57 @@
 
             const membersContainer = document.getElementById('bd-detail-members-list');
             const songsContainer = document.getElementById('bd-detail-songs-list');
+            const cueArea = document.getElementById('bd-detail-cuesheet-area');
+
             membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
             songsContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
+            cueArea.innerHTML = '<span style="color:#999;">読み込み中...</span>';
             
             document.getElementById('bd-detail-existing').innerText = "-";
             document.getElementById('bd-detail-sync').innerText = "-";
             document.getElementById('bd-detail-ng').innerText = "-";
 
             try {
-                const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
+                // デジタルCueシートIDの優先取得 (cueSheetId 又は latestCueSheetId 又は 複合キー)
+                const cueSheetId = band.cueSheetId || band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
+                let cData = null;
+
+                // 1. cuesheets コレクションからドキュメント取得を試みる
                 const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
-
                 if (cueSnap.exists()) {
-                    const cData = cueSnap.data();
+                    cData = cueSnap.data();
+                }
 
+                // Cueシートのバッジ・リンク表示の構築
+                if (band.cueSheetId) {
+                    cueArea.innerHTML = `
+                        <div style="display:flex; align-items:center; justify-content:space-between; background:#f0f7ff; padding:12px; border-radius:12px; border:1px solid #d0e3ff;">
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-file-text" style="color:#0b57d0;"></i>
+                                <span style="font-weight:bold; color:#0b57d0; font-size:13px;">デジタルCueシート登録済み</span>
+                            </div>
+                            <a href="${DIGITAL_CUE_PATH}?cueID=${encodeURIComponent(band.cueSheetId)}" target="_blank" style="background:#0b57d0; color:white; padding:6px 14px; border-radius:999px; font-size:11px; font-weight:bold; text-decoration:none;">表示 (Web)</a>
+                        </div>`;
+                } else if (band.latestCuesheetUrl || band.cueSheetUrl) {
+                    const targetUrl = band.latestCuesheetUrl || band.cueSheetUrl;
+                    cueArea.innerHTML = `
+                        <div style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:12px; border-radius:12px; border:1px solid #dadce0;">
+                            <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                                <i class="fa-solid fa-image" style="color:#5f6368;"></i>
+                                <span style="font-weight:bold; color:#1f1f1f; font-size:13px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">画像Cueシート</span>
+                            </div>
+                            <a href="${targetUrl}" target="_blank" style="background:#f1f3f4; color:#1f1f1f; padding:6px 14px; border-radius:999px; font-size:11px; font-weight:bold; text-decoration:none; border:1px solid #dadce0; flex-shrink:0;">開く</a>
+                        </div>`;
+                } else if (cData) {
+                    cueArea.innerHTML = `
+                        <div style="display:flex; align-items:center; justify-content:space-between; background:#e6f4ea; padding:12px; border-radius:12px; border:1px solid #ceead6;">
+                            <span style="font-weight:bold; color:#137333; font-size:13px;">Cueシートデータあり</span>
+                        </div>`;
+                } else {
+                    cueArea.innerHTML = '<span style="color:#999; font-size:13px;">Cueシート未登録</span>';
+                }
+
+                if (cData) {
                     document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
                     document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
                     document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
@@ -943,8 +969,26 @@
                     }
 
                 } else {
-                    membersContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
-                    songsContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
+                    // バンド自体のメンバー情報などをフォールバック表示
+                    if (band.memberIds && band.memberIds.length > 0) {
+                        let mHtml = "<div style='display:flex; flex-direction:column; gap:8px;'>";
+                        band.memberIds.forEach(uid => {
+                            const uObj = allUsersCache.find(x => x.id === uid) || { name: '不明' };
+                            mHtml += `
+                                <div onclick="showUserProfile('${uid}', '${uObj.name}', '${uObj.year}', '')" style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:10px 12px; border-radius:12px; cursor:pointer;">
+                                    <div>
+                                        <strong style="color:#1f1f1f;">${uObj.name || '不明'}</strong> 
+                                        <span style="font-size:12px; color:#5f6368; margin-left:4px;">(${uObj.year || '-'}年)</span>
+                                    </div>
+                                    <span class="material-icons" style="font-size:18px; color:#c4c7c5;">chevron_right</span>
+                                </div>`;
+                        });
+                        mHtml += "</div>";
+                        membersContainer.innerHTML = mHtml;
+                    } else {
+                        membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
+                    }
+                    songsContainer.innerHTML = '<div style="color:#999;">楽曲データがありません</div>';
                 }
 
             } catch (e) {
