@@ -237,32 +237,46 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">権限 (ロール)</label>
-                        <select id="create-role" class="edit-input">
-                            <option value="lmc_user">LMC一般 (lmc_user)</option>
-                            <option value="lmc_all">LMC全体 (lmc_all)</option>
-                            <option value="admin">管理者 (admin)</option>
-                            <option value="urakata_all">裏方統括 (urakata_all)</option>
-                            <option value="urakata_user">裏方一般 (urakata_user)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">電話番号 (11桁)</label>
-                        <input type="tel" id="create-tel" maxlength="11" class="edit-input font-mono" placeholder="09012345678" oninput="this.value = this.value.replace(/\D/g, '')">
+                <div>
+                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 ml-1">権限 (ロール・複数選択可)</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 p-3 rounded-2xl border border-gray-100" id="create-role-container">
+                        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
+                            <input type="checkbox" value="admin" class="create-role-checkbox custom-checkbox">
+                            <span>管理者 (admin)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
+                            <input type="checkbox" value="lmc_all" class="create-role-checkbox custom-checkbox">
+                            <span>LMC全体 (lmc_all)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
+                            <input type="checkbox" value="lmc_user" class="create-role-checkbox custom-checkbox" checked>
+                            <span>LMC一般 (lmc_user)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
+                            <input type="checkbox" value="urakata_all" class="create-role-checkbox custom-checkbox">
+                            <span>裏方統括 (urakata_all)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
+                            <input type="checkbox" value="urakata_user" class="create-role-checkbox custom-checkbox">
+                            <span>裏方一般 (urakata_user)</span>
+                        </label>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">電話番号 (11桁)</label>
+                        <input type="tel" id="create-tel" maxlength="11" class="edit-input font-mono" placeholder="09012345678" oninput="this.value = this.value.replace(/\D/g, '')">
+                    </div>
+                    <div>
                         <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
                         <input type="date" id="create-birthday" class="edit-input">
                     </div>
-                    <div>
-                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
-                        <input type="text" id="create-headerImage" class="edit-input font-mono text-[10px]" placeholder="https://...">
-                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
+                    <input type="text" id="create-headerImage" class="edit-input font-mono text-[10px]" placeholder="https://...">
                 </div>
 
                 <div class="pt-4 flex justify-end gap-3">
@@ -328,16 +342,31 @@
             'urakata_user': { label: '裏方一般', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' }
         };
 
-        const getRoleKey = (u) => {
+        // 複数権限を安全に配列として抽出する関数
+        const getUserRoles = (u) => {
             const raw = u?.role ?? u?.roll;
-            const str = toSafeString(raw).trim().toLowerCase();
-            return str || 'lmc_user';
+            if (!raw) return [];
+            if (Array.isArray(raw)) {
+                return raw.map(r => toSafeString(r).trim().toLowerCase()).filter(Boolean);
+            }
+            if (typeof raw === 'string') {
+                return raw.split(/[\s,]+/).map(r => r.trim().toLowerCase()).filter(Boolean);
+            }
+            if (typeof raw === 'object') {
+                return Object.entries(raw).filter(([_, v]) => Boolean(v)).map(([k]) => k.toLowerCase());
+            }
+            return [toSafeString(raw).toLowerCase()].filter(Boolean);
         };
 
-        const getRoleInfo = (u) => {
-            const r = getRoleKey(u);
-            const firstKey = r.split(/[\s,]+/)[0];
-            return roleMap[firstKey] || roleMap[r] || { label: r || '一般', color: 'bg-gray-50 text-gray-500 border-gray-200' };
+        // バッジHTML生成
+        const renderRoleBadges = (roles) => {
+            if (!roles || roles.length === 0) {
+                return `<span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border bg-gray-50 text-gray-400 border-gray-200">一般</span>`;
+            }
+            return roles.map(r => {
+                const info = roleMap[r] || { label: r, color: 'bg-gray-50 text-gray-600 border-gray-200' };
+                return `<span class="text-[10px] font-black px-2 py-0.5 rounded-lg border ${info.color}">${info.label}</span>`;
+            }).join(' ');
         };
 
         // 電話番号フォーマット（11桁ハイフン付き: 070-0000-0000 / 10桁対応）
@@ -392,8 +421,9 @@
             const q = userSearchQuery.toLowerCase();
             filteredData = usersData.filter(u => {
                 const partJapanese = getPartName(u.part);
-                const roleKey = getRoleKey(u);
-                const roleInfo = getRoleInfo(u);
+                const userRoles = getUserRoles(u);
+                const rolesText = userRoles.join(' ');
+                const rolesJapaneseText = userRoles.map(r => roleMap[r]?.label || r).join(' ');
                 const telRaw = toSafeString(u.tel).replace(/\D/g, '');
                 const telFormatted = formatTel(u.tel);
                 return toSafeString(u.name).toLowerCase().includes(q) || 
@@ -402,8 +432,8 @@
                        toSafeString(u.faculty).toLowerCase().includes(q) ||
                        toSafeString(u.part).toLowerCase().includes(q) ||
                        partJapanese.toLowerCase().includes(q) ||
-                       roleKey.includes(q) ||
-                       roleInfo.label.toLowerCase().includes(q) ||
+                       rolesText.includes(q) ||
+                       rolesJapaneseText.toLowerCase().includes(q) ||
                        telRaw.includes(q) ||
                        telFormatted.includes(q);
             });
@@ -498,7 +528,7 @@
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
                 const formattedTel = user.tel ? formatTel(user.tel) : '-';
-                const roleInfo = getRoleInfo(user);
+                const userRoles = getUserRoles(user);
 
                 return `<tr class="transition-colors ${isSelected ? 'bg-indigo-50/30' : ''}">
                     <td class="pl-6"><input type="checkbox" class="user-checkbox custom-checkbox" data-id="${user.id}" ${isSelected ? 'checked' : ''}></td>
@@ -513,7 +543,7 @@
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-400">${user.studentId || '-'}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs font-bold text-indigo-500">${getPartName(user.part)}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer">
-                        <span class="text-[10px] font-black px-2 py-0.5 rounded-lg border ${roleInfo.color}">${roleInfo.label}</span>
+                        <div class="flex flex-wrap gap-1">${renderRoleBadges(userRoles)}</div>
                     </td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="text-xs text-gray-500">${birthStr}</span></td>
                     <td onclick="window.showUserDetail('${user.id}')" class="cursor-pointer"><span class="font-mono text-xs text-gray-500">${formattedTel}</span></td>
@@ -590,7 +620,15 @@
                 : `background-image: linear-gradient(to bottom right, #6366f1, #a855f7, #ec4899);`;
 
             const formattedTel = user.tel ? formatTel(user.tel) : '未設定';
-            const currentRole = getRoleKey(user);
+            const userRoles = getUserRoles(user);
+
+            if (!isEditing) {
+                content.innerHTML = `
+                    <div class="h-32 w-full relative overflow-hidden" style="${headerBackground}">
+                        ${!user.headerImage ? `<div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/pinstriped-suit.png')]"></div>` : `<div class="absolute inset-0 bg-black/10"></div>`}
+                    </div>
+                    <div class="px-8 pb-8 -mt-14 relative">
+
             const roleInfo = getRoleInfo(user);
 
             if (!isEditing) {
@@ -615,11 +653,13 @@
                             <div class="flex items-center gap-2">
                                 <h3 class="text-2xl font-black text-gray-800 tracking-tight">${user.name}</h3>
                                 <button onclick="window.copyInfo('${user.name}', this)" class="copy-btn"><i class="fa-regular fa-copy text-sm"></i></button>
-                                <span class="ml-2 text-[10px] font-black px-2 py-0.5 rounded-lg border ${roleInfo.color}">${roleInfo.label}</span>
                             </div>
                             <div class="flex items-center gap-2 mt-0.5">
                                 <p class="text-indigo-500 font-bold text-xs tracking-widest uppercase">${user.kana || ''}</p>
                                 ${user.kana ? `<button onclick="window.copyInfo('${user.kana}', this)" class="copy-btn text-indigo-200 hover:text-indigo-400"><i class="fa-regular fa-copy text-[10px]"></i></button>` : ''}
+                            </div>
+                            <div class="flex flex-wrap gap-1.5 mt-2.5">
+                                ${renderRoleBadges(userRoles)}
                             </div>
                         </div>
                         
@@ -657,17 +697,6 @@
                             <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.35s">
                                 <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <div class="flex items-center gap-2">
-                                        <i class="fa-solid fa-shield-halved text-xs"></i>
-                                        <span class="text-[9px] font-black uppercase tracking-widest">権限 (ロール)</span>
-                                    </div>
-                                    <button onclick="window.copyInfo('${currentRole}', this)" class="copy-btn"><i class="fa-regular fa-copy text-[10px]"></i></button>
-                                </div>
-                                <div class="font-bold text-gray-800 text-sm">${roleInfo.label} <span class="text-[10px] text-gray-400 font-mono">(${currentRole})</span></div>
-                            </div>
-
-                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.4s">
-                                <div class="flex items-center justify-between mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
-                                    <div class="flex items-center gap-2">
                                         <i class="fa-solid fa-phone text-xs"></i>
                                         <span class="text-[9px] font-black uppercase tracking-widest">電話番号</span>
                                     </div>
@@ -676,7 +705,7 @@
                                 <div class="font-mono font-bold text-gray-800 text-sm">${formattedTel}</div>
                             </div>
 
-                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.5s">
+                            <div class="animate-item bg-gray-50 p-4 rounded-[24px] border border-transparent hover:border-indigo-100 hover:bg-white transition-all group" style="animation-delay: 0.4s">
                                 <div class="flex items-center gap-2 mb-2 text-gray-400 group-hover:text-indigo-500 transition-colors">
                                     <i class="fa-solid fa-cake-candles text-xs"></i>
                                     <span class="text-[9px] font-black uppercase tracking-widest">誕生日</span>
@@ -684,7 +713,7 @@
                                 <div class="font-bold text-gray-800 text-sm">${birthStr}</div>
                             </div>
 
-                            <div class="animate-item bg-gray-50/50 p-3 rounded-2xl col-span-full flex items-center justify-between group mt-2" style="animation-delay: 0.6s">
+                            <div class="animate-item bg-gray-50/50 p-3 rounded-2xl col-span-full flex items-center justify-between group mt-2" style="animation-delay: 0.5s">
                                 <div class="flex items-center gap-2">
                                     <span class="text-[8px] font-black text-gray-300 uppercase tracking-tighter">システムID:</span>
                                     <span class="font-mono text-[9px] text-gray-400">${user.id}</span>
@@ -696,6 +725,20 @@
                 `;
             } else {
                 // 編集モード
+                const availableRoles = [
+                    { key: 'admin', label: '管理者 (admin)' },
+                    { key: 'lmc_all', label: 'LMC全体 (lmc_all)' },
+                    { key: 'lmc_user', label: 'LMC一般 (lmc_user)' },
+                    { key: 'urakata_all', label: '裏方統括 (urakata_all)' },
+                    { key: 'urakata_user', label: '裏方一般 (urakata_user)' }
+                ];
+                const roleCheckboxesHtml = availableRoles.map(r => `
+                    <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
+                        <input type="checkbox" value="${r.key}" class="edit-role-checkbox custom-checkbox" ${userRoles.includes(r.key) ? 'checked' : ''}>
+                        <span>${r.label}</span>
+                    </label>
+                `).join('');
+
                 content.innerHTML = `
                     <div class="bg-gray-100 h-24 w-full relative"></div>
                     <div class="px-8 pb-10 -mt-12 relative">
@@ -751,31 +794,27 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">権限 (ロール)</label>
-                                    <select id="edit-role" class="edit-input">
-                                        <option value="lmc_user" ${currentRole == 'lmc_user' ? 'selected' : ''}>LMC一般 (lmc_user)</option>
-                                        <option value="lmc_all" ${currentRole == 'lmc_all' ? 'selected' : ''}>LMC全体 (lmc_all)</option>
-                                        <option value="admin" ${currentRole == 'admin' ? 'selected' : ''}>管理者 (admin)</option>
-                                        <option value="urakata_all" ${currentRole == 'urakata_all' ? 'selected' : ''}>裏方統括 (urakata_all)</option>
-                                        <option value="urakata_user" ${currentRole == 'urakata_user' ? 'selected' : ''}>裏方一般 (urakata_user)</option>
-                                    </select>
+
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1.5 ml-1">権限 (ロール・複数選択可)</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                                    ${roleCheckboxesHtml}
                                 </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">電話番号 (11桁)</label>
                                     <input type="tel" id="edit-tel" maxlength="11" value="${(user.tel || '').replace(/\D/g, '')}" class="edit-input font-mono" placeholder="09012345678" oninput="this.value = this.value.replace(/\D/g, '')">
                                 </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">誕生日</label>
                                     <input type="date" id="edit-birthday" value="${birthInputVal}" class="edit-input">
                                 </div>
-                                <div>
-                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
-                                    <input type="text" id="edit-headerImage" value="${user.headerImage || ''}" class="edit-input font-mono text-[10px]" placeholder="https://...">
-                                </div>
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
+                                <input type="text" id="edit-headerImage" value="${user.headerImage || ''}" class="edit-input font-mono text-[10px]" placeholder="https://...">
                             </div>
                         </div>
                     </div>
@@ -822,8 +861,13 @@
             const faculty = document.getElementById('edit-faculty')?.value;
             const studentId = document.getElementById('edit-studentId')?.value;
             const part = document.getElementById('edit-part')?.value;
-            const role = document.getElementById('edit-role')?.value || 'lmc_user';
-            const roll = role; // roll と role の両方を同期保存
+            
+            // 選択された複数ロールを配列として取得
+            const roleCheckboxes = document.querySelectorAll('.edit-role-checkbox:checked');
+            const roles = Array.from(roleCheckboxes).map(cb => cb.value);
+            const role = roles;
+            const roll = roles; // role と roll の双方に配列として保存
+
             const tel = document.getElementById('edit-tel')?.value?.replace(/\D/g, '');
             const birthdayInput = document.getElementById('edit-birthday')?.value;
             const headerImage = document.getElementById('edit-headerImage')?.value;
@@ -866,7 +910,9 @@
             document.getElementById('create-faculty').value = '';
             document.getElementById('create-studentId').value = '';
             document.getElementById('create-part').value = '';
-            document.getElementById('create-role').value = 'lmc_user';
+            document.querySelectorAll('.create-role-checkbox').forEach(cb => {
+                cb.checked = (cb.value === 'lmc_user');
+            });
             document.getElementById('create-tel').value = '';
             document.getElementById('create-birthday').value = '';
             document.getElementById('create-headerImage').value = '';
@@ -897,8 +943,13 @@
             const faculty = document.getElementById('create-faculty')?.value?.trim() || '';
             const studentId = document.getElementById('create-studentId')?.value?.trim() || '';
             const part = document.getElementById('create-part')?.value || '';
-            const role = document.getElementById('create-role')?.value || 'lmc_user';
-            const roll = role; // roll と role の両方を保存
+            
+            // 選択された複数ロールを配列として取得
+            const roleCheckboxes = document.querySelectorAll('.create-role-checkbox:checked');
+            const roles = Array.from(roleCheckboxes).map(cb => cb.value);
+            const role = roles;
+            const roll = roles;
+
             const tel = document.getElementById('create-tel')?.value?.replace(/\D/g, '') || '';
             const birthdayInput = document.getElementById('create-birthday')?.value;
             const headerImage = document.getElementById('create-headerImage')?.value?.trim() || '';
@@ -995,7 +1046,8 @@
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
                 const formattedTel = u.tel ? formatTel(u.tel) : '';
-                const roleValue = getRoleKey(u);
+                const userRoles = getUserRoles(u);
+                const roleValue = userRoles.join(', ');
                 return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), roleValue, formattedTel, birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
             });
             const csvContent = "\ufeff" + [headers.join(','), ...rows].join('\n');
