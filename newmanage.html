@@ -20,7 +20,7 @@
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         
         .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; -webkit-overflow-scrolling: touch; }
-        .card { background: white; border-radius: 20px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; }
+        .card { background: white; border-radius: 24px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.02); }
         
         /* メニューリスト */
         .menu-list { display: flex; flex-direction: column; gap: 12px; }
@@ -72,15 +72,17 @@
         .band-members { font-size: 12px; color: #5f6368; margin-top: 2px; }
 
         .form-group { margin-bottom: 14px; } 
-        .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
-        .form-input { width: 100%; padding: 10px 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 14px; background: white; outline: none; }
+        .form-label { display: block; font-size: 11px; color: #5f6368; margin-bottom: 6px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input { width: 100%; padding: 12px 14px; border: 1px solid #dadce0; border-radius: 14px; box-sizing: border-box; font-size: 14px; background: #f8f9fa; outline: none; transition: all 0.2s; }
+        .form-input:focus { background: #fff; border-color: #0b57d0; box-shadow: 0 0 0 3px rgba(11,87,208,0.1); }
         
         .part-checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
         .part-chip { display: inline-flex; align-items: center; gap: 4px; background: #f1f3f4; padding: 6px 12px; border-radius: 999px; font-size: 13px; cursor: pointer; user-select: none; border: 1px solid transparent; transition: all 0.2s; }
         .part-chip input { display: none; }
         .part-chip.checked { background: #e8f0fe; color: #0b57d0; border-color: #0b57d0; font-weight: bold; }
 
-        .btn-primary { background: #0b57d0; color: white; border: none; padding: 12px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 14px; }
+        .btn-primary { background: #0b57d0; color: white; border: none; padding: 14px 20px; border-radius: 999px; width: 100%; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(11,87,208,0.2); font-size: 14px; transition: transform 0.1s; }
+        .btn-primary:active { transform: scale(0.98); }
         .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
 
         .edit-toggle-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #0b57d0; transition: background 0.2s; }
@@ -165,7 +167,7 @@
             <div class="menu-list">
                 <button class="menu-btn" onclick="openAdminConcert()">
                     <div class="menu-icon-wrapper icon-admin-concert"><span class="material-icons">event_note</span></div>
-                    <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">現在のイベント情報の表示・編集</span></div>
+                    <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">現在のイベント情報の表示・管理</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
                 <button class="menu-btn" onclick="location.href='#'">
@@ -197,24 +199,59 @@
         <div class="page-header">
             <div class="page-header-left">
                 <button class="back-btn" onclick="closePage('admin-concert')"><span class="material-icons">arrow_back</span></button>
-                <div class="page-title">定期演奏会 (現在のイベント)</div>
+                <div class="page-title">定期演奏会</div>
             </div>
         </div>
         <div class="content-area" style="padding-top:16px;">
-            <div class="card">
-                <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">イベント情報</h3>
-                <div id="concert-loading" style="text-align:center; padding:20px; color:#999;">読み込み中...</div>
-                <div id="concert-form-area" class="hidden">
-                    <div class="form-group"><label class="form-label">イベント名</label><input type="text" id="concert-event-name" class="form-input"></div>
-                    <div class="form-group"><label class="form-label">開催日</label><input type="date" id="concert-event-date" class="form-input"></div>
-                    <div class="form-group"><label class="form-label">詳細・備考</label><textarea id="concert-event-desc" class="form-input" style="height:100px; resize:none;"></textarea></div>
-                    <button class="btn-primary" style="margin-top:12px;" onclick="saveCurrentConcertEvent()">変更を保存する</button>
+            <div id="concert-loading" style="text-align:center; padding:40px; color:#999;">読み込み中...</div>
+            
+            <div id="concert-content-area" class="hidden">
+                <!-- メトリクス（モダンな数値カード） -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
+                    <div class="card" style="margin:0; padding:16px 12px; text-align:center; background:linear-gradient(135deg, #e3f2fd, #ffffff);">
+                        <div style="font-size: 10px; font-weight: bold; color: #5f6368; margin-bottom: 4px;">登録バンド</div>
+                        <div id="metric-band-count" style="font-size: 22px; font-weight: 800; color: #0b57d0;">0</div>
+                    </div>
+                    <div class="card" style="margin:0; padding:16px 12px; text-align:center; background:linear-gradient(135deg, #f3e5f5, #ffffff);">
+                        <div style="font-size: 10px; font-weight: bold; color: #5f6368; margin-bottom: 4px;">総曲数</div>
+                        <div id="metric-song-count" style="font-size: 22px; font-weight: 800; color: #7b1fa2;">0</div>
+                    </div>
+                    <div class="card" style="margin:0; padding:16px 12px; text-align:center; background:linear-gradient(135deg, #e8f5e9, #ffffff);">
+                        <div style="font-size: 10px; font-weight: bold; color: #5f6368; margin-bottom: 4px;">参加メンバー</div>
+                        <div id="metric-member-count" style="font-size: 22px; font-weight: 800; color: #2e7d32;">0</div>
+                    </div>
                 </div>
-                <div id="concert-empty-area" class="hidden" style="text-align:center; padding:30px; color:#5f6368;">
-                    <span class="material-icons" style="font-size:48px; color:#dadce0; margin-bottom:8px;">event_busy</span>
-                    <div style="font-weight:bold; font-size:15px; color:#1f1f1f;">現在のイベントが設定されていません</div>
+
+                <!-- イベント概要カード (表示・編集) -->
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">
+                        <h3 style="font-size:15px; margin:0; color:#1f1f1f; font-weight:bold;">イベント概要</h3>
+                        <span id="concert-status-badge" style="font-size: 10px; background: #e8f0fe; color: #0b57d0; padding: 2px 10px; border-radius: 999px; font-weight: bold;">開催予定</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">イベント名</label>
+                        <input type="text" id="concert-event-name" class="form-input" placeholder="例: 2026年度 定期演奏会">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">開催日</label>
+                        <input type="date" id="concert-event-date" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">詳細・備考</label>
+                        <textarea id="concert-event-desc" class="form-input" style="height:90px; resize:none;" placeholder="場所や備考など"></textarea>
+                    </div>
+
+                    <button class="btn-primary" onclick="saveCurrentConcertEvent()">変更を保存する</button>
                 </div>
             </div>
+
+            <div id="concert-empty-area" class="hidden" style="text-align:center; padding:50px 20px; color:#5f6368;">
+                <span class="material-icons" style="font-size:56px; color:#dadce0; margin-bottom:12px;">event_busy</span>
+                <div style="font-weight:bold; font-size:16px; color:#1f1f1f; margin-bottom:4px;">現在のイベントが設定されていません</div>
+                <div style="font-size:13px;">「基本の設定」から有効なメインイベントを設定してください。</div>
+            </div>
+            
             <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">Active Event ID: <span id="concert-event-id">-</span></div>
         </div>
     </div>
@@ -232,6 +269,7 @@
                 <span class="material-icons" style="color:#5f6368;">search</span>
                 <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
             </div>
+            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <div style="display:flex; gap:8px;">
                     <button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button>
@@ -344,12 +382,9 @@
                 <div id="bd-detail-event" style="font-size:12px; color:#5f6368;">イベントID: -</div>
             </div>
 
-            <!-- Cueシート確認セクション -->
             <div class="card">
                 <h3 style="font-size:15px; margin:0 0 12px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">Cueシート</h3>
-                <div id="bd-detail-cuesheet-area" style="font-size:14px;">
-                    <span style="color:#999;">読み込み中...</span>
-                </div>
+                <div id="bd-detail-cuesheet-area" style="font-size:14px;"><span style="color:#999;">読み込み中...</span></div>
             </div>
 
             <div class="card">
@@ -446,16 +481,16 @@
         });
 
         // ==========================
-        // 0. 定期演奏会ロジック
+        // 0. 定期演奏会（現在のイベント情報・メトリクス表示）ロジック
         // ==========================
         window.openAdminConcert = async () => {
             openPage('admin-concert');
             const loadingEl = document.getElementById('concert-loading');
-            const formEl = document.getElementById('concert-form-area');
+            const contentEl = document.getElementById('concert-content-area');
             const emptyEl = document.getElementById('concert-empty-area');
 
             loadingEl.classList.remove('hidden');
-            formEl.classList.add('hidden');
+            contentEl.classList.add('hidden');
             emptyEl.classList.add('hidden');
 
             try {
@@ -479,8 +514,32 @@
                     document.getElementById('concert-event-date').value = ev.startDate || "";
                     document.getElementById('concert-event-desc').value = ev.desc || "";
 
+                    // メトリクス（バンド数・総曲数・参加メンバー数）の算出
+                    const bandQs = await getDocs(collection(db, "bands"));
+                    let matchedBandsCount = 0;
+                    let totalSongsCount = 0;
+                    const uniqueMembersSet = new Set();
+
+                    bandQs.forEach(bDoc => {
+                        const bData = bDoc.data();
+                        const bandEvents = Array.isArray(bData.events) ? bData.events : [];
+                        if (bandEvents.includes(currentActiveEventId)) {
+                            matchedBandsCount++;
+                            if (bData.songs && Array.isArray(bData.songs)) {
+                                totalSongsCount += bData.songs.length;
+                            }
+                            if (bData.memberIds && Array.isArray(bData.memberIds)) {
+                                bData.memberIds.forEach(uid => uniqueMembersSet.add(uid));
+                            }
+                        }
+                    });
+
+                    document.getElementById('metric-band-count').innerText = matchedBandsCount;
+                    document.getElementById('metric-song-count').innerText = totalSongsCount;
+                    document.getElementById('metric-member-count').innerText = uniqueMembersSet.size;
+
                     loadingEl.classList.add('hidden');
-                    formEl.classList.remove('hidden');
+                    contentEl.classList.remove('hidden');
                 } else {
                     loadingEl.classList.add('hidden');
                     emptyEl.classList.remove('hidden');
@@ -737,7 +796,7 @@
         }
 
         // ==========================
-        // 2. バンドの管理 ＆ 詳細ロジック
+        // 2. バンドの管理ロジック
         // ==========================
         window.openAdminBands = async () => {
             openPage('admin-bands');
@@ -864,7 +923,7 @@
             filterAndRenderBands();
         });
 
-        // 3. バンド詳細ページ（Cueシート情報の取得・表示機能強化）
+        // 3. バンド詳細ページ
         async function openAdminBandDetail(band) {
             openPage('admin-band-detail');
             
@@ -893,17 +952,14 @@
             document.getElementById('bd-detail-ng').innerText = "-";
 
             try {
-                // デジタルCueシートIDの優先取得 (cueSheetId 又は latestCueSheetId 又は 複合キー)
                 const cueSheetId = band.cueSheetId || band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
                 let cData = null;
 
-                // 1. cuesheets コレクションからドキュメント取得を試みる
                 const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
                 if (cueSnap.exists()) {
                     cData = cueSnap.data();
                 }
 
-                // Cueシートのバッジ・リンク表示の構築
                 if (band.cueSheetId) {
                     cueArea.innerHTML = `
                         <div style="display:flex; align-items:center; justify-content:space-between; background:#f0f7ff; padding:12px; border-radius:12px; border:1px solid #d0e3ff;">
@@ -969,7 +1025,6 @@
                     }
 
                 } else {
-                    // バンド自体のメンバー情報などをフォールバック表示
                     if (band.memberIds && band.memberIds.length > 0) {
                         let mHtml = "<div style='display:flex; flex-direction:column; gap:8px;'>";
                         band.memberIds.forEach(uid => {
