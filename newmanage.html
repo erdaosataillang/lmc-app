@@ -87,14 +87,12 @@
         .edit-toggle-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #0b57d0; transition: background 0.2s; }
         .edit-toggle-btn:hover { background: rgba(11, 87, 208, 0.08); }
 
-        /* モーダル共通 */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9000; display: none; justify-content: center; align-items: center; } 
         .modal-overlay.open { display: flex; }
         .dialog-content { background: white; width: 85%; max-width: 320px; border-radius: 24px; padding: 24px; text-align: center; }
         .dialog-title { font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1f1f1f; }
         .dialog-message { font-size: 13px; color: #444746; margin-bottom: 20px; line-height: 1.5; white-space: pre-wrap; }
 
-        /* ユーザー詳細ポップアップモーダル */
         .user-modal-content { background: white; width: 90%; max-width: 360px; border-radius: 24px; padding: 24px; position: relative; box-shadow: 0 8px 30px rgba(0,0,0,0.15); animation: zoomIn 0.2s ease; box-sizing: border-box; }
         @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -148,9 +146,7 @@
                 </div>
             </div>
 
-            <div id="popup-user-roles" style="display:flex; flex-wrap:wrap; gap:6px;">
-                <!-- 権限バッジが動的に入ります -->
-            </div>
+            <div id="popup-user-roles" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
         </div>
     </div>
 
@@ -169,59 +165,28 @@
         <div class="scroll-content">
             <div class="menu-list">
                 <button class="menu-btn" onclick="location.href='#'">
-                    <div class="menu-icon-wrapper icon-admin-concert">
-                        <span class="material-icons">event_note</span>
-                    </div>
-                    <div class="menu-content">
-                        <span class="menu-title">定期演奏会</span>
-                        <span class="menu-subtitle">定期演奏会の詳細・各種設定</span>
-                    </div>
+                    <div class="menu-icon-wrapper icon-admin-concert"><span class="material-icons">event_note</span></div>
+                    <div class="menu-content"><span class="menu-title">定期演奏会</span><span class="menu-subtitle">定期演奏会の詳細・各種設定</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-
                 <button class="menu-btn" onclick="location.href='#'">
-                    <div class="menu-icon-wrapper icon-admin-cal">
-                        <span class="material-icons">edit_calendar</span>
-                    </div>
-                    <div class="menu-content">
-                        <span class="menu-title">予約システムの管理</span>
-                        <span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span>
-                    </div>
+                    <div class="menu-icon-wrapper icon-admin-cal"><span class="material-icons">edit_calendar</span></div>
+                    <div class="menu-content"><span class="menu-title">予約システムの管理</span><span class="menu-subtitle">予約設定、先着/抽選の切り替えなど</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-
-                <!-- バンドの管理ボタン -->
                 <button class="menu-btn" onclick="openAdminBands()">
-                    <div class="menu-icon-wrapper icon-admin-band">
-                        <span class="material-icons">groups</span>
-                    </div>
-                    <div class="menu-content">
-                        <span class="menu-title">バンドの管理</span>
-                        <span class="menu-subtitle">全バンドの編集、合わせ状況の確認</span>
-                    </div>
+                    <div class="menu-icon-wrapper icon-admin-band"><span class="material-icons">groups</span></div>
+                    <div class="menu-content"><span class="menu-title">バンドの管理</span><span class="menu-subtitle">全バンドの編集、合わせ状況の確認</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-
-                <!-- 個人の管理ボタン -->
                 <button class="menu-btn" onclick="openAdminUsers()">
-                    <div class="menu-icon-wrapper icon-admin-user">
-                        <span class="material-icons">manage_accounts</span>
-                    </div>
-                    <div class="menu-content">
-                        <span class="menu-title">個人の管理</span>
-                        <span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span>
-                    </div>
+                    <div class="menu-icon-wrapper icon-admin-user"><span class="material-icons">manage_accounts</span></div>
+                    <div class="menu-content"><span class="menu-title">個人の管理</span><span class="menu-subtitle">ユーザー情報の閲覧、役職の変更</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
-
                 <button class="menu-btn" onclick="location.href='#'">
-                    <div class="menu-icon-wrapper icon-admin-event">
-                        <span class="material-icons">event</span>
-                    </div>
-                    <div class="menu-content">
-                        <span class="menu-title">イベントの管理</span>
-                        <span class="menu-subtitle">ライブや合宿などのイベント作成・編集</span>
-                    </div>
+                    <div class="menu-icon-wrapper icon-admin-event"><span class="material-icons">event</span></div>
+                    <div class="menu-content"><span class="menu-title">イベントの管理</span><span class="menu-subtitle">ライブや合宿などのイベント作成・編集</span></div>
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
             </div>
@@ -241,21 +206,16 @@
                 <span class="material-icons" style="color:#5f6368;">search</span>
                 <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
             </div>
-            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <div style="display:flex; gap:8px;">
                     <button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button>
                     <button class="btn-outline" onclick="sortUsers('kana')"><span class="material-icons" style="font-size:14px;">sort_by_alpha</span> 五十音順</button>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <label class="switch">
-                        <input type="checkbox" id="activeOnlyToggle" checked onchange="filterAndRenderUsers()">
-                        <span class="slider"></span>
-                    </label>
+                    <label class="switch"><input type="checkbox" id="activeOnlyToggle" checked onchange="filterAndRenderUsers()"><span class="slider"></span></label>
                     <span style="font-size:12px; color:#5f6368; font-weight:bold;">現役生のみ</span>
                 </div>
             </div>
-
             <div id="adminUserList">読み込み中...</div>
         </div>
     </div>
@@ -267,9 +227,7 @@
                 <button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button>
                 <div class="page-title" id="page-edit-title">ユーザー詳細</div>
             </div>
-            <button class="edit-toggle-btn" id="btnToggleEdit" onclick="toggleEditMode()">
-                <span class="material-icons" id="editToggleIcon">edit</span>
-            </button>
+            <button class="edit-toggle-btn" id="btnToggleEdit" onclick="toggleEditMode()"><span class="material-icons" id="editToggleIcon">edit</span></button>
         </div>
         <div class="content-area" style="padding-top:16px;">
             <div class="card" style="display: flex; align-items: center; gap: 16px; padding: 16px;">
@@ -285,30 +243,16 @@
 
             <div class="card">
                 <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">基本情報</h3>
-                
                 <div id="view-mode-info">
                     <div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div>
                     <div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div>
                     <div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div>
                 </div>
-
                 <div id="edit-mode-form" class="hidden">
-                    <div class="form-group">
-                        <label class="form-label">氏名</label>
-                        <input type="text" id="edit-user-name" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ふりがな</label>
-                        <input type="text" id="edit-user-kana" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">学籍番号</label>
-                        <input type="text" id="edit-user-studentId" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">学年</label>
-                        <input type="number" id="edit-user-year" class="form-input" min="1" max="6">
-                    </div>
+                    <div class="form-group"><label class="form-label">氏名</label><input type="text" id="edit-user-name" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">ふりがな</label><input type="text" id="edit-user-kana" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">学籍番号</label><input type="text" id="edit-user-studentId" class="form-input"></div>
+                    <div class="form-group"><label class="form-label">学年</label><input type="number" id="edit-user-year" class="form-input" min="1" max="6"></div>
                     <div class="form-group">
                         <label class="form-label">パート (複数選択可)</label>
                         <div class="part-checkbox-group" id="edit-part-container">
@@ -319,7 +263,6 @@
                             <label class="part-chip"><input type="checkbox" name="editPart" value="keyboard">Keyboard</label>
                         </div>
                     </div>
-
                     <button class="btn-primary" style="margin-top:12px;" onclick="saveAdminUserEdit()">変更を保存する</button>
                 </div>
             </div>
@@ -328,7 +271,6 @@
                 <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">所属バンド</h3>
                 <div id="admin-user-band-list" style="font-size:14px; line-height:1.6;">読み込み中...</div>
             </div>
-            
             <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">ID: <span id="admin-edit-docId"></span></div>
         </div>
     </div>
@@ -354,10 +296,7 @@
             
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:white; padding:12px 16px; border-radius:16px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
                 <span style="font-size:13px; font-weight:bold; color:#1f1f1f;">現在のイベントのバンドのみ表示</span>
-                <label class="switch">
-                    <input type="checkbox" id="currentEventBandsToggle" checked onchange="filterAndRenderBands()">
-                    <span class="slider"></span>
-                </label>
+                <label class="switch"><input type="checkbox" id="currentEventBandsToggle" checked onchange="filterAndRenderBands()"><span class="slider"></span></label>
             </div>
 
             <div id="adminBandList">読み込み中...</div>
@@ -405,22 +344,10 @@
 
     <!-- 下部ナビゲーションバー -->
     <div class="bottom-nav">
-        <div class="nav-item" onclick="location.href='/index.html'">
-            <span class="material-icons nav-icon">groups</span>
-            <span>マイバンド</span>
-        </div>
-        <div class="nav-item" onclick="location.href='/booking.html'">
-            <span class="material-icons nav-icon">calendar_month</span>
-            <span>合わせ予約</span>
-        </div>
-        <div class="nav-item active" id="nav-admin" onclick="location.href='/manage.html'">
-            <span class="material-icons nav-icon">admin_panel_settings</span>
-            <span>管理</span>
-        </div>
-        <div class="nav-item" onclick="location.href='https://mypage.sorairosystem.com'">
-            <span class="material-icons nav-icon">account_circle</span>
-            <span>マイページ</span>
-        </div>
+        <div class="nav-item" onclick="location.href='/index.html'"><span class="material-icons nav-icon">groups</span><span>マイバンド</span></div>
+        <div class="nav-item" onclick="location.href='/booking.html'"><span class="material-icons nav-icon">calendar_month</span><span>合わせ予約</span></div>
+        <div class="nav-item active" id="nav-admin" onclick="location.href='/manage.html'"><span class="material-icons nav-icon">admin_panel_settings</span><span>管理</span></div>
+        <div class="nav-item" onclick="location.href='https://mypage.sorairosystem.com'"><span class="material-icons nav-icon">account_circle</span><span>マイページ</span></div>
     </div>
 
     <!-- Firebase 連携スクリプト -->
@@ -491,15 +418,16 @@
             const container = document.getElementById('adminUserList');
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; 
             try { 
-                const q = query(collection(db, "users"), orderBy("createdAt", "desc")); 
-                const qs = await getDocs(q); 
-                allUsersCache = []; 
-                qs.forEach(docSnap => { 
-                    const d = docSnap.data(); 
-                    if (hasRoleKeyword(d.role, 'lmc')) {
-                        allUsersCache.push({ id: docSnap.id, ...d }); 
-                    }
-                }); 
+                if (allUsersCache.length === 0) {
+                    const q = query(collection(db, "users"), orderBy("createdAt", "desc")); 
+                    const qs = await getDocs(q); 
+                    qs.forEach(docSnap => { 
+                        const d = docSnap.data(); 
+                        if (hasRoleKeyword(d.role, 'lmc')) {
+                            allUsersCache.push({ id: docSnap.id, ...d }); 
+                        }
+                    });
+                }
                 filterAndRenderUsers(); 
             } catch(e) { 
                 container.innerHTML = `<div style="padding:20px; color:#d93025; text-align:center;">エラー: ${e.message}</div>`; 
@@ -705,7 +633,7 @@
         }
 
         // ==========================
-        // 2. バンドの管理 ＆ 詳細・メンバープロフィール表示
+        // 2. バンドの管理 ＆ 詳細・無限ループ防止版ロジック
         // ==========================
         window.openAdminBands = async () => {
             openPage('admin-bands');
@@ -731,26 +659,12 @@
 
                 document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
 
+                // バンド一覧の取得（ループ内での個別クエリを廃止し高速化・無限ループ防止）
                 const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                 allBandsCache = [];
-                
-                for (const docSnap of bandQs.docs) {
-                    const bData = docSnap.data();
-                    const bandId = docSnap.id;
-                    
-                    let cueData = null;
-                    try {
-                        const cueSheetId = bData.latestCueSheetId || `${bandId}_${currentActiveEventId}`;
-                        const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
-                        if (cueSnap.exists()) {
-                            cueData = cueSnap.data();
-                        }
-                    } catch(err) {
-                        console.warn("Cueシート読み込みスキップ:", err);
-                    }
-
-                    allBandsCache.push({ id: bandId, ...bData, cueData });
-                }
+                bandQs.forEach(docSnap => {
+                    allBandsCache.push({ id: docSnap.id, ...docSnap.data() });
+                });
 
                 if (allUsersCache.length === 0) {
                     const userQs = await getDocs(collection(db, "users"));
@@ -781,15 +695,7 @@
                     if (nameMatch) return true;
 
                     let memberMatch = false;
-                    if (b.cueData && b.cueData.members && Array.isArray(b.cueData.members)) {
-                        memberMatch = b.cueData.members.some(m => {
-                            const mName = (m.name || "").toLowerCase();
-                            const uObj = allUsersCache.find(u => u.name === m.name);
-                            const mKana = uObj && uObj.kana ? uObj.kana.toLowerCase() : "";
-                            return mName.includes(searchKeyword) || (mKana && mKana.includes(searchKeyword));
-                        });
-                    }
-                    if (!memberMatch && b.memberIds && Array.isArray(b.memberIds)) {
+                    if (b.memberIds && Array.isArray(b.memberIds)) {
                         memberMatch = b.memberIds.some(uid => {
                             const u = allUsersCache.find(x => x.id === uid);
                             if (!u) return false;
@@ -799,15 +705,6 @@
                         });
                     }
                     if (memberMatch) return true;
-
-                    let songMatch = false;
-                    if (b.cueData && b.cueData.songs && Array.isArray(b.cueData.songs)) {
-                        songMatch = b.cueData.songs.some(s => {
-                            const sTitle = (s.title || "").toLowerCase();
-                            return sTitle.includes(searchKeyword);
-                        });
-                    }
-                    if (songMatch) return true;
 
                     return false;
                 }
@@ -863,7 +760,7 @@
             filterAndRenderBands();
         });
 
-        // 3. バンド詳細ページ
+        // 3. バンド詳細ページ（Cueシート情報の取得）
         async function openAdminBandDetail(band) {
             openPage('admin-band-detail');
             
@@ -881,63 +778,63 @@
 
             const membersContainer = document.getElementById('bd-detail-members-list');
             const songsContainer = document.getElementById('bd-detail-songs-list');
+            membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
+            songsContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
             
-            let cData = band.cueData;
-            if (!cData) {
-                membersContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
-                songsContainer.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">読み込み中...</div>';
-                try {
-                    const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
-                    const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
-                    if (cueSnap.exists()) cData = cueSnap.data();
-                } catch(e) {
-                    console.error(e);
-                }
-            }
+            document.getElementById('bd-detail-existing').innerText = "-";
+            document.getElementById('bd-detail-sync').innerText = "-";
+            document.getElementById('bd-detail-ng').innerText = "-";
 
-            if (cData) {
-                document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
-                document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
-                document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
+            try {
+                const cueSheetId = band.latestCueSheetId || `${band.id}_${currentActiveEventId}`;
+                const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
 
-                // メンバー一覧 (タップするとプロフィール詳細モーダルが開くように変更)
-                if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
-                    let mHtml = "<div style='display:flex; flex-direction:column; gap:8px;'>";
-                    cData.members.forEach(m => {
-                        // ユーザーマスターから該当ユーザーを探す
-                        const uObj = allUsersCache.find(x => x.name === m.name) || {};
-                        const uid = uObj.id || '';
-                        mHtml += `
-                            <div onclick="showUserProfile('${uid}', '${m.name}', '${m.grade}', '${m.part}')" style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:10px 12px; border-radius:12px; cursor:pointer; transition:background 0.2s;">
-                                <div>
-                                    <strong style="color:#1f1f1f;">${m.name || '不明'}</strong> 
-                                    <span style="font-size:12px; color:#5f6368; margin-left:4px;">(${m.grade || '-'}年 | ${m.part || '-'})</span>
-                                </div>
-                                <span class="material-icons" style="font-size:18px; color:#c4c7c5;">chevron_right</span>
-                            </div>`;
-                    });
-                    mHtml += "</div>";
-                    membersContainer.innerHTML = mHtml;
+                if (cueSnap.exists()) {
+                    const cData = cueSnap.data();
+
+                    document.getElementById('bd-detail-existing').innerText = cData.existingCount ?? "-";
+                    document.getElementById('bd-detail-sync').innerText = cData.syncVal ?? "-";
+                    document.getElementById('bd-detail-ng').innerText = cData.ngReason || "なし";
+
+                    if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
+                        let mHtml = "<div style='display:flex; flex-direction:column; gap:8px;'>";
+                        cData.members.forEach(m => {
+                            const uObj = allUsersCache.find(x => x.name === m.name) || {};
+                            const uid = uObj.id || '';
+                            mHtml += `
+                                <div onclick="showUserProfile('${uid}', '${m.name}', '${m.grade}', '${m.part}')" style="display:flex; align-items:center; justify-content:space-between; background:#f8f9fa; padding:10px 12px; border-radius:12px; cursor:pointer; transition:background 0.2s;">
+                                    <div>
+                                        <strong style="color:#1f1f1f;">${m.name || '不明'}</strong> 
+                                        <span style="font-size:12px; color:#5f6368; margin-left:4px;">(${m.grade || '-'}年 | ${m.part || '-'})</span>
+                                    </div>
+                                    <span class="material-icons" style="font-size:18px; color:#c4c7c5;">chevron_right</span>
+                                </div>`;
+                        });
+                        mHtml += "</div>";
+                        membersContainer.innerHTML = mHtml;
+                    } else {
+                        membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
+                    }
+
+                    if (cData.songs && Array.isArray(cData.songs) && cData.songs.length > 0) {
+                        let sHtml = "<ul style='padding-left:20px; margin:0;'>";
+                        cData.songs.forEach(s => {
+                            sHtml += `<li style="margin-bottom:6px;"><strong>${s.title || '無題'}</strong> <span style="color:#5f6368; font-size:12px;">(${s.duration || '-'})</span></li>`;
+                        });
+                        sHtml += "</ul>";
+                        songsContainer.innerHTML = sHtml;
+                    } else {
+                        songsContainer.innerHTML = '<div style="color:#999;">楽曲が登録されていません</div>';
+                    }
+
                 } else {
-                    membersContainer.innerHTML = '<div style="color:#999;">メンバー情報がありません</div>';
+                    membersContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
+                    songsContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
                 }
 
-                if (cData.songs && Array.isArray(cData.songs) && cData.songs.length > 0) {
-                    let sHtml = "<ul style='padding-left:20px; margin:0;'>";
-                    cData.songs.forEach(s => {
-                        sHtml += `<li style="margin-bottom:6px;"><strong>${s.title || '無題'}</strong> <span style="color:#5f6368; font-size:12px;">(${s.duration || '-'})</span></li>`;
-                    });
-                    sHtml += "</ul>";
-                    songsContainer.innerHTML = sHtml;
-                } else {
-                    songsContainer.innerHTML = '<div style="color:#999;">楽曲が登録されていません</div>';
-                }
-            } else {
-                membersContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
-                songsContainer.innerHTML = '<div style="color:#999;">Cueシートデータが見つかりません</div>';
-                document.getElementById('bd-detail-existing').innerText = "-";
-                document.getElementById('bd-detail-sync').innerText = "-";
-                document.getElementById('bd-detail-ng').innerText = "-";
+            } catch (e) {
+                membersContainer.innerHTML = `<div style="color:#d93025;">取得エラー: ${e.message}</div>`;
+                songsContainer.innerHTML = `<div style="color:#d93025;">取得エラー: ${e.message}</div>`;
             }
         }
 
@@ -957,7 +854,6 @@
             const kanaStr = uData.kana ? `@${uData.kana}` : "";
             document.getElementById('popup-user-sub').innerText = `${gradeStr} | ${partStr} ${kanaStr}`;
 
-            // 所属バンド数のカウント
             let bandCount = 0;
             if (uData.id) {
                 const bQ = query(collection(db, "bands"), where("memberIds", "array-contains", uData.id));
@@ -966,21 +862,17 @@
             }
             document.getElementById('popup-user-bands-count').innerText = bandCount;
 
-            // 権限・役割タグの表示
             const rolesContainer = document.getElementById('popup-user-roles');
             rolesContainer.innerHTML = "";
             const roles = Array.isArray(uData.role) ? uData.role : (uData.role ? [uData.role] : []);
             
-            if (roles.length > 0) {
-                roles.forEach(r => {
-                    const tag = document.createElement('span');
-                    tag.style.cssText = "font-size:11px; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:999px; font-weight:bold;";
-                    tag.innerText = r;
-                    rolesContainer.appendChild(tag);
-                });
-            }
+            roles.forEach(r => {
+                const tag = document.createElement('span');
+                tag.style.cssText = "font-size:11px; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:999px; font-weight:bold;";
+                tag.innerText = r;
+                rolesContainer.appendChild(tag);
+            });
 
-            // 裏方やLMCのバッジ
             if (hasRoleKeyword(uData.role, 'urakata')) {
                 const tag = document.createElement('span');
                 tag.style.cssText = "font-size:11px; background:#fce8e6; color:#d93025; padding:4px 10px; border-radius:999px; font-weight:bold;";
