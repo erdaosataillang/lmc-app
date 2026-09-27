@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
-        /* 画面全体のスクロールを禁止し、コンテナ内で制御 */
         body { margin: 0; padding: 0; font-family: 'Roboto', 'Noto Sans JP', sans-serif; background-color: rgb(241, 244, 249); color: #1f1f1f; min-height: 100vh; overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; }
         .container { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; } 
         .hidden { display: none !important; }
@@ -20,6 +19,7 @@
         .header-avatar img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid white; z-index: 2; }
         
         .scroll-content { flex-grow: 1; overflow-y: auto; padding: 16px; padding-bottom: 40px; -webkit-overflow-scrolling: touch; }
+        .card { background: white; border-radius: 20px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 12px; }
         
         /* メニューリスト */
         .menu-list { display: flex; flex-direction: column; gap: 12px; }
@@ -38,6 +38,30 @@
         .icon-admin-band { background-color: #f3e5f5; color: #7b1fa2; } 
         .icon-admin-event { background-color: #e3f2fd; color: #1976d2; }
         .icon-admin-concert { background-color: #fbe9e7; color: #d84315; }
+
+        /* サブページ */
+        .page-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgb(241, 244, 249); z-index: 2500; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1); overflow-y: auto; max-width: 480px; margin: 0 auto; box-sizing: border-box; } 
+        .page-container.open { transform: translateX(0); }
+        .page-header { padding: 12px 16px; display: flex; align-items: center; background: rgb(241, 244, 249); position: sticky; top: 0; z-index: 10; }
+        .back-btn { background: none; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1f1f1f; margin-right: 8px; margin-left: -8px; }
+        .page-title { font-size: 20px; font-weight: bold; color: #1f1f1f; } 
+        .content-area { padding: 0 16px 40px; }
+        
+        .search-bar { padding: 12px 16px; background: white; border-radius: 30px; display: flex; align-items: center; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); } 
+        .search-bar input { border: none; width: 100%; outline: none; font-size: 16px; margin-left: 10px; padding: 0; background: transparent; }
+        
+        .user-list-item { background: white; padding: 16px; border-radius: 20px; display: flex; align-items: center; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; }
+        .mini-icon { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; background: #eee; flex-shrink: 0; }
+        .user-info-main { flex-grow: 1; min-width: 0; } 
+        .user-name { font-size: 16px; font-weight: bold; color: #1f1f1f; } 
+        .user-sub { font-size: 12px; color: #5f6368; }
+        
+        .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; } 
+        .info-row:last-child { border-bottom: none; }
+        .info-row .label { color: #5f6368; font-size: 13px; } 
+        .info-row .value { color: #1f1f1f; font-weight: 500; font-size: 15px; }
+
+        .btn-outline { background: white; color: #0b57d0; border: 1px solid #dadce0; padding: 6px 12px; border-radius: 999px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: bold; }
 
         /* ナビゲーション (グラスモーフィズム) */
         .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(224, 227, 231, 0.6); display: flex; justify-content: space-around; padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 2000; box-shadow: 0 -4px 20px rgba(0,0,0,0.03); }
@@ -64,7 +88,6 @@
         <!-- スクロールコンテンツ（メインメニュー） -->
         <div class="scroll-content">
             <div class="menu-list">
-                <!-- 1. 定期演奏会 -->
                 <button class="menu-btn" onclick="location.href='#'">
                     <div class="menu-icon-wrapper icon-admin-concert">
                         <span class="material-icons">event_note</span>
@@ -76,7 +99,6 @@
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
 
-                <!-- 2. 予約システムの管理 -->
                 <button class="menu-btn" onclick="location.href='#'">
                     <div class="menu-icon-wrapper icon-admin-cal">
                         <span class="material-icons">edit_calendar</span>
@@ -88,7 +110,6 @@
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
 
-                <!-- 3. バンドの管理 -->
                 <button class="menu-btn" onclick="location.href='#'">
                     <div class="menu-icon-wrapper icon-admin-band">
                         <span class="material-icons">groups</span>
@@ -100,8 +121,8 @@
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
 
-                <!-- 4. 個人の管理 -->
-                <button class="menu-btn" onclick="location.href='#'">
+                <!-- 個人の管理ボタン -->
+                <button class="menu-btn" onclick="openAdminUsers()">
                     <div class="menu-icon-wrapper icon-admin-user">
                         <span class="material-icons">manage_accounts</span>
                     </div>
@@ -112,7 +133,6 @@
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
 
-                <!-- 5. イベントの管理 -->
                 <button class="menu-btn" onclick="location.href='#'">
                     <div class="menu-icon-wrapper icon-admin-event">
                         <span class="material-icons">event</span>
@@ -124,6 +144,53 @@
                     <span class="material-icons menu-arrow">chevron_right</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- 1. 個人の管理 一覧ページ -->
+    <div id="page-admin-users" class="page-container">
+        <div class="page-header">
+            <button class="back-btn" onclick="closePage('admin-users')"><span class="material-icons">arrow_back</span></button>
+            <div class="page-title">個人の管理</div>
+        </div>
+        <div class="content-area">
+            <div class="search-bar">
+                <span class="material-icons" style="color:#5f6368;">search</span>
+                <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
+            </div>
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button>
+                <button class="btn-outline" onclick="sortUsers('kana')"><span class="material-icons" style="font-size:14px;">sort_by_alpha</span> 五十音順</button>
+            </div>
+            <div id="adminUserList">読み込み中...</div>
+        </div>
+    </div>
+
+    <!-- 2. ユーザー詳細・編集ページ -->
+    <div id="page-admin-edit" class="page-container">
+        <div class="page-header">
+            <button class="back-btn" onclick="closePage('admin-edit')"><span class="material-icons">arrow_back</span></button>
+            <div class="page-title">ユーザー詳細</div>
+        </div>
+        <div class="content-area">
+            <div style="text-align:center; margin:20px 0;">
+                <img id="admin-user-icon" src="" style="width:88px; height:88px; border-radius:50%; object-fit:cover; background:#eee; border:4px solid white; box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                <div id="admin-user-lineName" style="font-size:13px; color:#5f6368; margin-top:12px; font-weight:500;"></div>
+            </div>
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">基本情報</h3>
+                <div class="info-row"><span class="label">氏名</span><span id="admin-show-name" class="value"></span></div>
+                <div class="info-row"><span class="label">ふりがな</span><span id="admin-show-kana" class="value"></span></div>
+                <div class="info-row"><span class="label">学籍番号</span><span id="admin-show-studentId" class="value"></span></div>
+                <div class="info-row"><span class="label">学年</span><span id="admin-show-year" class="value"></span></div>
+                <div class="info-row"><span class="label">所属</span><span id="admin-show-aff" class="value"></span></div>
+                <div class="info-row"><span class="label">パート</span><span id="admin-show-part" class="value"></span></div>
+            </div>
+            <div class="card">
+                <h3 style="font-size:15px; margin:0 0 16px; color:#0b57d0; border-bottom:1px solid #eee; padding-bottom:8px;">所属バンド</h3>
+                <div id="admin-user-band-list" style="font-size:14px; line-height:1.6;">読み込み中...</div>
+            </div>
+            <div style="font-size:11px; color:#999; text-align:center; margin-top:20px; font-family:monospace;">ID: <span id="admin-edit-docId"></span></div>
         </div>
     </div>
 
@@ -147,5 +214,143 @@
         </div>
     </div>
 
+    <!-- Firebase 連携スクリプト -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        
+        const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
+        const app = initializeApp(firebaseConfig); 
+        const db = getFirestore(app); 
+        const auth = getAuth(app);
+
+        let allUsersCache = [];
+
+        window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
+        window.closePage = (id) => { document.getElementById('page-' + id).classList.remove('open'); };
+
+        function getPartLabel(p){ 
+            return { vocal: "Vocal", guitar: "Guitar", bass: "Bass", drums: "Drums", keyboard: "Keyboard" }[p] || p || ""; 
+        }
+
+        // 個人の管理画面を開く・データ取得
+        window.openAdminUsers = async () => { 
+            openPage('admin-users'); 
+            const container = document.getElementById('adminUserList');
+            container.innerHTML = '<div style="text-align:center; padding:40px; color:#999;">読み込み中...</div>'; 
+            try { 
+                const q = query(collection(db, "users"), orderBy("createdAt", "desc")); 
+                const qs = await getDocs(q); 
+                allUsersCache = []; 
+                qs.forEach(docSnap => { 
+                    const d = docSnap.data(); 
+                    d.affiliations = d.affiliations || (d.org ? [d.org] : []); 
+                    allUsersCache.push({ id: docSnap.id, ...d }); 
+                }); 
+                renderAdminList(allUsersCache); 
+            } catch(e) { 
+                container.innerHTML = `<div style="padding:20px; color:#d93025; text-align:center;">エラー: ${e.message}</div>`; 
+            } 
+        };
+
+        // ユーザー一覧を描画
+        function renderAdminList(users) { 
+            const container = document.getElementById('adminUserList'); 
+            container.innerHTML = ""; 
+            if(users.length === 0) { 
+                container.innerHTML = '<div style="padding:40px; text-align:center; color:#999;">ユーザーが見つかりません</div>'; 
+                return; 
+            } 
+            users.forEach(u => { 
+                const div = document.createElement('div'); 
+                div.className = 'user-list-item'; 
+                div.onclick = () => openAdminEdit(u); 
+                
+                const badges = (u.affiliations?.includes('urakata') ? '<span style="color:#ea4335; font-weight:bold; font-size:10px; margin-right:6px; background:#fce8e6; padding:2px 6px; border-radius:10px;">裏方</span>' : '') + 
+                               (u.affiliations?.includes('lmc') ? '<span style="color:#5f6368; font-weight:bold; font-size:10px; background:#f1f3f4; padding:2px 6px; border-radius:10px;">LMC</span>' : ''); 
+                const kanaHtml = u.kana ? `<div style="font-size:10px; color:#999; margin-bottom:2px;">${u.kana}</div>` : ''; 
+                
+                div.innerHTML = `
+                    <img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon">
+                    <div class="user-info-main">
+                        ${kanaHtml}
+                        <div class="user-name">${u.name || '名称未設定'}</div>
+                        <div class="user-sub" style="margin-top:4px;">${badges} <span>${u.year || '-'}年</span></div>
+                    </div>
+                    <span class="material-icons" style="color:#ccc;">chevron_right</span>
+                `; 
+                container.appendChild(div); 
+            }); 
+        }
+
+        // 検索機能
+        document.getElementById('adminSearchInput')?.addEventListener('input', (e) => { 
+            const t = e.target.value.trim(); 
+            renderAdminList(t ? allUsersCache.filter(u => (u.name && u.name.includes(t)) || (u.kana && u.kana.includes(t))) : allUsersCache); 
+        });
+
+        // ソート機能
+        window.sortUsers = (type) => { 
+            if(type === 'year') allUsersCache.sort((a, b) => (a.year || 99) - (b.year || 99)); 
+            else if(type === 'kana') allUsersCache.sort((a, b) => (a.kana || "").localeCompare(b.kana || "", "ja")); 
+            renderAdminList(allUsersCache); 
+        };
+
+        // ユーザー詳細ページを開く
+        async function openAdminEdit(u) { 
+            openPage('admin-edit'); 
+            document.getElementById('admin-user-icon').src = u.icon || "https://ul.h3z.jp/Vnukmtvq.jpg"; 
+            document.getElementById('admin-user-lineName').innerText = "@" + (u.lineDisplayName || "LINE_User"); 
+            document.getElementById('admin-edit-docId').innerText = u.id; 
+            document.getElementById('admin-show-name').innerText = u.name || "-"; 
+            document.getElementById('admin-show-kana').innerText = u.kana || "-"; 
+            document.getElementById('admin-show-studentId').innerText = u.studentId || "-"; 
+            document.getElementById('admin-show-year').innerText = (u.year || "-") + "年"; 
+            
+            const affText = (u.affiliations?.includes('urakata') ? "裏方部 " : "") + (u.affiliations?.includes('lmc') ? "LMC " : ""); 
+            document.getElementById('admin-show-aff').innerText = affText || "-"; 
+            document.getElementById('admin-show-part').innerText = getPartLabel(u.part) || "-"; 
+            
+            loadAdminUserBands(u.id); 
+        }
+
+        // ユーザーの所属バンドを取得して表示
+        async function loadAdminUserBands(uid) { 
+            const container = document.getElementById('admin-user-band-list'); 
+            container.innerHTML = '<div style="text-align:center; padding:10px; color:#999;">読み込み中...</div>'; 
+            try { 
+                const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid)); 
+                const qs = await getDocs(q); 
+                if(qs.empty) {
+                    container.innerHTML = '<div style="color:#999;">所属バンドはありません</div>'; 
+                } else { 
+                    let h = "<ul style='padding-left:20px; margin:0; color:#1f1f1f;'>"; 
+                    qs.forEach(docSnap => { 
+                        const b = docSnap.data(); 
+                        h += `<li style="margin-bottom:8px;">${b.name} ${b.creatorId === uid ? '<span style="font-size:10px; background:#e8f0fe; color:#0b57d0; padding:2px 6px; border-radius:10px; font-weight:bold; margin-left:4px;">リーダー</span>' : ''}</li>`; 
+                    }); 
+                    h += "</ul>"; 
+                    container.innerHTML = h; 
+                } 
+            } catch(e) { 
+                container.innerHTML = '<div style="color:#d93025;">エラーが発生しました</div>'; 
+            } 
+        }
+
+        // 初期認証
+        async function initAuth() {
+            try {
+                if(typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch(e) {
+                console.warn(e);
+            }
+        }
+        initAuth();
+    </script>
 </body>
 </html>
