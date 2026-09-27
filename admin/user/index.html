@@ -287,6 +287,21 @@
         let selectedUserIds = new Set();
         let isEditing = false;
 
+        // 安全な文字列変換（オブジェクトや数値型がFirestoreに混入していてもクラッシュを防ぐ）
+        const toSafeString = (val) => {
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'string') return val;
+            if (typeof val === 'number') return String(val);
+            if (typeof val === 'object') {
+                if (Array.isArray(val)) return val.map(toSafeString).join(' ');
+                return Object.entries(val)
+                    .filter(([_, v]) => Boolean(v))
+                    .map(([k]) => k)
+                    .join(' ');
+            }
+            return String(val);
+        };
+
         // 担当楽器の日本語マップ
         const partMap = {
             'drum': 'ドラム',
@@ -298,9 +313,10 @@
         };
 
         const getPartName = (p) => {
-            if (!p) return '未設定';
-            const normalizedPart = p.toLowerCase();
-            return partMap[normalizedPart] || p;
+            const raw = toSafeString(p).trim();
+            if (!raw) return '未設定';
+            const normalizedPart = raw.toLowerCase();
+            return partMap[normalizedPart] || raw;
         };
 
         // 権限の表示マップ
@@ -312,15 +328,22 @@
             'urakata_user': { label: '裏方一般', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' }
         };
 
+        const getRoleKey = (u) => {
+            const raw = u?.role ?? u?.roll;
+            const str = toSafeString(raw).trim().toLowerCase();
+            return str || 'lmc_user';
+        };
+
         const getRoleInfo = (u) => {
-            const r = (u.role || u.roll || 'lmc_user').toLowerCase();
-            return roleMap[r] || { label: r, color: 'bg-gray-50 text-gray-500 border-gray-200' };
+            const r = getRoleKey(u);
+            const firstKey = r.split(/[\s,]+/)[0];
+            return roleMap[firstKey] || roleMap[r] || { label: r || '一般', color: 'bg-gray-50 text-gray-500 border-gray-200' };
         };
 
         // 電話番号フォーマット（11桁ハイフン付き: 070-0000-0000 / 10桁対応）
         const formatTel = (tel) => {
             if (!tel) return '';
-            const cleaned = ('' + tel).replace(/\D/g, '');
+            const cleaned = toSafeString(tel).replace(/\D/g, '');
             if (cleaned.length === 11) {
                 return cleaned.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
             } else if (cleaned.length === 10) {
@@ -369,17 +392,17 @@
             const q = userSearchQuery.toLowerCase();
             filteredData = usersData.filter(u => {
                 const partJapanese = getPartName(u.part);
-                const roleValue = (u.role || u.roll || "").toLowerCase();
+                const roleKey = getRoleKey(u);
                 const roleInfo = getRoleInfo(u);
-                const telRaw = (u.tel || "").replace(/\D/g, '');
+                const telRaw = toSafeString(u.tel).replace(/\D/g, '');
                 const telFormatted = formatTel(u.tel);
-                return (u.name || "").toLowerCase().includes(q) || 
-                       (u.kana || "").toLowerCase().includes(q) || 
-                       (u.studentId || "").toLowerCase().includes(q) ||
-                       (u.faculty || "").toLowerCase().includes(q) ||
-                       (u.part || "").toLowerCase().includes(q) ||
+                return toSafeString(u.name).toLowerCase().includes(q) || 
+                       toSafeString(u.kana).toLowerCase().includes(q) || 
+                       toSafeString(u.studentId).toLowerCase().includes(q) ||
+                       toSafeString(u.faculty).toLowerCase().includes(q) ||
+                       toSafeString(u.part).toLowerCase().includes(q) ||
                        partJapanese.toLowerCase().includes(q) ||
-                       roleValue.includes(q) ||
+                       roleKey.includes(q) ||
                        roleInfo.label.toLowerCase().includes(q) ||
                        telRaw.includes(q) ||
                        telFormatted.includes(q);
@@ -394,7 +417,7 @@
             
             filteredData.sort((a,b) => {
                 if (userSortOrder === "name") {
-                    return (a.kana || a.name || "").localeCompare(b.kana || b.name || "", "ja");
+                    return toSafeString(a.kana || a.name).localeCompare(toSafeString(b.kana || b.name), "ja");
                 } else if (userSortOrder === "year") {
                     const yearA = parseInt(a.year) || 99;
                     const yearB = parseInt(b.year) || 99;
@@ -567,7 +590,7 @@
                 : `background-image: linear-gradient(to bottom right, #6366f1, #a855f7, #ec4899);`;
 
             const formattedTel = user.tel ? formatTel(user.tel) : '未設定';
-            const currentRole = user.role || user.roll || 'lmc_user';
+            const currentRole = getRoleKey(user);
             const roleInfo = getRoleInfo(user);
 
             if (!isEditing) {
@@ -972,7 +995,7 @@
                     birthStr = d.toLocaleDateString('ja-JP');
                 }
                 const formattedTel = u.tel ? formatTel(u.tel) : '';
-                const roleValue = u.role || u.roll || 'lmc_user';
+                const roleValue = getRoleKey(u);
                 return [ u.name || '', u.kana || '', u.year ? u.year + '年' : '', u.faculty || '', u.studentId || '', getPartName(u.part), roleValue, formattedTel, birthStr, u.id ].map(val => `"${val.toString().replace(/"/g, '""')}"`).join(',');
             });
             const csvContent = "\ufeff" + [headers.join(','), ...rows].join('\n');
