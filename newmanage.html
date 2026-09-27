@@ -206,6 +206,7 @@
                 <span class="material-icons" style="color:#5f6368;">search</span>
                 <input type="text" id="adminSearchInput" placeholder="ユーザー検索...">
             </div>
+            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
                 <div style="display:flex; gap:8px;">
                     <button class="btn-outline" onclick="sortUsers('year')"><span class="material-icons" style="font-size:14px;">sort</span> 学年順</button>
@@ -411,7 +412,7 @@
         });
 
         // ==========================
-        // 1. 個人の管理ロジック
+        // 1. 個人の管理ロジック（LMC所属者のみ抽出）
         // ==========================
         window.openAdminUsers = async () => { 
             openPage('admin-users'); 
@@ -423,6 +424,7 @@
                     const qs = await getDocs(q); 
                     qs.forEach(docSnap => { 
                         const d = docSnap.data(); 
+                        // 所属にlmcが含まれる人のみ抽出
                         if (hasRoleKeyword(d.role, 'lmc')) {
                             allUsersCache.push({ id: docSnap.id, ...d }); 
                         }
@@ -659,7 +661,6 @@
 
                 document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
 
-                // バンド一覧の取得（ループ内での個別クエリを廃止し高速化・無限ループ防止）
                 const bandQs = await getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                 allBandsCache = [];
                 bandQs.forEach(docSnap => {
@@ -669,7 +670,8 @@
                 if (allUsersCache.length === 0) {
                     const userQs = await getDocs(collection(db, "users"));
                     userQs.forEach(docSnap => {
-                        allUsersCache.push({ id: docSnap.id, ...docSnap.data() });
+                        const d = docSnap.data();
+                        allUsersCache.push({ id: docSnap.id, ...d });
                     });
                 }
 
