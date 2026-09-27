@@ -93,9 +93,12 @@
 
         .user-list-item, .band-card { margin-bottom: 12px; padding: 16px; }
         .mini-icon, .band-icon { width: 52px; height: 52px; border-radius: 20px; object-fit: cover; margin-right: 16px; background: rgba(0,0,0,0.05); flex-shrink: 0; display:flex; justify-content:center; align-items:center; font-size:20px; font-weight:700; color:#8e8e93; overflow:hidden;}
+        .band-card { display: flex; align-items: center; overflow: hidden; cursor: pointer; }
         .band-icon { border-radius: 16px; }
+        .band-icon img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        #adminBandList .band-card > .material-icons { flex-shrink: 0; margin-left: 8px; }
         .user-info-main, .band-info { flex-grow: 1; min-width: 0; }
-        .user-name, .band-name { font-size: 17px; font-weight: 600; color: #1c1c1e; margin-bottom:4px; }
+        .user-name, .band-name { font-size: 17px; font-weight: 600; color: #1c1c1e; margin-bottom:4px; overflow-wrap:anywhere; }
         .user-sub, .band-members { font-size: 13px; color: #8e8e93; font-weight: 500; }
 
         /* 個人の管理: ユーザー情報を横並びにして一覧をコンパクトに */
@@ -106,10 +109,11 @@
         #adminUserList .user-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
         #adminUserList .user-list-item > .material-icons { flex-shrink: 0; margin-left: 8px; }
 
-        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        .info-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; min-width: 0; padding: 14px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
         .info-row:last-child { border-bottom: none; }
-        .info-row .label { color: #8e8e93; font-size: 14px; font-weight: 500; }
-        .info-row .value { color: #1c1c1e; font-weight: 500; font-size: 15px; text-align: right; }
+        .info-row .label { color: #8e8e93; font-size: 14px; font-weight: 500; line-height: 1.4; flex-shrink: 0; }
+        .info-row .value { color: #1c1c1e; font-weight: 500; font-size: 15px; line-height: 1.5; text-align: right; min-width: 0; overflow-wrap: anywhere; word-break: break-word; white-space: normal; }
+        #bd-detail-ng { white-space: pre-wrap; }
 
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 13px; color: #8e8e93; margin-bottom: 8px; font-weight: 600; }
