@@ -541,11 +541,11 @@
         }
 
         // 権限チェック関数 (lmc_all または 期限内の lmc_limit_xxx または admin)
-        function checkAdminRole(roll) {
-            if (!roll) return false;
-            const rolls = Array.isArray(roll) ? roll : [roll];
+        function checkAdminRole(role) {
+            if (!role) return false;
+            const roles = Array.isArray(role) ? role : [role];
             const now = Date.now();
-            for (const r of rolls) {
+            for (const r of roles) {
                 if (r === 'lmc_all' || r === 'admin') return true;
                 if (r.startsWith('lmc_limit_')) {
                     const limitTime = parseInt(r.replace('lmc_limit_', ''), 10);
@@ -569,7 +569,7 @@
                         if(el) { el.innerHTML=h; el.onclick = window.openUserStatusModal || function(){}; }
 
                         // デバッグモード判定
-                        const hasDebugRole = u.roll && (Array.isArray(u.roll) ? u.roll.includes('debug') : u.roll === 'debug');
+                        const hasDebugRole = u.role && (Array.isArray(u.role) ? u.role.includes('debug') : u.role === 'debug');
                         if(hasDebugRole) {
                             isDebugMode = true;
                             initDebugConsole();
@@ -577,7 +577,7 @@
                         }
 
                         // 新しい権限チェックロジック
-                        const hasAdminRole = checkAdminRole(u.roll);
+                        const hasAdminRole = checkAdminRole(u.role);
 
                         if(!hasAdminRole){
                             document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:48px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>';
@@ -618,11 +618,11 @@
         }
 
         // 新しい権限判定ロジック
-        function checkAdminRole(roll) {
-            if (!roll) return false;
-            const rolls = Array.isArray(roll) ? roll : [roll];
+        function checkAdminRole(role) {
+            if (!role) return false;
+            const roles = Array.isArray(role) ? role : [role];
             const now = Date.now();
-            for (const r of rolls) {
+            for (const r of roles) {
                 if (r === 'lmc_all' || r === 'admin') return true;
                 if (r.startsWith('lmc_limit_')) {
                     const limitTime = parseInt(r.replace('lmc_limit_', ''), 10);
@@ -633,11 +633,11 @@
         }
 
         // 権限の詳細を取得するヘルパー
-        function getAdminRoleDetails(roll) {
-            if (!roll) return null;
-            const rolls = Array.isArray(roll) ? roll : [roll];
+        function getAdminRoleDetails(role) {
+            if (!role) return null;
+            const roles = Array.isArray(role) ? role : [role];
             const now = Date.now();
-            for (const r of rolls) {
+            for (const r of roles) {
                 if (r === 'lmc_all' || r === 'admin') return { type: '永続', text: '幹部 (永続)' };
                 if (r.startsWith('lmc_limit_')) {
                     const timeStr = r.replace('lmc_limit_', '');
@@ -1140,7 +1140,7 @@
             const container = document.getElementById('admin-officer-list');
             if (allUsersCache.length === 0) refreshAllUsersCache();
             
-            const officers = allUsersCache.filter(u => checkAdminRole(u.roll));
+            const officers = allUsersCache.filter(u => checkAdminRole(u.role));
             container.innerHTML = "";
             
             if (officers.length === 0) {
@@ -1149,7 +1149,7 @@
             }
 
             officers.forEach(u => {
-                const details = getAdminRoleDetails(u.roll);
+                const details = getAdminRoleDetails(u.role);
                 if (!details) return; // 念のため
 
                 const div = document.createElement('div');
@@ -1200,7 +1200,7 @@
             users.forEach(u => {
                 const div = document.createElement('div');
                 div.className = 'user-list-item';
-                const isAdmin = checkAdminRole(u.roll);
+                const isAdmin = checkAdminRole(u.role);
                 
                 div.innerHTML = `
                     <img src="${u.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon">
@@ -1229,28 +1229,28 @@
             const name = document.getElementById('officerTargetName').innerText;
             const type = document.querySelector('input[name="officerRoleType"]:checked').value;
             
-            let newRoll = 'lmc_all';
+            let newRole = 'lmc_all';
             let msg = '永続的な幹部権限';
             if (type === 'limit_1d') {
                 const limitTime = Date.now() + (24 * 60 * 60 * 1000);
-                newRoll = `lmc_limit_${limitTime}`;
+                newRole = `lmc_limit_${limitTime}`;
                 msg = '24時間の臨時権限';
             } else if (type === 'limit_7d') {
                 const limitTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
-                newRoll = `lmc_limit_${limitTime}`;
+                newRole = `lmc_limit_${limitTime}`;
                 msg = '1週間の臨時権限';
             }
 
             try {
                 const u = allUsersCache.find(x => x.id === uid);
                 if (u) {
-                    let rolls = Array.isArray(u.roll) ? u.roll : (u.roll ? [u.roll] : ['lmc_normal']);
+                    let roles = Array.isArray(u.role) ? u.role : (u.role ? [u.role] : ['lmc_normal']);
                     // 古い権限を一旦掃除する
-                    rolls = rolls.filter(r => r !== 'lmc_all' && !r.startsWith('lmc_limit_'));
-                    rolls.push(newRoll);
-                    u.roll = rolls; 
+                    roles = roles.filter(r => r !== 'lmc_all' && !r.startsWith('lmc_limit_'));
+                    roles.push(newRole);
+                    u.role = roles; 
                     
-                    await updateDoc(doc(db, "users", uid), { roll: rolls });
+                    await updateDoc(doc(db, "users", uid), { role: roles });
                 }
                 
                 await showCustomAlert(`${name} さんに ${msg} を付与しました。`);
@@ -1266,12 +1266,12 @@
             if (await showCustomConfirm(`${name} さんの管理権限を解除しますか？`, "権限解除")) {
                 try {
                     const u = allUsersCache.find(x => x.id === uid);
-                    if (u && u.roll) {
-                        let rolls = Array.isArray(u.roll) ? u.roll : [u.roll];
-                        rolls = rolls.filter(r => r !== 'lmc_all' && !r.startsWith('lmc_limit_'));
-                        if (rolls.length === 0) rolls.push('lmc_normal');
-                        u.roll = rolls;
-                        await updateDoc(doc(db, "users", uid), { roll: rolls });
+                    if (u && u.role) {
+                        let roles = Array.isArray(u.role) ? u.role : [u.role];
+                        roles = roles.filter(r => r !== 'lmc_all' && !r.startsWith('lmc_limit_'));
+                        if (roles.length === 0) roles.push('lmc_normal');
+                        u.role = roles;
+                        await updateDoc(doc(db, "users", uid), { role: roles });
                     }
                     
                     renderOfficerList();
@@ -1310,7 +1310,7 @@
                 document.getElementById('headerIconAdmin').innerHTML=`<img src="${currentUserData.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
                 
                 // デバッグ権限チェックとコンソールの起動
-                const hasDebugRole = currentUserData.roll && (Array.isArray(currentUserData.roll) ? currentUserData.roll.includes('debug') : currentUserData.roll === 'debug');
+                const hasDebugRole = currentUserData.role && (Array.isArray(currentUserData.role) ? currentUserData.role.includes('debug') : currentUserData.role === 'debug');
                 if(hasDebugRole) {
                     isDebugMode = true;
                     initDebugConsole();
@@ -1320,7 +1320,7 @@
                 checkNotifications();
                 renderNav();
 
-                const hasAdminRole = checkAdminRole(currentUserData.roll);
+                const hasAdminRole = checkAdminRole(currentUserData.role);
                 if(!hasAdminRole){
                     document.body.innerHTML='<div style="padding:40px 20px; text-align:center; color:#5f6368;"><span class="material-icons" style="font-size:64px; margin-bottom:16px; color:#dadce0;">lock</span><div style="font-size:18px; font-weight:bold; color:#1f1f1f; margin-bottom:8px;">アクセス権限がありません</div><div style="font-size:14px; margin-bottom:24px;">このページを表示するには管理者権限が必要です。</div><button onclick="window.location.href=\'/index.html\'" style="background:#0b57d0; color:white; border:none; padding:12px 24px; border-radius:999px; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(11,87,208,0.2);">トップへ戻る</button></div>'; 
                 }
@@ -1334,7 +1334,7 @@
             const path = window.location.pathname;
             
             // 管理者権限の判定（管理画面用に用意されている checkAdminRole 関数を使用）
-            const isAdmin = currentUserData ? checkAdminRole(currentUserData.roll) : (localStorage.getItem('lmc_is_admin') === 'true');
+            const isAdmin = currentUserData ? checkAdminRole(currentUserData.role) : (localStorage.getItem('lmc_is_admin') === 'true');
             
             const items = [
                 { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
