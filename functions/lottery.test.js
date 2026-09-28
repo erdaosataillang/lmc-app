@@ -31,5 +31,25 @@ test("allocates one confirmed slot per band and respects locked time", () => {
   assert.deepEqual(result.candidateDocIds.sort(), ["a1", "a2", "b1"]);
   assert.equal(new Set(result.assignments.map((item) => item.bandId)).size, 2);
   assert.ok(result.assignments.every((item) => item.start >= at(10)));
+  assert.ok(result.assignments.every((item) => item.durationMinutes === 60));
   assert.deepEqual(result.assignments.find((item) => item.bandId === "a").originalDocIds, ["a1", "a2"]);
+});
+
+test("keeps one-hour assignments and shortens only bands that cannot fit", () => {
+  const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
+  const bookings = [
+    {id: "event", type: "event", status: "confirmed", startTime: at(10), endTime: at(11, 30)},
+    {id: "a1", bandId: "a", bandName: "A", type: "normal", status: "pending", startTime: at(10), endTime: at(12)},
+    {id: "b1", bandId: "b", bandName: "B", type: "normal", status: "pending", startTime: at(13), endTime: at(15)},
+  ];
+
+  const result = calculateLottery(bookings, () => 0.5);
+  const bandA = result.assignments.find((item) => item.bandId === "a");
+  const bandB = result.assignments.find((item) => item.bandId === "b");
+
+  assert.equal(bandA.durationMinutes, 30);
+  assert.equal(bandB.durationMinutes, 60);
+  assert.equal(bandA.end - bandA.start, 30 * 60 * 1000);
+  assert.equal(bandB.end - bandB.start, 60 * 60 * 1000);
+  assert.equal(result.failedBands.length, 0);
 });

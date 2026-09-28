@@ -41,25 +41,18 @@
     <main class="app">
         <header class="header">
             <div class="title">タイムテーブル</div>
-            <div class="event-name" id="eventName">イベントを確認中...</div>
+            <div class="event-name">準備中</div>
         </header>
         <section class="content">
-            <div class="day-tabs" id="dayTabs"></div>
-            <div id="scheduleList"><div class="state"><span class="material-icons" style="animation:spin 1s linear infinite;">sync</span><br>読み込み中...</div></div>
+            <div class="state">
+                <span class="material-icons" style="font-size:48px; color:#c7c7cc; margin-bottom:8px;">construction</span><br>
+                タイムテーブルは準備中です
+            </div>
         </section>
     </main>
     <div id="nav-container"></div>
 
-    <script type="module">
-        import { app, db, auth, MY_LIFF_ID } from './js/common.js';
-        import { collection, doc, getDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-
-        let bands = [];
-        let eventData = null;
-        let selectedDay = 1;
-        let currentUser = null;
-
+    <script>
         function renderNav() {
             const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
             const items = [
@@ -74,102 +67,7 @@
                     <span class="material-icons nav-icon">${item.icon}</span><span>${item.label}</span>
                 </div>`).join('')}</div>`;
         }
-
-        function escapeHtml(value) {
-            return String(value ?? '').replace(/[&<>'\"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','\"':'&quot;'}[char]));
-        }
-
-        function safeImageUrl(value) {
-            try {
-                const url = new URL(value || '', window.location.href);
-                return ['http:', 'https:'].includes(url.protocol) ? escapeHtml(url.href) : 'https://ul.h3z.jp/Vnukmtvq.jpg';
-            } catch (_) {
-                return 'https://ul.h3z.jp/Vnukmtvq.jpg';
-            }
-        }
-
-        function toDateLabel(dayNumber) {
-            if (!eventData?.startDate) return `Day ${dayNumber}`;
-            const base = new Date(`${eventData.startDate}T00:00:00`);
-            base.setDate(base.getDate() + dayNumber - 1);
-            return `${base.getMonth()+1}/${base.getDate()} Day ${dayNumber}`;
-        }
-
-        function getTimeValue(band) {
-            const value = band.performanceTime || band.timetableTime || band.appearanceTime || band.time;
-            if (!value) return '時間未定';
-            if (typeof value === 'string') return value;
-            if (value.toDate) {
-                const date = value.toDate();
-                return `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
-            }
-            return '時間未定';
-        }
-
-        function render() {
-            const availableDays = new Set(bands.map(band => Number.parseInt(band.day, 10) || 1));
-            if (eventData?.startDate && eventData?.endDate) {
-                const start = new Date(`${eventData.startDate}T12:00:00`);
-                const end = new Date(`${eventData.endDate}T12:00:00`);
-                const dayCount = Math.max(1, Math.round((end - start) / 86400000) + 1);
-                for (let day = 1; day <= dayCount; day += 1) availableDays.add(day);
-            }
-            if (availableDays.size === 0) availableDays.add(1);
-            const sortedDays = [...availableDays].sort((a,b) => a-b);
-            if (!sortedDays.includes(selectedDay)) selectedDay = sortedDays[0];
-            document.getElementById('dayTabs').innerHTML = sortedDays.map(day => `<button class="day-tab ${day === selectedDay ? 'active' : ''}" onclick="selectDay(${day})">${toDateLabel(day)}</button>`).join('');
-
-            const list = bands.filter(band => (Number.parseInt(band.day, 10) || 1) === selectedDay)
-                .sort((a,b) => getTimeValue(a).localeCompare(getTimeValue(b), 'ja'));
-            const container = document.getElementById('scheduleList');
-            if (list.length === 0) {
-                container.innerHTML = '<div class="state"><span class="material-icons" style="font-size:44px; color:#c7c7cc;">event_busy</span><br>この日の出演予定はありません</div>';
-                return;
-            }
-            container.innerHTML = list.map(band => {
-                const mine = currentUser && Array.isArray(band.memberIds) && band.memberIds.includes(currentUser);
-                return `<article class="schedule-card">
-                    <div class="time">${getTimeValue(band)}</div>
-                    <img class="band-icon" src="${safeImageUrl(band.icon)}" alt="">
-                    <div class="band-info"><div class="band-name">${escapeHtml(band.name || '名称未設定')}</div><div class="band-sub">${escapeHtml(band.stage || '会場未定')}</div></div>
-                    ${mine ? '<span class="mine">参加中</span>' : ''}
-                </article>`;
-            }).join('');
-        }
-
-        window.selectDay = day => { selectedDay = day; render(); };
-
-        async function main() {
-            renderNav();
-            try {
-                const authPromise = signInAnonymously(auth);
-                const liffPromise = liff.init({liffId:MY_LIFF_ID}).then(async () => {
-                    if (liff.isLoggedIn()) currentUser = (await liff.getProfile()).userId;
-                }).catch(error => console.warn('LIFF initialization failed:', error));
-                await Promise.all([authPromise, liffPromise]);
-
-                const settings = await getDoc(doc(db, 'system', 'settings'));
-                const activeEventId = settings.exists() ? settings.data().activeEventId : null;
-                if (!activeEventId) {
-                    document.getElementById('eventName').innerText = 'イベント未設定';
-                    document.getElementById('scheduleList').innerHTML = '<div class="state">現在のイベントが設定されていません</div>';
-                    return;
-                }
-                const [eventSnapshot, bandSnapshot] = await Promise.all([
-                    getDoc(doc(db, 'events', activeEventId)),
-                    getDocs(query(collection(db, 'bands'), where('events', 'array-contains', activeEventId)))
-                ]);
-                eventData = eventSnapshot.exists() ? eventSnapshot.data() : null;
-                bands = bandSnapshot.docs.map(bandDoc => ({id:bandDoc.id, ...bandDoc.data()})).filter(band => !band.isArchived);
-                document.getElementById('eventName').innerText = eventData?.event || eventData?.name || '現在のイベント';
-                render();
-            } catch (error) {
-                console.error('Timetable load failed:', error);
-                document.getElementById('scheduleList').innerHTML = '<div class="state">タイムテーブルを読み込めませんでした<br><button class="day-tab" style="margin-top:14px;" onclick="location.reload()">再読み込み</button></div>';
-            }
-        }
-
-        main();
+        renderNav();
     </script>
 </body>
 </html>

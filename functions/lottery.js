@@ -119,10 +119,28 @@ function calculateLottery(bookings, random = Math.random) {
   }
 
   const bands = [...grouped.values()];
-  let result = tryAllocate(bands, 60, locked, random);
-  if (result.failedBands.length > 0) result = tryAllocate(bands, 30, locked, random);
+  const hourResult = tryAllocate(bands, 60, locked, random);
+  const occupiedAfterHourLottery = [
+    ...locked,
+    ...hourResult.assignments.map((assignment) => ({
+      start: assignment.start,
+      end: assignment.end,
+    })),
+  ];
+  const halfHourResult = tryAllocate(
+      hourResult.failedBands,
+      30,
+      occupiedAfterHourLottery,
+      random,
+  );
+  const assignments = [
+    ...hourResult.assignments.map((assignment) => ({...assignment, durationMinutes: 60})),
+    ...halfHourResult.assignments.map((assignment) => ({...assignment, durationMinutes: 30})),
+  ];
   return {
-    ...result,
+    duration: halfHourResult.assignments.length > 0 ? 30 : 60,
+    assignments,
+    failedBands: halfHourResult.failedBands,
     candidateCount: candidates.length,
     candidateDocIds: candidates.map((candidate) => candidate.id),
     bandCount: bands.length,

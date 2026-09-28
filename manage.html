@@ -1127,11 +1127,27 @@
                 const bands = Object.values(bandReqs);
                 logB.innerHTML += `<div style="padding:4px; border-bottom:1px solid rgba(0,0,0,0.05); margin-bottom:8px;">候補:${candidates.length} エントリー:${bands.length}</div>`;
 
-                let result = tryAllocate(bands, 60, locked);
-                if (result.failedBands.length > 0) {
-                    logB.innerHTML += `<div style="padding:4px; color:#ff9500;">60分枠では全員確保不可(${result.failedBands.length}組落選) -> 30分枠で再抽選します</div>`;
-                    result = tryAllocate(bands, 30, locked);
+                const hourResult = tryAllocate(bands, 60, locked);
+                let result = hourResult;
+                if (hourResult.failedBands.length > 0) {
+                    logB.innerHTML += `<div style="padding:4px; color:#ff9500;">1時間で確保できない${hourResult.failedBands.length}組だけ、30分枠で再抽選します</div>`;
+                    const occupied = [
+                        ...locked,
+                        ...hourResult.assignments.map(assignment => ({start:assignment.start, end:assignment.end}))
+                    ];
+                    const halfHourResult = tryAllocate(hourResult.failedBands, 30, occupied);
+                    result = {
+                        duration: halfHourResult.assignments.length > 0 ? 30 : 60,
+                        assignments: [
+                            ...hourResult.assignments.map(assignment => ({...assignment, durationMinutes:60})),
+                            ...halfHourResult.assignments.map(assignment => ({...assignment, durationMinutes:30}))
+                        ],
+                        failedBands: halfHourResult.failedBands,
+                        successCount: hourResult.assignments.length + halfHourResult.assignments.length,
+                        totalCount: bands.length
+                    };
                 } else {
+                    result.assignments = result.assignments.map(assignment => ({...assignment, durationMinutes:60}));
                     logB.innerHTML += `<div style="padding:4px; color:#34c759; font-weight:600;">全員60分枠で確保可能です</div>`;
                 }
 
@@ -1139,7 +1155,7 @@
                 result.assignments.forEach(a => {
                     const sStr = `${a.start.getHours()}:${String(a.start.getMinutes()).padStart(2, '0')}`;
                     const eStr = `${a.end.getHours()}:${String(a.end.getMinutes()).padStart(2, '0')}`;
-                    logB.innerHTML += `<div style="color:#34c759; font-size:13px; font-weight:500; margin-bottom:6px; border-bottom:1px dashed rgba(0,0,0,0.1); padding-bottom:6px;"><span class="material-icons" style="font-size:16px; vertical-align:middle;">check_circle</span> ${a.bandName}: ${sStr}-${eStr} (${result.duration}分)</div>`;
+                    logB.innerHTML += `<div style="color:#34c759; font-size:13px; font-weight:500; margin-bottom:6px; border-bottom:1px dashed rgba(0,0,0,0.1); padding-bottom:6px;"><span class="material-icons" style="font-size:16px; vertical-align:middle;">check_circle</span> ${a.bandName}: ${sStr}-${eStr} (${a.durationMinutes}分)</div>`;
                 });
                 result.failedBands.forEach(b => {
                     logB.innerHTML += `<div style="color:#ff3b30; font-size:13px; font-weight:500; margin-bottom:6px; border-bottom:1px dashed rgba(0,0,0,0.1); padding-bottom:6px;"><span class="material-icons" style="font-size:16px; vertical-align:middle;">cancel</span> ${b.name}: 確保不可</div>`;
@@ -1216,6 +1232,30 @@
             if (!isConfirmed) return;
 
             const batch = writeBatch(db);
+            const lotteryDate = document.getElementById('manualLotteryDate').value;
+            batch.set(doc(db, "lotteryRuns", lotteryDate), {
+                targetDate: lotteryDate,
+                status: 'completed',
+                executionMode: 'manual',
+                durationMinutes: tempLotterySchedule.duration,
+                hasMixedDurations: tempLotterySchedule.assignments.some(assignment => assignment.durationMinutes === 30) && tempLotterySchedule.assignments.some(assignment => assignment.durationMinutes === 60),
+                candidateCount: tempLotterySchedule.assignments.reduce((count, assignment) => count + assignment.originalDocIds.length, 0) + tempLotterySchedule.failedBands.reduce((count, band) => count + band.docIds.length, 0),
+                bandCount: tempLotterySchedule.totalCount,
+                successCount: tempLotterySchedule.assignments.length,
+                failedBandIds: tempLotterySchedule.failedBands.map(band => band.id),
+                bandIds: [...new Set([
+                    ...tempLotterySchedule.assignments.map(assignment => assignment.bandId),
+                    ...tempLotterySchedule.failedBands.map(band => band.id)
+                ])],
+                assignments: tempLotterySchedule.assignments.map(assignment => ({
+                    bandId: assignment.bandId,
+                    bandName: assignment.bandName,
+                    startTime: assignment.start,
+                    endTime: assignment.end,
+                    durationMinutes: assignment.durationMinutes
+                })),
+                executedAt: serverTimestamp()
+            }, { merge: true });
             tempLotterySchedule.assignments.forEach(a => {
                 const ref = doc(collection(db, "bookings"));
                 const uid = auth.currentUser ? auth.currentUser.uid : "admin";

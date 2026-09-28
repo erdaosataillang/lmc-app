@@ -1070,7 +1070,7 @@
             document.querySelectorAll(`.day-cell[id^="day-${y}-${m}-"]`).forEach(cell => {
                 cell.classList.remove('unavailable', 'partial-event');
                 const st = cell.querySelector('.status-label');
-                if(st) st.innerText = "";
+                if(st) { st.innerText = ""; st.style.color = ""; }
             });
             document.querySelectorAll(`.event-dots[id^="dots-${y}-${m}-"]`).forEach(el => el.innerHTML = "");
 
@@ -1079,16 +1079,29 @@
                 const d = new Date(bk.startTime); 
                 if (d.getFullYear() === y && (d.getMonth() + 1) === m) {
                     const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-                    if (!stats[key]) stats[key] = { count: 0, eventType: null };
+                    if (!stats[key]) stats[key] = { count: 0, eventType: null, hasConfirmedLottery: false };
                     if (bk.type === 'event') {
                         const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); const sH = d.getHours(); const eH = e.getHours(); const isAllDay = (sH <= 9 && eH >= 20);
                         if (isAllDay) { stats[key].eventType = 'unavailable'; } else if (stats[key].eventType !== 'unavailable') { stats[key].eventType = 'partial'; }
-                    } else { stats[key].count++; }
+                    } else {
+                        stats[key].count++;
+                        if (bk.source === 'lottery' && bk.status === 'confirmed') stats[key].hasConfirmedLottery = true;
+                    }
                 }
             });
             Object.keys(stats).forEach(key => {
                 const data = stats[key]; const cell = document.getElementById(key); if (!cell) return;
-                if (data.eventType === 'unavailable') { cell.classList.add('unavailable'); const st = cell.querySelector('.status-label'); if(st) st.innerText = "不可"; } else if (data.eventType === 'partial') { cell.classList.add('partial-event'); }
+                if (data.eventType === 'unavailable') {
+                    cell.classList.add('unavailable');
+                    const st = cell.querySelector('.status-label');
+                    if(st) st.innerText = "不可";
+                } else {
+                    if (data.eventType === 'partial') cell.classList.add('partial-event');
+                    if (data.hasConfirmedLottery) {
+                        const st = cell.querySelector('.status-label');
+                        if (st) { st.innerText = "抽選確定"; st.style.color = "#7b1fa2"; }
+                    }
+                }
                 if (data.count > 0) {
                     const dotsContainer = document.getElementById(key.replace('day-', 'dots-'));
                     if (dotsContainer) { 
@@ -1172,7 +1185,11 @@
             if (currentLotteryRunUnsub) currentLotteryRunUnsub();
             currentLotteryRunUnsub = onSnapshot(doc(db, "lotteryRuns", selectedDateKey), (snapshot) => {
                 currentLotteryRunData = snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null;
-                isLotteryDay = snapshot.exists();
+                const hasLegacyLotteryBooking = loadedBookingsCache.some(booking => {
+                    return booking.source === 'lottery' && booking.status === 'confirmed' &&
+                        formatDateKey(new Date(booking.startTime)) === selectedDateKey;
+                });
+                isLotteryDay = snapshot.exists() || hasLegacyLotteryBooking;
                 updateDayBanner();
                 if (snapshot.exists()) loadLotteryNotifications();
             }, (error) => console.warn("Lottery status refresh failed:", error));
@@ -1209,7 +1226,12 @@
                     d.startTime = d.startTime.toDate().toISOString();
                     d.endTime = d.endTime.toDate().toISOString();
                     evs.push(d);
-                }); 
+                });
+                // 古い手動抽選データも「抽選確定済み」として扱う。
+                if (!isLotteryDay && evs.some(item => item.source === 'lottery' && item.status === 'confirmed')) {
+                    isLotteryDay = true;
+                    updateDayBanner();
+                }
                 
                 // キャッシュの該当部分を更新
                 const newCache = loadedBookingsCache.filter(b => {
@@ -1249,7 +1271,23 @@
             localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
             localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS_UPDATED, String(Date.now()));
             const configuredMode = currentSystemSettings.reservationMode || currentSystemSettings.bookingMode || 'first_come';
-            return configuredMode === 'lottery' && !runSnapshot.exists() ? 'lottery' : 'first_come';
+            if (configuredMode !== 'lottery' || runSnapshot.exists()) return 'first_come';
+
+            // 以前の手動抽選には実行記録がないため、確定済みの抽選予約からも判定する。
+            const startOfDay = new Date(dateObj);
+            const endOfDay = new Date(dateObj);
+            startOfDay.setHours(0, 0, 0, 0);
+            endOfDay.setHours(23, 59, 59, 999);
+            const bookingSnapshot = await getDocs(query(
+                collection(db, "bookings"),
+                where("startTime", ">=", startOfDay),
+                where("startTime", "<=", endOfDay)
+            ));
+            const hasConfirmedLottery = bookingSnapshot.docs.some(bookingDoc => {
+                const data = bookingDoc.data();
+                return data.source === 'lottery' && data.status === 'confirmed';
+            });
+            return hasConfirmedLottery ? 'first_come' : 'lottery';
         }
 
         // 過去日判定関数
@@ -1292,11 +1330,13 @@
                 banner.style.border = '1px solid #ffe0b2'; 
                 banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">casino</span> 抽選受付中</div><div style="font-size:11px;">希望を提出してください。後日確定します。</div>`;
             } else {
-                banner.style.backgroundColor = '#e8f0fe'; 
-                banner.style.color = '#1967d2'; 
-                banner.style.border = '1px solid #d2e3fc'; 
-                const detail = isLotteryDay ? '抽選は終了しました。空いている時間は即時確定します。' : '即時確定します。';
-                banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">flash_on</span> 先着順モード</div><div style="font-size:11px;">${detail}</div>`;
+                banner.style.backgroundColor = isLotteryDay ? '#f3e5f5' : '#e8f0fe';
+                banner.style.color = isLotteryDay ? '#7b1fa2' : '#1967d2';
+                banner.style.border = isLotteryDay ? '1px solid #e1bee7' : '1px solid #d2e3fc';
+                const title = isLotteryDay ? '抽選確定' : '先着順モード';
+                const icon = isLotteryDay ? 'verified' : 'flash_on';
+                const detail = isLotteryDay ? '抽選結果が確定しました。空いている時間は先着で予約できます。' : '即時確定します。';
+                banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px;">${icon}</span> ${title}</div><div style="font-size:11px;">${detail}</div>`;
             }
         }
 

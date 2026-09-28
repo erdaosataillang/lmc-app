@@ -75,6 +75,8 @@ exports.runScheduledLottery = onSchedule({
     targetDate: dateKey,
     status: result.candidateCount === 0 ? "no_candidates" : "completed",
     durationMinutes: result.duration,
+    hasMixedDurations: result.assignments.some((assignment) => assignment.durationMinutes === 30) &&
+      result.assignments.some((assignment) => assignment.durationMinutes === 60),
     candidateCount: result.candidateCount,
     bandCount: result.bandCount,
     successCount: result.assignments.length,
@@ -88,6 +90,7 @@ exports.runScheduledLottery = onSchedule({
       bandName: assignment.bandName,
       startTime: Timestamp.fromDate(assignment.start),
       endTime: Timestamp.fromDate(assignment.end),
+      durationMinutes: assignment.durationMinutes,
     })),
     executedAt: FieldValue.serverTimestamp(),
     scheduleTime: event.scheduleTime || null,
