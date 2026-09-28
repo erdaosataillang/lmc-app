@@ -633,8 +633,22 @@
                             eventSelect.appendChild(opt);
                         });
 
+                        if (eventId && !Array.from(eventSelect.options).some(option => option.value === eventId)) {
+                            const requestedEvent = await getDoc(doc(db, 'events', eventId));
+                            if (requestedEvent.exists()) {
+                                const eventData = requestedEvent.data();
+                                const rawName = eventData.event || eventData.name || eventId;
+                                const monthMatch = rawName.match(/(\d{1,2})月/);
+                                const option = document.createElement('option');
+                                option.value = eventId;
+                                option.textContent = monthMatch ? `${monthMatch[1]}月定演` : rawName;
+                                eventSelect.prepend(option);
+                            }
+                        }
+
                         if (eventId && Array.from(eventSelect.options).some(option => option.value === eventId)) {
                             eventSelect.value = eventId;
+                            draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
                         } else {
                             eventId = eventSelect.value;
                             draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
@@ -1044,6 +1058,7 @@
                     try {
                         await updateDoc(doc(db, 'bands', bandId), {
                             latestCueSheetId: targetDocId,
+                            cueSheetId: targetDocId,
                             updatedAt: serverTimestamp()
                         });
                     } catch (bandErr) {

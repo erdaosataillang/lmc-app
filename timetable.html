@@ -41,18 +41,24 @@
     <main class="app">
         <header class="header">
             <div class="title">タイムテーブル</div>
-            <div class="event-name">準備中</div>
+            <div class="event-name" id="eventName">読み込み中...</div>
         </header>
         <section class="content">
-            <div class="state">
-                <span class="material-icons" style="font-size:48px; color:#c7c7cc; margin-bottom:8px;">construction</span><br>
-                タイムテーブルは準備中です
-            </div>
+            <div class="day-tabs" id="dayTabs"></div>
+            <div id="scheduleList"><div class="state"><span class="material-icons" style="animation:spin 1s linear infinite;">sync</span><br>読み込み中...</div></div>
         </section>
     </main>
     <div id="nav-container"></div>
 
-    <script>
+    <script type="module">
+        import {db, auth} from './js/common.js';
+        import {doc, getDoc} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+        import {signInAnonymously} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+
+        let entries = [];
+        let selectedDate = '';
+        let showTimes = true;
+
         function renderNav() {
             const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
             const items = [
@@ -67,7 +73,85 @@
                     <span class="material-icons nav-icon">${item.icon}</span><span>${item.label}</span>
                 </div>`).join('')}</div>`;
         }
-        renderNav();
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+        }
+
+        function safeImageUrl(value) {
+            try {
+                const url = new URL(value || '', window.location.href);
+                return ['http:', 'https:'].includes(url.protocol) ? escapeHtml(url.href) : 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            } catch (_) {
+                return 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            }
+        }
+
+        function dateLabel(value) {
+            const date = new Date(`${value}T12:00:00`);
+            if (Number.isNaN(date.getTime())) return value;
+            return `${date.getMonth() + 1}/${date.getDate()}（${['日','月','火','水','木','金','土'][date.getDay()]}）`;
+        }
+
+        function renderSchedule() {
+            const dates = [...new Set(entries.map(entry => entry.date).filter(Boolean))].sort();
+            if (!selectedDate || !dates.includes(selectedDate)) selectedDate = dates[0] || '';
+            document.getElementById('dayTabs').innerHTML = dates.map(date =>
+                `<button class="day-tab ${date === selectedDate ? 'active' : ''}" data-date="${escapeHtml(date)}">${escapeHtml(dateLabel(date))}</button>`
+            ).join('');
+            document.querySelectorAll('.day-tab').forEach(button => {
+                button.onclick = () => { selectedDate = button.dataset.date; renderSchedule(); };
+            });
+
+            const dayEntries = entries.filter(entry => entry.date === selectedDate).sort((a, b) => {
+                if (!showTimes) return (a.order || 0) - (b.order || 0);
+                if (a.time && b.time) return a.time.localeCompare(b.time) || (a.order || 0) - (b.order || 0);
+                if (a.time) return -1;
+                if (b.time) return 1;
+                return (a.order || 0) - (b.order || 0);
+            });
+            const container = document.getElementById('scheduleList');
+            if (dayEntries.length === 0) {
+                container.innerHTML = '<div class="state"><span class="material-icons" style="font-size:46px; color:#c7c7cc;">event_busy</span><br>出演予定はありません</div>';
+                return;
+            }
+            container.innerHTML = dayEntries.map((entry, index) => `
+                <article class="schedule-card">
+                    <div class="time">${showTimes ? escapeHtml(entry.time || '未定') : `${index + 1}`}</div>
+                    <img class="band-icon" src="${safeImageUrl(entry.icon)}" alt="">
+                    <div class="band-info">
+                        <div class="band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
+                        <div class="band-sub">${showTimes ? '出演予定' : `出演順 ${index + 1}`}</div>
+                    </div>
+                </article>`).join('');
+        }
+
+        async function main() {
+            renderNav();
+            try {
+                await signInAnonymously(auth);
+                const settings = await getDoc(doc(db, 'system', 'settings'));
+                const activeEventId = settings.exists() ? settings.data().activeEventId : null;
+                if (!activeEventId) throw new Error('active event is not configured');
+                const eventSnapshot = await getDoc(doc(db, 'events', activeEventId));
+                if (!eventSnapshot.exists()) throw new Error('active event was not found');
+                const eventData = eventSnapshot.data();
+                document.getElementById('eventName').innerText = eventData.event || eventData.name || '現在のイベント';
+                const timetable = eventData.timetable || {};
+                if (timetable.published !== true) {
+                    document.getElementById('scheduleList').innerHTML = '<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">construction</span><br>タイムテーブルは準備中です</div>';
+                    return;
+                }
+                entries = Array.isArray(timetable.entries) ? timetable.entries : [];
+                showTimes = timetable.showTimes !== false;
+                renderSchedule();
+            } catch (error) {
+                console.error('Timetable load failed:', error);
+                document.getElementById('eventName').innerText = 'タイムテーブル';
+                document.getElementById('scheduleList').innerHTML = '<div class="state">タイムテーブルを読み込めませんでした<br><button class="day-tab" style="margin-top:14px;" onclick="location.reload()">再読み込み</button></div>';
+            }
+        }
+        main();
     </script>
 </body>
 </html>

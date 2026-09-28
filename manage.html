@@ -347,14 +347,35 @@
                         <input type="text" id="concert-event-name" class="form-input" placeholder="例: 2026年度 定期演奏会">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">開催日</label>
+                        <label class="form-label">開始日</label>
                         <input type="date" id="concert-event-date" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">終了日</label>
+                        <input type="date" id="concert-event-end-date" class="form-input">
                     </div>
                     <div class="form-group">
                         <label class="form-label">詳細・備考</label>
                         <textarea id="concert-event-desc" class="form-input" style="height:100px; resize:none;" placeholder="場所や備考など"></textarea>
                     </div>
                     <button class="btn-primary" onclick="saveCurrentConcertEvent()" style="margin-top:12px;">変更を保存</button>
+                </div>
+
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px;">
+                        <div>
+                            <h3 style="font-size:18px; margin:0 0 4px; color:#1c1c1e; font-weight:700;">タイムテーブル</h3>
+                            <div style="font-size:12px; color:#8e8e93;">出演日と開始時刻をバンドごとに設定します</div>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="concert-timetable-published"><span class="slider"></span></label>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-top:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0; margin-bottom:14px;">
+                        <span style="font-size:14px; font-weight:600;">利用者に開始時刻を表示</span>
+                        <label class="switch"><input type="checkbox" id="concert-timetable-show-times" checked><span class="slider"></span></label>
+                    </div>
+                    <div id="concert-timetable-rows"></div>
+                    <button class="btn-primary" onclick="saveConcertTimetable()" style="margin-top:16px;">タイムテーブルを保存</button>
+                    <div style="font-size:11px; color:#8e8e93; line-height:1.5; margin-top:10px;">上のスイッチをONにすると、タイムテーブルタブへ公開されます。開始時刻を非表示にして出演順だけを公開することもできます。</div>
                 </div>
             </div>
 
@@ -628,6 +649,15 @@
             </div>
 
             <div class="card">
+                <h3 style="font-size:18px; margin:0 0 8px; color:#1c1c1e; font-weight:700;">現在のイベントでの出演日</h3>
+                <div id="bd-detail-performance-event" style="font-size:12px; color:#8e8e93; margin-bottom:12px;">イベント未設定</div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <input type="date" id="bd-detail-performance-date" class="form-input" style="margin:0; flex:1;">
+                    <button class="btn-primary" onclick="saveBandPerformanceDate()" style="width:auto; margin:0; padding:12px 18px;">保存</button>
+                </div>
+            </div>
+
+            <div class="card">
                 <h3 style="font-size:18px; margin:0 0 16px; color:#1c1c1e; font-weight:700;">メンバー一覧</h3>
                 <div id="bd-detail-members-list" style="font-size:15px; line-height:1.6;">読み込み中...</div>
             </div>
@@ -677,6 +707,7 @@
 
         let currentActiveEventId = null;
         let currentActiveEventName = "なし";
+        let currentActiveEventData = null;
         let currentSystemSettings = { bookingMode: 'first_come', lotteryConfig: { mode: 'auto', daysBefore: 2, time: 0 } };
         let tempLotterySchedule = null;
         let eventsCache = [];
@@ -686,7 +717,9 @@
         let concertLoadedEventId = null;
 
         const MY_PAGE_URL = "https://mypage.sorairosystem.com";
-        const DIGITAL_CUE_PATH = 'cuesheet.html';
+        const DIGITAL_CUE_PATH = 'cue.html';
+        let concertBandsCache = [];
+        let currentBandDetail = null;
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
         window.closePage = (id) => { document.getElementById('page-' + id).classList.remove('open'); };
@@ -796,6 +829,99 @@
         // ==========================
         // 0. 定期演奏会（現在のイベント情報・メトリクス表示）ロジック
         // ==========================
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+        }
+
+        function renderConcertTimetable(eventData) {
+            const container = document.getElementById('concert-timetable-rows');
+            const timetable = eventData.timetable || {};
+            const existingEntries = new Map((timetable.entries || []).map(entry => [entry.bandId, entry]));
+            document.getElementById('concert-timetable-published').checked = timetable.published === true;
+            document.getElementById('concert-timetable-show-times').checked = timetable.showTimes !== false;
+
+            if (concertBandsCache.length === 0) {
+                container.innerHTML = '<div style="padding:24px; text-align:center; color:#8e8e93;">現在のイベントに登録されたバンドがありません</div>';
+                return;
+            }
+
+            const originalOrder = new Map(concertBandsCache.map((band, index) => [band.id, index]));
+            const orderedBands = [...concertBandsCache].sort((a, b) => {
+                const aOrder = existingEntries.get(a.id)?.order;
+                const bOrder = existingEntries.get(b.id)?.order;
+                return (Number.isFinite(aOrder) ? aOrder : originalOrder.get(a.id)) - (Number.isFinite(bOrder) ? bOrder : originalOrder.get(b.id));
+            });
+            container.innerHTML = orderedBands.map((band, index) => {
+                const entry = existingEntries.get(band.id) || {};
+                const date = entry.date || band.performanceDates?.[currentActiveEventId] || eventData.startDate || '';
+                const time = entry.time || '';
+                const icon = band.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+                return `
+                    <div class="timetable-admin-row" data-band-id="${escapeHtml(band.id)}" style="padding:14px 0; border-bottom:1px solid #f0f0f0;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                            <img src="${escapeHtml(icon)}" style="width:36px; height:36px; border-radius:10px; object-fit:cover; background:#f1f3f4;">
+                            <div style="font-size:14px; font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(band.name || '名称未設定')}</div>
+                            <button type="button" onclick="moveTimetableRow(this,-1)" style="border:0; background:#f1f3f4; border-radius:8px; width:30px; height:30px; color:#5f6368;"><span class="material-icons" style="font-size:18px;">arrow_upward</span></button>
+                            <button type="button" onclick="moveTimetableRow(this,1)" style="border:0; background:#f1f3f4; border-radius:8px; width:30px; height:30px; color:#5f6368;"><span class="material-icons" style="font-size:18px;">arrow_downward</span></button>
+                        </div>
+                        <div style="display:grid; grid-template-columns:1fr 110px; gap:8px;">
+                            <input type="date" class="form-input timetable-date" value="${escapeHtml(date)}" min="${escapeHtml(eventData.startDate || '')}" max="${escapeHtml(eventData.endDate || eventData.startDate || '')}" style="margin:0; padding:10px;">
+                            <input type="time" class="form-input timetable-time" value="${escapeHtml(time)}" style="margin:0; padding:10px;">
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        window.moveTimetableRow = (button, direction) => {
+            const row = button.closest('.timetable-admin-row');
+            const sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
+            if (!sibling) return;
+            if (direction < 0) row.parentElement.insertBefore(row, sibling);
+            else row.parentElement.insertBefore(sibling, row);
+        };
+
+        window.saveConcertTimetable = async () => {
+            if (!currentActiveEventId) return;
+            const rows = [...document.querySelectorAll('.timetable-admin-row')];
+            const entries = rows.map((row, order) => {
+                const band = concertBandsCache.find(item => item.id === row.dataset.bandId);
+                return {
+                    bandId: row.dataset.bandId,
+                    bandName: band?.name || '名称未設定',
+                    icon: band?.icon || '',
+                    date: row.querySelector('.timetable-date').value,
+                    time: row.querySelector('.timetable-time').value,
+                    order
+                };
+            }).filter(entry => entry.date);
+
+            try {
+                const batch = writeBatch(db);
+                batch.update(doc(db, 'events', currentActiveEventId), {
+                    timetable: {
+                        published: document.getElementById('concert-timetable-published').checked,
+                        showTimes: document.getElementById('concert-timetable-show-times').checked,
+                        entries
+                    },
+                    timetableUpdatedAt: serverTimestamp()
+                });
+                entries.forEach(entry => {
+                    const band = concertBandsCache.find(item => item.id === entry.bandId);
+                    batch.update(doc(db, 'bands', entry.bandId), {
+                        performanceDates: {...(band?.performanceDates || {}), [currentActiveEventId]: entry.date}
+                    });
+                });
+                await batch.commit();
+                entries.forEach(entry => {
+                    const band = concertBandsCache.find(item => item.id === entry.bandId);
+                    if (band) band.performanceDates = {...(band.performanceDates || {}), [currentActiveEventId]: entry.date};
+                });
+                await showCustomAlert(document.getElementById('concert-timetable-published').checked ? 'タイムテーブルを保存・公開しました。' : 'タイムテーブルを下書き保存しました。');
+            } catch (error) {
+                await showCustomAlert('保存エラー: ' + error.message, 'エラー');
+            }
+        };
+
         window.openAdminConcert = async () => {
             openPage('admin-concert');
             const loadingEl = document.getElementById('concert-loading');
@@ -835,8 +961,10 @@
                     }
 
                     const ev = eventSnap.data();
+                    currentActiveEventData = ev;
                     document.getElementById('concert-event-name').value = ev.event || ev.name || "";
                     document.getElementById('concert-event-date').value = ev.startDate || "";
+                    document.getElementById('concert-event-end-date').value = ev.endDate || ev.startDate || "";
                     document.getElementById('concert-event-desc').value = ev.desc || "";
                     document.getElementById('metric-band-count').innerText = '…';
                     document.getElementById('metric-song-count').innerText = '…';
@@ -846,6 +974,8 @@
 
                     // 対象イベントのバンドだけを取得し、Cueシートは同時並行で集計する。
                     const bandQs = await getDocs(query(collection(db, "bands"), where("events", "array-contains", currentActiveEventId)));
+                    concertBandsCache = bandQs.docs.map(bDoc => ({id:bDoc.id, ...bDoc.data()}));
+                    renderConcertTimetable(ev);
                     const uniqueMembersSet = new Set();
                     bandQs.docs.forEach(bDoc => {
                         const memberIds = bDoc.data().memberIds;
@@ -856,7 +986,7 @@
 
                     const songCounts = await Promise.all(bandQs.docs.map(async bDoc => {
                         const bData = bDoc.data();
-                        const cueSheetId = bData.cueSheetId || bData.latestCueSheetId || `${bDoc.id}_${currentActiveEventId}`;
+                        const cueSheetId = `${bDoc.id}_${currentActiveEventId}`;
                         try {
                             const cueSnap = await getDoc(doc(db, "cuesheets", cueSheetId));
                             const songs = cueSnap.exists() ? cueSnap.data().songs : null;
@@ -881,17 +1011,19 @@
             if (!currentActiveEventId) return;
             const name = document.getElementById('concert-event-name').value.trim();
             const date = document.getElementById('concert-event-date').value;
+            const endDate = document.getElementById('concert-event-end-date').value || date;
             const desc = document.getElementById('concert-event-desc').value.trim();
 
             if (!name || !date) {
                 return await showCustomAlert("イベント名と開催日は必須です。", "入力エラー");
             }
+            if (endDate < date) return await showCustomAlert('終了日は開始日以降にしてください。', '入力エラー');
 
             try {
                 await updateDoc(doc(db, "events", currentActiveEventId), {
                     event: name,
                     startDate: date,
-                    endDate: date,
+                    endDate,
                     desc: desc,
                     updatedAt: serverTimestamp()
                 });
@@ -1519,19 +1651,26 @@
         const bandCueRequests = new Map();
         let bandDetailVersion = 0;
 
-        function loadBandCue(band) {
-            const cueId = band.cueSheetId || band.latestCueSheetId ||
-                (currentActiveEventId ? `${band.id}_${currentActiveEventId}` : null);
-            if (!cueId) return Promise.resolve(null);
-            if (!bandCueRequests.has(cueId)) {
-                // 存在しないシートと取得失敗も保持し、自動再試行を行わない。
-                bandCueRequests.set(cueId, getDoc(doc(db, "cuesheets", cueId)).then(snap =>
-                    snap.exists() ? snap.data() : null));
+        async function loadBandCue(band) {
+            const cueIds = [...new Set([
+                currentActiveEventId ? `${band.id}_${currentActiveEventId}` : null,
+                band.latestCueSheetId,
+                band.cueSheetId
+            ].filter(Boolean))];
+            for (const cueId of cueIds) {
+                if (!bandCueRequests.has(cueId)) {
+                    // 存在しないシートと取得失敗も保持し、自動再試行を行わない。
+                    bandCueRequests.set(cueId, getDoc(doc(db, "cuesheets", cueId)).then(snap =>
+                        snap.exists() ? {id:snap.id, ...snap.data()} : null));
+                }
+                const data = await bandCueRequests.get(cueId);
+                if (data) {
+                    band.cueData = data;
+                    return data;
+                }
             }
-            return bandCueRequests.get(cueId).then(data => {
-                band.cueData = data;
-                return data;
-            });
+            band.cueData = null;
+            return null;
         }
 
         window.openAdminBands = async () => {
@@ -1556,6 +1695,7 @@
                     const bandsPromise = getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                     const [eventSnap, bandQs] = await Promise.all([eventPromise, bandsPromise]);
                     if (eventSnap) {
+                        currentActiveEventData = eventSnap.exists() ? eventSnap.data() : null;
                         currentActiveEventName = eventSnap.exists()
                             ? eventSnap.data().event || eventSnap.data().name || currentActiveEventId
                             : currentActiveEventId + " (詳細不明)";
@@ -1691,12 +1831,18 @@
         // 3. バンド詳細ページ
         async function openAdminBandDetail(band) {
             const detailVersion = ++bandDetailVersion;
+            currentBandDetail = band;
             openPage('admin-band-detail');
 
             document.getElementById('band-detail-title').innerText = band.name || "バンド詳細";
             document.getElementById('bd-detail-name').innerText = band.name || "名称未設定";
             document.getElementById('bd-detail-id').innerText = band.id;
             document.getElementById('bd-detail-event').innerText = `イベントID: ${currentActiveEventId || '-'}`;
+            document.getElementById('bd-detail-performance-event').innerText = currentActiveEventId ? currentActiveEventName : 'イベント未設定';
+            const performanceDateInput = document.getElementById('bd-detail-performance-date');
+            performanceDateInput.value = band.performanceDates?.[currentActiveEventId] || '';
+            performanceDateInput.min = currentActiveEventData?.startDate || '';
+            performanceDateInput.max = currentActiveEventData?.endDate || currentActiveEventData?.startDate || '';
 
             const iconContainer = document.getElementById('bd-detail-icon');
             if (band.icon) {
@@ -1721,7 +1867,8 @@
                 const cData = await loadBandCue(band);
                 if (detailVersion !== bandDetailVersion) return;
 
-                if (band.cueSheetId) {
+                if (cData) {
+                    const digitalCueId = cData.id || `${band.id}_${currentActiveEventId}`;
                     cueArea.innerHTML = `
                         <div style="display:flex; align-items:center; justify-content:space-between; background:#e5f0ff; padding:16px; border-radius:16px;">
                             <div style="display:flex; align-items:center; gap:12px;">
@@ -1730,7 +1877,7 @@
                                 </div>
                                 <span style="font-weight:600; color:#1a73e8; font-size:15px;">デジタルCueシート</span>
                             </div>
-                            <a href="${DIGITAL_CUE_PATH}?cueID=${encodeURIComponent(band.cueSheetId)}" target="_blank" style="background:#1a73e8; color:white; padding:8px 20px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; box-shadow:0 2px 10px rgba(0,122,255,0.3);">表示</a>
+                            <a href="${DIGITAL_CUE_PATH}?cueID=${encodeURIComponent(digitalCueId)}" target="_blank" style="background:#1a73e8; color:white; padding:8px 20px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; box-shadow:0 2px 10px rgba(0,122,255,0.3);">表示</a>
                         </div>`;
                 } else if (band.latestCuesheetUrl || band.cueSheetUrl) {
                     const targetUrl = band.latestCuesheetUrl || band.cueSheetUrl;
@@ -1743,11 +1890,6 @@
                                 <span style="font-weight:600; color:#1c1c1e; font-size:15px;">画像Cueシート</span>
                             </div>
                             <a href="${targetUrl}" target="_blank" style="background:#ffffff; color:#1a73e8; padding:8px 20px; border-radius:999px; font-size:13px; font-weight:600; text-decoration:none; box-shadow:0 2px 10px rgba(0,0,0,0.05); flex-shrink:0;">開く</a>
-                        </div>`;
-                } else if (cData) {
-                    cueArea.innerHTML = `
-                        <div style="display:flex; align-items:center; justify-content:space-between; background:#e8f5e9; padding:16px; border-radius:16px;">
-                            <span style="font-weight:600; color:#34c759; font-size:15px;">Cueシートデータあり</span>
                         </div>`;
                 } else {
                     cueArea.innerHTML = '<div style="padding:16px; text-align:center; color:#8e8e93; background:#f2f2f7; border-radius:16px; font-size:14px; font-weight:500;">Cueシート未登録</div>';
@@ -1772,14 +1914,19 @@
 
                     if (cData.members && Array.isArray(cData.members) && cData.members.length > 0) {
                         let mHtml = "<div style='display:flex; flex-direction:column; gap:12px;'>";
-                        cData.members.forEach(m => {
-                            const uObj = allUsersCache.find(x => x.name === m.name) || {};
+                        cData.members.forEach((m, memberIndex) => {
+                            const memberId = Array.isArray(band.memberIds) ? band.memberIds[memberIndex] : null;
+                            const uObj = allUsersCache.find(x => x.id === memberId) || allUsersCache.find(x => x.name === m.name) || {};
                             const uid = uObj.id || '';
+                            const memberIcon = uObj.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
                             mHtml += `
                                 <div onclick="showUserProfile('${uid}', '${m.name}', '${m.grade}', '${m.part}')" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; padding:16px; border-radius:16px; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.03); transition:transform 0.15s;">
-                                    <div>
+                                    <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                                        <img src="${memberIcon}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; background:#f1f3f4; flex-shrink:0;">
+                                        <div>
                                         <strong style="color:#1c1c1e; font-size:16px;">${m.name || '不明'}</strong>
                                         <span style="font-size:13px; color:#8e8e93; margin-left:8px; font-weight:500;">(${m.grade || '-'}年 | ${m.part || '-'})</span>
+                                        </div>
                                     </div>
                                     <span class="material-icons" style="font-size:22px; color:#c7c7cc;">chevron_right</span>
                                 </div>`;
@@ -1811,11 +1958,15 @@
                         let mHtml = "<div style='display:flex; flex-direction:column; gap:12px;'>";
                         band.memberIds.forEach(uid => {
                             const uObj = allUsersCache.find(x => x.id === uid) || { name: '不明' };
+                            const memberIcon = uObj.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
                             mHtml += `
                                 <div onclick="showUserProfile('${uid}', '${uObj.name}', '${uObj.year}', '')" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; padding:16px; border-radius:16px; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.03); transition:transform 0.15s;">
-                                    <div>
+                                    <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                                        <img src="${memberIcon}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; background:#f1f3f4; flex-shrink:0;">
+                                        <div>
                                         <strong style="color:#1c1c1e; font-size:16px;">${uObj.name || '不明'}</strong>
                                         <span style="font-size:13px; color:#8e8e93; margin-left:8px; font-weight:500;">(${uObj.year || '-'}年)</span>
+                                        </div>
                                     </div>
                                     <span class="material-icons" style="font-size:22px; color:#c7c7cc;">chevron_right</span>
                                 </div>`;
@@ -1833,6 +1984,25 @@
                 songsContainer.innerHTML = `<div style="color:#ff3b30; text-align:center; padding:16px;">取得エラー: ${e.message}</div>`;
             }
         }
+
+        window.saveBandPerformanceDate = async () => {
+            if (!currentBandDetail || !currentActiveEventId) {
+                return await showCustomAlert('現在のイベントが設定されていません。', '保存できません');
+            }
+            const date = document.getElementById('bd-detail-performance-date').value;
+            if (!date) return await showCustomAlert('出演日を選択してください。', '入力エラー');
+            const performanceDates = {...(currentBandDetail.performanceDates || {}), [currentActiveEventId]: date};
+            try {
+                await updateDoc(doc(db, 'bands', currentBandDetail.id), {performanceDates, updatedAt:serverTimestamp()});
+                currentBandDetail.performanceDates = performanceDates;
+                const cachedBand = allBandsCache.find(item => item.id === currentBandDetail.id);
+                if (cachedBand) cachedBand.performanceDates = performanceDates;
+                concertLoadedEventId = null;
+                await showCustomAlert('出演日を保存しました。');
+            } catch (error) {
+                await showCustomAlert('保存エラー: ' + error.message, 'エラー');
+            }
+        };
 
         // 4. メンバータップ時の詳細ポップアップ表示用関数
         window.showUserProfile = async (uid, fallbackName, fallbackGrade, fallbackPart) => {

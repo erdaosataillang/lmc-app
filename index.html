@@ -629,6 +629,7 @@
         let cropper = null;
         let currentCropResolver = null;
         let currentBandLatestEventId = "";
+        let currentActiveEventId = "";
 
 
         
@@ -676,7 +677,9 @@
 
         window.goToWebCueSheet = () => {
             if (!currentEditingBandId) return;
-            window.location.href = `${CUE_WEB_URL}?bandID=${currentEditingBandId}&eventID=${currentBandLatestEventId}`;
+            const params = new URLSearchParams({bandID:currentEditingBandId});
+            if (currentBandLatestEventId) params.set('eventID', currentBandLatestEventId);
+            window.location.href = `${CUE_WEB_URL}?${params.toString()}`;
         };
 
         async function fetchAndRenderCueSheet(bandId, cueSheetId, eventId, fallbackImageUrl) {
@@ -694,17 +697,18 @@
 
             try {
                 let cueData = null;
-                let targetCueId = cueSheetId || "";
+                let targetCueId = "";
 
-                // 1. バンド情報に紐付く最新CueシートIDから直接取得
-                if (targetCueId) {
+                // 1. 現在開いているイベントのCueシートを最優先する
+                if (bandId && eventId) {
+                    targetCueId = `${bandId}_${eventId}`;
                     const docSnap = await getDoc(doc(db, "cuesheets", targetCueId));
                     if (docSnap.exists()) cueData = docSnap.data();
                 }
 
-                // 2. ID未登録時のフォールバック（{bandId}_{eventId}）
-                if (!cueData && bandId && eventId) {
-                    targetCueId = `${bandId}_${eventId}`;
+                // 2. バンド情報に紐付く最新CueシートIDから取得
+                if (!cueData && cueSheetId && cueSheetId !== targetCueId) {
+                    targetCueId = cueSheetId;
                     const docSnap = await getDoc(doc(db, "cuesheets", targetCueId));
                     if (docSnap.exists()) cueData = docSnap.data();
                 }
@@ -768,12 +772,15 @@
                         mBody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">メンバー情報なし</td></tr>`;
                     }
 
+                    return cueData;
+
                 } else if (fallbackImageUrl) {
                     cueImg.src = fallbackImageUrl;
                     imgContent.classList.remove('hidden');
                 } else {
                     emptyArea.classList.remove('hidden');
                 }
+                return null;
             } catch (err) {
                 console.error("CueSheet Fetch Error:", err);
                 if (fallbackImageUrl) {
@@ -782,6 +789,7 @@
                 } else {
                     emptyArea.classList.remove('hidden');
                 }
+                return null;
             } finally {
                 loading.classList.add('hidden');
             }
@@ -929,9 +937,9 @@
                 renderHeaderIcons(currentUserData);
                 
                 await loadTargetEvents();
+                await loadSystemSettings();
                 loadMyBands();
                 refreshAllUsersCache();
-                loadSystemSettings();
                 checkNotifications();
                 renderNav();
                 
@@ -1276,6 +1284,62 @@
                 showCustomAlert("お気に入りの更新に失敗しました。");
             }
         };
+        function renderCombinedBandSongs(bandData, cueData, canEdit) {
+            const combined = [];
+            const seen = new Set();
+            const addSong = (song, source) => {
+                const title = typeof song === 'string' ? song : song?.title;
+                const normalized = String(title || '').trim().toLowerCase();
+                if (!normalized || seen.has(normalized)) return;
+                seen.add(normalized);
+                combined.push({title:String(title).trim(), duration:typeof song === 'object' ? song.duration || '' : '', source});
+            };
+            (bandData.songs || []).forEach(song => addSong(song, 'band'));
+            (cueData?.songs || []).forEach(song => addSong(song, 'cue'));
+
+            const statSongEl = document.getElementById('stat-song-count');
+            if (statSongEl) statSongEl.innerText = combined.length;
+            const songList = document.getElementById('bandSongsList');
+            if (!songList) return;
+            songList.innerHTML = '';
+            if (combined.length === 0) {
+                songList.innerHTML = '<div style="padding:28px; text-align:center; color:#999; font-size:13px;">登録されている曲はありません</div>';
+                return;
+            }
+            combined.forEach(song => {
+                const row = document.createElement('div');
+                row.className = 'member-row-rich';
+                const icon = document.createElement('span');
+                icon.className = 'material-icons';
+                icon.innerText = 'music_note';
+                icon.style.cssText = 'font-size:16px; margin-right:8px; color:#0b57d0;';
+                const title = document.createElement('div');
+                title.style.cssText = 'flex:1; font-size:13px;';
+                title.innerText = song.title;
+                row.append(icon, title);
+                if (song.duration) {
+                    const duration = document.createElement('span');
+                    duration.style.cssText = 'font-size:10px; color:#666; margin-right:8px;';
+                    duration.innerText = song.duration;
+                    row.appendChild(duration);
+                }
+                if (song.source === 'cue') {
+                    const badge = document.createElement('span');
+                    badge.style.cssText = 'font-size:9px; color:#0b57d0; background:#e8f0fe; padding:3px 6px; border-radius:999px;';
+                    badge.innerText = 'Cueシート';
+                    row.appendChild(badge);
+                } else if (canEdit) {
+                    const remove = document.createElement('button');
+                    remove.className = 'btn-outline';
+                    remove.style.cssText = 'padding:2px 8px; font-size:10px;';
+                    remove.innerText = '削除';
+                    remove.onclick = () => removeSongFromBand(song.title);
+                    row.appendChild(remove);
+                }
+                songList.appendChild(row);
+            });
+        }
+
         // --- バンド詳細ロジック ---
         window.openBandDetail = async (bid, data) => {
             currentEditingBandId = bid; currentEditingBandMembers = data.memberIds;
@@ -1310,8 +1374,9 @@
             const eventNameEl = document.getElementById('detailBandEventName');
             currentBandLatestEventId = "";
             if (data.events && data.events.length > 0) {
-                // 配列の末尾（最新のイベントID）を取得
-                currentBandLatestEventId = data.events[data.events.length - 1];
+                currentBandLatestEventId = currentActiveEventId && data.events.includes(currentActiveEventId)
+                    ? currentActiveEventId
+                    : data.events[data.events.length - 1];
                 if (targetEvents) {
                     const ev = targetEvents.find(e => e.id === currentBandLatestEventId);
                     if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "アーカイブ";
@@ -1323,27 +1388,12 @@
             // Cueシート提出ボタンのリンク設定
             const btnSubmitCue = document.getElementById('btnSubmitCueInModal');
             if(btnSubmitCue) {
-                btnSubmitCue.onclick = () => {
-                    window.location.href = `${CUE_WEB_URL}?bandID=${bid}&eventID=${currentBandLatestEventId}`;
-                };
+                btnSubmitCue.onclick = () => goToWebCueSheet();
             }
 
             renderBandMembersInModal(data);
 
-            const songs = data.songs || []; 
-            const statSongEl = document.getElementById('stat-song-count');
-            if(statSongEl) statSongEl.innerText = songs.length;
-            
-            const songList = document.getElementById('bandSongsList'); 
-            if(songList) {
-                songList.innerHTML = "";
-                songs.forEach(s => {
-                    const div = document.createElement('div'); div.className = 'member-row-rich';
-                    const sTitle = s.title || s;
-                    div.innerHTML = `<span class="material-icons" style="font-size:16px; margin-right:8px; color:#0b57d0;">music_note</span><div style="flex:1; font-size:13px;">${sTitle}</div>${canE?`<button class="btn-outline" style="padding:2px 8px; font-size:10px;" onclick="removeSongFromBand('${sTitle}')">削除</button>`:''}`;
-                    songList.appendChild(div);
-                });
-            }
+            renderCombinedBandSongs(data, null, canE);
             
             const bandSongAddArea = document.getElementById('bandSongAddArea');
             if(bandSongAddArea) bandSongAddArea.classList.toggle('hidden', !canE);
@@ -1353,7 +1403,9 @@
 
             // バンドデータに保持されている latestCueSheetId を渡して描画
             const cueId = data.latestCueSheetId || data.cueSheetId || "";
-            fetchAndRenderCueSheet(bid, cueId, currentBandLatestEventId, data.latestCuesheetUrl || data.cueSheetUrl);
+            fetchAndRenderCueSheet(bid, cueId, currentBandLatestEventId, data.latestCuesheetUrl || data.cueSheetUrl).then(cueData => {
+                if (currentEditingBandId === bid) renderCombinedBandSongs(data, cueData, canE);
+            });
 
             // タブを初期状態（メンバー）にリセット
             if(window.switchDetailTab) window.switchDetailTab('members');
@@ -1696,7 +1748,8 @@
         async function loadSystemSettings() {
             const s = await getDoc(doc(db, "system", "settings"));
             if(s.exists() && s.data().activeEventId) {
-                const ev = await getDoc(doc(db, "events", s.data().activeEventId));
+                currentActiveEventId = s.data().activeEventId;
+                const ev = await getDoc(doc(db, "events", currentActiveEventId));
                 if(ev.exists()) {
                     const el = document.getElementById('displayActiveEvent');
                     let name = ev.data().event || ev.data().name || "";
@@ -1706,6 +1759,7 @@
                     localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
                 }
             } else {
+                currentActiveEventId = "";
                 document.getElementById('displayActiveEvent').style.display = "none";
                 localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
             }
