@@ -70,7 +70,7 @@
         .member-stack img,.member-stack-placeholder { width:28px; height:28px; border-radius:50%; object-fit:cover; background:#f1f3f4; border:2px solid white; margin-left:-7px; display:flex; align-items:center; justify-content:center; color:#8e8e93; font-size:15px; }
         .member-stack img:first-child,.member-stack-placeholder:first-child { margin-left:0; }
         .member-stack-label { color:#536471; font-size:11px; margin-left:8px; }
-        .post-actions { display:flex; align-items:center; justify-content:space-between; max-width:240px; margin-top:10px; color:#536471; }
+        .post-actions { display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:10px; color:#536471; }
         .post-action { border:0; background:transparent; color:inherit; display:flex; align-items:center; gap:5px; padding:3px 8px 3px 0; font-size:12px; }
         .post-action.liked { color:#f91880; }
         .post-action .material-icons { font-size:19px; }
@@ -83,6 +83,9 @@
         .member-detail-row:last-child { border-bottom:0; }
         .member-detail-row img { width:44px; height:44px; border-radius:50%; object-fit:cover; background:#f1f3f4; }
         .profile-section-title { font-size:13px; font-weight:800; margin:20px 0 6px; }
+        .copy-editor { width:100%; min-height:130px; resize:none; border:1px solid #cfd9de; border-radius:16px; padding:14px; font:inherit; font-size:15px; line-height:1.6; outline:none; }
+        .copy-editor:focus { border-color:#0b57d0; box-shadow:0 0 0 3px rgba(11,87,208,.1); }
+        .copy-edit-button { border:0; border-radius:999px; background:#f1f3f4; color:#1f1f1f; font-size:12px; font-weight:700; padding:7px 11px; display:inline-flex; align-items:center; gap:4px; }
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
     </style>
@@ -126,6 +129,16 @@
             <div id="bandProfileBody" style="padding:0 18px 24px;"></div>
         </div>
     </div>
+    <div id="modal-band-copy" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-copy')">
+        <div class="modal-content" style="padding:0; overflow:hidden;">
+            <div class="modal-header"><div><h3 style="margin:0; font-size:18px;">紹介文を編集</h3><div id="bandCopyName" style="font-size:12px; color:#536471; margin-top:3px;"></div></div><button class="modal-close" onclick="closeModal('modal-band-copy')"><span class="material-icons">close</span></button></div>
+            <div style="padding:18px;">
+                <textarea id="bandCopyInput" class="copy-editor" maxlength="160" placeholder="バンドの雰囲気や見どころを入力してください"></textarea>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:7px;"><span style="font-size:11px; color:#8e8e93;">タイムラインに表示されます</span><span id="bandCopyCount" style="font-size:11px; color:#8e8e93;">0/160</span></div>
+                <button id="bandCopySave" onclick="saveBandCopy()" style="width:100%; border:0; border-radius:999px; background:#0b57d0; color:white; font-weight:700; padding:13px; margin-top:18px;">保存する</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import {db, auth} from './js/common.js';
@@ -142,6 +155,7 @@
         let timelineBandsLoading = null;
         const bandProfiles = new Map();
         let allUsersCache = readCachedJson('lmc_all_users_cache', []);
+        let editingBandCopyId = null;
 
         window.closeModal = id => document.getElementById(id)?.classList.remove('open');
 
@@ -269,9 +283,13 @@
         }
 
         function bandDescription(band) {
-            const saved = band?.description || band?.profile || band?.bio || band?.comment || band?.remarks;
+            const saved = band?.timelineDescription || band?.description || band?.profile || band?.bio || band?.comment || band?.remarks;
             if (saved) return saved;
             return 'LMCのステージに出演するバンドです。プロフィールの更新をお楽しみに。';
+        }
+
+        function canEditBandCopy(band) {
+            return !!currentUser && Array.isArray(band?.memberIds) && band.memberIds.includes(currentUser);
         }
 
         function memberStackHtml(band) {
@@ -303,6 +321,7 @@
                 const icon = safeImageUrl(band.icon || entry.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
                 const likes = Array.isArray(band.likes) ? band.likes : [];
                 const liked = !!currentUser && likes.includes(currentUser);
+                const editable = canEditBandCopy(band);
                 const performance = `${dateLabel(entry.date)}${showTimes && entry.time ? ` · ${entry.time}` : ''}`;
                 return `<article class="timeline-post" onclick="openBandProfile('${escapeHtml(entry.bandId)}')">
                     <img class="post-avatar" src="${icon}" alt="">
@@ -314,7 +333,7 @@
                         <div class="post-actions">
                             <button class="post-action" onclick="event.stopPropagation(); openBandProfile('${escapeHtml(entry.bandId)}')"><span class="material-icons">group</span><span>メンバー</span></button>
                             <button class="post-action ${liked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleBandLike('${escapeHtml(entry.bandId)}')"><span class="material-icons">${liked ? 'favorite' : 'favorite_border'}</span><span>${likes.length}</span></button>
-                            <span class="post-action"><span class="material-icons">visibility</span><span>詳細</span></span>
+                            ${editable ? `<button class="post-action" onclick="event.stopPropagation(); openBandCopyEditor('${escapeHtml(entry.bandId)}')"><span class="material-icons">edit</span><span>編集</span></button>` : '<span class="post-action"><span class="material-icons">visibility</span><span>詳細</span></span>'}
                         </div>
                     </div>
                 </article>`;
@@ -341,12 +360,13 @@
             document.getElementById('bandProfileCover').style.background = cover ? `url(${cover}) center/cover` : 'linear-gradient(135deg,#dbeafe,#c4b5fd)';
             const likes = Array.isArray(band.likes) ? band.likes : [];
             const liked = !!currentUser && likes.includes(currentUser);
+            const editable = canEditBandCopy(band);
             const songs = Array.isArray(band.songs) ? band.songs.map(song => typeof song === 'string' ? song : song?.title).filter(Boolean) : [];
             document.getElementById('bandProfileBody').innerHTML = `
                 <img class="band-profile-icon" src="${icon}" alt="">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-top:7px;">
                     <div style="min-width:0;"><div style="font-size:21px; font-weight:850; overflow-wrap:anywhere;">${escapeHtml(band.name || '名称未設定')}</div><div style="font-size:13px; color:#536471; margin-top:3px;">@LMC_BAND</div></div>
-                    <button id="bandProfileLike" class="post-action ${liked ? 'liked' : ''}" onclick="toggleBandLike('${escapeHtml(band.id)}')" style="border:1px solid ${liked ? '#f9a8d4' : '#cfd9de'}; border-radius:999px; padding:8px 13px; flex-shrink:0;"><span class="material-icons">${liked ? 'favorite' : 'favorite_border'}</span><span>${likes.length}</span></button>
+                    <div style="display:flex; gap:7px; align-items:center; flex-shrink:0;">${editable ? `<button class="copy-edit-button" onclick="openBandCopyEditor('${escapeHtml(band.id)}')"><span class="material-icons" style="font-size:17px;">edit</span>紹介文</button>` : ''}<button id="bandProfileLike" class="post-action ${liked ? 'liked' : ''}" onclick="toggleBandLike('${escapeHtml(band.id)}')" style="border:1px solid ${liked ? '#f9a8d4' : '#cfd9de'}; border-radius:999px; padding:8px 13px; flex-shrink:0;"><span class="material-icons">${liked ? 'favorite' : 'favorite_border'}</span><span>${likes.length}</span></button></div>
                 </div>
                 <div style="font-size:14px; line-height:1.65; margin-top:14px; white-space:pre-wrap;">${escapeHtml(bandDescription(band))}</div>
                 <div class="band-stat-row"><div class="band-stat"><strong>${members.length}</strong><span>メンバー</span></div><div class="band-stat"><strong>${songs.length}</strong><span>登録曲</span></div><div class="band-stat"><strong>${likes.length}</strong><span>いいね</span></div></div>
@@ -361,9 +381,51 @@
                 try { const snapshot = await getDoc(doc(db,'bands',bandId)); if (snapshot.exists()) bandProfiles.set(bandId,{id:snapshot.id,...snapshot.data()}); }
                 catch (_) {}
             }
+            await ensureLiffUser(false);
             const band = bandProfiles.get(bandId) || uniqueBandEntries().find(entry => entry.bandId === bandId) || {id:bandId};
             const members = await getBandMembers(band);
             renderBandProfile(band, members);
+        };
+
+        window.openBandCopyEditor = async bandId => {
+            const uid = await ensureLiffUser(true);
+            if (!uid) return;
+            const band = bandProfiles.get(bandId);
+            if (!canEditBandCopy(band)) return;
+            editingBandCopyId = bandId;
+            const input = document.getElementById('bandCopyInput');
+            input.value = band.timelineDescription || band.description || band.profile || band.bio || band.comment || band.remarks || '';
+            document.getElementById('bandCopyName').textContent = band.name || '';
+            document.getElementById('bandCopyCount').textContent = `${input.value.length}/160`;
+            input.oninput = () => { document.getElementById('bandCopyCount').textContent = `${input.value.length}/160`; };
+            document.getElementById('modal-band-copy').classList.add('open');
+            setTimeout(() => input.focus(), 250);
+        };
+
+        window.saveBandCopy = async () => {
+            const band = bandProfiles.get(editingBandCopyId);
+            if (!band || !canEditBandCopy(band)) return;
+            const value = document.getElementById('bandCopyInput').value.trim();
+            const button = document.getElementById('bandCopySave');
+            button.disabled = true;
+            button.textContent = '保存中…';
+            try {
+                await updateDoc(doc(db,'bands',band.id), {timelineDescription:value});
+                band.timelineDescription = value;
+                closeModal('modal-band-copy');
+                if (viewMode === 'timeline') renderTimeline();
+                if (document.getElementById('modal-band-profile').classList.contains('open')) {
+                    const members = await getBandMembers(band);
+                    renderBandProfile(band, members);
+                }
+            } catch (error) {
+                console.error('Timeline copy update failed:', error);
+                button.textContent = '保存に失敗しました。もう一度試す';
+                return;
+            } finally {
+                button.disabled = false;
+                if (button.textContent === '保存中…') button.textContent = '保存する';
+            }
         };
 
         window.toggleBandLike = async bandId => {
