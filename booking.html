@@ -62,6 +62,7 @@
         .status-label { font-size: 8px; color: #cf1322; font-weight: bold; height: 12px; transform: scale(0.9); }
         .event-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; min-height: 5px; align-items: center; } 
         .dot { width: 4px; height: 4px; border-radius: 50%; background: #34A853; } .dot.event { background: #137333; transform: scale(1.2); }
+        .dot.mine { width:7px; height:7px; background:#137333; box-shadow:0 0 0 2px #ceead6; }
         .dot-plus { font-size: 10px; color: #137333; font-weight: bold; margin-left: 2px; line-height: 1; }
         
         /* 日カレンダー・タイムライン */
@@ -82,6 +83,16 @@
         .event-block.lottery-confirmed { background: #f3e5f5; border-left-color: #ab47bc; color: #4a148c; }
         /* 管理者による確定/イベント (緑系) */
         .event-block.special-event { background: #e6f4ea; border-left-color: #137333; color: #0d652d; }
+        .event-block.my-band-booking { box-shadow: 0 0 0 2px #34a853, 0 4px 12px rgba(52,168,83,.2); }
+        .event-block.my-band-booking::after { content: "参加中"; position:absolute; top:3px; right:4px; padding:2px 5px; border-radius:999px; background:#137333; color:white; font-size:8px; font-weight:700; }
+        .event-block.my-band-booking .event-title { padding-right:36px; }
+
+        .booking-detail-hero { background:linear-gradient(135deg,#e8f0fe,#f3e5f5); border-radius:22px; padding:18px; display:flex; align-items:center; gap:14px; }
+        .booking-detail-band-icon { width:66px; height:66px; border-radius:20px; object-fit:cover; background:white; box-shadow:0 3px 12px rgba(0,0,0,.09); flex-shrink:0; }
+        .booking-detail-card { background:#fff; border:1px solid #eef0f2; border-radius:18px; padding:16px; margin-top:12px; }
+        .booking-detail-person { display:flex; align-items:center; gap:12px; }
+        .booking-detail-person img { width:48px; height:48px; border-radius:50%; object-fit:cover; background:#f1f3f4; }
+        .my-band-pill { display:inline-flex; align-items:center; gap:4px; color:#137333; background:#e6f4ea; border-radius:999px; padding:4px 9px; font-size:11px; font-weight:700; margin-top:7px; }
         
         .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; } .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
         
@@ -260,8 +271,22 @@
                 <div id="weekStrip" class="week-strip"></div>
                 
                 <div id="bookingModeBanner" style="margin:0 0 12px; padding:12px; border-radius:12px; font-size:13px; text-align:center; line-height:1.4;"></div>
-                <div style="font-size:11px; color:#999; text-align:center; margin-bottom:8px;">空き時間を長押し＆なぞって予約 / 予約をタップして編集</div>
+                <div style="font-size:11px; color:#999; text-align:center; margin-bottom:8px;">空き時間を長押し＆なぞって予約 / 予約をタップして詳細を表示</div>
                 <div class="timeline-container" id="timeline"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 予約詳細（全ユーザー共通） -->
+    <div id="modal-booking-detail" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking-detail')">
+        <div class="modal-content" style="padding:0; overflow:hidden;">
+            <div style="padding:18px 20px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0;">
+                <h3 style="margin:0; font-size:18px;">予約の詳細</h3>
+                <button onclick="closeModal('modal-booking-detail')" aria-label="閉じる" style="border:0; background:#f1f3f4; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><span class="material-icons">close</span></button>
+            </div>
+            <div id="bookingDetailBody" style="padding:16px 16px 22px; overflow-y:auto; max-height:72vh;"></div>
+            <div id="bookingDetailActions" style="display:none; padding:0 16px 20px;">
+                <button class="btn-primary" onclick="editCurrentBookingFromDetail()"><span class="material-icons" style="font-size:18px; vertical-align:-4px; margin-right:5px;">edit</span>この予約を編集</button>
             </div>
         </div>
     </div>
@@ -536,6 +561,7 @@
         const CACHE_KEY_ALL_USERS_UPDATED = 'lmc_all_users_updated';
         const CACHE_KEY_LAST_LOGIN_UPDATED = 'lmc_last_login_updated';
         const CACHE_KEY_SEEN_LOTTERY_RUNS = 'lmc_seen_lottery_runs';
+        const CACHE_KEY_SEEN_MY_BOOKINGS = 'lmc_seen_my_band_bookings';
         const CACHE_FRESH_MS = 30 * 60 * 1000;
 
         let currentUser=null, currentProfile=null, currentUserData=null, displayDate=new Date(), selectedTimeSlot=null, selectionStartHour=null, selectionEndHour=null;
@@ -552,6 +578,8 @@
         let systemSettingsReady = false;
         let currentLotteryRunData = null;
         let lotteryNotificationsCache = [];
+        let bookingDetailTarget = null;
+        const bandProfileCache = new Map();
         let currentMonthUnsub = null;
         let currentDayUnsub = null;
         let currentBandsUnsub = null;
@@ -616,6 +644,17 @@
             if (!uid) return fallbackName || '';
             const u = allUsersCache.find(x => x.id === uid);
             return u && u.name ? u.name : fallbackName || '';
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+        }
+
+        function safeImageUrl(value, fallback = 'https://ul.h3z.jp/Vnukmtvq.jpg') {
+            try {
+                const url = new URL(value || fallback, window.location.href);
+                return ['http:', 'https:'].includes(url.protocol) ? escapeHtml(url.href) : fallback;
+            } catch (_) { return fallback; }
         }
         
         function checkAdminRole(role) {
@@ -913,6 +952,12 @@
                 snapshot.forEach(docSnap=>myBandsAll.push({id:docSnap.id,...docSnap.data()}));
                 localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
                 checkNotifications();
+                if (calendarMode === 'month') {
+                    applyBookingDataToMonth(loadedBookingsCache, displayDate.getFullYear(), displayDate.getMonth() + 1);
+                } else {
+                    const dayKey = formatDateKey(displayDate);
+                    renderDayEvents(loadedBookingsCache.filter(booking => formatDateKey(new Date(booking.startTime)) === dayKey));
+                }
             }, (error) => console.warn("Band refresh failed:", error));
         }
         
@@ -1039,7 +1084,7 @@
             const displayM = m + 1;
             const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${displayM}`;
             const cached = localStorage.getItem(cacheKey);
-            if(cached) { try { const data = JSON.parse(cached); loadedBookingsCache = data; applyBookingDataToMonth(data, y, displayM); } catch(e) {} }
+            if(cached) { try { const data = JSON.parse(cached); loadedBookingsCache = data; applyBookingDataToMonth(data, y, displayM); checkNotifications(); } catch(e) {} }
             if (useCache) return;
             if (currentDayUnsub) {
                 currentDayUnsub();
@@ -1063,6 +1108,7 @@
                 loadedBookingsCache = bookings;
                 localStorage.setItem(cacheKey, JSON.stringify(bookings));
                 applyBookingDataToMonth(bookings, y, displayM);
+                checkNotifications();
                 hideSyncIndicator(syncToken);
                 if (monthSyncToken === syncToken) monthSyncToken = null;
             }, (error) => {
@@ -1085,12 +1131,13 @@
                 const d = new Date(bk.startTime); 
                 if (d.getFullYear() === y && (d.getMonth() + 1) === m) {
                     const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-                    if (!stats[key]) stats[key] = { count: 0, eventType: null, hasConfirmedLottery: false };
+                    if (!stats[key]) stats[key] = { count: 0, mineCount: 0, eventType: null, hasConfirmedLottery: false };
                     if (bk.type === 'event') {
                         const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); const sH = d.getHours(); const eH = e.getHours(); const isAllDay = (sH <= 9 && eH >= 20);
                         if (isAllDay) { stats[key].eventType = 'unavailable'; } else if (stats[key].eventType !== 'unavailable') { stats[key].eventType = 'partial'; }
                     } else {
                         stats[key].count++;
+                        if (myBandsAll.some(band => band.id === bk.bandId)) stats[key].mineCount++;
                         if (bk.source === 'lottery' && bk.status === 'confirmed') stats[key].hasConfirmedLottery = true;
                     }
                 }
@@ -1112,9 +1159,9 @@
                     const dotsContainer = document.getElementById(key.replace('day-', 'dots-'));
                     if (dotsContainer) { 
                         if (data.count <= 3) { 
-                            for(let i=0; i<data.count; i++) { const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); } 
+                            for(let i=0; i<data.count; i++) { const dot = document.createElement('div'); dot.className = `dot${i < data.mineCount ? ' mine' : ''}`; dotsContainer.appendChild(dot); }
                         } else { 
-                            const dot = document.createElement('div'); dot.className = 'dot'; dotsContainer.appendChild(dot); 
+                            const dot = document.createElement('div'); dot.className = `dot${data.mineCount ? ' mine' : ''}`; dotsContainer.appendChild(dot);
                             const plus = document.createElement('div'); plus.className = 'dot-plus'; plus.innerText = `+${data.count - 1}`; dotsContainer.appendChild(plus); 
                         } 
                     }
@@ -1175,8 +1222,9 @@
                     } else {
                         div.classList.add('normal-confirmed');
                     }
+                    if (myBandsAll.some(band => band.id === d.bandId)) div.classList.add('my-band-booking');
                 } 
-                div.onclick=(ev)=>{ev.stopPropagation(); openEditBookingModal(d.id,d,ev);}; 
+                div.onclick=(ev)=>{ev.stopPropagation(); openBookingDetailModal(d.id,d,ev);};
                 cA.appendChild(div); 
             } 
         }
@@ -1248,6 +1296,7 @@
                 loadedBookingsCache = newCache;
                 const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${cacheYear}_${cacheMonth}`;
                 localStorage.setItem(cacheKey, JSON.stringify(newCache));
+                checkNotifications();
 
                 renderDayEvents(evs);
                 hideSyncIndicator(syncToken);
@@ -1547,6 +1596,103 @@
             openModal('modal-booking'); 
         }
         
+        async function getBookingBandProfile(data) {
+            if (!data?.bandId || data.type === 'event') return null;
+            const localBand = myBandsAll.find(band => band.id === data.bandId);
+            if (localBand) return localBand;
+            if (bandProfileCache.has(data.bandId)) return bandProfileCache.get(data.bandId);
+            try {
+                const snapshot = await getDoc(doc(db, 'bands', data.bandId));
+                const band = snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null;
+                bandProfileCache.set(data.bandId, band);
+                return band;
+            } catch (error) {
+                console.warn('Band profile could not be loaded:', error);
+                return null;
+            }
+        }
+
+        async function getBookingCreator(data) {
+            const cached = allUsersCache.find(user => user.id === data?.creatorId);
+            if (cached) return cached;
+            if (!data?.creatorId) return null;
+            try {
+                const snapshot = await getDoc(doc(db, 'users', data.creatorId));
+                const user = snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null;
+                if (user) allUsersCache.push(user);
+                return user;
+            } catch (error) {
+                console.warn('Booking creator could not be loaded:', error);
+                return null;
+            }
+        }
+
+        window.openBookingDetailModal = async (id, data, e) => {
+            bookingDetailTarget = {id, data, event:e};
+            const body = document.getElementById('bookingDetailBody');
+            const actions = document.getElementById('bookingDetailActions');
+            const canEdit = data.creatorId === currentUser || hasAdminAccess(currentUserData);
+            actions.style.display = canEdit ? 'block' : 'none';
+            body.innerHTML = `<div style="padding:44px 0; text-align:center; color:#8e8e93;"><span class="material-icons" style="animation:spin 1s linear infinite;">sync</span><div style="margin-top:8px;">詳細を読み込んでいます</div></div>`;
+            openModal('modal-booking-detail');
+
+            const [band, creator] = await Promise.all([getBookingBandProfile(data), getBookingCreator(data)]);
+            if (!bookingDetailTarget || bookingDetailTarget.id !== id) return;
+            const start = new Date(data.startTime);
+            const end = new Date(data.endTime);
+            const dateText = `${start.getFullYear()}年${start.getMonth()+1}月${start.getDate()}日`;
+            const timeText = `${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}〜${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
+            const isMine = !!data.bandId && myBandsAll.some(item => item.id === data.bandId);
+            const title = data.type === 'event' ? (data.title || 'イベント') : (band?.name || data.bandName || '名称未設定');
+            const bandIcon = safeImageUrl(band?.icon || band?.image || band?.iconUrl);
+            const creatorIcon = safeImageUrl(creator?.icon);
+            const creatorName = creator?.name || data.userName || 'ユーザー';
+            const memberCount = Array.isArray(band?.memberIds) ? band.memberIds.length : null;
+            const songCount = Array.isArray(band?.songs) ? band.songs.length : null;
+            const profileText = band?.description || band?.profile || band?.bio || band?.comment || '';
+            const stateText = data.status === 'pending' ? '抽選待ち' : (data.source === 'lottery' ? '抽選確定' : '予約確定');
+
+            body.innerHTML = `
+                <div class="booking-detail-hero">
+                    <img class="booking-detail-band-icon" src="${bandIcon}" alt="">
+                    <div style="min-width:0; flex:1;">
+                        <div style="font-size:18px; font-weight:800; overflow-wrap:anywhere;">${escapeHtml(title)}</div>
+                        <div style="font-size:13px; color:#536471; margin-top:5px;">${escapeHtml(dateText)} · ${escapeHtml(timeText)}</div>
+                        ${isMine ? '<div class="my-band-pill"><span class="material-icons" style="font-size:14px;">groups</span>自分が参加しているバンド</div>' : ''}
+                    </div>
+                </div>
+                <div class="booking-detail-card">
+                    <div style="font-size:12px; color:#8e8e93; font-weight:700; margin-bottom:10px;">予約した人</div>
+                    <div class="booking-detail-person">
+                        <img src="${creatorIcon}" alt="">
+                        <div style="min-width:0;">
+                            <div style="font-size:16px; font-weight:800;">${escapeHtml(creatorName)}</div>
+                            <div style="font-size:12px; color:#8e8e93; margin-top:3px;">${escapeHtml(creator?.part || 'LMCメンバー')}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="booking-detail-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                        <div style="font-size:14px; font-weight:800;">${data.type === 'event' ? 'イベント情報' : 'バンドプロフィール'}</div>
+                        <span style="font-size:11px; font-weight:700; color:#0b57d0; background:#e8f0fe; border-radius:999px; padding:5px 9px;">${escapeHtml(stateText)}</span>
+                    </div>
+                    ${data.type === 'event'
+                        ? '<div style="font-size:13px; color:#536471; line-height:1.6; margin-top:10px;">管理者が登録したイベント予定です。</div>'
+                        : `<div style="display:flex; gap:20px; margin-top:12px;">
+                            <div><strong style="font-size:18px;">${memberCount ?? '–'}</strong><div style="font-size:11px; color:#8e8e93;">メンバー</div></div>
+                            <div><strong style="font-size:18px;">${songCount ?? '–'}</strong><div style="font-size:11px; color:#8e8e93;">登録曲</div></div>
+                           </div>
+                           <div style="font-size:13px; color:#536471; line-height:1.65; margin-top:12px; white-space:pre-wrap;">${escapeHtml(profileText || 'プロフィールはまだ登録されていません。')}</div>`}
+                </div>`;
+        };
+
+        window.editCurrentBookingFromDetail = () => {
+            if (!bookingDetailTarget) return;
+            const target = bookingDetailTarget;
+            closeModal('modal-booking-detail');
+            openEditBookingModal(target.id, target.data, target.event);
+        };
+
         function openEditBookingModal(id, data, e){ 
             const isAdmin=hasAdminAccess(currentUserData);
             if(data.creatorId!==currentUser && !isAdmin){
@@ -1687,7 +1833,7 @@
                     closeModal('modal-search');
                     displayDate.setTime(s.getTime());
                     renderCalendar(); 
-                    setTimeout(() => openEditBookingModal(d.id, d, event), 300);
+                    setTimeout(() => openBookingDetailModal(d.id, d, event), 300);
                 };
                 container.appendChild(div);
             });
@@ -1861,6 +2007,45 @@
             return html;
         }
 
+        function getMyBandBookings() {
+            const myBandIds = new Set(myBandsAll.map(band => band.id));
+            const now = Date.now();
+            return loadedBookingsCache
+                .filter(booking => booking.type !== 'event' && myBandIds.has(booking.bandId) && new Date(booking.endTime).getTime() >= now)
+                .sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+                .slice(0, 12);
+        }
+
+        function getSeenMyBookingIds() {
+            try { return new Set(JSON.parse(localStorage.getItem(CACHE_KEY_SEEN_MY_BOOKINGS) || '[]')); }
+            catch (error) { return new Set(); }
+        }
+
+        function myBandBookingNotificationHtml() {
+            return getMyBandBookings().map(booking => {
+                const start = new Date(booking.startTime);
+                const end = new Date(booking.endTime);
+                const dateText = `${start.getMonth()+1}月${start.getDate()}日 ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}〜${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
+                const state = booking.status === 'pending' ? '抽選待ち' : (booking.source === 'lottery' ? '抽選で確定' : '予約済み');
+                return `<div class="notification-item clickable" onclick="openMyBandBooking('${escapeHtml(booking.id)}')">
+                    <div class="notif-icon-box" style="background:#e6f4ea; color:#137333;"><span class="material-icons">groups</span></div>
+                    <div class="notif-content" style="min-width:0;">
+                        <div class="notif-text" style="font-weight:bold;">${escapeHtml(booking.bandName || '参加バンド')} の合わせ予約</div>
+                        <div style="font-size:12px; color:#536471; margin-top:4px; line-height:1.5;">${escapeHtml(dateText)} · ${escapeHtml(state)}</div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        window.openMyBandBooking = (bookingId) => {
+            const booking = loadedBookingsCache.find(item => item.id === bookingId);
+            if (!booking) return;
+            closeModal('modal-notification');
+            displayDate = new Date(booking.startTime);
+            switchCalendarView('day', true);
+            setTimeout(() => openBookingDetailModal(booking.id, booking), 120);
+        };
+
         window.openLotteryResult = (dateKey) => {
             const [year, month, day] = dateKey.split('-').map(Number);
             displayDate = new Date(year, month - 1, day);
@@ -1878,6 +2063,10 @@
             }
             const seenRunIds = getSeenLotteryRunIds();
             if (getRelevantLotteryRuns().some(run => !seenRunIds.has(run.id))) {
+                hasNotification = true;
+            }
+            const seenBookingIds = getSeenMyBookingIds();
+            if (getMyBandBookings().some(booking => !seenBookingIds.has(booking.id))) {
                 hasNotification = true;
             }
             
@@ -1909,6 +2098,7 @@
             }
 
             html += lotteryNotificationHtml();
+            html += myBandBookingNotificationHtml();
 
             if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 for (const bid of currentUserData.pendingInvites) {
@@ -1957,6 +2147,9 @@
                 relevantRunIds.forEach(id => seenRunIds.add(id));
                 localStorage.setItem(CACHE_KEY_SEEN_LOTTERY_RUNS, JSON.stringify([...seenRunIds].slice(-100)));
             }
+            const seenBookingIds = getSeenMyBookingIds();
+            getMyBandBookings().forEach(booking => seenBookingIds.add(booking.id));
+            localStorage.setItem(CACHE_KEY_SEEN_MY_BOOKINGS, JSON.stringify([...seenBookingIds].slice(-200)));
             checkNotifications(); 
         };
 

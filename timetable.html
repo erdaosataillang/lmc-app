@@ -13,9 +13,16 @@
         body { margin:0; width:100%; height:100vh; height:100dvh; overflow:hidden; background:#f1f4f9; color:#1f1f1f; font-family:'Roboto','Noto Sans JP',sans-serif; }
         * { box-sizing:border-box; }
         .app { max-width:480px; width:100%; height:100%; min-height:0; margin:0 auto; display:flex; flex-direction:column; padding-bottom:calc(76px + env(safe-area-inset-bottom, 0px)); }
-        .header { flex-shrink:0; padding:14px 16px 10px; display:flex; align-items:center; justify-content:space-between; }
+        .header { flex-shrink:0; padding:12px 16px 10px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+        .header-copy { min-width:0; }
         .title { font-size:20px; font-weight:700; }
-        .event-name { font-size:11px; color:#5f6368; max-width:55%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .event-name { font-size:11px; color:#5f6368; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
+        .header-actions { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+        .notification-btn,.header-avatar { width:36px; height:36px; border:0; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative; background:transparent; color:#5f6368; padding:0; }
+        .header-avatar { background:#dadce0; overflow:hidden; }
+        .header-avatar img { width:32px; height:32px; border-radius:50%; object-fit:cover; border:2px solid white; }
+        .notification-badge { position:absolute; top:4px; right:4px; width:10px; height:10px; border-radius:50%; background:#d93025; border:2px solid white; display:none; }
+        .notification-badge.show { display:block; }
         .content { flex:1; min-height:0; overflow-y:auto; overscroll-behavior-y:contain; padding:8px 16px 24px; }
         .day-tabs { display:flex; gap:8px; overflow-x:auto; padding:4px 0 14px; scrollbar-width:none; }
         .day-tabs::-webkit-scrollbar { display:none; }
@@ -39,14 +46,25 @@
         .nav-item.active { color:#1f1f1f; transform:translateY(-4px); }
         .nav-item.active .nav-icon { background:#c2e7ff; color:#001d35; padding:4px 16px; }
         .hidden { display:none !important; }
+        .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9000; display:none; align-items:flex-end; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal-content { background:white; width:100%; max-width:480px; max-height:82vh; overflow-y:auto; border-radius:28px 28px 0 0; animation:slideUp .25s ease; }
+        .modal-header { padding:20px 20px 12px; border-bottom:1px solid #f0f0f0; display:flex; justify-content:space-between; align-items:center; }
+        .modal-close { border:0; background:#f1f3f4; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#5f6368; }
+        .notification-item { padding:18px 20px; border-bottom:1px solid #f0f0f0; display:flex; gap:12px; align-items:flex-start; }
+        .profile-cover { height:112px; background:linear-gradient(135deg,#c2e7ff,#0b57d0); background-size:cover; background-position:center; }
         @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
     </style>
 </head>
 <body>
     <main class="app">
         <header class="header">
-            <div class="title">タイムテーブル</div>
-            <div class="event-name" id="eventName">読み込み中...</div>
+            <div class="header-copy"><div class="title">タイムテーブル</div><div class="event-name" id="eventName">読み込み中...</div></div>
+            <div class="header-actions">
+                <button class="notification-btn" onclick="openNotificationModal()" aria-label="通知"><span class="material-icons">notifications</span><span class="notification-badge" id="headerNotifBadge"></span></button>
+                <button class="header-avatar" onclick="openProfileModal()" aria-label="マイページ"><img id="headerAvatar" src="https://ul.h3z.jp/Vnukmtvq.jpg" alt=""></button>
+            </div>
         </header>
         <section class="content">
             <div class="day-tabs" id="dayTabs"></div>
@@ -54,6 +72,24 @@
         </section>
     </main>
     <div id="nav-container"></div>
+
+    <div id="modal-notification" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-notification')">
+        <div class="modal-content">
+            <div class="modal-header"><h3 style="margin:0; font-size:18px;">通知</h3><button class="modal-close" onclick="closeModal('modal-notification')"><span class="material-icons">close</span></button></div>
+            <div id="notificationList"></div>
+        </div>
+    </div>
+    <div id="modal-profile" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-profile')">
+        <div class="modal-content" style="overflow:hidden;">
+            <div class="profile-cover" id="profileCover"><button class="modal-close" onclick="closeModal('modal-profile')" style="float:right; margin:14px; background:rgba(0,0,0,.42); color:white;"><span class="material-icons">close</span></button></div>
+            <div style="padding:0 18px 24px;">
+                <img id="profileIcon" src="https://ul.h3z.jp/Vnukmtvq.jpg" alt="" style="width:78px; height:78px; border-radius:50%; border:4px solid white; object-fit:cover; margin-top:-40px; position:relative; background:white;">
+                <div id="profileName" style="font-size:21px; font-weight:800; margin-top:7px;">マイページ</div>
+                <div id="profileSub" style="font-size:13px; color:#536471; margin-top:4px;"></div>
+                <button onclick="window.location.href='https://mypage.sorairosystem.com'" style="width:100%; border:0; border-radius:999px; background:#0b57d0; color:white; font-weight:700; padding:13px; margin-top:20px;">マイページを開く</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import {db, auth} from './js/common.js';
@@ -63,6 +99,58 @@
         let entries = [];
         let selectedDate = '';
         let showTimes = true;
+        let cachedUser = {};
+
+        window.closeModal = id => document.getElementById(id)?.classList.remove('open');
+
+        function readCachedJson(key, fallback) {
+            try { return JSON.parse(localStorage.getItem(key) || '') || fallback; }
+            catch (_) { return fallback; }
+        }
+
+        function getCachedMyBookings() {
+            const bands = readCachedJson('lmc_bands_cache', []);
+            const bandIds = new Set(bands.map(band => band.id));
+            const now = new Date();
+            const key = `lmc_bookings_${now.getFullYear()}_${now.getMonth()+1}`;
+            return readCachedJson(key, []).filter(booking => bandIds.has(booking.bandId) && new Date(booking.endTime) >= now).sort((a,b) => new Date(a.startTime)-new Date(b.startTime)).slice(0,8);
+        }
+
+        function updateHeader() {
+            cachedUser = readCachedJson('lmc_user_cache', {});
+            document.getElementById('headerAvatar').src = safeImageUrl(cachedUser.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            const seen = new Set(readCachedJson('lmc_seen_my_band_bookings', []));
+            const hasUnreadBooking = getCachedMyBookings().some(booking => !seen.has(booking.id));
+            const needsEmail = cachedUser && !(cachedUser.Email || cachedUser.email);
+            const hasInvite = Array.isArray(cachedUser.pendingInvites) && cachedUser.pendingInvites.length > 0;
+            document.getElementById('headerNotifBadge').classList.toggle('show', hasUnreadBooking || needsEmail || hasInvite);
+        }
+
+        window.openNotificationModal = () => {
+            const bookings = getCachedMyBookings();
+            let html = '';
+            if (!(cachedUser.Email || cachedUser.email)) html += `<div class="notification-item"><span class="material-icons" style="color:#d93025;">warning</span><div><strong>メールアドレスを登録してください</strong><div style="font-size:12px; color:#536471; margin-top:4px;">マイページから登録できます。</div></div></div>`;
+            html += bookings.map(booking => {
+                const start = new Date(booking.startTime);
+                return `<div class="notification-item" onclick="window.location.href='/booking.html'" style="cursor:pointer;"><span class="material-icons" style="color:#137333;">groups</span><div><strong>${escapeHtml(booking.bandName || '参加バンド')} の合わせ予約</strong><div style="font-size:12px; color:#536471; margin-top:4px;">${start.getMonth()+1}月${start.getDate()}日 ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}</div></div></div>`;
+            }).join('');
+            document.getElementById('notificationList').innerHTML = html || '<div style="padding:42px 20px; text-align:center; color:#8e8e93;">通知はありません</div>';
+            const seen = new Set(readCachedJson('lmc_seen_my_band_bookings', []));
+            bookings.forEach(booking => seen.add(booking.id));
+            localStorage.setItem('lmc_seen_my_band_bookings', JSON.stringify([...seen].slice(-200)));
+            updateHeader();
+            document.getElementById('modal-notification').classList.add('open');
+        };
+
+        window.openProfileModal = () => {
+            const icon = safeImageUrl(cachedUser.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('profileIcon').src = icon;
+            document.getElementById('profileName').textContent = cachedUser.name || 'マイページ';
+            document.getElementById('profileSub').textContent = cachedUser.part || (cachedUser.affiliations || []).join('・');
+            const cover = document.getElementById('profileCover');
+            cover.style.background = cachedUser.headerImage ? `url(${safeImageUrl(cachedUser.headerImage)}) center/cover` : 'linear-gradient(135deg,#c2e7ff,#0b57d0)';
+            document.getElementById('modal-profile').classList.add('open');
+        };
 
         function renderNav() {
             const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
@@ -86,7 +174,7 @@
         function safeImageUrl(value) {
             try {
                 const url = new URL(value || '', window.location.href);
-                return value && ['http:', 'https:'].includes(url.protocol) ? escapeHtml(url.href) : '';
+                return value && ['http:', 'https:'].includes(url.protocol) ? url.href : '';
             } catch (_) {
                 return '';
             }
@@ -136,6 +224,7 @@
 
         async function main() {
             renderNav();
+            updateHeader();
             try {
                 await signInAnonymously(auth);
                 const settings = await getDoc(doc(db, 'system', 'settings'));
