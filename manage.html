@@ -152,6 +152,55 @@
         .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 2px; bottom: 2px; background-color: white; transition: .3s cubic-bezier(0.2, 0.8, 0.2, 1); border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
         input:checked + .slider { background-color: #34c759; }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        /* 定期演奏会: タイムテーブル編集 */
+        .tt-editor-card { padding: 0; overflow: clip; }
+        .tt-editor-header { padding: 20px 18px 16px; }
+        .tt-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+        .tt-title { margin: 0 0 5px; font-size: 19px; font-weight: 750; color: #1c1c1e; }
+        .tt-description { margin: 0; color: #73777f; font-size: 12px; line-height: 1.55; }
+        .tt-status-badge { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; padding: 7px 11px; border-radius: 999px; background: #f1f3f4; color: #5f6368; font-size: 12px; font-weight: 700; }
+        .tt-status-badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #9aa0a6; }
+        .tt-status-badge.published { color: #137333; background: #e6f4ea; }
+        .tt-status-badge.published::before { background: #34a853; }
+        .tt-settings { display: grid; grid-template-columns: 1fr; gap: 1px; background: rgba(0,0,0,0.06); border-top: 1px solid rgba(0,0,0,0.04); border-bottom: 1px solid rgba(0,0,0,0.04); }
+        .tt-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 18px; background: rgba(255,255,255,0.72); }
+        .tt-setting-copy { min-width: 0; }
+        .tt-setting-title { display: block; font-size: 14px; font-weight: 700; color: #1c1c1e; }
+        .tt-setting-help { display: block; margin-top: 2px; font-size: 11px; color: #8e8e93; line-height: 1.4; }
+        .tt-body { padding: 18px; }
+        .tt-section-label { display: block; margin-bottom: 9px; color: #5f6368; font-size: 12px; font-weight: 700; }
+        .tt-day-tabs { display: flex; gap: 8px; margin: 0 -18px 16px; padding: 0 18px 4px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .tt-day-tabs::-webkit-scrollbar { display: none; }
+        .tt-day-tab { min-width: 88px; border: 1px solid rgba(60,64,67,0.12); border-radius: 16px; padding: 10px 12px; background: rgba(255,255,255,0.7); color: #5f6368; text-align: left; cursor: pointer; }
+        .tt-day-tab.active { border-color: #1a73e8; background: #e8f0fe; color: #174ea6; box-shadow: 0 4px 14px rgba(26,115,232,0.12); }
+        .tt-day-main { display: block; font-size: 14px; font-weight: 750; white-space: nowrap; }
+        .tt-day-count { display: block; margin-top: 3px; font-size: 10px; font-weight: 650; opacity: .78; }
+        .tt-bulk-tools { padding: 14px; margin-bottom: 14px; border-radius: 18px; background: rgba(26,115,232,0.07); }
+        .tt-bulk-title { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; color: #174ea6; font-size: 13px; font-weight: 750; }
+        .tt-bulk-grid { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 8px; }
+        .tt-compact-input { width: 100%; min-width: 0; padding: 11px 10px; border: 1px solid rgba(26,115,232,0.16); border-radius: 12px; background: white; color: #1c1c1e; font: inherit; font-size: 14px; box-sizing: border-box; outline: none; }
+        .tt-auto-button { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; border: 0; border-radius: 13px; background: #1a73e8; color: white; font-size: 13px; font-weight: 700; cursor: pointer; }
+        .tt-list-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin: 18px 2px 10px; }
+        .tt-summary { color: #8e8e93; font-size: 11px; font-weight: 600; }
+        .tt-row { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 11px; padding: 14px; margin-bottom: 10px; border: 1px solid rgba(60,64,67,0.09); border-radius: 18px; background: rgba(255,255,255,0.82); box-shadow: 0 4px 16px rgba(0,0,0,0.035); }
+        .tt-order-badge { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #e8f0fe; color: #174ea6; font-size: 14px; font-weight: 800; }
+        .tt-row-main { min-width: 0; }
+        .tt-band-line { display: flex; align-items: center; min-width: 0; gap: 9px; }
+        .tt-band-icon { width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; object-fit: cover; background: #f1f3f4; }
+        .tt-band-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 750; }
+        .tt-fields { display: grid; grid-template-columns: minmax(0,1fr) 112px; gap: 8px; margin-top: 11px; }
+        .tt-field-label { display: block; margin: 0 0 5px 2px; color: #8e8e93; font-size: 10px; font-weight: 700; }
+        .tt-row-actions { display: flex; gap: 6px; margin-top: 10px; }
+        .tt-move-button { flex: 1; min-height: 36px; display: flex; align-items: center; justify-content: center; gap: 4px; border: 0; border-radius: 11px; background: #f1f3f4; color: #5f6368; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .tt-move-button:disabled { opacity: .35; cursor: default; }
+        .tt-empty { padding: 28px 16px; text-align: center; border: 1px dashed rgba(60,64,67,0.18); border-radius: 18px; color: #8e8e93; font-size: 13px; line-height: 1.6; }
+        .tt-save-bar { position: sticky; bottom: 0; z-index: 4; padding: 12px 18px calc(12px + env(safe-area-inset-bottom, 0px)); background: rgba(255,255,255,0.9); border-top: 1px solid rgba(60,64,67,0.1); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+        .tt-save-note { margin-top: 7px; color: #8e8e93; text-align: center; font-size: 10px; line-height: 1.4; }
+        @media (max-width: 360px) {
+            .tt-fields { grid-template-columns: 1fr; }
+            .tt-day-tab { min-width: 82px; }
+        }
     </style>
 </head>
 <body>
@@ -361,21 +410,65 @@
                     <button class="btn-primary" onclick="saveCurrentConcertEvent()" style="margin-top:12px;">変更を保存</button>
                 </div>
 
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px;">
-                        <div>
-                            <h3 style="font-size:18px; margin:0 0 4px; color:#1c1c1e; font-weight:700;">タイムテーブル</h3>
-                            <div style="font-size:12px; color:#8e8e93;">出演日と開始時刻をバンドごとに設定します</div>
+                <div class="card tt-editor-card">
+                    <div class="tt-editor-header">
+                        <div class="tt-title-row">
+                            <div>
+                                <h3 class="tt-title">タイムテーブル</h3>
+                                <p class="tt-description">開催日を選んで、出演順と開始時刻を編集します。</p>
+                            </div>
+                            <span id="concert-timetable-status" class="tt-status-badge">下書き</span>
                         </div>
-                        <label class="switch"><input type="checkbox" id="concert-timetable-published"><span class="slider"></span></label>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-top:1px solid #f0f0f0; border-bottom:1px solid #f0f0f0; margin-bottom:14px;">
-                        <span style="font-size:14px; font-weight:600;">利用者に開始時刻を表示</span>
-                        <label class="switch"><input type="checkbox" id="concert-timetable-show-times" checked><span class="slider"></span></label>
+                    <div class="tt-settings">
+                        <div class="tt-setting-row">
+                            <div class="tt-setting-copy">
+                                <span class="tt-setting-title">タイムテーブルを公開</span>
+                                <span class="tt-setting-help">保存後、利用者のタイムテーブルタブに表示</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="concert-timetable-published" onchange="updateConcertTimetableStatus()"><span class="slider"></span></label>
+                        </div>
+                        <div class="tt-setting-row">
+                            <div class="tt-setting-copy">
+                                <span class="tt-setting-title">開始時刻を表示</span>
+                                <span class="tt-setting-help">OFFの場合は出演順だけを表示</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="concert-timetable-show-times" checked><span class="slider"></span></label>
+                        </div>
                     </div>
-                    <div id="concert-timetable-rows"></div>
-                    <button class="btn-primary" onclick="saveConcertTimetable()" style="margin-top:16px;">タイムテーブルを保存</button>
-                    <div style="font-size:11px; color:#8e8e93; line-height:1.5; margin-top:10px;">上のスイッチをONにすると、タイムテーブルタブへ公開されます。開始時刻を非表示にして出演順だけを公開することもできます。</div>
+                    <div class="tt-body">
+                        <span class="tt-section-label">編集する開催日</span>
+                        <div id="concert-timetable-day-tabs" class="tt-day-tabs"></div>
+                        <div class="tt-bulk-tools">
+                            <div class="tt-bulk-title"><span class="material-icons" style="font-size:18px;">auto_fix_high</span>開始時刻をまとめて入力</div>
+                            <div class="tt-bulk-grid">
+                                <div>
+                                    <label class="tt-field-label" for="concert-timetable-start-time">最初の開始時刻</label>
+                                    <input id="concert-timetable-start-time" class="tt-compact-input" type="time" value="10:00">
+                                </div>
+                                <div>
+                                    <label class="tt-field-label" for="concert-timetable-interval">出演間隔</label>
+                                    <select id="concert-timetable-interval" class="tt-compact-input">
+                                        <option value="15">15分</option>
+                                        <option value="20">20分</option>
+                                        <option value="30" selected>30分</option>
+                                        <option value="45">45分</option>
+                                        <option value="60">60分</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="tt-auto-button" onclick="autoFillTimetableTimes()"><span class="material-icons" style="font-size:18px;">schedule</span>この日の時刻を自動入力</button>
+                            </div>
+                        </div>
+                        <div class="tt-list-heading">
+                            <span class="tt-section-label" style="margin:0;">出演順</span>
+                            <span id="concert-timetable-summary" class="tt-summary"></span>
+                        </div>
+                        <div id="concert-timetable-rows"></div>
+                    </div>
+                    <div class="tt-save-bar">
+                        <button id="concert-timetable-save" class="btn-primary" onclick="saveConcertTimetable()">変更を保存</button>
+                        <div class="tt-save-note">公開設定もこのボタンで反映されます</div>
+                    </div>
                 </div>
             </div>
 
@@ -719,6 +812,9 @@
         const MY_PAGE_URL = "https://mypage.sorairosystem.com";
         const DIGITAL_CUE_PATH = 'cue.html';
         let concertBandsCache = [];
+        let concertTimetableDraft = [];
+        let concertTimetableDates = [];
+        let selectedTimetableDate = '';
         let currentBandDetail = null;
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
@@ -833,69 +929,197 @@
             return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
         }
 
-        function renderConcertTimetable(eventData) {
+        function getConcertDateOptions(eventData, entries = []) {
+            const result = [];
+            const start = eventData.startDate;
+            const end = eventData.endDate || start;
+            const validDate = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '');
+            if (validDate(start) && validDate(end) && end >= start) {
+                const cursor = new Date(`${start}T00:00:00`);
+                const last = new Date(`${end}T00:00:00`);
+                for (let count = 0; cursor <= last && count < 366; count += 1) {
+                    const year = cursor.getFullYear();
+                    const month = String(cursor.getMonth() + 1).padStart(2, '0');
+                    const day = String(cursor.getDate()).padStart(2, '0');
+                    result.push(`${year}-${month}-${day}`);
+                    cursor.setDate(cursor.getDate() + 1);
+                }
+            }
+            entries.forEach(entry => {
+                if (validDate(entry.date) && !result.includes(entry.date)) result.push(entry.date);
+            });
+            return result.sort();
+        }
+
+        function formatTimetableDate(date) {
+            if (!date) return '日付未設定';
+            const value = new Date(`${date}T00:00:00`);
+            if (Number.isNaN(value.getTime())) return date;
+            return `${value.getMonth() + 1}/${value.getDate()}（${['日','月','火','水','木','金','土'][value.getDay()]}）`;
+        }
+
+        function getSelectedTimetableEntries() {
+            return concertTimetableDraft.filter(entry => entry.date === selectedTimetableDate);
+        }
+
+        function renderTimetableDayTabs() {
+            const container = document.getElementById('concert-timetable-day-tabs');
+            if (!container) return;
+            if (concertTimetableDates.length === 0) {
+                container.innerHTML = '<div class="tt-empty" style="width:100%; box-sizing:border-box;">イベント概要で開始日と終了日を設定してください</div>';
+                return;
+            }
+            container.innerHTML = concertTimetableDates.map(date => {
+                const count = concertTimetableDraft.filter(entry => entry.date === date).length;
+                return `<button type="button" class="tt-day-tab ${date === selectedTimetableDate ? 'active' : ''}" onclick="selectTimetableDate('${date}')"><span class="tt-day-main">${escapeHtml(formatTimetableDate(date))}</span><span class="tt-day-count">${count}バンド</span></button>`;
+            }).join('');
+        }
+
+        function renderTimetableRows() {
             const container = document.getElementById('concert-timetable-rows');
-            const timetable = eventData.timetable || {};
-            const existingEntries = new Map((timetable.entries || []).map(entry => [entry.bandId, entry]));
-            document.getElementById('concert-timetable-published').checked = timetable.published === true;
-            document.getElementById('concert-timetable-show-times').checked = timetable.showTimes !== false;
+            const summary = document.getElementById('concert-timetable-summary');
+            if (!container) return;
+            const entries = getSelectedTimetableEntries();
+            const timedCount = entries.filter(entry => entry.time).length;
+            if (summary) summary.textContent = `${entries.length}バンド・時刻入力 ${timedCount}/${entries.length}`;
 
             if (concertBandsCache.length === 0) {
-                container.innerHTML = '<div style="padding:24px; text-align:center; color:#8e8e93;">現在のイベントに登録されたバンドがありません</div>';
+                container.innerHTML = '<div class="tt-empty">現在のイベントに登録されたバンドがありません</div>';
+                return;
+            }
+            if (!selectedTimetableDate || entries.length === 0) {
+                container.innerHTML = '<div class="tt-empty">この日の出演バンドはありません。<br>別の日のバンドで「出演日」を変更すると、ここへ移動できます。</div>';
                 return;
             }
 
+            const dateOptions = concertTimetableDates.map(date => `<option value="${date}">${escapeHtml(formatTimetableDate(date))}</option>`).join('');
+            container.innerHTML = entries.map((entry, index) => `
+                <div class="tt-row" data-band-id="${escapeHtml(entry.bandId)}">
+                    <div class="tt-order-badge">${index + 1}</div>
+                    <div class="tt-row-main">
+                        <div class="tt-band-line">
+                            <img class="tt-band-icon" src="${escapeHtml(entry.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg')}" alt="">
+                            <div class="tt-band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
+                        </div>
+                        <div class="tt-fields">
+                            <div>
+                                <label class="tt-field-label">出演日</label>
+                                <select class="tt-compact-input" onchange="updateTimetableEntry(this.closest('.tt-row').dataset.bandId,'date',this.value)">${dateOptions.replace(`value="${entry.date}"`, `value="${entry.date}" selected`)}</select>
+                            </div>
+                            <div>
+                                <label class="tt-field-label">開始時刻</label>
+                                <input class="tt-compact-input" type="time" value="${escapeHtml(entry.time)}" onchange="updateTimetableEntry(this.closest('.tt-row').dataset.bandId,'time',this.value)">
+                            </div>
+                        </div>
+                        <div class="tt-row-actions">
+                            <button type="button" class="tt-move-button" onclick="moveTimetableBand(this.closest('.tt-row').dataset.bandId,-1)" ${index === 0 ? 'disabled' : ''}><span class="material-icons" style="font-size:17px;">arrow_upward</span>前へ</button>
+                            <button type="button" class="tt-move-button" onclick="moveTimetableBand(this.closest('.tt-row').dataset.bandId,1)" ${index === entries.length - 1 ? 'disabled' : ''}><span class="material-icons" style="font-size:17px;">arrow_downward</span>後へ</button>
+                        </div>
+                    </div>
+                </div>`).join('');
+        }
+
+        function renderConcertTimetable(eventData) {
+            const timetable = eventData.timetable || {};
+            const savedEntries = Array.isArray(timetable.entries) ? timetable.entries : [];
+            const existingEntries = new Map(savedEntries.map(entry => [entry.bandId, entry]));
             const originalOrder = new Map(concertBandsCache.map((band, index) => [band.id, index]));
             const orderedBands = [...concertBandsCache].sort((a, b) => {
                 const aOrder = existingEntries.get(a.id)?.order;
                 const bOrder = existingEntries.get(b.id)?.order;
                 return (Number.isFinite(aOrder) ? aOrder : originalOrder.get(a.id)) - (Number.isFinite(bOrder) ? bOrder : originalOrder.get(b.id));
             });
-            container.innerHTML = orderedBands.map((band, index) => {
+
+            concertTimetableDraft = orderedBands.map(band => {
                 const entry = existingEntries.get(band.id) || {};
-                const date = entry.date || band.performanceDates?.[currentActiveEventId] || eventData.startDate || '';
-                const time = entry.time || '';
-                const icon = band.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
-                return `
-                    <div class="timetable-admin-row" data-band-id="${escapeHtml(band.id)}" style="padding:14px 0; border-bottom:1px solid #f0f0f0;">
-                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                            <img src="${escapeHtml(icon)}" style="width:36px; height:36px; border-radius:10px; object-fit:cover; background:#f1f3f4;">
-                            <div style="font-size:14px; font-weight:700; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(band.name || '名称未設定')}</div>
-                            <button type="button" onclick="moveTimetableRow(this,-1)" style="border:0; background:#f1f3f4; border-radius:8px; width:30px; height:30px; color:#5f6368;"><span class="material-icons" style="font-size:18px;">arrow_upward</span></button>
-                            <button type="button" onclick="moveTimetableRow(this,1)" style="border:0; background:#f1f3f4; border-radius:8px; width:30px; height:30px; color:#5f6368;"><span class="material-icons" style="font-size:18px;">arrow_downward</span></button>
-                        </div>
-                        <div style="display:grid; grid-template-columns:1fr 110px; gap:8px;">
-                            <input type="date" class="form-input timetable-date" value="${escapeHtml(date)}" min="${escapeHtml(eventData.startDate || '')}" max="${escapeHtml(eventData.endDate || eventData.startDate || '')}" style="margin:0; padding:10px;">
-                            <input type="time" class="form-input timetable-time" value="${escapeHtml(time)}" style="margin:0; padding:10px;">
-                        </div>
-                    </div>`;
-            }).join('');
+                return {
+                    bandId: band.id,
+                    bandName: band.name || '名称未設定',
+                    icon: band.icon || '',
+                    date: entry.date || band.performanceDates?.[currentActiveEventId] || eventData.startDate || '',
+                    time: entry.time || ''
+                };
+            });
+            concertTimetableDates = getConcertDateOptions(eventData, concertTimetableDraft);
+            selectedTimetableDate = concertTimetableDates.includes(selectedTimetableDate) ? selectedTimetableDate : (concertTimetableDates[0] || '');
+            document.getElementById('concert-timetable-published').checked = timetable.published === true;
+            document.getElementById('concert-timetable-show-times').checked = timetable.showTimes !== false;
+            updateConcertTimetableStatus();
+            renderTimetableDayTabs();
+            renderTimetableRows();
         }
 
-        window.moveTimetableRow = (button, direction) => {
-            const row = button.closest('.timetable-admin-row');
-            const sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
-            if (!sibling) return;
-            if (direction < 0) row.parentElement.insertBefore(row, sibling);
-            else row.parentElement.insertBefore(sibling, row);
+        window.updateConcertTimetableStatus = () => {
+            const published = document.getElementById('concert-timetable-published')?.checked === true;
+            const badge = document.getElementById('concert-timetable-status');
+            if (!badge) return;
+            badge.textContent = published ? '公開' : '下書き';
+            badge.classList.toggle('published', published);
+        };
+
+        window.selectTimetableDate = date => {
+            selectedTimetableDate = date;
+            renderTimetableDayTabs();
+            renderTimetableRows();
+        };
+
+        window.updateTimetableEntry = (bandId, field, value) => {
+            const entry = concertTimetableDraft.find(item => item.bandId === bandId);
+            if (!entry || !['date', 'time'].includes(field)) return;
+            entry[field] = value;
+            renderTimetableDayTabs();
+            renderTimetableRows();
+        };
+
+        window.moveTimetableBand = (bandId, direction) => {
+            const positions = concertTimetableDraft.map((entry, index) => entry.date === selectedTimetableDate ? index : -1).filter(index => index >= 0);
+            const currentPosition = positions.findIndex(index => concertTimetableDraft[index].bandId === bandId);
+            const targetPosition = currentPosition + direction;
+            if (currentPosition < 0 || targetPosition < 0 || targetPosition >= positions.length) return;
+            const currentIndex = positions[currentPosition];
+            const targetIndex = positions[targetPosition];
+            [concertTimetableDraft[currentIndex], concertTimetableDraft[targetIndex]] = [concertTimetableDraft[targetIndex], concertTimetableDraft[currentIndex]];
+            renderTimetableRows();
+        };
+
+        window.autoFillTimetableTimes = async () => {
+            const entries = getSelectedTimetableEntries();
+            if (entries.length === 0) return;
+            const startValue = document.getElementById('concert-timetable-start-time').value;
+            const interval = Number(document.getElementById('concert-timetable-interval').value);
+            if (!/^\d{2}:\d{2}$/.test(startValue) || !interval) {
+                await showCustomAlert('最初の開始時刻と出演間隔を入力してください。');
+                return;
+            }
+            const [hours, minutes] = startValue.split(':').map(Number);
+            const startMinutes = (hours * 60) + minutes;
+            if (startMinutes + (entries.length - 1) * interval >= 1440) {
+                await showCustomAlert('この開始時刻と間隔では日付をまたぎます。開始時刻または出演間隔を変更してください。');
+                return;
+            }
+            entries.forEach((entry, index) => {
+                const value = startMinutes + index * interval;
+                entry.time = `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+            });
+            renderTimetableRows();
         };
 
         window.saveConcertTimetable = async () => {
             if (!currentActiveEventId) return;
-            const rows = [...document.querySelectorAll('.timetable-admin-row')];
-            const entries = rows.map((row, order) => {
-                const band = concertBandsCache.find(item => item.id === row.dataset.bandId);
-                return {
-                    bandId: row.dataset.bandId,
-                    bandName: band?.name || '名称未設定',
-                    icon: band?.icon || '',
-                    date: row.querySelector('.timetable-date').value,
-                    time: row.querySelector('.timetable-time').value,
-                    order
-                };
-            }).filter(entry => entry.date);
+            const dayOrders = {};
+            const entries = concertTimetableDraft.filter(entry => entry.date).map(entry => ({
+                bandId: entry.bandId,
+                bandName: entry.bandName,
+                icon: entry.icon,
+                date: entry.date,
+                time: entry.time,
+                order: dayOrders[entry.date] = (dayOrders[entry.date] ?? -1) + 1
+            }));
+            const saveButton = document.getElementById('concert-timetable-save');
 
             try {
+                saveButton.disabled = true;
+                saveButton.textContent = '保存中…';
                 const batch = writeBatch(db);
                 batch.update(doc(db, 'events', currentActiveEventId), {
                     timetable: {
@@ -919,6 +1143,9 @@
                 await showCustomAlert(document.getElementById('concert-timetable-published').checked ? 'タイムテーブルを保存・公開しました。' : 'タイムテーブルを下書き保存しました。');
             } catch (error) {
                 await showCustomAlert('保存エラー: ' + error.message, 'エラー');
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = '変更を保存';
             }
         };
 
