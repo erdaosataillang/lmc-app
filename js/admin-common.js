@@ -2,6 +2,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebas
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+if ('serviceWorker' in navigator && window.isSecureContext) {
+    navigator.serviceWorker.register('/image-cache-sw.js', {scope: '/'}).catch(error => {
+        console.warn('Image cache registration failed:', error);
+    });
+}
+
 const firebaseConfig = {
     apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
     authDomain: "urakata-app.firebaseapp.com",
