@@ -580,6 +580,7 @@
         }
 
         function startSystemSettingsListener() {
+            if (document.hidden || bookingPageHidden) return;
             if (currentSettingsUnsub) currentSettingsUnsub();
             currentSettingsUnsub = onSnapshot(doc(db, "system", "settings"), (snapshot) => {
                 if (!snapshot.exists()) {
@@ -871,7 +872,9 @@
                 Promise.allSettled([loadAllUsers()]);
                 checkNotifications();
 
-                setInterval(updateCurrentTimeLine, 60000);
+                bookingReady = true;
+                if (document.hidden || bookingPageHidden) stopBookingActivity();
+                else startBookingClock();
                 setupSwipes();
             }catch(e){
                 console.error(e);
@@ -902,6 +905,7 @@
         }
 
         function loadMyBands(){
+            if (document.hidden || bookingPageHidden) return;
             if (currentBandsUnsub) currentBandsUnsub();
             const q=query(collection(db,"bands"),where("memberIds","array-contains",currentUser));
             currentBandsUnsub = onSnapshot(q,(snapshot)=>{
@@ -1030,7 +1034,8 @@
             }, { once: true });
         }
 
-        function loadMonthBookings(y,m, useCache){ 
+        function loadMonthBookings(y,m, useCache){
+            if (document.hidden || bookingPageHidden) return;
             const displayM = m + 1;
             const cacheKey = CACHE_KEY_BOOKINGS_PREFIX + `${y}_${displayM}`;
             const cached = localStorage.getItem(cacheKey);
@@ -1176,7 +1181,8 @@
             } 
         }
 
-        function loadDayBookings(){ 
+        function loadDayBookings(){
+            if (document.hidden || bookingPageHidden) return;
             const sD=new Date(displayDate), eD=new Date(displayDate); 
             sD.setHours(0,0,0,0); eD.setHours(23,59,59,999); 
             const selectedDateKey = formatDateKey(displayDate);
@@ -2005,15 +2011,49 @@
             } catch(e) { console.error(e); }
         };
 
-        window.addEventListener('pagehide', () => {
-            if (currentMonthUnsub) currentMonthUnsub();
-            if (currentDayUnsub) currentDayUnsub();
-            if (currentBandsUnsub) currentBandsUnsub();
-            if (currentLotteryRunUnsub) currentLotteryRunUnsub();
-            if (currentSettingsUnsub) currentSettingsUnsub();
+        let bookingReady = false;
+        let bookingPageHidden = false;
+        let bookingClock = null;
+        function startBookingClock() {
+            if (bookingClock !== null) return;
+            updateCurrentTimeLine();
+            bookingClock = setInterval(updateCurrentTimeLine, 60000);
+        }
+        function cancelBookingSelection() {
+            clearTimeout(selectionTimer);
+            isSelecting = false;
+            selectionStartHour = selectionEndHour = null;
+            document.getElementById('selectionToast').classList.remove('show');
+            document.querySelectorAll('.time-content.selecting').forEach(el => el.classList.remove('selecting'));
+        }
+        function stopBookingActivity() {
+            for (const unsubscribe of [currentMonthUnsub, currentDayUnsub, currentBandsUnsub, currentLotteryRunUnsub, currentSettingsUnsub]) {
+                if (unsubscribe) unsubscribe();
+            }
+            currentMonthUnsub = currentDayUnsub = currentBandsUnsub = currentLotteryRunUnsub = currentSettingsUnsub = null;
+            clearInterval(bookingClock);
+            bookingClock = null;
+            cancelBookingSelection();
+            if (monthSyncToken) hideSyncIndicator(monthSyncToken);
+            if (daySyncToken) hideSyncIndicator(daySyncToken);
+            monthSyncToken = daySyncToken = null;
             activeSyncTokens.clear();
+        }
+        function resumeBookingActivity() {
+            if (!bookingReady || document.hidden || bookingPageHidden || bookingClock !== null) return;
+            loadMyBands();
+            startSystemSettingsListener();
+            renderCalendar();
+            startBookingClock();
+        }
+        document.addEventListener('touchcancel', cancelBookingSelection);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopBookingActivity();
+            else resumeBookingActivity();
         });
-        
+        window.addEventListener('pagehide', () => { bookingPageHidden = true; stopBookingActivity(); });
+        window.addEventListener('pageshow', () => { bookingPageHidden = false; resumeBookingActivity(); });
+
         // 即時実行用
         renderNav();
 

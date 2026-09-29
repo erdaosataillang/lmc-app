@@ -1182,8 +1182,26 @@
         };
 
         // --- バンドリスト取得・描画 ---
-        function loadMyBands(){ 
-            onSnapshot(query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)), (snap) => {
+        let myBandsUnsubscribe = null;
+        let bandsListenerReady = false;
+        let bandsPageHidden = false;
+        function stopMyBandsListener() {
+            if (myBandsUnsubscribe) myBandsUnsubscribe();
+            myBandsUnsubscribe = null;
+        }
+        function resumeMyBandsListener() {
+            if (bandsListenerReady && !document.hidden && !bandsPageHidden) loadMyBands();
+        }
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopMyBandsListener();
+            else resumeMyBandsListener();
+        });
+        window.addEventListener('pagehide', () => { bandsPageHidden = true; stopMyBandsListener(); });
+        window.addEventListener('pageshow', () => { bandsPageHidden = false; resumeMyBandsListener(); });
+        function loadMyBands(){
+            bandsListenerReady = true;
+            if (document.hidden || bandsPageHidden || myBandsUnsubscribe) return;
+            myBandsUnsubscribe = onSnapshot(query(collection(db, "bands"), where("memberIds", "array-contains", currentUser)), (snap) => {
                 myBandsAll = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 localStorage.setItem(CACHE_KEY_BANDS, JSON.stringify(myBandsAll));
                 renderBandList();

@@ -1159,6 +1159,7 @@
                 container,
                 ghost,
                 scrollContainer,
+                handle: event.currentTarget,
                 pointerId: event.pointerId,
                 offsetY: event.clientY - rect.top,
                 lastY: event.clientY,
@@ -1196,7 +1197,21 @@
 
         document.addEventListener('pointermove', moveActiveTimetableDrag, {passive:false});
         document.addEventListener('pointerup', finishActiveTimetableDrag);
-        document.addEventListener('pointercancel', finishActiveTimetableDrag);
+        function cancelTimetableDrag() {
+            if (!timetableDragState) return;
+            const {ghost, row, handle, pointerId, animationFrame} = timetableDragState;
+            timetableDragState = null;
+            cancelAnimationFrame(animationFrame);
+            try { if (handle.hasPointerCapture(pointerId)) handle.releasePointerCapture(pointerId); } catch (_) {}
+            ghost.remove();
+            row.classList.remove('tt-drag-placeholder');
+            renderTimetableRows();
+        }
+        document.addEventListener('pointercancel', cancelTimetableDrag);
+        window.addEventListener('pagehide', cancelTimetableDrag);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) cancelTimetableDrag();
+        });
 
         window.autoFillTimetableTimes = async () => {
             const entries = getSelectedTimetableEntries();
