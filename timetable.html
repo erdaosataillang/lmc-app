@@ -28,6 +28,8 @@
         .day-tabs::-webkit-scrollbar { display:none; }
         .day-tab { flex:0 0 auto; border:0; border-radius:999px; padding:9px 16px; background:#fff; color:#5f6368; font-size:12px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.04); }
         .day-tab.active { background:#1f1f1f; color:#fff; }
+        .timeline-tab { display:flex; align-items:center; gap:5px; color:#0b57d0; background:#e8f0fe; }
+        .timeline-tab.active { color:white; background:#0b57d0; }
         .schedule-card { background:#fff; border-radius:18px; padding:16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 10px rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.03); }
         .time { width:62px; flex-shrink:0; font-size:14px; font-weight:700; color:#0b57d0; text-align:center; }
         .band-icon { width:46px; height:46px; flex-shrink:0; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; background:#e8f0fe; color:#1a73e8; }
@@ -53,6 +55,34 @@
         .modal-close { border:0; background:#f1f3f4; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#5f6368; }
         .notification-item { padding:18px 20px; border-bottom:1px solid #f0f0f0; display:flex; gap:12px; align-items:flex-start; }
         .profile-cover { height:112px; background:linear-gradient(135deg,#c2e7ff,#0b57d0); background-size:cover; background-position:center; }
+        .timeline-feed { margin:0 -16px; background:#fff; border-top:1px solid #eff1f3; border-bottom:1px solid #eff1f3; }
+        .timeline-post { padding:16px; border-bottom:1px solid #eff1f3; display:flex; gap:11px; cursor:pointer; transition:background .15s; }
+        .timeline-post:last-child { border-bottom:0; }
+        .timeline-post:active { background:#f7f9f9; }
+        .post-avatar { width:48px; height:48px; border-radius:50%; object-fit:cover; background:#e8f0fe; flex-shrink:0; }
+        .post-main { flex:1; min-width:0; }
+        .post-name-row { display:flex; align-items:center; gap:5px; min-width:0; font-size:14px; }
+        .post-name { font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .post-handle { color:#536471; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .post-copy { margin-top:6px; font-size:14px; line-height:1.55; color:#1f1f1f; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .post-meta { margin-top:8px; color:#536471; font-size:12px; display:flex; align-items:center; gap:5px; }
+        .member-stack { display:flex; align-items:center; margin-top:12px; min-height:28px; }
+        .member-stack img,.member-stack-placeholder { width:28px; height:28px; border-radius:50%; object-fit:cover; background:#f1f3f4; border:2px solid white; margin-left:-7px; display:flex; align-items:center; justify-content:center; color:#8e8e93; font-size:15px; }
+        .member-stack img:first-child,.member-stack-placeholder:first-child { margin-left:0; }
+        .member-stack-label { color:#536471; font-size:11px; margin-left:8px; }
+        .post-actions { display:flex; align-items:center; justify-content:space-between; max-width:240px; margin-top:10px; color:#536471; }
+        .post-action { border:0; background:transparent; color:inherit; display:flex; align-items:center; gap:5px; padding:3px 8px 3px 0; font-size:12px; }
+        .post-action.liked { color:#f91880; }
+        .post-action .material-icons { font-size:19px; }
+        .band-profile-cover { height:130px; background:linear-gradient(135deg,#dbeafe,#c4b5fd); background-size:cover; background-position:center; position:relative; }
+        .band-profile-icon { width:84px; height:84px; border-radius:50%; border:4px solid white; background:#e8f0fe; object-fit:cover; margin-top:-44px; position:relative; }
+        .band-stat-row { display:flex; gap:22px; margin-top:14px; }
+        .band-stat strong { font-size:16px; }
+        .band-stat span { color:#536471; font-size:12px; margin-left:3px; }
+        .member-detail-row { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid #f0f0f0; }
+        .member-detail-row:last-child { border-bottom:0; }
+        .member-detail-row img { width:44px; height:44px; border-radius:50%; object-fit:cover; background:#f1f3f4; }
+        .profile-section-title { font-size:13px; font-weight:800; margin:20px 0 6px; }
         @keyframes spin { to { transform:rotate(360deg); } }
         @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
     </style>
@@ -90,16 +120,28 @@
             </div>
         </div>
     </div>
+    <div id="modal-band-profile" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-profile')">
+        <div class="modal-content" style="overflow:hidden;">
+            <div class="band-profile-cover" id="bandProfileCover"><button class="modal-close" onclick="closeModal('modal-band-profile')" style="position:absolute; top:14px; right:14px; background:rgba(0,0,0,.42); color:white;"><span class="material-icons">close</span></button></div>
+            <div id="bandProfileBody" style="padding:0 18px 24px;"></div>
+        </div>
+    </div>
 
     <script type="module">
         import {db, auth} from './js/common.js';
-        import {doc, getDoc} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+        import {doc, getDoc, updateDoc, arrayUnion, arrayRemove} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
         import {signInAnonymously} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
 
         let entries = [];
         let selectedDate = '';
         let showTimes = true;
         let cachedUser = {};
+        let currentUser = null;
+        let viewMode = 'schedule';
+        let timelineBandsLoaded = false;
+        let timelineBandsLoading = null;
+        const bandProfiles = new Map();
+        let allUsersCache = readCachedJson('lmc_all_users_cache', []);
 
         window.closeModal = id => document.getElementById(id)?.classList.remove('open');
 
@@ -186,15 +228,188 @@
             return `${date.getMonth() + 1}/${date.getDate()}（${['日','月','火','水','木','金','土'][date.getDay()]}）`;
         }
 
+        function uniqueBandEntries() {
+            const seen = new Set();
+            return entries.filter(entry => entry.bandId && !seen.has(entry.bandId) && seen.add(entry.bandId));
+        }
+
+        async function ensureLiffUser(allowLogin = false) {
+            if (currentUser) return currentUser;
+            try {
+                await liff.init({liffId:'2008162165-vVODNp12'});
+                if (!liff.isLoggedIn()) {
+                    if (allowLogin) liff.login();
+                    return null;
+                }
+                const profile = await liff.getProfile();
+                currentUser = profile.userId;
+                return currentUser;
+            } catch (error) {
+                console.warn('LIFF profile could not be loaded:', error);
+                return null;
+            }
+        }
+
+        async function loadTimelineBands() {
+            if (timelineBandsLoaded) return;
+            if (timelineBandsLoading) return timelineBandsLoading;
+            timelineBandsLoading = Promise.all(uniqueBandEntries().map(async entry => {
+                try {
+                    const snapshot = await getDoc(doc(db, 'bands', entry.bandId));
+                    const band = snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : {id:entry.bandId, name:entry.bandName, icon:entry.icon};
+                    bandProfiles.set(entry.bandId, band);
+                } catch (error) {
+                    bandProfiles.set(entry.bandId, {id:entry.bandId, name:entry.bandName, icon:entry.icon});
+                }
+            })).finally(() => {
+                timelineBandsLoaded = true;
+                timelineBandsLoading = null;
+            });
+            return timelineBandsLoading;
+        }
+
+        function bandDescription(band) {
+            const saved = band?.description || band?.profile || band?.bio || band?.comment || band?.remarks;
+            if (saved) return saved;
+            const songs = Array.isArray(band?.songs) ? band.songs.map(song => typeof song === 'string' ? song : song?.title).filter(Boolean) : [];
+            if (songs.length) return `演奏予定：${songs.slice(0,3).join('、')}`;
+            return 'LMCのステージに出演するバンドです。プロフィールの更新をお楽しみに。';
+        }
+
+        function memberStackHtml(band) {
+            const ids = Array.isArray(band?.memberIds) ? band.memberIds : [];
+            const names = Array.isArray(band?.memberNames) ? band.memberNames : [];
+            const avatars = ids.slice(0,4).map((id, index) => {
+                const user = allUsersCache.find(item => item.id === id);
+                const icon = safeImageUrl(user?.icon);
+                return icon ? `<img src="${icon}" alt="${escapeHtml(user?.name || names[index] || '')}">` : `<span class="member-stack-placeholder"><span class="material-icons" style="font-size:16px;">person</span></span>`;
+            }).join('');
+            const count = ids.length || names.length;
+            return `<div class="member-stack">${avatars || '<span class="member-stack-placeholder"><span class="material-icons" style="font-size:16px;">group</span></span>'}<span class="member-stack-label">${count ? `${count}人のメンバー` : 'メンバーを見る'}</span></div>`;
+        }
+
+        async function renderTimeline() {
+            const container = document.getElementById('scheduleList');
+            if (!timelineBandsLoaded) {
+                container.innerHTML = '<div class="state"><span class="material-icons" style="animation:spin 1s linear infinite;">sync</span><br>タイムラインを読み込んでいます</div>';
+                await loadTimelineBands();
+                if (viewMode !== 'timeline') return;
+            }
+            const posts = uniqueBandEntries();
+            if (!posts.length) {
+                container.innerHTML = '<div class="state"><span class="material-icons" style="font-size:46px; color:#c7c7cc;">forum</span><br>出演バンドはまだありません</div>';
+                return;
+            }
+            container.innerHTML = `<div class="timeline-feed">${posts.map(entry => {
+                const band = bandProfiles.get(entry.bandId) || entry;
+                const icon = safeImageUrl(band.icon || entry.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+                const likes = Array.isArray(band.likes) ? band.likes : [];
+                const liked = !!currentUser && likes.includes(currentUser);
+                const performance = `${dateLabel(entry.date)}${showTimes && entry.time ? ` · ${entry.time}` : ''}`;
+                return `<article class="timeline-post" onclick="openBandProfile('${escapeHtml(entry.bandId)}')">
+                    <img class="post-avatar" src="${icon}" alt="">
+                    <div class="post-main">
+                        <div class="post-name-row"><span class="post-name">${escapeHtml(band.name || entry.bandName || '名称未設定')}</span><span class="post-handle">@LMC_BAND</span></div>
+                        <div class="post-copy">${escapeHtml(bandDescription(band))}</div>
+                        <div class="post-meta"><span class="material-icons" style="font-size:16px;">event</span>${escapeHtml(performance)}</div>
+                        ${memberStackHtml(band)}
+                        <div class="post-actions">
+                            <button class="post-action" onclick="event.stopPropagation(); openBandProfile('${escapeHtml(entry.bandId)}')"><span class="material-icons">group</span><span>メンバー</span></button>
+                            <button class="post-action ${liked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleBandLike('${escapeHtml(entry.bandId)}')"><span class="material-icons">${liked ? 'favorite' : 'favorite_border'}</span><span>${likes.length}</span></button>
+                            <span class="post-action"><span class="material-icons">visibility</span><span>詳細</span></span>
+                        </div>
+                    </div>
+                </article>`;
+            }).join('')}</div>`;
+        }
+
+        async function getBandMembers(band) {
+            const ids = Array.isArray(band?.memberIds) ? band.memberIds : [];
+            const missing = ids.filter(id => !allUsersCache.some(user => user.id === id));
+            if (missing.length) {
+                const loaded = await Promise.all(missing.map(async id => {
+                    try { const snapshot = await getDoc(doc(db, 'users', id)); return snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null; }
+                    catch (_) { return null; }
+                }));
+                allUsersCache.push(...loaded.filter(Boolean));
+                localStorage.setItem('lmc_all_users_cache', JSON.stringify(allUsersCache));
+            }
+            return ids.map((id, index) => allUsersCache.find(user => user.id === id) || {id, name:band.memberNames?.[index] || 'メンバー'});
+        }
+
+        function renderBandProfile(band, members) {
+            const icon = safeImageUrl(band.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            const cover = safeImageUrl(band.headerImage || band.coverImage);
+            document.getElementById('bandProfileCover').style.background = cover ? `url(${cover}) center/cover` : 'linear-gradient(135deg,#dbeafe,#c4b5fd)';
+            const likes = Array.isArray(band.likes) ? band.likes : [];
+            const liked = !!currentUser && likes.includes(currentUser);
+            const songs = Array.isArray(band.songs) ? band.songs.map(song => typeof song === 'string' ? song : song?.title).filter(Boolean) : [];
+            document.getElementById('bandProfileBody').innerHTML = `
+                <img class="band-profile-icon" src="${icon}" alt="">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-top:7px;">
+                    <div style="min-width:0;"><div style="font-size:21px; font-weight:850; overflow-wrap:anywhere;">${escapeHtml(band.name || '名称未設定')}</div><div style="font-size:13px; color:#536471; margin-top:3px;">@LMC_BAND</div></div>
+                    <button id="bandProfileLike" class="post-action ${liked ? 'liked' : ''}" onclick="toggleBandLike('${escapeHtml(band.id)}')" style="border:1px solid ${liked ? '#f9a8d4' : '#cfd9de'}; border-radius:999px; padding:8px 13px; flex-shrink:0;"><span class="material-icons">${liked ? 'favorite' : 'favorite_border'}</span><span>${likes.length}</span></button>
+                </div>
+                <div style="font-size:14px; line-height:1.65; margin-top:14px; white-space:pre-wrap;">${escapeHtml(bandDescription(band))}</div>
+                <div class="band-stat-row"><div class="band-stat"><strong>${members.length}</strong><span>メンバー</span></div><div class="band-stat"><strong>${songs.length}</strong><span>登録曲</span></div><div class="band-stat"><strong>${likes.length}</strong><span>いいね</span></div></div>
+                ${songs.length ? `<div class="profile-section-title">演奏曲</div><div style="font-size:13px; color:#536471; line-height:1.7;">${songs.slice(0,5).map(song => `♪ ${escapeHtml(song)}`).join('<br>')}</div>` : ''}
+                <div class="profile-section-title">バンドメンバー</div>
+                <div>${members.length ? members.map(member => `<div class="member-detail-row"><img src="${safeImageUrl(member.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" alt=""><div style="min-width:0;"><div style="font-size:15px; font-weight:800;">${escapeHtml(member.name || 'メンバー')}</div><div style="font-size:12px; color:#536471; margin-top:3px;">${escapeHtml([member.grade, member.part, member.job].filter(Boolean).join(' · ') || 'LMCメンバー')}</div></div></div>`).join('') : '<div style="padding:18px 0; color:#8e8e93; font-size:13px;">メンバー情報はまだ登録されていません。</div>'}</div>`;
+        }
+
+        window.openBandProfile = async bandId => {
+            document.getElementById('bandProfileBody').innerHTML = '<div class="state"><span class="material-icons" style="animation:spin 1s linear infinite;">sync</span><br>プロフィールを読み込んでいます</div>';
+            document.getElementById('modal-band-profile').classList.add('open');
+            if (!bandProfiles.has(bandId)) {
+                try { const snapshot = await getDoc(doc(db,'bands',bandId)); if (snapshot.exists()) bandProfiles.set(bandId,{id:snapshot.id,...snapshot.data()}); }
+                catch (_) {}
+            }
+            const band = bandProfiles.get(bandId) || uniqueBandEntries().find(entry => entry.bandId === bandId) || {id:bandId};
+            const members = await getBandMembers(band);
+            renderBandProfile(band, members);
+        };
+
+        window.toggleBandLike = async bandId => {
+            const uid = await ensureLiffUser(true);
+            if (!uid) return;
+            const band = bandProfiles.get(bandId);
+            if (!band) return;
+            const previous = Array.isArray(band.likes) ? [...band.likes] : [];
+            const liked = previous.includes(uid);
+            band.likes = liked ? previous.filter(id => id !== uid) : [...previous, uid];
+            if (viewMode === 'timeline') renderTimeline();
+            if (document.getElementById('modal-band-profile').classList.contains('open')) {
+                const members = await getBandMembers(band);
+                renderBandProfile(band, members);
+            }
+            try {
+                await updateDoc(doc(db,'bands',bandId), {likes:liked ? arrayRemove(uid) : arrayUnion(uid)});
+            } catch (error) {
+                band.likes = previous;
+                if (viewMode === 'timeline') renderTimeline();
+                if (document.getElementById('modal-band-profile').classList.contains('open')) {
+                    const members = await getBandMembers(band);
+                    renderBandProfile(band, members);
+                }
+                console.error('Like update failed:', error);
+            }
+        };
+
         function renderSchedule() {
             const dates = [...new Set(entries.map(entry => entry.date).filter(Boolean))].sort();
             if (!selectedDate || !dates.includes(selectedDate)) selectedDate = dates[0] || '';
             document.getElementById('dayTabs').innerHTML = dates.map(date =>
-                `<button class="day-tab ${date === selectedDate ? 'active' : ''}" data-date="${escapeHtml(date)}">${escapeHtml(dateLabel(date))}</button>`
-            ).join('');
-            document.querySelectorAll('.day-tab').forEach(button => {
-                button.onclick = () => { selectedDate = button.dataset.date; renderSchedule(); };
+                `<button class="day-tab ${viewMode === 'schedule' && date === selectedDate ? 'active' : ''}" data-date="${escapeHtml(date)}">${escapeHtml(dateLabel(date))}</button>`
+            ).join('') + `<button class="day-tab timeline-tab ${viewMode === 'timeline' ? 'active' : ''}" id="timelineTab"><span class="material-icons" style="font-size:16px;">forum</span>タイムライン</button>`;
+            document.querySelectorAll('.day-tab[data-date]').forEach(button => {
+                button.onclick = () => { viewMode = 'schedule'; selectedDate = button.dataset.date; renderSchedule(); };
             });
+            document.getElementById('timelineTab').onclick = () => { viewMode = 'timeline'; renderSchedule(); };
+
+            if (viewMode === 'timeline') {
+                renderTimeline();
+                return;
+            }
 
             const dayEntries = entries.filter(entry => entry.date === selectedDate).sort((a, b) => {
                 if (!showTimes) return (a.order || 0) - (b.order || 0);
@@ -211,13 +426,14 @@
             container.innerHTML = dayEntries.map((entry, index) => {
                 const iconUrl = safeImageUrl(entry.icon);
                 return `
-                <article class="schedule-card">
+                <article class="schedule-card" onclick="openBandProfile('${escapeHtml(entry.bandId || '')}')" style="cursor:pointer;">
                     <div class="time">${showTimes ? escapeHtml(entry.time || '未定') : `${index + 1}`}</div>
                     <div class="band-icon ${iconUrl ? '' : 'icon-error'}">${iconUrl ? `<img src="${iconUrl}" alt="" onerror="this.parentElement.classList.add('icon-error')">` : ''}<span class="material-icons default-icon">groups</span></div>
                     <div class="band-info">
                         <div class="band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
                         <div class="band-sub">${showTimes ? '出演予定' : `出演順 ${index + 1}`}</div>
                     </div>
+                    <span class="material-icons" style="color:#c7c7cc;">chevron_right</span>
                 </article>`;
             }).join('');
         }
@@ -227,6 +443,7 @@
             updateHeader();
             try {
                 await signInAnonymously(auth);
+                ensureLiffUser(false).then(() => { if (viewMode === 'timeline') renderTimeline(); });
                 const settings = await getDoc(doc(db, 'system', 'settings'));
                 const activeEventId = settings.exists() ? settings.data().activeEventId : null;
                 if (!activeEventId) throw new Error('active event is not configured');
