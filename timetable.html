@@ -22,7 +22,11 @@
         .day-tab.active { background:#1f1f1f; color:#fff; }
         .schedule-card { background:#fff; border-radius:18px; padding:16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 10px rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.03); }
         .time { width:62px; flex-shrink:0; font-size:14px; font-weight:700; color:#0b57d0; text-align:center; }
-        .band-icon { width:46px; height:46px; flex-shrink:0; border-radius:14px; object-fit:cover; background:#e8eaed; }
+        .band-icon { width:46px; height:46px; flex-shrink:0; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; background:#e8f0fe; color:#1a73e8; }
+        .band-icon img { width:100%; height:100%; object-fit:cover; }
+        .band-icon .default-icon { display:none; }
+        .band-icon.icon-error img { display:none; }
+        .band-icon.icon-error .default-icon { display:block; }
         .band-info { min-width:0; flex:1; }
         .band-name { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .band-sub { font-size:11px; color:#8e8e93; margin-top:4px; }
@@ -81,9 +85,9 @@
         function safeImageUrl(value) {
             try {
                 const url = new URL(value || '', window.location.href);
-                return ['http:', 'https:'].includes(url.protocol) ? escapeHtml(url.href) : 'https://ul.h3z.jp/Vnukmtvq.jpg';
+                return value && ['http:', 'https:'].includes(url.protocol) ? escapeHtml(url.href) : '';
             } catch (_) {
-                return 'https://ul.h3z.jp/Vnukmtvq.jpg';
+                return '';
             }
         }
 
@@ -115,15 +119,18 @@
                 container.innerHTML = '<div class="state"><span class="material-icons" style="font-size:46px; color:#c7c7cc;">event_busy</span><br>出演予定はありません</div>';
                 return;
             }
-            container.innerHTML = dayEntries.map((entry, index) => `
+            container.innerHTML = dayEntries.map((entry, index) => {
+                const iconUrl = safeImageUrl(entry.icon);
+                return `
                 <article class="schedule-card">
                     <div class="time">${showTimes ? escapeHtml(entry.time || '未定') : `${index + 1}`}</div>
-                    <img class="band-icon" src="${safeImageUrl(entry.icon)}" alt="">
+                    <div class="band-icon ${iconUrl ? '' : 'icon-error'}">${iconUrl ? `<img src="${iconUrl}" alt="" onerror="this.parentElement.classList.add('icon-error')">` : ''}<span class="material-icons default-icon">groups</span></div>
                     <div class="band-info">
                         <div class="band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
                         <div class="band-sub">${showTimes ? '出演予定' : `出演順 ${index + 1}`}</div>
                     </div>
-                </article>`).join('');
+                </article>`;
+            }).join('');
         }
 
         async function main() {

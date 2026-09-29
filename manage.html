@@ -183,12 +183,25 @@
         .tt-auto-button { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; border: 0; border-radius: 13px; background: #1a73e8; color: white; font-size: 13px; font-weight: 700; cursor: pointer; }
         .tt-list-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin: 18px 2px 10px; }
         .tt-summary { color: #8e8e93; font-size: 11px; font-weight: 600; }
-        .tt-row { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 11px; padding: 14px; margin-bottom: 10px; border: 1px solid rgba(60,64,67,0.09); border-radius: 18px; background: rgba(255,255,255,0.82); box-shadow: 0 4px 16px rgba(0,0,0,0.035); }
+        .tt-row { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 11px; padding: 14px; margin-bottom: 10px; border: 1px solid rgba(60,64,67,0.09); border-radius: 18px; background: rgba(255,255,255,0.82); box-shadow: 0 4px 16px rgba(0,0,0,0.035); transition: transform .16s ease, opacity .16s ease, box-shadow .16s ease; }
         .tt-order-badge { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #e8f0fe; color: #174ea6; font-size: 14px; font-weight: 800; }
         .tt-row-main { min-width: 0; }
-        .tt-band-line { display: flex; align-items: center; min-width: 0; gap: 9px; }
-        .tt-band-icon { width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; object-fit: cover; background: #f1f3f4; }
+        .tt-band-line { display: flex; align-items: center; min-width: 0; gap: 7px; margin: -5px -5px 0; padding: 5px; border-radius: 12px; }
+        .tt-band-overview { display: flex; align-items: center; gap: 9px; min-width: 0; flex: 1; cursor: pointer; border-radius: 10px; }
+        .tt-band-overview:active { opacity: .65; }
+        .tt-band-icon { width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 10px; overflow: hidden; background: #e8f0fe; color: #1a73e8; }
+        .tt-band-icon img { width: 100%; height: 100%; object-fit: cover; }
+        .tt-band-icon .tt-default-icon { display: none; }
+        .tt-band-icon.icon-error img { display: none; }
+        .tt-band-icon.icon-error .tt-default-icon { display: block; }
         .tt-band-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 750; }
+        .tt-detail-arrow { color: #bdc1c6; font-size: 19px; flex-shrink: 0; }
+        .tt-drag-handle { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #f1f3f4; color: #5f6368; cursor: grab; touch-action: none; }
+        .tt-drag-handle:active { cursor: grabbing; background: #e8f0fe; color: #1a73e8; }
+        .tt-drag-hint { display: flex; align-items: center; gap: 5px; margin: -2px 0 12px; padding: 9px 11px; border-radius: 12px; background: #fff8e1; color: #8d6e00; font-size: 11px; font-weight: 700; line-height: 1.4; }
+        .tt-drag-placeholder { opacity: .12; box-shadow: none; border: 2px dashed #1a73e8; }
+        .tt-drag-ghost { position: fixed !important; z-index: 10000; margin: 0 !important; pointer-events: none; opacity: .96; transform: scale(1.025); box-sizing: border-box; border-color: rgba(26,115,232,.45); background: white; box-shadow: 0 18px 44px rgba(26,115,232,.24); transition: none; }
+        .tt-drag-ghost .tt-row-actions { display: none; }
         .tt-fields { display: grid; grid-template-columns: minmax(0,1fr) 112px; gap: 8px; margin-top: 11px; }
         .tt-field-label { display: block; margin: 0 0 5px 2px; color: #8e8e93; font-size: 10px; font-weight: 700; }
         .tt-row-actions { display: flex; gap: 6px; margin-top: 10px; }
@@ -200,6 +213,10 @@
         @media (max-width: 360px) {
             .tt-fields { grid-template-columns: 1fr; }
             .tt-day-tab { min-width: 82px; }
+        }
+        @media (pointer: coarse) {
+            .tt-row-actions { display: none; }
+            .tt-fields { margin-top: 9px; }
         }
     </style>
 </head>
@@ -463,6 +480,7 @@
                             <span class="tt-section-label" style="margin:0;">出演順</span>
                             <span id="concert-timetable-summary" class="tt-summary"></span>
                         </div>
+                        <div class="tt-drag-hint"><span class="material-icons" style="font-size:17px;">drag_indicator</span>右側のつまみを押したまま上下に動かして並べ替え</div>
                         <div id="concert-timetable-rows"></div>
                     </div>
                     <div class="tt-save-bar">
@@ -815,6 +833,7 @@
         let concertTimetableDraft = [];
         let concertTimetableDates = [];
         let selectedTimetableDate = '';
+        let timetableDragState = null;
         let currentBandDetail = null;
 
         window.openPage = (id) => { document.getElementById('page-' + id).classList.add('open'); };
@@ -998,8 +1017,12 @@
                     <div class="tt-order-badge">${index + 1}</div>
                     <div class="tt-row-main">
                         <div class="tt-band-line">
-                            <img class="tt-band-icon" src="${escapeHtml(entry.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg')}" alt="">
-                            <div class="tt-band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
+                            <div class="tt-band-overview" onclick="openTimetableBandDetail(this.closest('.tt-row').dataset.bandId)">
+                                <div class="tt-band-icon ${entry.icon ? '' : 'icon-error'}">${entry.icon ? `<img src="${escapeHtml(entry.icon)}" alt="" onerror="this.parentElement.classList.add('icon-error')">` : ''}<span class="material-icons tt-default-icon">groups</span></div>
+                                <div class="tt-band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
+                                <span class="material-icons tt-detail-arrow">chevron_right</span>
+                            </div>
+                            <div class="tt-drag-handle" onpointerdown="startTimetableDrag(event)" aria-label="押したまま上下に動かして並べ替え"><span class="material-icons">drag_indicator</span></div>
                         </div>
                         <div class="tt-fields">
                             <div>
@@ -1081,6 +1104,98 @@
             [concertTimetableDraft[currentIndex], concertTimetableDraft[targetIndex]] = [concertTimetableDraft[targetIndex], concertTimetableDraft[currentIndex]];
             renderTimetableRows();
         };
+
+        window.openTimetableBandDetail = bandId => {
+            const band = concertBandsCache.find(item => item.id === bandId);
+            if (band) openAdminBandDetail(band);
+        };
+
+        function placeDraggedTimetableRow(pointerY) {
+            if (!timetableDragState) return;
+            const {row, container} = timetableDragState;
+            const otherRows = [...container.querySelectorAll('.tt-row:not(.tt-drag-placeholder)')];
+            const nextRow = otherRows.find(item => {
+                const rect = item.getBoundingClientRect();
+                return pointerY < rect.top + rect.height / 2;
+            });
+            if (nextRow) container.insertBefore(row, nextRow);
+            else container.appendChild(row);
+        }
+
+        function runTimetableAutoScroll() {
+            if (!timetableDragState) return;
+            const {scrollContainer, lastY} = timetableDragState;
+            const bounds = scrollContainer.getBoundingClientRect();
+            const edgeSize = 90;
+            let speed = 0;
+            if (lastY < bounds.top + edgeSize) speed = -Math.max(5, Math.round((bounds.top + edgeSize - lastY) / 5));
+            else if (lastY > bounds.bottom - edgeSize) speed = Math.max(5, Math.round((lastY - (bounds.bottom - edgeSize)) / 5));
+            if (speed !== 0) {
+                scrollContainer.scrollTop += Math.max(-18, Math.min(18, speed));
+                placeDraggedTimetableRow(lastY);
+            }
+            timetableDragState.animationFrame = requestAnimationFrame(runTimetableAutoScroll);
+        }
+
+        window.startTimetableDrag = event => {
+            if (timetableDragState || (event.pointerType === 'mouse' && event.button !== 0)) return;
+            const row = event.currentTarget.closest('.tt-row');
+            const container = document.getElementById('concert-timetable-rows');
+            const scrollContainer = document.getElementById('page-admin-concert');
+            if (!row || !container || !scrollContainer) return;
+            event.preventDefault();
+            const rect = row.getBoundingClientRect();
+            const ghost = row.cloneNode(true);
+            ghost.classList.add('tt-drag-ghost');
+            ghost.style.left = `${rect.left}px`;
+            ghost.style.top = `${rect.top}px`;
+            ghost.style.width = `${rect.width}px`;
+            ghost.style.height = `${rect.height}px`;
+            document.body.appendChild(ghost);
+            row.classList.add('tt-drag-placeholder');
+            timetableDragState = {
+                row,
+                container,
+                ghost,
+                scrollContainer,
+                pointerId: event.pointerId,
+                offsetY: event.clientY - rect.top,
+                lastY: event.clientY,
+                animationFrame: null
+            };
+            try { event.currentTarget.setPointerCapture(event.pointerId); } catch (error) {}
+            if (navigator.vibrate) navigator.vibrate(12);
+            timetableDragState.animationFrame = requestAnimationFrame(runTimetableAutoScroll);
+        };
+
+        function moveActiveTimetableDrag(event) {
+            if (!timetableDragState || event.pointerId !== timetableDragState.pointerId) return;
+            event.preventDefault();
+            timetableDragState.lastY = event.clientY;
+            timetableDragState.ghost.style.top = `${event.clientY - timetableDragState.offsetY}px`;
+            placeDraggedTimetableRow(event.clientY);
+        }
+
+        function finishActiveTimetableDrag(event) {
+            if (!timetableDragState || event.pointerId !== timetableDragState.pointerId) return;
+            const {row, container, ghost, animationFrame} = timetableDragState;
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            const bandIds = [...container.querySelectorAll('.tt-row')].map(item => item.dataset.bandId);
+            const positions = concertTimetableDraft.map((entry, index) => entry.date === selectedTimetableDate ? index : -1).filter(index => index >= 0);
+            const entriesById = new Map(concertTimetableDraft.map(entry => [entry.bandId, entry]));
+            positions.forEach((draftIndex, index) => {
+                if (entriesById.has(bandIds[index])) concertTimetableDraft[draftIndex] = entriesById.get(bandIds[index]);
+            });
+            ghost.remove();
+            row.classList.remove('tt-drag-placeholder');
+            timetableDragState = null;
+            if (navigator.vibrate) navigator.vibrate(8);
+            renderTimetableRows();
+        }
+
+        document.addEventListener('pointermove', moveActiveTimetableDrag, {passive:false});
+        document.addEventListener('pointerup', finishActiveTimetableDrag);
+        document.addEventListener('pointercancel', finishActiveTimetableDrag);
 
         window.autoFillTimetableTimes = async () => {
             const entries = getSelectedTimetableEntries();
