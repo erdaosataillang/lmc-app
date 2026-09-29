@@ -271,8 +271,6 @@
         function bandDescription(band) {
             const saved = band?.description || band?.profile || band?.bio || band?.comment || band?.remarks;
             if (saved) return saved;
-            const songs = Array.isArray(band?.songs) ? band.songs.map(song => typeof song === 'string' ? song : song?.title).filter(Boolean) : [];
-            if (songs.length) return `演奏予定：${songs.slice(0,3).join('、')}`;
             return 'LMCのステージに出演するバンドです。プロフィールの更新をお楽しみに。';
         }
 
@@ -352,7 +350,6 @@
                 </div>
                 <div style="font-size:14px; line-height:1.65; margin-top:14px; white-space:pre-wrap;">${escapeHtml(bandDescription(band))}</div>
                 <div class="band-stat-row"><div class="band-stat"><strong>${members.length}</strong><span>メンバー</span></div><div class="band-stat"><strong>${songs.length}</strong><span>登録曲</span></div><div class="band-stat"><strong>${likes.length}</strong><span>いいね</span></div></div>
-                ${songs.length ? `<div class="profile-section-title">演奏曲</div><div style="font-size:13px; color:#536471; line-height:1.7;">${songs.slice(0,5).map(song => `♪ ${escapeHtml(song)}`).join('<br>')}</div>` : ''}
                 <div class="profile-section-title">バンドメンバー</div>
                 <div>${members.length ? members.map(member => `<div class="member-detail-row"><img src="${safeImageUrl(member.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" alt=""><div style="min-width:0;"><div style="font-size:15px; font-weight:800;">${escapeHtml(member.name || 'メンバー')}</div><div style="font-size:12px; color:#536471; margin-top:3px;">${escapeHtml([member.grade, member.part, member.job].filter(Boolean).join(' · ') || 'LMCメンバー')}</div></div></div>`).join('') : '<div style="padding:18px 0; color:#8e8e93; font-size:13px;">メンバー情報はまだ登録されていません。</div>'}</div>`;
         }
