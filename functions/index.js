@@ -6,6 +6,17 @@ const {FieldValue, Timestamp, getFirestore} = require("firebase-admin/firestore"
 const {logger} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {defineSecret} = require("firebase-functions/params");
+const {randomBytes} = require("node:crypto");
+const {
+  CHAT_CLIENT_ID,
+  CHAT_REDIRECT_URI,
+  chatProfile,
+  safeEqual,
+  sha256Base64Url,
+  validPkceChallenge,
+  validPkceVerifier,
+} = require("./chat-auth");
 const {
   calculateLottery,
   configuredTimeMatches,
@@ -16,6 +27,7 @@ const {
 
 initializeApp();
 const db = getFirestore();
+const chatApiToken = defineSecret("CHAT_API_TOKEN");
 
 const LINE_CHANNEL_ID = "2008162165";
 const ALLOWED_ORIGINS = new Set([
@@ -132,6 +144,137 @@ exports.createLineFirebaseToken = onRequest({
   } catch (error) {
     logger.error("LINE Firebase authentication failed", {message: error.message});
     response.status(500).json({error: "authentication_failed"});
+  }
+});
+
+exports.createChatAuthorizationCode = onRequest({
+  region: "asia-northeast1",
+  memory: "256MiB",
+  timeoutSeconds: 30,
+  maxInstances: 10,
+}, async (request, response) => {
+  const origin = request.get("origin");
+  if (origin === "https://lmc-mobile.sorairosystem.com") {
+    response.set("Access-Control-Allow-Origin", origin);
+    response.set("Vary", "Origin");
+  }
+  response.set("Access-Control-Allow-Headers", "Content-Type");
+  response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.set("Cache-Control", "no-store");
+  if (request.method === "OPTIONS") {
+    response.status(origin === "https://lmc-mobile.sorairosystem.com" ? 204 : 403).send("");
+    return;
+  }
+  if (request.method !== "POST") {
+    response.status(405).json({error: "method_not_allowed"});
+    return;
+  }
+  if (origin !== "https://lmc-mobile.sorairosystem.com") {
+    response.status(403).json({error: "origin_not_allowed"});
+    return;
+  }
+
+  const {firebaseIdToken, clientId, redirectUri, codeChallenge, codeChallengeMethod} = request.body || {};
+  if (typeof firebaseIdToken !== "string" || firebaseIdToken.length > 10000 ||
+      clientId !== CHAT_CLIENT_ID || redirectUri !== CHAT_REDIRECT_URI ||
+      codeChallengeMethod !== "S256" || !validPkceChallenge(codeChallenge)) {
+    response.status(400).json({error: "invalid_request"});
+    return;
+  }
+
+  try {
+    const identity = await getAuth().verifyIdToken(firebaseIdToken, true);
+    if (identity.line !== true || identity.registered !== true) {
+      response.status(403).json({error: "registered_lmc_account_required"});
+      return;
+    }
+    const userSnapshot = await db.doc(`users/${identity.uid}`).get();
+    const profile = userSnapshot.exists ? chatProfile(identity.uid, userSnapshot.data()) : null;
+    if (!profile?.chatAccess) {
+      response.status(403).json({error: "chat_access_denied"});
+      return;
+    }
+    const code = randomBytes(32).toString("base64url");
+    const codeHash = sha256Base64Url(code);
+    await db.doc(`chatAuthorizationCodes/${codeHash}`).create({
+      uid: identity.uid,
+      clientId,
+      redirectUri,
+      codeChallenge,
+      createdAt: FieldValue.serverTimestamp(),
+      expiresAt: Timestamp.fromMillis(Date.now() + 60_000),
+    });
+    response.status(200).json({code});
+  } catch (error) {
+    logger.warn("Chat authorization code creation failed", {code: error.code || "unknown"});
+    response.status(401).json({error: "authentication_failed"});
+  }
+});
+
+exports.lmcChatApi = onRequest({
+  region: "asia-northeast1",
+  memory: "256MiB",
+  timeoutSeconds: 30,
+  maxInstances: 10,
+  secrets: [chatApiToken],
+}, async (request, response) => {
+  response.set("Cache-Control", "no-store");
+  response.set("Content-Type", "application/json; charset=utf-8");
+  const suppliedToken = request.get("authorization").replace(/^Bearer\s+/i, "");
+  if (!safeEqual(suppliedToken, chatApiToken.value())) {
+    response.status(401).json({error: "unauthorized"});
+    return;
+  }
+
+  try {
+    if (request.method === "POST" && request.path === "/auth/chat/exchange") {
+      const {code, codeVerifier, redirectUri, clientId} = request.body || {};
+      if (typeof code !== "string" || code.length > 128 || !validPkceVerifier(codeVerifier) ||
+          clientId !== CHAT_CLIENT_ID || redirectUri !== CHAT_REDIRECT_URI) {
+        response.status(400).json({error: "invalid_request"});
+        return;
+      }
+      const codeRef = db.doc(`chatAuthorizationCodes/${sha256Base64Url(code)}`);
+      const uid = await db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(codeRef);
+        if (!snapshot.exists || snapshot.get("clientId") !== clientId ||
+            snapshot.get("redirectUri") !== redirectUri ||
+            snapshot.get("expiresAt")?.toMillis() < Date.now() ||
+            !safeEqual(sha256Base64Url(codeVerifier), snapshot.get("codeChallenge"))) {
+          throw new Error("invalid_authorization_code");
+        }
+        transaction.delete(codeRef);
+        return snapshot.get("uid");
+      });
+      const userSnapshot = await db.doc(`users/${uid}`).get();
+      const profile = userSnapshot.exists ? chatProfile(uid, userSnapshot.data()) : null;
+      if (!profile?.chatAccess) {
+        response.status(403).json({error: "chat_access_denied"});
+        return;
+      }
+      response.status(200).json(profile);
+      return;
+    }
+
+    const match = request.method === "GET" ? request.path.match(/^\/users\/([A-Za-z0-9_-]{1,128})$/) : null;
+    if (match) {
+      const userSnapshot = await db.doc(`users/${match[1]}`).get();
+      const profile = userSnapshot.exists ? chatProfile(match[1], userSnapshot.data()) : null;
+      if (!profile?.chatAccess) {
+        response.status(404).json({error: "user_not_found"});
+        return;
+      }
+      response.status(200).json(profile);
+      return;
+    }
+    response.status(404).json({error: "not_found"});
+  } catch (error) {
+    if (error.message === "invalid_authorization_code") {
+      response.status(401).json({error: "invalid_authorization_code"});
+      return;
+    }
+    logger.error("LMC chat API failed", {message: error.message});
+    response.status(500).json({error: "internal_error"});
   }
 });
 

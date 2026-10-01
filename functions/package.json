@@ -7,7 +7,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "deploy": "firebase deploy --only functions:runScheduledLottery,functions:createLineFirebaseToken"
+    "deploy": "firebase deploy --only functions:runScheduledLottery,functions:createLineFirebaseToken,functions:createChatAuthorizationCode,functions:lmcChatApi"
   },
   "dependencies": {
     "firebase-admin": "^13.0.0",
