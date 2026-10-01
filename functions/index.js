@@ -79,25 +79,48 @@ exports.createLineFirebaseToken = onRequest({
   }
 
   const idToken = typeof request.body?.idToken === "string" ? request.body.idToken : "";
-  if (!idToken || idToken.length > 10000) {
-    response.status(400).json({error: "invalid_id_token"});
+  const accessToken = typeof request.body?.accessToken === "string" ? request.body.accessToken : "";
+  if ((!idToken && !accessToken) || idToken.length > 10000 || accessToken.length > 10000) {
+    response.status(400).json({error: "invalid_line_token"});
     return;
   }
 
   try {
-    const verificationResponse = await fetch("https://api.line.me/oauth2/v2.1/verify", {
-      method: "POST",
-      headers: {"Content-Type": "application/x-www-form-urlencoded"},
-      body: new URLSearchParams({id_token: idToken, client_id: LINE_CHANNEL_ID}),
-    });
-    const lineIdentity = await verificationResponse.json();
-    if (!verificationResponse.ok || typeof lineIdentity.sub !== "string" || !lineIdentity.sub) {
-      logger.warn("LINE ID token verification failed", {status: verificationResponse.status});
+    let lineUserId = "";
+    if (idToken) {
+      const verificationResponse = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: new URLSearchParams({id_token: idToken, client_id: LINE_CHANNEL_ID}),
+      });
+      const lineIdentity = await verificationResponse.json();
+      if (verificationResponse.ok && typeof lineIdentity.sub === "string") {
+        lineUserId = lineIdentity.sub;
+      } else {
+        logger.warn("LINE ID token verification failed; trying access token", {
+          status: verificationResponse.status,
+          reason: lineIdentity.error || "unknown",
+        });
+      }
+    }
+
+    if (!lineUserId && accessToken) {
+      const profileResponse = await fetch("https://api.line.me/v2/profile", {
+        headers: {Authorization: `Bearer ${accessToken}`},
+      });
+      const lineProfile = await profileResponse.json();
+      if (profileResponse.ok && typeof lineProfile.userId === "string") {
+        lineUserId = lineProfile.userId;
+      } else {
+        logger.warn("LINE access token verification failed", {status: profileResponse.status});
+      }
+    }
+
+    if (!lineUserId) {
       response.status(401).json({error: "line_verification_failed"});
       return;
     }
 
-    const lineUserId = lineIdentity.sub;
     const userSnapshot = await db.doc(`users/${lineUserId}`).get();
     const userData = userSnapshot.exists ? userSnapshot.data() : {};
     const customToken = await getAuth().createCustomToken(lineUserId, {

@@ -15,15 +15,16 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
     }
 
     const idToken = liff.getIDToken();
-    if (!idToken) {
-        throw new Error("LINE ID token is unavailable. Enable the openid scope for this LIFF app.");
+    const accessToken = liff.getAccessToken();
+    if (!idToken && !accessToken) {
+        throw new Error("LINE authentication tokens are unavailable. Please log in again.");
     }
 
     const response = await fetch(TOKEN_ENDPOINT, {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         cache: "no-store",
-        body: JSON.stringify({idToken})
+        body: JSON.stringify({idToken, accessToken})
     });
     if (!response.ok) throw new Error(`LINE authentication failed (${response.status})`);
 
