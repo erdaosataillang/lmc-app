@@ -691,8 +691,9 @@
             }
         }
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
+        onAuthStateChanged(auth, async (user) => {
+            const tokenResult = user && !user.isAnonymous ? await user.getIdTokenResult() : null;
+            if (user && tokenResult?.claims?.line === true && tokenResult?.claims?.admin === true) {
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('admin-app').classList.remove('hidden');
                 startDataListeners(user);

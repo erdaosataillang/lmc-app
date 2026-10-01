@@ -38,9 +38,10 @@ export function initAdminPage(activePageId, callback) {
         unlockUI();
     }, 5000);
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         clearTimeout(timeout);
-        if (!user || user.isAnonymous) {
+        const tokenResult = user && !user.isAnonymous ? await user.getIdTokenResult() : null;
+        if (!user || user.isAnonymous || tokenResult?.claims?.line !== true || tokenResult?.claims?.admin !== true) {
             if (!window.location.href.includes('/admin/login.html')) {
                 const redirect = encodeURIComponent(window.location.pathname + window.location.search);
                 window.location.href = `/admin/login.html?redirect=${redirect}`;

@@ -81,6 +81,12 @@
             if (user && !user.isAnonymous) {
                 const tokenResult = await user.getIdTokenResult();
                 if (tokenResult.claims.line !== true) return;
+                if (tokenResult.claims.admin !== true) {
+                    document.getElementById('btn-login').classList.remove('hidden');
+                    document.getElementById('loading-spinner').classList.add('hidden');
+                    alert('このアカウントには管理権限がありません。');
+                    return;
+                }
                 const target = getRedirectUrl();
                 console.log(`Authenticated, redirecting to ${target}...`);
                 window.location.href = target;

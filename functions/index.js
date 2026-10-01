@@ -27,7 +27,7 @@ const ALLOWED_ORIGINS = new Set([
 
 function roleValues(value) {
   if (!value) return [];
-  if (typeof value === "string") return [value];
+  if (typeof value === "string") return value.split(/[\s,]+/).filter(Boolean);
   if (Array.isArray(value)) return value.flatMap(roleValues);
   if (typeof value === "object") {
     return Object.entries(value)
@@ -42,9 +42,12 @@ function hasAdminAccess(userData = {}) {
     ...roleValues(userData.role),
     ...roleValues(userData.roll),
   ].map((role) => role.toLowerCase());
-  const affiliations = Array.isArray(userData.affiliations) ? userData.affiliations : [];
-  return roles.some((role) => ["admin", "lmc_all", "urakata_all"].includes(role)) ||
-    (affiliations.includes("urakata") && roles.length > 0);
+  return roles.some((role) => {
+    if (["admin", "lmc_all", "urakata_all"].includes(role)) return true;
+    if (!role.startsWith("lmc_limit_")) return false;
+    const expiresAt = Number.parseInt(role.replace("lmc_limit_", ""), 10);
+    return Number.isFinite(expiresAt) && expiresAt > Date.now();
+  });
 }
 
 exports.createLineFirebaseToken = onRequest({
