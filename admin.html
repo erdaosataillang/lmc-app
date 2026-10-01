@@ -568,7 +568,8 @@
     <!-- Firebase & Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
         import { getFirestore, collection, doc, onSnapshot, updateDoc, setDoc, addDoc, deleteDoc, serverTimestamp, Timestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Environment variables for Firebase
@@ -680,17 +681,13 @@
                     const profile = await liff.getProfile();
                     updateUserProfileUI(profile);
                     
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else { 
-                        await signInAnonymously(auth); 
-                    }
+                    await signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId);
                 } else {
                     document.getElementById('login-screen').classList.remove('hidden');
                 }
             } catch (err) { 
-                console.error("LIFF Error:", err); 
-                await signInAnonymously(auth);
+                console.error("LIFF Error:", err);
+                document.getElementById('login-screen').classList.remove('hidden');
             }
         }
 

@@ -610,7 +610,8 @@
     <script type="module">
       import { app, db, auth, MY_LIFF_ID } from './js/common.js';
         import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
         
         const MY_PAGE_URL = "https://lmc-mobile.sorairosystem.com/userregist?sec=LMC&jumpedurl=https://lmc-mobile.sorairosystem.com/";
         const CUE_WEB_URL = "https://lmc-mobile.sorairosystem.com/cue.html";
@@ -922,8 +923,7 @@
                 const profile = await liff.getProfile(); 
                 currentUser = profile.userId; currentProfile = profile;
 
-                if(typeof __initial_auth_token!=='undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); 
-                else await signInAnonymously(auth); 
+                await signInFirebaseWithLine(auth, signInWithCustomToken, currentUser);
                 
                 // 3. 最新データを取得
                 const userSnap = await getDoc(doc(db, "users", currentUser));

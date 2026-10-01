@@ -546,7 +546,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
@@ -870,17 +871,12 @@
         async function main(){ 
             const mainSyncToken = showSyncIndicator();
             try{
-                try{
-                    const authPromise = typeof __initial_auth_token!=='undefined'&&__initial_auth_token
-                        ? signInWithCustomToken(auth,__initial_auth_token)
-                        : signInAnonymously(auth);
-                    await withTimeout(authPromise, 8000, 'Firebase authentication');
-                }catch(ae){console.warn(ae)}
                 try {
                     await withTimeout(liff.init({liffId:MY_LIFF_ID}), 8000, 'LIFF initialization');
                     if(!liff.isLoggedIn()){liff.login();return;} 
                     const profile=await withTimeout(liff.getProfile(), 8000, 'LIFF profile');
-                    currentUser=profile.userId; currentProfile=profile; 
+                    currentUser=profile.userId; currentProfile=profile;
+                    await withTimeout(signInFirebaseWithLine(auth, signInWithCustomToken, currentUser), 12000, 'Firebase authentication');
                     const userRef=doc(db,"users",currentUser);
                     const userSnap=await withTimeout(getDoc(userRef), 8000, 'User data');
                     if(!userSnap.exists()){ window.location.href=MY_PAGE_URL; return; } 

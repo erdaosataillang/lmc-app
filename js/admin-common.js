@@ -40,9 +40,10 @@ export function initAdminPage(activePageId, callback) {
 
     onAuthStateChanged(auth, (user) => {
         clearTimeout(timeout);
-        if (!user) {
+        if (!user || user.isAnonymous) {
             if (!window.location.href.includes('/admin/login.html')) {
-                window.location.href = "/admin/login.html";
+                const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.href = `/admin/login.html?redirect=${redirect}`;
             }
             unlockUI();
         } else {

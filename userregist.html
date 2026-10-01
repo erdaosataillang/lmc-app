@@ -470,6 +470,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+        import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
 
         const firebaseConfig = {
             apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI",
@@ -483,6 +485,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
         // ==========================================
         // URLパラメータとセッションの処理
@@ -521,6 +524,7 @@
                     const profile = await liff.getProfile();
                     globalLineProfile = profile;
                     const lineUserId = profile.userId;
+                    await signInFirebaseWithLine(auth, signInWithCustomToken, lineUserId);
                     
                     const docRef = doc(db, "users", lineUserId);
                     const docSnap = await getDoc(docRef);

@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // LINE Loginで本人確認し、専用Functionsが発行したFirebaseトークンだけを許可する。
+    // UIDはLINE userIdと一致するため、監査ログと利用統計を同一ユーザーに集約できる。
+    function isVerifiedLineUser() {
+      return request.auth != null && request.auth.token.line == true;
+    }
+
+    match /{document=**} {
+      allow read, write: if isVerifiedLineUser();
+    }
+  }
+}

@@ -1,8 +1,10 @@
 "use strict";
 
 const {initializeApp} = require("firebase-admin/app");
+const {getAuth} = require("firebase-admin/auth");
 const {FieldValue, Timestamp, getFirestore} = require("firebase-admin/firestore");
 const {logger} = require("firebase-functions");
+const {onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
 const {
   calculateLottery,
@@ -14,6 +16,98 @@ const {
 
 initializeApp();
 const db = getFirestore();
+
+const LINE_CHANNEL_ID = "2008162165";
+const ALLOWED_ORIGINS = new Set([
+  "https://lmc-mobile.sorairosystem.com",
+  "https://liff.line.me",
+  "http://localhost",
+  "http://localhost:5000",
+]);
+
+function roleValues(value) {
+  if (!value) return [];
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(roleValues);
+  if (typeof value === "object") {
+    return Object.entries(value)
+        .filter(([, enabled]) => enabled === true || enabled === "true")
+        .map(([role]) => role);
+  }
+  return [];
+}
+
+function hasAdminAccess(userData = {}) {
+  const roles = [
+    ...roleValues(userData.role),
+    ...roleValues(userData.roll),
+  ].map((role) => role.toLowerCase());
+  const affiliations = Array.isArray(userData.affiliations) ? userData.affiliations : [];
+  return roles.some((role) => ["admin", "lmc_all", "urakata_all"].includes(role)) ||
+    (affiliations.includes("urakata") && roles.length > 0);
+}
+
+exports.createLineFirebaseToken = onRequest({
+  region: "asia-northeast1",
+  memory: "256MiB",
+  timeoutSeconds: 30,
+  maxInstances: 10,
+}, async (request, response) => {
+  const origin = request.get("origin");
+  if (origin && (ALLOWED_ORIGINS.has(origin) || /^http:\/\/localhost:\d+$/.test(origin))) {
+    response.set("Access-Control-Allow-Origin", origin);
+    response.set("Vary", "Origin");
+  }
+  response.set("Access-Control-Allow-Headers", "Content-Type");
+  response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  response.set("Cache-Control", "no-store");
+
+  if (request.method === "OPTIONS") {
+    response.status(204).send("");
+    return;
+  }
+  if (request.method !== "POST") {
+    response.status(405).json({error: "method_not_allowed"});
+    return;
+  }
+  if (origin && !ALLOWED_ORIGINS.has(origin) && !/^http:\/\/localhost:\d+$/.test(origin)) {
+    response.status(403).json({error: "origin_not_allowed"});
+    return;
+  }
+
+  const idToken = typeof request.body?.idToken === "string" ? request.body.idToken : "";
+  if (!idToken || idToken.length > 10000) {
+    response.status(400).json({error: "invalid_id_token"});
+    return;
+  }
+
+  try {
+    const verificationResponse = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+      method: "POST",
+      headers: {"Content-Type": "application/x-www-form-urlencoded"},
+      body: new URLSearchParams({id_token: idToken, client_id: LINE_CHANNEL_ID}),
+    });
+    const lineIdentity = await verificationResponse.json();
+    if (!verificationResponse.ok || typeof lineIdentity.sub !== "string" || !lineIdentity.sub) {
+      logger.warn("LINE ID token verification failed", {status: verificationResponse.status});
+      response.status(401).json({error: "line_verification_failed"});
+      return;
+    }
+
+    const lineUserId = lineIdentity.sub;
+    const userSnapshot = await db.doc(`users/${lineUserId}`).get();
+    const userData = userSnapshot.exists ? userSnapshot.data() : {};
+    const customToken = await getAuth().createCustomToken(lineUserId, {
+      line: true,
+      registered: userSnapshot.exists,
+      admin: hasAdminAccess(userData),
+    });
+    response.status(200).json({customToken});
+  } catch (error) {
+    logger.error("LINE Firebase authentication failed", {message: error.message});
+    response.status(500).json({error: "authentication_failed"});
+  }
+});
 
 exports.runScheduledLottery = onSchedule({
   schedule: "* * * * *",

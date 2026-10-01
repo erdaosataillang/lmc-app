@@ -65,7 +65,8 @@
     <!-- Logic -->
     <script type="module">
         import { auth, LIFF_ID } from "/js/admin-common.js";
-        import { signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { signInFirebaseWithLine } from "/js/line-firebase-auth.js";
 
         // URLパラメータからリダイレクト先を取得
         const getRedirectUrl = () => {
@@ -76,8 +77,10 @@
         };
 
         // すでにログインしている場合は自動リダイレクト
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
+        onAuthStateChanged(auth, async (user) => {
+            if (user && !user.isAnonymous) {
+                const tokenResult = await user.getIdTokenResult();
+                if (tokenResult.claims.line !== true) return;
                 const target = getRedirectUrl();
                 console.log(`Authenticated, redirecting to ${target}...`);
                 window.location.href = target;
@@ -100,7 +103,8 @@
                     liff.login();
                 } else {
                     // LINEログイン済みの場合はFirebase認証へ連携
-                    await signInAnonymously(auth);
+                    const profile = await liff.getProfile();
+                    await signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId);
                 }
             } catch (error) {
                 console.error("Login failed:", error);

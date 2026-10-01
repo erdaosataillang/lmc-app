@@ -800,7 +800,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, orderBy, where, setDoc, updateDoc, serverTimestamp, writeBatch, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
 
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig);
@@ -2545,18 +2546,11 @@
             renderNav();
 
             try {
-                if(typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch(e) { console.warn(e); }
-
-            try {
                 await liff.init({liffId: "2008162165-vVODNp12"});
                 if(!liff.isLoggedIn()){liff.login();return;}
                 currentProfile = await liff.getProfile();
                 currentUser = currentProfile.userId;
+                await signInFirebaseWithLine(auth, signInWithCustomToken, currentUser);
 
                 const userRef = doc(db, "users", currentUser);
                 const userSnap = await getDoc(userRef);

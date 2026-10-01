@@ -280,7 +280,8 @@
     <!-- Firebase SDK (ES Modules形式) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
         import { 
             getFirestore, 
             doc, 
@@ -314,7 +315,6 @@
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            authReady = signInAnonymously(auth);
         } catch(e) {
             console.log("Firebase setup skipped or missing config.", e);
         }
@@ -613,6 +613,10 @@
 
             try {
                 // Firestoreを読む前に認証を完了させ、初回表示時の権限エラーを防ぐ。
+                await liff.init({liffId: '2008162165-vVODNp12'});
+                if (!liff.isLoggedIn()) { liff.login(); return; }
+                const profile = await liff.getProfile();
+                authReady = signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId);
                 await authReady;
                 await preloadSystemUsers();
                 const eventSelect = document.getElementById('event-select');

@@ -143,7 +143,8 @@
     <script type="module">
         import {db, auth} from './js/common.js';
         import {doc, getDoc, updateDoc, arrayUnion, arrayRemove} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
-        import {signInAnonymously} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+        import {signInWithCustomToken} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+        import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
 
         let entries = [];
         let selectedDate = '';
@@ -501,8 +502,9 @@
             renderNav();
             updateHeader();
             try {
-                await signInAnonymously(auth);
-                ensureLiffUser(false).then(() => { if (viewMode === 'timeline') renderTimeline(); });
+                const lineUserId = await ensureLiffUser(true);
+                if (!lineUserId) return;
+                await signInFirebaseWithLine(auth, signInWithCustomToken, lineUserId);
                 const settings = await getDoc(doc(db, 'system', 'settings'));
                 const activeEventId = settings.exists() ? settings.data().activeEventId : null;
                 if (!activeEventId) throw new Error('active event is not configured');
