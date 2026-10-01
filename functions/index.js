@@ -220,7 +220,7 @@ exports.lmcChatApi = onRequest({
 }, async (request, response) => {
   response.set("Cache-Control", "no-store");
   response.set("Content-Type", "application/json; charset=utf-8");
-  const suppliedToken = request.get("authorization").replace(/^Bearer\s+/i, "");
+  const suppliedToken = (request.get("authorization") || "").replace(/^Bearer\s+/i, "");
   if (!safeEqual(suppliedToken, chatApiToken.value())) {
     response.status(401).json({error: "unauthorized"});
     return;
