@@ -43,7 +43,7 @@ function hasAdminAccess(userData = {}) {
     ...roleValues(userData.roll),
   ].map((role) => role.toLowerCase());
   return roles.some((role) => {
-    if (["admin", "lmc_all", "urakata_all"].includes(role)) return true;
+    if (["admin", "lmc_all", "lmc_admin", "urakata_all"].includes(role)) return true;
     if (!role.startsWith("lmc_limit_")) return false;
     const expiresAt = Number.parseInt(role.replace("lmc_limit_", ""), 10);
     return Number.isFinite(expiresAt) && expiresAt > Date.now();

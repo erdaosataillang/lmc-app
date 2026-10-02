@@ -251,6 +251,10 @@
                             <span>LMC全体 (lmc_all)</span>
                         </label>
                         <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
+                            <input type="checkbox" value="lmc_admin" class="create-role-checkbox custom-checkbox">
+                            <span>LMC管理 (lmc_admin)</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-indigo-300 transition-all">
                             <input type="checkbox" value="lmc_user" class="create-role-checkbox custom-checkbox" checked>
                             <span>LMC一般 (lmc_user)</span>
                         </label>
@@ -339,6 +343,7 @@
         const roleMap = {
             'admin': { label: '管理者', color: 'bg-rose-50 text-rose-600 border-rose-200' },
             'lmc_all': { label: 'LMC全体', color: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
+            'lmc_admin': { label: 'LMC管理', color: 'bg-violet-50 text-violet-600 border-violet-200' },
             'lmc_user': { label: 'LMC一般', color: 'bg-blue-50 text-blue-600 border-blue-200' },
             'urakata_all': { label: '裏方統括', color: 'bg-amber-50 text-amber-700 border-amber-200' },
             'urakata_user': { label: '裏方一般', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' }
@@ -621,9 +626,15 @@
             let birthStr = '未登録';
             let birthInputVal = '';
             if (user.birthday) {
-                const d = user.birthday.toDate ? user.birthday.toDate() : new Date(user.birthday.seconds * 1000 || user.birthday);
-                birthStr = d.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
-                birthInputVal = d.toISOString().split('T')[0];
+                const rawBirthday = typeof user.birthday.toDate === 'function'
+                    ? user.birthday.toDate()
+                    : (typeof user.birthday.seconds === 'number'
+                        ? new Date(user.birthday.seconds * 1000)
+                        : new Date(user.birthday));
+                if (!Number.isNaN(rawBirthday.getTime())) {
+                    birthStr = rawBirthday.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+                    birthInputVal = rawBirthday.toISOString().split('T')[0];
+                }
             }
 
             const iconLarge = user.icon 
@@ -637,6 +648,7 @@
 
             const formattedTel = user.tel ? formatTel(user.tel) : '未設定';
             const userRoles = getUserRoles(user);
+            const normalizedPart = toSafeString(user.part).trim().toLowerCase();
 
             if (!isEditing) {
                 content.innerHTML = `
@@ -735,6 +747,7 @@
                 const availableRoles = [
                     { key: 'admin', label: '管理者 (admin)' },
                     { key: 'lmc_all', label: 'LMC全体 (lmc_all)' },
+                    { key: 'lmc_admin', label: 'LMC管理 (lmc_admin)' },
                     { key: 'lmc_user', label: 'LMC一般 (lmc_user)' },
                     { key: 'urakata_all', label: '裏方統括 (urakata_all)' },
                     { key: 'urakata_user', label: '裏方一般 (urakata_user)' }
@@ -796,11 +809,11 @@
                                     <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">パート</label>
                                     <select id="edit-part" class="edit-input">
                                         <option value="">選択してください</option>
-                                        <option value="vocal" ${user.part?.toLowerCase() == 'vocal' ? 'selected' : ''}>ボーカル</option>
-                                        <option value="guitar" ${user.part?.toLowerCase() == 'guitar' ? 'selected' : ''}>ギター</option>
-                                        <option value="bass" ${user.part?.toLowerCase() == 'bass' ? 'selected' : ''}>ベース</option>
-                                        <option value="drums" ${user.part?.toLowerCase() == 'drums' || user.part?.toLowerCase() == 'drum' ? 'selected' : ''}>ドラム</option>
-                                        <option value="keyboard" ${user.part?.toLowerCase() == 'keyboard' ? 'selected' : ''}>キーボード</option>
+                                        <option value="vocal" ${normalizedPart === 'vocal' ? 'selected' : ''}>ボーカル</option>
+                                        <option value="guitar" ${normalizedPart === 'guitar' ? 'selected' : ''}>ギター</option>
+                                        <option value="bass" ${normalizedPart === 'bass' ? 'selected' : ''}>ベース</option>
+                                        <option value="drums" ${normalizedPart === 'drums' || normalizedPart === 'drum' ? 'selected' : ''}>ドラム</option>
+                                        <option value="keyboard" ${normalizedPart === 'keyboard' ? 'selected' : ''}>キーボード</option>
                                     </select>
                                 </div>
                             </div>
