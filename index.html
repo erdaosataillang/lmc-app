@@ -613,7 +613,8 @@
         import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
         
-        const MY_PAGE_URL = "https://lmc-mobile.sorairosystem.com/userregist?sec=LMC&jumpedurl=https://lmc-mobile.sorairosystem.com/";
+        const MY_PAGE_URL = "/mypage.html";
+        const REGISTRATION_URL = "https://lmc-mobile.sorairosystem.com/userregist?sec=LMC&jumpedurl=https://lmc-mobile.sorairosystem.com/";
         const CUE_WEB_URL = "https://lmc-mobile.sorairosystem.com/cue.html";
 
         // キャッシュキー
@@ -927,7 +928,7 @@
                 
                 // 3. 最新データを取得
                 const userSnap = await getDoc(doc(db, "users", currentUser));
-                if(!userSnap.exists()){ location.href=MY_PAGE_URL; return; }
+                if(!userSnap.exists()){ location.href=REGISTRATION_URL; return; }
                 currentUserData = userSnap.data();
                 localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));
                 

@@ -551,7 +551,8 @@
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
-        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "https://mypage.sorairosystem.com";
+        const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "/mypage.html";
+        const REGISTRATION_URL = "/userregist.html?sec=LMC&jumpedurl=" + encodeURIComponent(location.origin + "/booking.html");
         
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
@@ -879,7 +880,7 @@
                     await withTimeout(signInFirebaseWithLine(auth, signInWithCustomToken, currentUser), 12000, 'Firebase authentication');
                     const userRef=doc(db,"users",currentUser);
                     const userSnap=await withTimeout(getDoc(userRef), 8000, 'User data');
-                    if(!userSnap.exists()){ window.location.href=MY_PAGE_URL; return; } 
+                    if(!userSnap.exists()){ window.location.href=REGISTRATION_URL; return; }
                     updateLastLoginInBackground(userRef);
                     currentUserData=userSnap.data(); 
                     localStorage.setItem(CACHE_KEY_USER, JSON.stringify(currentUserData));

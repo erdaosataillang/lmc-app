@@ -119,7 +119,7 @@
                 <img id="profileIcon" src="https://ul.h3z.jp/Vnukmtvq.jpg" alt="" style="width:78px; height:78px; border-radius:50%; border:4px solid white; object-fit:cover; margin-top:-40px; position:relative; background:white;">
                 <div id="profileName" style="font-size:21px; font-weight:800; margin-top:7px;">マイページ</div>
                 <div id="profileSub" style="font-size:13px; color:#536471; margin-top:4px;"></div>
-                <button onclick="window.location.href='https://mypage.sorairosystem.com'" style="width:100%; border:0; border-radius:999px; background:#0b57d0; color:white; font-weight:700; padding:13px; margin-top:20px;">マイページを開く</button>
+                <button onclick="window.location.href='/mypage.html'" style="width:100%; border:0; border-radius:999px; background:#0b57d0; color:white; font-weight:700; padding:13px; margin-top:20px;">マイページを開く</button>
             </div>
         </div>
     </div>
@@ -216,7 +216,7 @@
                 {id:'timetable', label:'タイムテーブル', icon:'view_timeline', href:'/timetable.html'},
                 {id:'booking', label:'合わせ予約', icon:'calendar_month', href:'/booking.html'},
                 {id:'admin', label:'管理', icon:'admin_panel_settings', href:'/manage.html', hidden:!isAdmin},
-                {id:'mypage', label:'マイページ', icon:'account_circle', href:'https://mypage.sorairosystem.com'}
+                {id:'mypage', label:'マイページ', icon:'account_circle', href:'/mypage.html'}
             ];
             document.getElementById('nav-container').innerHTML = `<div class="bottom-nav">${items.filter(item => !item.hidden).map(item => `
                 <div class="nav-item ${item.id === 'timetable' ? 'active' : ''}" onclick="window.location.href='${item.href}'">

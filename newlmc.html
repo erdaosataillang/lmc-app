@@ -1970,7 +1970,7 @@
         }
         if (statusKey === 'BACKSTAGE') {
           showToast("裏方システムに接続中...");
-          setTimeout(() => { window.open('https://mypage.sorairosystem.com', '_blank'); }, 600);
+          setTimeout(() => { window.location.href = '/mypage.html'; }, 600);
           return;
         }
 
