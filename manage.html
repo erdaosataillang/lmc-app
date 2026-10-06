@@ -2054,12 +2054,25 @@
                     const bandsPromise = getDocs(query(collection(db, "bands"), orderBy("createdAt", "desc")));
                     const [eventSnap, bandQs] = await Promise.all([eventPromise, bandsPromise]);
                     if (eventSnap) {
-                        currentActiveEventData = eventSnap.exists() ? eventSnap.data() : null;
-                        currentActiveEventName = eventSnap.exists()
-                            ? eventSnap.data().event || eventSnap.data().name || currentActiveEventId
-                            : currentActiveEventId + " (詳細不明)";
+                        if (eventSnap.exists()) {
+                            currentActiveEventData = eventSnap.data();
+                            currentActiveEventName = eventSnap.data().event || eventSnap.data().name || currentActiveEventId;
+                        } else {
+                            currentActiveEventId = null;
+                            currentActiveEventData = null;
+                        }
                     }
                     document.getElementById('currentEventNameText').innerText = `対象イベント: ${currentActiveEventName}`;
+                    const currentEventToggle = document.getElementById('currentEventBandsToggle');
+                    if (currentEventToggle) {
+                        currentEventToggle.checked = Boolean(currentActiveEventId && currentActiveEventData);
+                        currentEventToggle.disabled = !currentActiveEventId || !currentActiveEventData;
+                    }
+                    const currentEventBanner = document.getElementById('currentEventInfoBanner');
+                    if (currentEventBanner && !currentActiveEventId) {
+                        currentEventBanner.style.color = '#9a6700';
+                        currentEventBanner.style.background = '#fff8e1';
+                    }
                     allBandsCache = bandQs.docs.map(snap => ({ ...snap.data(), id: snap.id, cueData: null }));
                     bandsLoaded = true;
                     filterAndRenderBands();

@@ -290,9 +290,6 @@
             setDoc, 
             updateDoc, 
             collection, 
-            query, 
-            orderBy, 
-            limit, 
             getDocs, 
             serverTimestamp 
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -624,46 +621,44 @@
                 await preloadSystemUsers();
                 const eventSelect = document.getElementById('event-select');
                 try {
-                    const eventsQuery = query(collection(db, 'events'), orderBy('startDate', 'desc'), limit(3));
-                    const eventsSnap = await getDocs(eventsQuery);
+                    eventSelect.innerHTML = '';
+                    let selectedEventId = eventId;
+                    if (!selectedEventId) {
+                        const settingsSnap = await getDoc(doc(db, 'system', 'settings'));
+                        selectedEventId = settingsSnap.exists() ? settingsSnap.data().activeEventId || '' : '';
+                    }
 
-                    if (!eventsSnap.empty) {
-                        eventSelect.innerHTML = '';
-                        eventsSnap.docs.forEach(d => {
-                            const data = d.data();
-                            const rawName = data.event || data.name || "";
+                    if (selectedEventId) {
+                        const selectedEvent = await getDoc(doc(db, 'events', selectedEventId));
+                        if (selectedEvent.exists()) {
+                            const eventData = selectedEvent.data();
+                            const rawName = eventData.event || eventData.name || selectedEventId;
                             const monthMatch = rawName.match(/(\d{1,2})月/);
-                            const displayName = monthMatch ? `${monthMatch[1]}月定演` : rawName;
-
-                            const opt = document.createElement('option');
-                            opt.value = d.id;
-                            opt.textContent = displayName;
-                            eventSelect.appendChild(opt);
-                        });
-
-                        if (eventId && !Array.from(eventSelect.options).some(option => option.value === eventId)) {
-                            const requestedEvent = await getDoc(doc(db, 'events', eventId));
-                            if (requestedEvent.exists()) {
-                                const eventData = requestedEvent.data();
-                                const rawName = eventData.event || eventData.name || eventId;
-                                const monthMatch = rawName.match(/(\d{1,2})月/);
-                                const option = document.createElement('option');
-                                option.value = eventId;
-                                option.textContent = monthMatch ? `${monthMatch[1]}月定演` : rawName;
-                                eventSelect.prepend(option);
-                            }
-                        }
-
-                        if (eventId && Array.from(eventSelect.options).some(option => option.value === eventId)) {
-                            eventSelect.value = eventId;
-                            draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
-                        } else {
-                            eventId = eventSelect.value;
-                            draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
+                            const option = document.createElement('option');
+                            option.value = selectedEventId;
+                            option.textContent = monthMatch ? `${monthMatch[1]}月定演` : rawName;
+                            eventSelect.appendChild(option);
+                            eventSelect.disabled = false;
+                            eventId = selectedEventId;
+                            draftKey = `draft_${bandId || 'common'}_${eventId}`;
                             const newUrl = new URL(window.location);
                             newUrl.searchParams.set('eventID', eventId);
                             window.history.replaceState(null, '', newUrl);
+                        } else {
+                            eventId = '';
                         }
+                    }
+
+                    if (!eventId) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = '次のイベントは未設定です';
+                        eventSelect.appendChild(option);
+                        eventSelect.disabled = true;
+                        const submitButton = document.getElementById('submit-btn');
+                        submitButton.disabled = true;
+                        submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        submitButton.textContent = 'イベント設定後に提出できます';
                     }
                 } catch (e) {
                     console.error("Events fetch error:", e);
@@ -703,9 +698,17 @@
                                         opt.value = eventId;
                                         opt.textContent = displayName;
                                         eventSelect.appendChild(opt);
+                                        hasOption = true;
                                     }
                                 }
-                                eventSelect.value = eventId;
+                                if (hasOption) {
+                                    eventSelect.value = eventId;
+                                    eventSelect.disabled = false;
+                                    const submitButton = document.getElementById('submit-btn');
+                                    submitButton.disabled = false;
+                                    submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                                    submitButton.textContent = 'Cueシートを送信・登録する';
+                                }
                             }
                         }
 

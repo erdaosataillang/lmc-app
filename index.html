@@ -680,6 +680,10 @@
 
         window.goToWebCueSheet = () => {
             if (!currentEditingBandId) return;
+            if (!currentBandLatestEventId) {
+                showCustomAlert("次のイベントが設定されていないため、Cueシートはまだ提出できません。イベント公開後にもう一度お試しください。", "次のイベントは未設定です");
+                return;
+            }
             const params = new URLSearchParams({bandID:currentEditingBandId});
             if (currentBandLatestEventId) params.set('eventID', currentBandLatestEventId);
             window.location.href = `${CUE_WEB_URL}?${params.toString()}`;
@@ -1138,7 +1142,12 @@
             const slider = document.getElementById('bandSlider');
             
             if (targetEvents.length === 0) {
-                renderBandTabsFallback();
+                tabs.innerHTML = '<div class="band-tab active">すべてのバンド</div>';
+                slider.innerHTML = '<div id="bandList-archive" class="band-slide"></div>';
+                slider.style.width = '100%';
+                slider.style.transform = 'translateX(0)';
+                currentBandTab = 0;
+                if (myBandsAll.length > 0) renderBandList();
                 return;
             }
 
@@ -1210,8 +1219,6 @@
         }
 
         function renderBandList(){
-            if(targetEvents.length === 0) return; 
-            
             targetEvents.forEach(ev => { const el = document.getElementById(`bandList-${ev.id}`); if(el) el.innerHTML = ""; });
             const arcEl = document.getElementById('bandList-archive'); if(arcEl) arcEl.innerHTML = "";
 
@@ -1248,6 +1255,18 @@
 
                 return card;
             };
+
+            if (targetEvents.length === 0) {
+                if (!arcEl) return;
+                arcEl.innerHTML = `
+                    <div style="grid-column:span 2; background:#fff8e1; border:1px solid #ffe0a3; color:#805600; padding:14px 16px; border-radius:16px; font-size:12px; line-height:1.6; margin-bottom:4px;">
+                        <div style="font-size:14px; font-weight:800; margin-bottom:3px;"><span class="material-icons" style="font-size:18px; vertical-align:-4px; margin-right:5px;">event_busy</span>次のイベントはまだ設定されていません</div>
+                        イベントが公開されるまで、参加中のバンドはここで確認できます。
+                    </div>`;
+                myBandsAll.forEach(b => arcEl.appendChild(createCard(b)));
+                if (myBandsAll.length === 0) arcEl.insertAdjacentHTML('beforeend', '<div style="grid-column:span 2; padding:56px 20px; text-align:center; color:#8e8e93;">参加中のバンドはありません</div>');
+                return;
+            }
 
             myBandsAll.forEach(b => {
                 if(b.isArchived) { 
@@ -1393,22 +1412,21 @@
             
             const eventNameEl = document.getElementById('detailBandEventName');
             currentBandLatestEventId = "";
-            if (data.events && data.events.length > 0) {
-                currentBandLatestEventId = currentActiveEventId && data.events.includes(currentActiveEventId)
-                    ? currentActiveEventId
-                    : data.events[data.events.length - 1];
-                if (targetEvents) {
-                    const ev = targetEvents.find(e => e.id === currentBandLatestEventId);
-                    if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "アーカイブ";
-                }
+            if (currentActiveEventId && Array.isArray(data.events) && data.events.includes(currentActiveEventId)) {
+                currentBandLatestEventId = currentActiveEventId;
+                const ev = targetEvents.find(e => e.id === currentBandLatestEventId);
+                if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "現在のイベント";
             } else {
-                if(eventNameEl) eventNameEl.innerText = "";
+                if(eventNameEl) eventNameEl.innerText = currentActiveEventId ? "このイベントには未登録" : "次のイベント未設定";
             }
 
             // Cueシート提出ボタンのリンク設定
             const btnSubmitCue = document.getElementById('btnSubmitCueInModal');
             if(btnSubmitCue) {
                 btnSubmitCue.onclick = () => goToWebCueSheet();
+                btnSubmitCue.disabled = !currentBandLatestEventId;
+                btnSubmitCue.style.opacity = currentBandLatestEventId ? '1' : '.5';
+                btnSubmitCue.innerText = currentBandLatestEventId ? 'Cueシートを提出' : 'イベント設定後に提出できます';
             }
 
             renderBandMembersInModal(data);
@@ -1777,10 +1795,17 @@
                     el.innerText = shortName;
                     el.style.display = "inline-block";
                     localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, shortName);
+                } else {
+                    currentActiveEventId = "";
                 }
-            } else {
+            }
+            if (!currentActiveEventId) {
                 currentActiveEventId = "";
-                document.getElementById('displayActiveEvent').style.display = "none";
+                const el = document.getElementById('displayActiveEvent');
+                el.innerText = "次のイベント未設定";
+                el.style.display = "inline-block";
+                el.style.background = "#f1f3f4";
+                el.style.color = "#5f6368";
                 localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
             }
         }
@@ -1799,6 +1824,11 @@
         }
         
         window.openEventRegisterModal = () => {
+            if (targetEvents.length === 0) {
+                closeFabMenu();
+                showCustomAlert("次のイベントが公開されると、既存バンドを登録できるようになります。", "次のイベントは未設定です");
+                return;
+            }
             closeFabMenu(); const eSel = document.getElementById('selectRegisterEvent'); eSel.innerHTML = "";
             targetEvents.forEach(ev => { const opt = document.createElement('option'); opt.value = ev.id; opt.innerText = ev.name; eSel.appendChild(opt); });
             

@@ -507,9 +507,19 @@
                 await signInFirebaseWithLine(auth, signInWithCustomToken, lineUserId);
                 const settings = await getDoc(doc(db, 'system', 'settings'));
                 const activeEventId = settings.exists() ? settings.data().activeEventId : null;
-                if (!activeEventId) throw new Error('active event is not configured');
+                if (!activeEventId) {
+                    document.getElementById('eventName').innerText = '次のイベントは未設定です';
+                    document.getElementById('dayTabs').innerHTML = '';
+                    document.getElementById('scheduleList').innerHTML = '<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">event_busy</span><br><strong style="color:#3c4043;">次のイベントはまだ設定されていません</strong><br><span style="font-size:12px;">イベントが公開されると、ここにタイムテーブルが表示されます。</span></div>';
+                    return;
+                }
                 const eventSnapshot = await getDoc(doc(db, 'events', activeEventId));
-                if (!eventSnapshot.exists()) throw new Error('active event was not found');
+                if (!eventSnapshot.exists()) {
+                    document.getElementById('eventName').innerText = 'イベントを確認できません';
+                    document.getElementById('dayTabs').innerHTML = '';
+                    document.getElementById('scheduleList').innerHTML = '<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">event_busy</span><br>設定されたイベントが見つかりません。<br><span style="font-size:12px;">管理者による設定をお待ちください。</span></div>';
+                    return;
+                }
                 const eventData = eventSnapshot.data();
                 document.getElementById('eventName').innerText = eventData.event || eventData.name || '現在のイベント';
                 const timetable = eventData.timetable || {};
