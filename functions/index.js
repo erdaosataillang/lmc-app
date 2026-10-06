@@ -396,3 +396,6 @@ exports.runScheduledLottery = onSchedule({
     durationMinutes: result.duration,
   });
 });
+
+// 日程調整専用のAPI。既存のチャット認証・予約機能から独立。
+exports.lmcScheduleApi = require("./schedule-api").lmcScheduleApi;
