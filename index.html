@@ -102,6 +102,68 @@
         .form-group { margin-bottom: 16px; } .form-label { display: block; font-size: 12px; color: #5f6368; margin-bottom: 4px; font-weight: bold; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 12px; box-sizing: border-box; font-size: 15px; background: white; }
 
+        /* バンド結成フォーム */
+        #modal-band { background: rgba(15, 23, 42, 0.58); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        #modal-band .band-create-sheet { position: relative; padding: 18px 22px calc(20px + env(safe-area-inset-bottom)); max-height: min(92vh, 760px); overflow-x: hidden; border-radius: 32px 32px 0 0; background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%); box-shadow: 0 -24px 80px rgba(15, 23, 42, 0.22); transform: translateY(106%) scale(.98); transition: transform .46s cubic-bezier(.2, .9, .28, 1.12); }
+        #modal-band.open .band-create-sheet { transform: translateY(0) scale(1); }
+        .band-create-glow { position: absolute; width: 190px; height: 190px; border-radius: 50%; filter: blur(4px); pointer-events: none; opacity: .52; }
+        .band-create-glow.one { top: -118px; right: -62px; background: radial-gradient(circle, rgba(37, 99, 235, .25), rgba(37, 99, 235, 0) 72%); }
+        .band-create-glow.two { top: 155px; left: -135px; background: radial-gradient(circle, rgba(139, 92, 246, .17), rgba(139, 92, 246, 0) 72%); }
+        .band-create-handle { width: 42px; height: 5px; margin: 0 auto 16px; border-radius: 999px; background: #d8dee9; }
+        .band-create-header { position: relative; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+        .band-create-kicker { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #2563eb; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+        .band-create-kicker::before { content: ''; width: 18px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, #2563eb, #8b5cf6); }
+        .band-create-title { margin: 0; color: #0f172a; font-size: 24px; line-height: 1.25; letter-spacing: -.04em; }
+        .band-create-subtitle { margin: 6px 0 0; color: #64748b; font-size: 12px; line-height: 1.6; }
+        .band-create-close { flex: 0 0 auto; display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid #e8edf5; border-radius: 50%; background: rgba(255,255,255,.82); color: #64748b; cursor: pointer; transition: transform .2s ease, background .2s ease; }
+        .band-create-close:active { transform: scale(.9); background: #f1f5f9; }
+        .band-create-profile { position: relative; display: flex; align-items: center; gap: 16px; padding: 15px; margin-bottom: 18px; border: 1px solid rgba(37, 99, 235, .1); border-radius: 22px; background: linear-gradient(125deg, #f4f8ff, #faf7ff); overflow: hidden; }
+        .band-create-icon-button { flex: 0 0 auto; padding: 0; border: 0; background: none; cursor: pointer; }
+        .band-create-icon-ring { position: relative; display: grid; place-items: center; width: 74px; height: 74px; border-radius: 23px; background: conic-gradient(from 15deg, #2563eb, #8b5cf6, #06b6d4, #2563eb); box-shadow: 0 10px 28px rgba(37, 99, 235, .22); transition: transform .25s cubic-bezier(.2,.8,.2,1); }
+        .band-create-icon-button:active .band-create-icon-ring { transform: scale(.92) rotate(-3deg); }
+        .band-create-icon-core { position: relative; display: grid; place-items: center; width: 68px; height: 68px; overflow: hidden; border: 3px solid white; border-radius: 20px; background: linear-gradient(145deg, #eef4ff, #fff); color: #2563eb; }
+        .band-create-icon-core > .material-icons { font-size: 27px; animation: bandCreateFloat 2.2s ease-in-out infinite; }
+        .band-create-icon-core img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .band-create-icon-badge { position: absolute; right: -5px; bottom: -5px; display: grid; place-items: center; width: 26px; height: 26px; border: 3px solid white; border-radius: 50%; background: #0f172a; color: white; font-size: 13px; box-shadow: 0 4px 10px rgba(15,23,42,.25); }
+        .band-create-preview { min-width: 0; }
+        .band-create-preview-label { display: block; color: #2563eb; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+        .band-create-preview strong { display: block; margin: 4px 0 3px; overflow: hidden; color: #172033; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+        .band-create-preview small { color: #718096; font-size: 11px; line-height: 1.45; }
+        .band-create-field { position: relative; margin-bottom: 14px; }
+        .band-create-label { display: flex; align-items: center; gap: 8px; margin: 0 0 7px 2px; color: #334155; font-size: 12px; font-weight: 750; }
+        .band-create-step { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 8px; background: #eaf1ff; color: #2563eb; font-size: 9px; font-weight: 900; }
+        .band-create-input-wrap { position: relative; display: flex; align-items: center; border: 1.5px solid #e2e8f0; border-radius: 16px; background: #fff; box-shadow: 0 3px 12px rgba(15,23,42,.035); transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease; }
+        .band-create-input-wrap:focus-within { border-color: #5284ef; box-shadow: 0 0 0 4px rgba(37,99,235,.10), 0 7px 20px rgba(37,99,235,.08); transform: translateY(-1px); }
+        .band-create-input-icon { margin-left: 14px; color: #94a3b8; font-size: 20px; transition: color .2s ease; }
+        .band-create-input-wrap:focus-within .band-create-input-icon { color: #2563eb; }
+        .band-create-input { width: 100%; min-width: 0; padding: 14px 14px 14px 10px; border: 0; outline: 0; border-radius: 16px; background: transparent; color: #172033; font-size: 15px; font-family: inherit; }
+        .band-create-select { appearance: none; -webkit-appearance: none; padding-right: 42px; }
+        .band-create-chevron { position: absolute; right: 13px; color: #64748b; font-size: 21px; pointer-events: none; }
+        .band-create-help { max-height: 0; margin: 0 4px; overflow: hidden; color: #b45309; font-size: 11px; line-height: 1.5; opacity: 0; transform: translateY(-4px); transition: max-height .28s ease, margin .28s ease, opacity .24s ease, transform .28s ease; }
+        .band-create-help.show { max-height: 52px; margin-top: 8px; opacity: 1; transform: translateY(0); }
+        .band-create-note { display: flex; align-items: flex-start; gap: 9px; margin: 4px 2px 17px; padding: 10px 12px; border-radius: 13px; background: #f8fafc; color: #64748b; font-size: 11px; line-height: 1.5; }
+        .band-create-note .material-icons { margin-top: 1px; color: #64748b; font-size: 16px; }
+        .band-create-submit { position: relative; display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; min-height: 52px; padding: 14px 20px; overflow: hidden; border: 0; border-radius: 17px; background: linear-gradient(110deg, #2563eb 0%, #4f46e5 52%, #7c3aed 100%); color: #fff; font-size: 14px; font-weight: 800; font-family: inherit; box-shadow: 0 12px 28px rgba(79, 70, 229, .26); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease; }
+        .band-create-submit::before { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.22) 45%, transparent 70%); transform: translateX(-120%); transition: transform .65s ease; }
+        .band-create-submit:not(:disabled):hover::before { transform: translateX(120%); }
+        .band-create-submit:not(:disabled):active { transform: scale(.975); box-shadow: 0 7px 18px rgba(79, 70, 229, .24); }
+        .band-create-submit:disabled { opacity: .42; box-shadow: none; cursor: default; }
+        .band-create-submit .material-icons { font-size: 19px; }
+        .band-create-spinner { display: none; width: 17px; height: 17px; border: 2px solid rgba(255,255,255,.38); border-top-color: white; border-radius: 50%; animation: spin .75s linear infinite; }
+        .band-create-submit.loading .band-create-spinner { display: block; }
+        .band-create-submit.loading .band-create-arrow { display: none; }
+        .band-create-cancel { display: block; margin: 7px auto 0; padding: 9px 16px; border: 0; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
+        #modal-band.open .band-create-animate { animation: bandCreateEnter .5s both cubic-bezier(.2,.8,.2,1); }
+        #modal-band.open .band-create-profile { animation-delay: .08s; }
+        #modal-band.open .band-create-profile + .band-create-field { animation-delay: .13s; }
+        #modal-band.open .band-create-profile + .band-create-field + .band-create-field { animation-delay: .18s; }
+        #modal-band.open .band-create-actions { animation-delay: .23s; }
+        @keyframes bandCreateEnter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bandCreateFloat { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-3px) rotate(-4deg); } }
+        @media (prefers-reduced-motion: reduce) {
+            #modal-band .band-create-sheet, #modal-band.open .band-create-animate, .band-create-icon-core > .material-icons { animation: none; transition-duration: .01ms; }
+        }
+
         /* メンバー・通知リスト */
         .member-select-list { max-height: 200px; overflow-y: auto; border: 1px solid #eee; border-radius: 12px; } .member-option { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
         .member-option.selected { background: #e8f0fe; }
@@ -277,27 +339,64 @@
 
     <!-- バンド作成 -->
     <div id="modal-band" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band')">
-        <div class="modal-content" style="padding: 24px;">
-            <h3 style="margin-top:0; font-size: 18px;">バンド結成</h3>
-            <div class="image-picker-area">
-                <div class="image-picker" onclick="document.getElementById('bandIconInput').click()">
-                    <span class="material-icons">add_a_photo</span>
-                    <img id="previewBandIcon" class="hidden" src="">
+        <div class="modal-content band-create-sheet" role="dialog" aria-modal="true" aria-labelledby="bandCreateTitle">
+            <div class="band-create-glow one"></div>
+            <div class="band-create-glow two"></div>
+            <div class="band-create-handle"></div>
+            <div class="band-create-header band-create-animate">
+                <div>
+                    <span class="band-create-kicker">CREATE BAND</span>
+                    <h3 id="bandCreateTitle" class="band-create-title">新しいバンドを結成</h3>
+                    <p class="band-create-subtitle">名前と出演イベントを決めたら、仲間を招待しましょう。</p>
                 </div>
+                <button type="button" class="band-create-close" onclick="closeModal('modal-band')" aria-label="閉じる"><span class="material-icons">close</span></button>
+            </div>
+
+            <div class="band-create-profile band-create-animate">
+                <button type="button" class="band-create-icon-button" onclick="document.getElementById('bandIconInput').click()" aria-label="バンドアイコンを選択">
+                    <span class="band-create-icon-ring">
+                        <span class="band-create-icon-core">
+                            <span class="material-icons">add_a_photo</span>
+                            <img id="previewBandIcon" class="hidden" src="" alt="選択したバンドアイコン">
+                        </span>
+                        <span class="material-icons band-create-icon-badge">edit</span>
+                    </span>
+                </button>
                 <input type="file" id="bandIconInput" accept="image/*" hidden onchange="handleImageSelect(this, 'previewBandIcon')">
+                <div class="band-create-preview">
+                    <span class="band-create-preview-label">BAND PREVIEW</span>
+                    <strong id="bandNamePreview">バンド名を入力</strong>
+                    <small>アイコンはあとからでも変更できます</small>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">バンド名</label>
-                <input type="text" id="inputBandName" class="form-input" placeholder="例: 放課後ティータイム">
+
+            <div class="band-create-field band-create-animate">
+                <label class="band-create-label" for="inputBandName"><span class="band-create-step">01</span>バンド名</label>
+                <div class="band-create-input-wrap">
+                    <span class="material-icons band-create-input-icon">groups</span>
+                    <input type="text" id="inputBandName" class="band-create-input" placeholder="例：放課後ティータイム" maxlength="40" autocomplete="off" oninput="updateBandCreatePreview()">
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">出演するイベント</label>
-                <select id="selectNewBandEvent" class="form-input"></select>
-                <div id="newBandEventHelp" style="font-size:11px; color:#d93025; margin-top:8px; display:none;">※イベントを指定しない場合、このバンドは「アーカイブ」タブに表示されます。</div>
+
+            <div class="band-create-field band-create-animate">
+                <label class="band-create-label" for="selectNewBandEvent"><span class="band-create-step">02</span>出演するイベント</label>
+                <div class="band-create-input-wrap">
+                    <span class="material-icons band-create-input-icon">event</span>
+                    <select id="selectNewBandEvent" class="band-create-input band-create-select"></select>
+                    <span class="material-icons band-create-chevron">expand_more</span>
+                </div>
+                <div id="newBandEventHelp" class="band-create-help">イベントを指定しないバンドは「アーカイブ」タブに保存されます。</div>
             </div>
-            <p style="font-size:12px; color:#5f6368; margin-bottom:20px; text-align:center;">バンドを作成し、メンバーに招待リンクを送信します。</p>
-            <button class="btn-primary" onclick="saveBand()">作成して招待リンクを発行</button>
-            <button class="btn-secondary" onclick="closeModal('modal-band')">キャンセル</button>
+
+            <div class="band-create-actions band-create-animate">
+                <div class="band-create-note"><span class="material-icons">link</span><span>結成後に招待リンクが発行されます。リンクを送るだけでメンバーを追加できます。</span></div>
+                <button type="button" id="createBandButton" class="band-create-submit" onclick="saveBand()" disabled>
+                    <span class="band-create-spinner" aria-hidden="true"></span>
+                    <span id="createBandButtonLabel">バンドを結成する</span>
+                    <span class="material-icons band-create-arrow">arrow_forward</span>
+                </button>
+                <button type="button" class="band-create-cancel" onclick="closeModal('modal-band')">キャンセル</button>
+            </div>
         </div>
     </div>
 
@@ -1474,11 +1573,28 @@
         }
 
         // --- バンド操作 ---
+        window.updateBandCreatePreview = () => {
+            const nameInput = document.getElementById('inputBandName');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const preview = document.getElementById('bandNamePreview');
+            const submit = document.getElementById('createBandButton');
+            if (preview) preview.textContent = name || 'バンド名を入力';
+            if (submit && !submit.classList.contains('loading')) submit.disabled = !name;
+        };
+
         window.openBandModal = () => {
             closeFabMenu(); 
             document.getElementById('inputBandName').value = "";
-            document.getElementById('previewBandIcon').classList.add('hidden');
+            const previewIcon = document.getElementById('previewBandIcon');
+            previewIcon.classList.add('hidden');
+            previewIcon.removeAttribute('src');
+            document.getElementById('bandIconInput').value = '';
             tempBandIconBlob = null;
+            const submit = document.getElementById('createBandButton');
+            submit.classList.remove('loading');
+            submit.disabled = true;
+            document.getElementById('createBandButtonLabel').textContent = 'バンドを結成する';
+            updateBandCreatePreview();
             
             const eSel = document.getElementById('selectNewBandEvent');
             eSel.innerHTML = '<option value="">指定しない（アーカイブタブに保存）</option>';
@@ -1491,8 +1607,8 @@
             if(targetEvents.length > 0) eSel.value = targetEvents[0].id;
             
             const helpText = document.getElementById('newBandEventHelp');
-            helpText.style.display = eSel.value === "" ? "block" : "none";
-            eSel.onchange = (e) => { helpText.style.display = e.target.value === "" ? "block" : "none"; };
+            helpText.classList.toggle('show', eSel.value === "");
+            eSel.onchange = (e) => { helpText.classList.toggle('show', e.target.value === ""); };
 
             openModal('modal-band');
         };
@@ -1500,6 +1616,11 @@
         window.saveBand = async () => {
             const name = document.getElementById('inputBandName').value.trim(); if(!name) return showCustomAlert("名前を入力してください。");
             const eventId = document.getElementById('selectNewBandEvent').value;
+            const submit = document.getElementById('createBandButton');
+            if (submit.classList.contains('loading')) return;
+            submit.classList.add('loading');
+            submit.disabled = true;
+            document.getElementById('createBandButtonLabel').textContent = '結成しています…';
             
             const mIds = [currentUser], mNames = [currentProfile.displayName];
             const initialEvents = eventId ? [eventId] : [];
@@ -1526,7 +1647,12 @@
                 }
                 
                 shareBandInvite(docRef.id, name);
-            } catch(e) { showCustomAlert(e.message); }
+            } catch(e) {
+                submit.classList.remove('loading');
+                submit.disabled = false;
+                document.getElementById('createBandButtonLabel').textContent = 'バンドを結成する';
+                showCustomAlert(e.message);
+            }
         };
         
         window.updateBandName = async () => {
