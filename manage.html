@@ -135,6 +135,20 @@
         .edit-toggle-btn { background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.8); cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #1a73e8; transition: opacity 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
         .edit-toggle-btn:active { opacity: 0.6; }
 
+        /* 定期演奏会: 対象イベント選択 */
+        .concert-event-picker { position: relative; overflow: hidden; padding: 18px; border: 1px solid rgba(26,115,232,.12); background: linear-gradient(135deg, rgba(232,240,254,.92), rgba(255,255,255,.86) 58%, rgba(245,238,255,.82)); }
+        .concert-event-picker::after { content: ''; position: absolute; width: 130px; height: 130px; top: -82px; right: -46px; border-radius: 50%; background: rgba(175,82,222,.09); pointer-events: none; }
+        .concert-event-picker-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: #174ea6; font-size: 15px; font-weight: 750; }
+        .concert-event-picker-title .material-icons { font-size: 20px; }
+        .concert-event-picker-help { margin: 0 0 13px; color: #6b7280; font-size: 11px; line-height: 1.55; }
+        .concert-event-select-wrap { position: relative; display: flex; align-items: center; border: 1px solid rgba(26,115,232,.18); border-radius: 15px; background: white; box-shadow: 0 5px 16px rgba(26,115,232,.07); }
+        .concert-event-select-icon { margin-left: 14px; color: #1a73e8; font-size: 21px; }
+        .concert-event-select { width: 100%; min-width: 0; padding: 14px 42px 14px 10px; border: 0; outline: 0; border-radius: 15px; appearance: none; -webkit-appearance: none; background: transparent; color: #1c1c1e; font: inherit; font-size: 14px; font-weight: 650; }
+        .concert-event-select-arrow { position: absolute; right: 13px; color: #8e8e93; pointer-events: none; }
+        .concert-event-picker-meta { min-height: 18px; margin: 9px 3px 0; color: #73777f; font-size: 11px; line-height: 1.5; }
+        .concert-event-apply { margin-top: 12px; min-height: 47px; padding: 12px 18px; border-radius: 15px; box-shadow: 0 8px 20px rgba(26,115,232,.18); }
+        .concert-event-apply:disabled { color: #6b7280; background: rgba(118,118,128,.12); box-shadow: none; cursor: default; }
+
         /* モーダル (Liquid Glass 強調) */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 9000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
         .modal-overlay.open { display: flex; }
@@ -386,6 +400,20 @@
             </div>
         </div>
         <div class="content-area" style="padding-top:16px;">
+            <div class="card concert-event-picker">
+                <div class="concert-event-picker-title"><span class="material-icons">event_available</span>定期演奏会を選択</div>
+                <p class="concert-event-picker-help">「イベントの管理」に登録されているイベントから、現在の定期演奏会を選べます。</p>
+                <div class="concert-event-select-wrap">
+                    <span class="material-icons concert-event-select-icon">calendar_month</span>
+                    <select id="concert-event-selector" class="concert-event-select" onchange="updateConcertEventPickerState()" aria-label="定期演奏会を選択">
+                        <option value="">イベントを読み込み中...</option>
+                    </select>
+                    <span class="material-icons concert-event-select-arrow">expand_more</span>
+                </div>
+                <div id="concert-event-selector-meta" class="concert-event-picker-meta"></div>
+                <button id="concert-event-apply" class="btn-primary concert-event-apply" type="button" onclick="applyConcertEventSelection()" disabled>現在の定期演奏会</button>
+            </div>
+
             <div id="concert-loading" style="text-align:center; padding:40px; color:#8e8e93; font-size:15px; font-weight:500;">読み込み中...</div>
 
             <div id="concert-content-area" class="hidden">
@@ -406,7 +434,7 @@
 
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="font-size:18px; margin:0; color:#1c1c1e; font-weight:700;">イベント概要</h3>
+                        <h3 style="font-size:18px; margin:0; color:#1c1c1e; font-weight:700;">選択中のイベント概要</h3>
                         <span id="concert-status-badge" style="font-size: 11px; background: rgba(26, 115, 232, 0.1); color: #1a73e8; padding: 6px 14px; border-radius: 999px; font-weight: 700;">開催予定</span>
                     </div>
                     <div class="form-group">
@@ -494,7 +522,7 @@
             <div id="concert-empty-area" class="hidden" style="text-align:center; padding:60px 20px; color:#8e8e93;">
                 <span class="material-icons" style="font-size:64px; color:#dadce0; margin-bottom:16px;">event_busy</span>
                 <div style="font-weight:600; font-size:18px; color:#1c1c1e; margin-bottom:8px;">現在のイベントが未設定</div>
-                <div style="font-size:14px; line-height:1.5;">「基本の設定」から有効なメインイベントを設定してください。</div>
+                <div style="font-size:14px; line-height:1.5;">上のイベント一覧から定期演奏会を選択してください。</div>
             </div>
 
             <div style="font-size:12px; color:#c7c7cc; text-align:center; margin-top:24px; font-weight:500;">Event ID: <span id="concert-event-id">-</span></div>
@@ -1281,15 +1309,105 @@
             }
         };
 
-        window.openAdminConcert = async () => {
+        async function ensureEventsCache(forceRefresh = false) {
+            if (eventsLoaded && !forceRefresh) return eventsCache;
+            const snapshot = await getDocs(collection(db, "events"));
+            eventsCache = snapshot.docs.map(eventDoc => ({id:eventDoc.id, ...eventDoc.data()}));
+            eventsCache.sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
+            eventsLoaded = true;
+            return eventsCache;
+        }
+
+        function renderConcertEventPicker() {
+            const selector = document.getElementById('concert-event-selector');
+            if (!selector) return;
+            selector.innerHTML = '';
+
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = eventsCache.length ? 'イベントを選択してください' : '登録されているイベントがありません';
+            selector.appendChild(placeholder);
+
+            eventsCache.forEach(eventData => {
+                const option = document.createElement('option');
+                option.value = eventData.id;
+                const name = eventData.event || eventData.name || '名称未設定';
+                const date = eventData.startDate ? `（${eventData.startDate}）` : '';
+                option.textContent = `${name}${date}`;
+                selector.appendChild(option);
+            });
+
+            selector.value = eventsCache.some(eventData => eventData.id === currentActiveEventId) ? currentActiveEventId : '';
+            selector.disabled = eventsCache.length === 0;
+            updateConcertEventPickerState();
+        }
+
+        window.updateConcertEventPickerState = () => {
+            const selector = document.getElementById('concert-event-selector');
+            const applyButton = document.getElementById('concert-event-apply');
+            const meta = document.getElementById('concert-event-selector-meta');
+            if (!selector || !applyButton || !meta) return;
+
+            const selectedId = selector.value;
+            const eventData = eventsCache.find(item => item.id === selectedId);
+            if (!eventData) {
+                meta.textContent = eventsCache.length ? '一覧からイベントを選択してください。' : '先に「イベントの管理」でイベントを作成してください。';
+                applyButton.disabled = true;
+                applyButton.textContent = 'イベントを選択してください';
+                return;
+            }
+
+            const start = eventData.startDate || '日付未設定';
+            const end = eventData.endDate && eventData.endDate !== eventData.startDate ? ` 〜 ${eventData.endDate}` : '';
+            const isCurrent = selectedId === currentActiveEventId;
+            meta.textContent = `${start}${end}${isCurrent ? ' ・ 現在設定中' : ''}`;
+            applyButton.disabled = isCurrent;
+            applyButton.textContent = isCurrent ? '現在の定期演奏会' : 'このイベントを定期演奏会に設定';
+        };
+
+        window.applyConcertEventSelection = async () => {
+            const selector = document.getElementById('concert-event-selector');
+            const applyButton = document.getElementById('concert-event-apply');
+            const selectedId = selector?.value || '';
+            if (!selectedId || selectedId === currentActiveEventId) return;
+            const selectedEvent = eventsCache.find(item => item.id === selectedId);
+            if (!selectedEvent) return showCustomAlert('選択したイベントが見つかりません。', 'エラー');
+
+            applyButton.disabled = true;
+            applyButton.textContent = '切り替えています…';
+            try {
+                await setDoc(doc(db, 'system', 'settings'), {activeEventId:selectedId}, {merge:true});
+                currentActiveEventId = selectedId;
+                currentActiveEventName = selectedEvent.event || selectedEvent.name || selectedId;
+                currentActiveEventData = selectedEvent;
+                currentSystemSettings = {...currentSystemSettings, activeEventId:selectedId};
+                concertLoadedEventId = null;
+                concertLoadPromise = null;
+                bandsLoaded = false;
+                bandsLoadPromise = null;
+                renderConcertEventPicker();
+                await openAdminConcert(true);
+                await showCustomAlert(`「${currentActiveEventName}」を定期演奏会に設定しました。`);
+            } catch (error) {
+                updateConcertEventPickerState();
+                await showCustomAlert('切り替えに失敗しました: ' + error.message, 'エラー');
+            }
+        };
+
+        window.openAdminConcert = async (forceRefresh = false) => {
             openPage('admin-concert');
             const loadingEl = document.getElementById('concert-loading');
             const contentEl = document.getElementById('concert-content-area');
             const emptyEl = document.getElementById('concert-empty-area');
 
+            if (forceRefresh) {
+                concertLoadedEventId = null;
+                concertLoadPromise = null;
+            }
             emptyEl.classList.add('hidden');
             if (concertLoadPromise) return concertLoadPromise;
-            if (concertLoadedEventId && concertLoadedEventId === currentActiveEventId) {
+            if (!forceRefresh && eventsLoaded && concertLoadedEventId && concertLoadedEventId === currentActiveEventId) {
+                renderConcertEventPicker();
                 loadingEl.classList.add('hidden');
                 contentEl.classList.remove('hidden');
                 return;
@@ -1301,25 +1419,32 @@
 
             concertLoadPromise = (async () => {
                 try {
+                    await ensureEventsCache();
                     if (!currentActiveEventId) {
                         const settingsSnap = await getDoc(doc(db, "system", "settings"));
                         currentActiveEventId = settingsSnap.exists() ? settingsSnap.data().activeEventId || null : null;
                     }
+                    renderConcertEventPicker();
                     document.getElementById('concert-event-id').innerText = currentActiveEventId || "-";
                     if (!currentActiveEventId) {
                         loadingEl.classList.add('hidden');
+                        contentEl.classList.add('hidden');
                         emptyEl.classList.remove('hidden');
                         return;
                     }
 
-                    const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
-                    if (!eventSnap.exists()) {
+                    let ev = eventsCache.find(item => item.id === currentActiveEventId) || null;
+                    if (!ev) {
+                        const eventSnap = await getDoc(doc(db, "events", currentActiveEventId));
+                        if (eventSnap.exists()) ev = {id:eventSnap.id, ...eventSnap.data()};
+                    }
+                    if (!ev) {
                         loadingEl.classList.add('hidden');
+                        contentEl.classList.add('hidden');
                         emptyEl.classList.remove('hidden');
                         return;
                     }
 
-                    const ev = eventSnap.data();
                     currentActiveEventData = ev;
                     document.getElementById('concert-event-name').value = ev.event || ev.name || "";
                     document.getElementById('concert-event-date').value = ev.startDate || "";
@@ -1359,6 +1484,7 @@
                 } catch (e) {
                     loadingEl.classList.remove('hidden');
                     loadingEl.innerHTML = `<div style="color:#ff3b30;">読み込みエラー: ${e.message}</div>`;
+                    document.getElementById('concert-event-selector-meta').textContent = 'イベント一覧を読み込めませんでした。';
                 } finally {
                     concertLoadPromise = null;
                 }
@@ -1406,10 +1532,7 @@
             }
             container.innerHTML = '<div style="text-align:center; padding:40px; color:#8e8e93;">イベントを読み込み中...</div>';
             try {
-                const snapshot = await getDocs(collection(db, "events"));
-                eventsCache = snapshot.docs.map(eventDoc => ({id:eventDoc.id, ...eventDoc.data()}));
-                eventsCache.sort((a, b) => String(b.startDate || '').localeCompare(String(a.startDate || '')));
-                eventsLoaded = true;
+                await ensureEventsCache(forceRefresh);
                 renderAdminEvents();
             } catch (error) {
                 container.innerHTML = `<div style="padding:40px 20px; color:#ff3b30; text-align:center;">読み込みに失敗しました<br><button class="btn-outline" style="margin-top:16px;" onclick="openAdminEvents(true)">再試行</button></div>`;
