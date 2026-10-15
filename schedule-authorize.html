@@ -20,7 +20,7 @@
 <body>
   <main>
     <div class="mark">L</div>
-    <h1>LMCアカウントを確認しています</h1>
+    <h1>裏方アカウントを確認しています</h1>
     <p>確認後、安全に日程調整へ移動します。</p>
     <div class="spinner" id="spinner"></div>
     <p class="error" id="error"></p>
@@ -69,7 +69,7 @@
         }),
       });
       const result = await response.json();
-      if (!response.ok || !result.code) throw new Error("LMCの登録ユーザーを確認できませんでした。");
+      if (!response.ok || !result.code) throw new Error("裏方アカウントの登録ユーザーを確認できませんでした。");
       const destination = new URL(redirectUri);
       destination.searchParams.set("lmc_code", result.code);
       destination.searchParams.set("state", state);
