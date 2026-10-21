@@ -3,6 +3,7 @@
 <head>
     <script defer src="/js/image-cache.js"></script>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LMC Mobile - タイムテーブル</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -145,6 +146,7 @@
         import {doc, getDoc, updateDoc, arrayUnion, arrayRemove} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
         import {signInWithCustomToken} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
+        import {loadPublicProfile} from './js/app-api.js';
 
         let entries = [];
         let selectedDate = '';
@@ -155,7 +157,8 @@
         let timelineBandsLoaded = false;
         let timelineBandsLoading = null;
         const bandProfiles = new Map();
-        let allUsersCache = readCachedJson('lmc_all_users_cache', []);
+        localStorage.removeItem('lmc_all_users_cache');
+        let allUsersCache = readCachedJson('lmc_public_profiles_cache_v2', []);
         let editingBandCopyId = null;
 
         window.closeModal = id => document.getElementById(id)?.classList.remove('open');
@@ -346,11 +349,11 @@
             const missing = ids.filter(id => !allUsersCache.some(user => user.id === id));
             if (missing.length) {
                 const loaded = await Promise.all(missing.map(async id => {
-                    try { const snapshot = await getDoc(doc(db, 'users', id)); return snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null; }
+                    try { return await loadPublicProfile(auth, id); }
                     catch (_) { return null; }
                 }));
                 allUsersCache.push(...loaded.filter(Boolean));
-                localStorage.setItem('lmc_all_users_cache', JSON.stringify(allUsersCache));
+                localStorage.setItem('lmc_public_profiles_cache_v2', JSON.stringify(allUsersCache));
             }
             return ids.map((id, index) => allUsersCache.find(user => user.id === id) || {id, name:band.memberNames?.[index] || 'メンバー'});
         }

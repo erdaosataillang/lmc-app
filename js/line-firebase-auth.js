@@ -11,7 +11,9 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
     const existingUser = auth.currentUser;
     if (existingUser && !existingUser.isAnonymous && existingUser.uid === lineUserId) {
         const tokenResult = await existingUser.getIdTokenResult();
-        if (tokenResult.claims.line === true) return existingUser;
+        // 登録直後や権限変更後は新しいカスタムクレームが必要になる。
+        // 未登録トークンを使い回すと、登録済みユーザー向けルールが拒否してしまう。
+        if (tokenResult.claims.line === true && tokenResult.claims.registered === true) return existingUser;
     }
 
     const idToken = liff.getIDToken();

@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Booking - LMC Admin</title>
     <!-- Tailwind CSS -->
@@ -193,7 +194,7 @@
 
     <!-- Logic -->
     <script type="module">
-        import { initAdminPage, db } from "/js/admin-common.js";
+        import { initAdminPage, db, escapeHtml } from "/js/admin-common.js";
         import { collection, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, doc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let bookingsData = [], bandsData = [];
@@ -258,7 +259,7 @@
                 const statusColor = res.status === 'confirmed' ? 'text-green-500' : 'text-orange-500';
                 return `
                 <tr class="hover:bg-gray-50 border-b border-gray-50 transition-colors">
-                    <td class="px-8 py-5 font-bold text-gray-800">${res.bandName || '不明'}</td>
+                    <td class="px-8 py-5 font-bold text-gray-800">${escapeHtml(res.bandName || '不明')}</td>
                     <td class="px-8 py-5 text-xs">${dateStr}</td>
                     <td class="px-8 py-5 text-xs">${timeStr}</td>
                     <td class="px-8 py-5"><span class="px-2 py-1 ${res.type === 'event' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'} rounded text-[10px] font-bold">${res.type === 'event' ? 'イベント' : '練習'}</span></td>

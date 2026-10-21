@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <script defer src="/js/image-cache.js"></script>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LMC Mobile - マイバンド</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -711,18 +711,22 @@
       import { app, db, auth, MY_LIFF_ID } from './js/common.js';
         import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import {getDownloadURL, getStorage, ref as storageRef, uploadBytes} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
+        import {acceptBandInvite, createBandInvite, leaveBandSecurely, loadPublicProfiles, sendEmailCode, verifyEmailCode} from './js/app-api.js';
         
         const MY_PAGE_URL = "/mypage.html";
         const REGISTRATION_URL = "https://lmc-mobile.sorairosystem.com/userregist?sec=LMC&jumpedurl=https://lmc-mobile.sorairosystem.com/";
         const CUE_WEB_URL = "https://lmc-mobile.sorairosystem.com/cue.html";
+        const storage = getStorage(app);
 
         // キャッシュキー
         const CACHE_KEY_USER = 'lmc_user_cache';
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
         const CACHE_KEY_EVENTS = 'lmc_events_cache';
         const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_event_name';
-        const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache';
+        localStorage.removeItem('lmc_all_users_cache');
+        const CACHE_KEY_ALL_USERS = 'lmc_public_profiles_cache_v2';
         const CACHE_KEY_ADMIN = 'lmc_is_admin';
         
 
@@ -758,6 +762,8 @@
         window.closeModal = (id) => document.getElementById(id).classList.remove('open');
         window.goToMyPage = () => location.href = MY_PAGE_URL;
         function getPartLabel(p){ return {vocal:"Vo",guitar:"Gt",bass:"Ba",drums:"Dr",keyboard:"Key"}[p]||""; }
+        function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function safeImageUrl(value, fallback='https://ul.h3z.jp/Vnukmtvq.jpg') { try { const url=new URL(value||fallback,location.href); return ['https:','http:'].includes(url.protocol)?escapeHtml(url.href):fallback; } catch(_){ return fallback; } }
         function formatEventName(name) { return name ? name.replace(/\d{2,4}年度/g, "").trim() : ""; }
 
        // --- タブ切り替えロジック ---
@@ -854,8 +860,8 @@
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
                                 <td style="text-align:center; color:#888;">${idx + 1}</td>
-                                <td style="font-weight:bold;">${s.title || '-'}</td>
-                                <td style="text-align:center; font-family:monospace;">${s.duration || '--:--'}</td>
+                                <td style="font-weight:bold;">${escapeHtml(s.title || '-')}</td>
+                                <td style="text-align:center; font-family:monospace;">${escapeHtml(s.duration || '--:--')}</td>
                             `;
                             sBody.appendChild(tr);
                         });
@@ -869,9 +875,9 @@
                         cueData.members.forEach(m => {
                             const tr = document.createElement('tr');
                             tr.innerHTML = `
-                                <td style="color:#555;">${m.grade || '-'}</td>
-                                <td style="font-weight:bold; color:#0b57d0;">${m.part || '-'}</td>
-                                <td>${m.name || '-'}</td>
+                                <td style="color:#555;">${escapeHtml(m.grade || '-')}</td>
+                                <td style="font-weight:bold; color:#0b57d0;">${escapeHtml(m.part || '-')}</td>
+                                <td>${escapeHtml(m.name || '-')}</td>
                             `;
                             mBody.appendChild(tr);
                         });
@@ -919,13 +925,13 @@
             const u = allUsersCache.find(x => x.id === uid);
             if(!u) return;
 
-            document.getElementById('profileModalIcon').src = u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('profileModalIcon').src = safeImageUrl(u.icon);
             document.getElementById('profileModalName').innerText = u.name;
             
             // ヘッダー背景
             const headerBg = document.getElementById('profileModalHeaderBg');
             if(u.headerImage) {
-                headerBg.style.background = `url(${u.headerImage}) center/cover no-repeat`;
+                headerBg.style.background = `url("${safeImageUrl(u.headerImage)}") center/cover no-repeat`;
             } else {
                 headerBg.style.background = `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
             }
@@ -942,7 +948,7 @@
 
             const badges = document.getElementById('profileModalBadges');
             badges.innerHTML = "";
-            if(u.role) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:12px;">${u.role}</div>`;
+            if(u.role) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#e8f0fe; color:#0b57d0; padding:4px 10px; border-radius:12px;">${escapeHtml(u.role)}</div>`;
             if(u.affiliations?.includes('urakata')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#fce8e6; color:#d93025; padding:4px 10px; border-radius:12px;">裏方</div>`;
             if(u.affiliations?.includes('lmc')) badges.innerHTML += `<div style="font-size:11px; font-weight:bold; background:#f1f3f4; color:#5f6368; padding:4px 10px; border-radius:12px;">LMC</div>`;
 
@@ -1053,9 +1059,10 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const action = urlParams.get('action');
                 const inviteBandId = urlParams.get('bandId');
+                const inviteToken = urlParams.get('invite');
                 
-                if (action === 'invite' && inviteBandId) {
-                    handleInviteLink(inviteBandId);
+                if (action === 'invite' && inviteBandId && inviteToken) {
+                    handleInviteLink(inviteBandId, inviteToken);
                 }
             } catch(e) { console.error(e); } 
         }
@@ -1136,10 +1143,14 @@
         window.closeFullscreenViewer = () => {
             document.getElementById('fullscreen-viewer').classList.remove('open');
         };
-        async function uploadImageToExternal(blob){
-            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
-            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
-            const json = await res.json(); return json.files[0].url;
+        async function uploadImageSecure(blob, category, ownerId){
+            if (!blob || blob.size > 5 * 1024 * 1024) throw new Error('画像は5MB以内にしてください。');
+            const contentType = ['image/jpeg','image/png','image/webp'].includes(blob.type) ? blob.type : 'image/jpeg';
+            const extension = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
+            const path = `${category}/${ownerId}/${crypto.randomUUID()}.${extension}`;
+            const target = storageRef(storage, path);
+            await uploadBytes(target, blob, {contentType, cacheControl:'public,max-age=604800'});
+            return getDownloadURL(target);
         }
 
         window.handleImageSelect = async (inp, pid) => {
@@ -1164,7 +1175,7 @@
                     inp.value = "";
                     const b = await openCropModal(file, 1);
                     if (await showCustomConfirm("アイコンを変更しますか？")) {
-                        const url = await uploadImageToExternal(b);
+                        const url = await uploadImageSecure(b, 'band-images', document.getElementById('detailBandId').value);
                         await updateDoc(doc(db, "bands", document.getElementById('detailBandId').value), { icon: url });
                         document.getElementById('detailBandIcon').src = url;
                         showCustomAlert("アイコンを変更しました。");
@@ -1180,7 +1191,7 @@
                     inp.value = "";
                     // ヘッダーは 3:1
                     const b = await openCropModal(file, 3);
-                    const url = await uploadImageToExternal(b);
+                    const url = await uploadImageSecure(b, 'user-images', currentUser);
                     await updateDoc(doc(db, "users", currentUser), { headerImage: url });
                     
                     currentUserData.headerImage = url;
@@ -1328,7 +1339,7 @@
                 card.onclick = () => openBandDetail(b.id, b); 
                 
                 // 画像表示
-                const img = b.icon ? `<img src="${b.icon}" class="band-card-img">` : `<div class="band-card-img" style="display:flex; justify-content:center; align-items:center; color:#ccc; font-size:40px;">${(b.name||"?")[0]}</div>`;
+                const img = b.icon ? `<img src="${safeImageUrl(b.icon)}" class="band-card-img">` : `<div class="band-card-img" style="display:flex; justify-content:center; align-items:center; color:#ccc; font-size:40px;">${escapeHtml((b.name||"?")[0])}</div>`;
                 
                 const dateText = "日付未定";
 
@@ -1341,7 +1352,7 @@
                     ${img}
                     <span class="material-icons like-icon" style="color: ${heartColor};">${heartIcon}</span>
                     <div class="band-card-content">
-                        <div class="band-name">${b.name}</div>
+                        <div class="band-name">${escapeHtml(b.name)}</div>
                         <div class="band-date">${dateText}</div>
                     </div>
                 `;
@@ -1564,8 +1575,9 @@
                 
                 if (u) {
                     div.onclick = () => showMemberProfile(uid);
-                    const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline" style="padding:2px 8px; font-size:10px; color:red; border-color:red;" onclick="event.stopPropagation(); removeMember('${bid}','${uid}','${u.name}')">削除</button>` : '';
-                    div.innerHTML = `<img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${u.name}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${u.part?getPartLabel(u.part):''}</div></div>${delBtn}`;
+                    const delBtn = (canE && uid !== currentUser) ? `<button class="btn-outline remove-member-button" style="padding:2px 8px; font-size:10px; color:red; border-color:red;">削除</button>` : '';
+                    div.innerHTML = `<img src="${safeImageUrl(u.icon)}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${escapeHtml(u.name)}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${escapeHtml(u.part?getPartLabel(u.part):'')}</div></div>${delBtn}`;
+                    div.querySelector('.remove-member-button')?.addEventListener('click', event => { event.stopPropagation(); removeMember(bid, uid, u.name || 'メンバー'); });
                 } else {
                     div.innerHTML = `<div class="member-avatar-small" style="background:#f1f3f4; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:16px; color:#9aa0a6; animation: spin 1s linear infinite;">sync</span></div><div class="member-info-rich" style="flex:1;"><div class="member-name-rich" style="color:#9aa0a6;">読み込み中...</div><div style="font-size:10px; color:#ccc;">${uid.substring(0,8)}...</div></div>`;
                 }
@@ -1638,7 +1650,7 @@
                 });
                 
                 if (tempBandIconBlob) { 
-                    const url = await uploadImageToExternal(tempBandIconBlob); 
+                    const url = await uploadImageSecure(tempBandIconBlob, 'band-images', docRef.id);
                     await updateDoc(docRef, { icon: url }); 
                 }
                 closeModal('modal-band'); 
@@ -1677,7 +1689,7 @@
         window.leaveBand = async () => {
             const bid = document.getElementById('detailBandId').value;
             if(await showCustomConfirm("脱退しますか？")) { 
-                await updateDoc(doc(db, "bands", bid), { memberIds: arrayRemove(currentUser), memberNames: arrayRemove(currentProfile.displayName) }); 
+                await leaveBandSecurely(auth, bid);
                 closeModal('modal-band-detail'); 
             }
         };
@@ -1705,7 +1717,14 @@
        
         // --- 招待ロジック ---
        window.shareBandInvite = async (bid, bn) => {
-            const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${bid}&action=invite`;
+            let invitation;
+            try {
+                invitation = await createBandInvite(auth, bid);
+            } catch (error) {
+                await showCustomAlert(error.message, "招待リンクを作成できません");
+                return;
+            }
+            const u = `https://liff.line.me/${MY_LIFF_ID}/?bandId=${encodeURIComponent(bid)}&invite=${encodeURIComponent(invitation.token)}&action=invite`;
             if (navigator.share) {
                 try {
                     await navigator.share({
@@ -1723,7 +1742,7 @@
             }
         };
 
-        window.handleInviteLink = async (bid) => {
+        window.handleInviteLink = async (bid, token) => {
             try {
                 const bandSnap = await getDoc(doc(db, "bands", bid));
                 if (!bandSnap.exists()) {
@@ -1738,31 +1757,22 @@
                 }
 
                 document.getElementById('inviteBandNameTitle').innerText = bandData.name;
-                document.getElementById('btnAcceptInvite').onclick = () => acceptInvite(bid, bandData.name);
-                document.getElementById('btnHoldInvite').onclick = () => holdInvite(bid);
+                document.getElementById('btnAcceptInvite').onclick = () => acceptInvite(token, bandData.name);
+                document.getElementById('btnHoldInvite').onclick = () => closeModal('modal-invite-confirm');
 
                 openModal('modal-invite-confirm');
                 
-                window.history.replaceState(null, null, window.location.pathname);
             } catch (e) { console.error(e); }
         };
 
-        window.acceptInvite = async (bid, bName) => {
+        window.acceptInvite = async (token, bName) => {
             try {
-                await updateDoc(doc(db, "bands", bid), {
-                    memberIds: arrayUnion(currentUser),
-                    memberNames: arrayUnion(currentProfile.displayName)
-                });
-                
-                if (currentUserData.pendingInvites && currentUserData.pendingInvites.includes(bid)) {
-                    await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
-                    currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
-                }
-                
+                await acceptBandInvite(auth, token);
                 showCustomAlert(`${bName} に参加しました！`);
                 closeModal('modal-invite-confirm');
+                window.history.replaceState(null, null, window.location.pathname);
                 checkNotifications();
-            } catch(e) { showCustomAlert("参加処理に失敗しました。"); }
+            } catch(e) { showCustomAlert(e.message || "参加処理に失敗しました。"); }
         };
 
         window.holdInvite = async (bid) => {
@@ -1845,13 +1855,12 @@
                                         <span class="material-icons" style="font-size: 20px;">group_add</span>
                                     </div>
                                     <div class="notif-content" style="flex:1;">
-                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${bData.name}</strong> からの招待</div>
-                                        <div style="font-size:12px; color:#536471; margin-top:2px;">バンドへ参加しますか？</div>
+                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${escapeHtml(bData.name)}</strong> の古い招待</div>
+                                        <div style="font-size:12px; color:#536471; margin-top:2px;">安全のため、新しい招待リンクを発行してもらってください。</div>
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:8px; width:100%; padding-left: 56px; box-sizing: border-box;">
                                     <button class="btn-secondary" style="margin:0; flex:1; padding:8px 0; font-size:13px; background:#f1f3f4; color:#1f1f1f;" onclick="rejectInvite('${bid}')">削除</button>
-                                    <button class="btn-primary" style="margin:0; flex:1; padding:8px 0; font-size:13px;" onclick="acceptInviteFromNotif('${bid}', '${bData.name}')">参加する</button>
                                 </div>
                             </div>`;
                         } else {
@@ -1874,21 +1883,18 @@
         window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
         window.sendAuthCode = async () => {
             const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
             try {
-                await updateDoc(doc(db, "users", currentUser), { tempEmail: email, authCode: code });
-                await addDoc(collection(db, "mail_queue"), { to: email, subject: "認証コード", body: `コード: ${code}`, userId: currentUser, createdAt: serverTimestamp() });
+                await sendEmailCode(auth, email);
                 showCustomAlert("コードを送信しました。");
                 document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
             } catch(e) { showCustomAlert(e.message); }
         };
         window.verifyAuthCode = async () => {
             const input = document.getElementById('inputAuthCode').value.trim();
-            const userData = (await getDoc(doc(db, "users", currentUser))).data();
-            if (userData.authCode === input) {
-                await updateDoc(doc(db, "users", currentUser), { Email: userData.tempEmail, tempEmail: deleteField(), authCode: deleteField() });
+            try {
+                await verifyEmailCode(auth, input);
                 showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
-            } else { showCustomAlert("コードが正しくありません。"); }
+            } catch (error) { showCustomAlert(error.message); }
         };
         window.backToEmailInput = () => {
             document.getElementById('email-step-2').classList.add('hidden');
@@ -1898,14 +1904,13 @@
         // --- その他UIロジック ---
         async function loadUserList(id, exclude=[]) {
             const list = document.getElementById(id); list.innerHTML = "読込中...";
-            const snap = await getDocs(collection(db, "users")); list.innerHTML = "";
-            snap.forEach(d => {
-                if(d.id === currentUser || exclude.includes(d.id)) return;
-                const u = d.data();
+            const profiles = await loadPublicProfiles(auth); list.innerHTML = "";
+            profiles.forEach(u => {
+                if(u.id === currentUser || exclude.includes(u.id)) return;
                 const div = document.createElement('div'); div.className = 'member-option';
                 div.onclick = () => { div.classList.toggle('selected'); div.querySelector('.material-icons').innerText = div.classList.contains('selected') ? 'check_box' : 'check_box_outline_blank'; };
-                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${u.icon||''}" style="width:28px;height:28px;border-radius:50%;margin:0 10px;">${u.name}`;
-                div.dataset.uid = d.id; div.dataset.uname = u.name;
+                div.innerHTML = `<span class="material-icons">check_box_outline_blank</span><img src="${safeImageUrl(u.icon, '')}" style="width:28px;height:28px;border-radius:50%;margin:0 10px;">${escapeHtml(u.name)}`;
+                div.dataset.uid = u.id; div.dataset.uname = u.name;
                 list.appendChild(div);
             });
         }
@@ -1938,8 +1943,7 @@
         }
 
         async function refreshAllUsersCache(){ 
-            const qs=await getDocs(collection(db,"users")); 
-            allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); 
+            allUsersCache = await loadPublicProfiles(auth);
             localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
             
             // バンド詳細モーダルが開かれていればメンバーリストを自動再描画

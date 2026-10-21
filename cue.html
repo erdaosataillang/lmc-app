@@ -5,6 +5,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script defer src="/js/image-cache.js"></script>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cueシート・デジタルフォーム</title>
     <!-- Tailwind CSS -->
@@ -283,6 +284,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
+        import { loadPublicProfiles } from './js/app-api.js';
         import { 
             getFirestore, 
             doc, 
@@ -323,7 +325,7 @@
             
             const bgColor = type === 'error' ? 'bg-red-600' : type === 'info' ? 'bg-blue-600' : 'bg-gray-800';
             toast.className = `toast-enter ${bgColor} text-white px-6 py-3 rounded-full shadow-lg font-bold text-sm flex items-center gap-2 max-w-[90vw]`;
-            toast.innerHTML = message;
+            toast.textContent = String(message ?? '');
             
             container.appendChild(toast);
             
@@ -360,6 +362,8 @@
                 return String.fromCharCode(match.charCodeAt(0) - 0x60);
             });
         };
+        const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        const safeImageUrl = value => { try { const url = new URL(value, location.href); return ['https:','http:'].includes(url.protocol) ? escapeHtml(url.href) : ''; } catch (_) { return ''; } };
 
         // ユーザー一覧キャッシュとサジェスト機能
         let systemUsersCache = [];
@@ -367,8 +371,7 @@
         async function preloadSystemUsers() {
             if (!db) return;
             try {
-                const snap = await getDocs(collection(db, 'users'));
-                systemUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                systemUsersCache = await loadPublicProfiles(auth);
             } catch (e) {
                 console.error("Users cache error:", e);
             }
@@ -397,8 +400,8 @@
                     const div = document.createElement('div');
                     div.className = 'name-suggest-item flex items-center justify-between';
                     div.innerHTML = `
-                        <span class="font-bold text-gray-800">${user.name}</span>
-                        <span class="text-[10px] text-gray-400">${user.year ? user.year + '年' : ''} ${user.part ? window.formatPart(user.part) : ''}</span>
+                        <span class="font-bold text-gray-800">${escapeHtml(user.name)}</span>
+                        <span class="text-[10px] text-gray-400">${user.year ? escapeHtml(user.year) + '年' : ''} ${user.part ? escapeHtml(window.formatPart(user.part)) : ''}</span>
                     `;
 
                     const selectUser = (e) => {
@@ -868,10 +871,10 @@
                         const artwork = song.artworkUrl100 || song.artworkUrl60 || '';
 
                         div.innerHTML = `
-                            <img src="${artwork}" alt="" class="w-9 h-9 rounded-md object-cover bg-gray-100 flex-shrink-0 shadow-sm">
+                            <img src="${safeImageUrl(artwork)}" alt="" class="w-9 h-9 rounded-md object-cover bg-gray-100 flex-shrink-0 shadow-sm">
                             <div class="flex-grow min-w-0 pr-1">
-                                <div class="font-bold text-slate-900 text-xs truncate leading-snug">${song.trackName}</div>
-                                <div class="text-[11px] text-slate-500 truncate leading-snug mt-0.5">${song.artistName}</div>
+                                <div class="font-bold text-slate-900 text-xs truncate leading-snug">${escapeHtml(song.trackName)}</div>
+                                <div class="text-[11px] text-slate-500 truncate leading-snug mt-0.5">${escapeHtml(song.artistName)}</div>
                             </div>
                         `;
 

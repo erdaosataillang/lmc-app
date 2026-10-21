@@ -22,6 +22,17 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const LIFF_ID = "2008162165-WaEbbUrr"; 
 
+export function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+
+export function safeImageUrl(value, fallback = 'https://ul.h3z.jp/Vnukmtvq.jpg') {
+    try {
+        const url = new URL(value || fallback, location.href);
+        return ['https:', 'http:'].includes(url.protocol) ? escapeHtml(url.href) : fallback;
+    } catch (_) { return fallback; }
+}
+
 export function initAdminPage(activePageId, callback) {
     // 画面ロック解除用の関数
     const unlockUI = () => {
@@ -101,8 +112,8 @@ function renderSidebar(activePage, user) {
         </nav>
         <div class="p-6 border-t border-gray-100">
             <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
-                <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold shadow-inner">${user.displayName ? user.displayName[0] : 'A'}</div>
-                <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800 truncate text-left">${user.displayName || 'Admin'}</p></div>
+                <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold shadow-inner">${escapeHtml(user.displayName ? user.displayName[0] : 'A')}</div>
+                <div class="flex-1 min-w-0"><p class="text-sm font-bold text-gray-800 truncate text-left">${escapeHtml(user.displayName || 'Admin')}</p></div>
                 <button onclick="handleSignOut()" class="text-gray-400 hover:text-red-500 transition-all"><i class="fa-solid fa-right-from-bracket"></i></button>
             </div>
         </div>

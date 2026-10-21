@@ -16,11 +16,12 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const MY_LIFF_ID = "2008162165-vVODNp12";
+const safeImageUrl = value => { try { const url = new URL(value || 'https://ul.h3z.jp/Vnukmtvq.jpg', location.href); return ['https:','http:'].includes(url.protocol) ? url.href : 'https://ul.h3z.jp/Vnukmtvq.jpg'; } catch (_) { return 'https://ul.h3z.jp/Vnukmtvq.jpg'; } };
 export const renderHeaderIcons = (d, targetId = 'headerIconCal') => {
     if (!d) return;
     const el = document.getElementById(targetId);
     if (!el) return;
-    el.innerHTML = `<img src="${d.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
+    el.replaceChildren(Object.assign(document.createElement('img'), {src: safeImageUrl(d.icon), alt: ''}));
     el.onclick = () => openUserStatusModal(d);
 };
 
@@ -33,8 +34,8 @@ export const openUserStatusModal = async (userData) => {
     const q = query(collection(db, "bands"), where("memberIds", "array-contains", userData.id || auth.currentUser.uid));
     const snap = await getDocs(q);
     
-    document.getElementById('modalUserIcon').src = userData.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
-    document.getElementById('modalUserName').innerHTML = `${userData.name} さん`;
+    document.getElementById('modalUserIcon').src = safeImageUrl(userData.icon);
+    document.getElementById('modalUserName').textContent = `${userData.name || '名称未設定'} さん`;
     document.getElementById('modalUserBandCount').innerText = snap.size;
     
     modal.classList.add('open');
@@ -57,7 +58,7 @@ window.renderHeaderIcons = (d) => {
     
     const el = document.getElementById('headerIconBands');
     if (el) {
-        el.innerHTML = `<img src="${d.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}">`;
+        el.replaceChildren(Object.assign(document.createElement('img'), {src: safeImageUrl(d.icon), alt: ''}));
         el.className = "header-avatar " + r;
         el.onclick = () => window.openUserStatusModal(d);
     }
@@ -103,8 +104,8 @@ window.openUserStatusModal = async (userData = null) => {
     if (!modal) return;
 
     // ...以降の処理は同じ...
-    document.getElementById('modalUserIcon').src = targetUser.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
-    document.getElementById('modalUserName').innerHTML = `${targetUser.name} <span style="font-size:14px; font-weight:normal; color:#536471; margin-left:2px;">さん</span>`;
+    document.getElementById('modalUserIcon').src = safeImageUrl(targetUser.icon);
+    document.getElementById('modalUserName').textContent = `${targetUser.name || '名称未設定'} さん`;
     
     // バンド数をリセット
     const elBandCount = document.getElementById('modalUserBandCount');
@@ -123,7 +124,7 @@ window.openUserStatusModal = async (userData = null) => {
     // ヘッダー背景の設定
     const headerBg = document.getElementById('modalHeaderBg');
     headerBg.style.background = targetUser.headerImage 
-        ? `url(${targetUser.headerImage}) center/cover no-repeat` 
+        ? `url("${safeImageUrl(targetUser.headerImage)}") center/cover no-repeat`
         : `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
 
     modal.classList.add('open');

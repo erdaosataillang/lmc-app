@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isRegisteredLineUser() {
+      return request.auth != null && request.auth.token.line == true && request.auth.token.registered == true;
+    }
+    function isAdmin() {
+      return isRegisteredLineUser() && request.auth.token.admin == true;
+    }
+    function validImage() {
+      return request.resource != null && request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/(jpeg|png|webp)');
+    }
+    match /user-images/{userId}/{fileName} {
+      allow read: if isRegisteredLineUser();
+      allow write: if isRegisteredLineUser() && request.auth.uid == userId && validImage();
+    }
+    match /band-images/{bandId}/{fileName} {
+      allow read: if isRegisteredLineUser();
+      allow write: if isRegisteredLineUser() && validImage() && (isAdmin() ||
+        firestore.get(/databases/(default)/documents/bands/$(bandId)).data.memberIds.hasAny([request.auth.uid]));
+    }
+    match /cue-files/{bandId}/{fileName} {
+      allow read: if isRegisteredLineUser();
+      allow write: if isAdmin() && request.resource != null && request.resource.size < 10 * 1024 * 1024 &&
+        request.resource.contentType.matches('(image/(jpeg|png|webp)|application/pdf)');
+    }
+  }
+}

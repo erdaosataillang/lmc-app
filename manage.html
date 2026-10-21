@@ -3,6 +3,7 @@
 <head>
     <script defer src="/js/image-cache.js"></script>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LMC Admin</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -978,6 +979,13 @@
             return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
         }
 
+        function safeImageUrl(value, fallback = 'https://ul.h3z.jp/Vnukmtvq.jpg') {
+            try {
+                const url = new URL(value || fallback, location.href);
+                return ['https:', 'http:'].includes(url.protocol) ? escapeHtml(url.href) : fallback;
+            } catch (_) { return fallback; }
+        }
+
         function getConcertDateOptions(eventData, entries = []) {
             const result = [];
             const start = eventData.startDate;
@@ -1557,8 +1565,8 @@
                 item.innerHTML = `
                     <div class="menu-icon-wrapper icon-admin-event"><span class="material-icons">event</span></div>
                     <div class="menu-content">
-                        <span class="menu-title">${eventData.event || eventData.name || '名称未設定'} ${isActive ? '<span style="font-size:10px; color:#1a73e8; background:#e5f0ff; padding:3px 8px; border-radius:999px; margin-left:6px;">定期演奏会</span>' : ''}</span>
-                        <span class="menu-subtitle">${start}${end}</span>
+                        <span class="menu-title">${escapeHtml(eventData.event || eventData.name || '名称未設定')} ${isActive ? '<span style="font-size:10px; color:#1a73e8; background:#e5f0ff; padding:3px 8px; border-radius:999px; margin-left:6px;">定期演奏会</span>' : ''}</span>
+                        <span class="menu-subtitle">${escapeHtml(start)}${escapeHtml(end)}</span>
                     </div>
                     <span class="material-icons menu-arrow">edit</span>`;
                 container.appendChild(item);
@@ -1957,14 +1965,14 @@
 
                 let badges = (isUrakata ? '<span style="color:#ff3b30; font-weight:600; font-size:10px; margin-right:6px; background:#fde8e8; padding:4px 10px; border-radius:999px;">裏方</span>' : '') +
                                (isLmc ? '<span style="color:#1a73e8; font-weight:600; font-size:10px; background:#e5f0ff; padding:4px 10px; border-radius:999px;">LMC</span>' : '');
-                const kanaHtml = u.kana ? `<div style="font-size:11px; color:#8e8e93; font-weight:500; margin-bottom:2px;">${u.kana}</div>` : '';
+                const kanaHtml = u.kana ? `<div style="font-size:11px; color:#8e8e93; font-weight:500; margin-bottom:2px;">${escapeHtml(u.kana)}</div>` : '';
 
                 div.innerHTML = `
-                    <img src="${u.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" class="mini-icon">
+                    <img src="${safeImageUrl(u.icon)}" class="mini-icon">
                     <div class="user-info-main">
                         ${kanaHtml}
-                        <div class="user-name">${u.name || '名称未設定'}</div>
-                        <div class="user-sub" style="margin-top:6px;">${badges} <span style="margin-left:4px;">${u.year || '-'}年</span></div>
+                        <div class="user-name">${escapeHtml(u.name || '名称未設定')}</div>
+                        <div class="user-sub" style="margin-top:6px;">${badges} <span style="margin-left:4px;">${escapeHtml(u.year || '-')}年</span></div>
                     </div>
                     <span class="material-icons" style="color:#c7c7cc;">chevron_right</span>
                 `;
@@ -2302,15 +2310,15 @@
                         const user = allUsersCache.find(u => u.id === uid);
                         return user ? user.name : '不明';
                     });
-                    memberNamesHtml = realNames.join(', ');
+                    memberNamesHtml = realNames.map(escapeHtml).join(', ');
                 }
 
                 div.innerHTML = `
                     <div class="band-icon">
-                        ${b.icon ? `<img src="${b.icon}">` : (b.name || "?")[0]}
+                        ${b.icon ? `<img src="${safeImageUrl(b.icon)}">` : escapeHtml((b.name || "?")[0])}
                     </div>
                     <div class="band-info">
-                        <div class="band-name">${b.name || '名称未設定'}</div>
+                        <div class="band-name">${escapeHtml(b.name || '名称未設定')}</div>
                         <div class="band-members" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${memberNamesHtml}</div>
                     </div>
                     <span class="material-icons" style="color:#c7c7cc;">chevron_right</span>
@@ -2341,7 +2349,7 @@
 
             const iconContainer = document.getElementById('bd-detail-icon');
             if (band.icon) {
-                iconContainer.innerHTML = `<img src="${band.icon}" style="width:100%; height:100%; object-fit:cover;">`;
+                iconContainer.innerHTML = `<img src="${safeImageUrl(band.icon)}" style="width:100%; height:100%; object-fit:cover;">`;
             } else {
                 iconContainer.innerHTML = (band.name || "?")[0];
             }
@@ -2413,14 +2421,14 @@
                             const memberId = Array.isArray(band.memberIds) ? band.memberIds[memberIndex] : null;
                             const uObj = allUsersCache.find(x => x.id === memberId) || allUsersCache.find(x => x.name === m.name) || {};
                             const uid = uObj.id || '';
-                            const memberIcon = uObj.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+                            const memberIcon = safeImageUrl(uObj.icon);
                             mHtml += `
-                                <div onclick="showUserProfile('${uid}', '${m.name}', '${m.grade}', '${m.part}')" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; padding:16px; border-radius:16px; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.03); transition:transform 0.15s;">
+                                <div data-profile-id="${escapeHtml(uid)}" style="display:flex; align-items:center; justify-content:space-between; background:#ffffff; padding:16px; border-radius:16px; cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,0.03); transition:transform 0.15s;">
                                     <div style="display:flex; align-items:center; gap:12px; min-width:0;">
                                         <img src="${memberIcon}" style="width:40px; height:40px; border-radius:50%; object-fit:cover; background:#f1f3f4; flex-shrink:0;">
                                         <div>
-                                        <strong style="color:#1c1c1e; font-size:16px;">${m.name || '不明'}</strong>
-                                        <span style="font-size:13px; color:#8e8e93; margin-left:8px; font-weight:500;">(${m.grade || '-'}年 | ${m.part || '-'})</span>
+                                        <strong style="color:#1c1c1e; font-size:16px;">${escapeHtml(m.name || '不明')}</strong>
+                                        <span style="font-size:13px; color:#8e8e93; margin-left:8px; font-weight:500;">(${escapeHtml(m.grade || '-')}年 | ${escapeHtml(m.part || '-')})</span>
                                         </div>
                                     </div>
                                     <span class="material-icons" style="font-size:22px; color:#c7c7cc;">chevron_right</span>
@@ -2428,6 +2436,10 @@
                         });
                         mHtml += "</div>";
                         membersContainer.innerHTML = mHtml;
+                        membersContainer.querySelectorAll('[data-profile-id]').forEach((row, memberIndex) => {
+                            const member = cData.members[memberIndex] || {};
+                            row.addEventListener('click', () => showUserProfile(row.dataset.profileId, member.name || '', member.grade || '', member.part || ''));
+                        });
                     } else {
                         membersContainer.innerHTML = '<div style="color:#8e8e93; text-align:center; padding:20px; font-weight:500;">メンバー情報がありません</div>';
                     }
@@ -2438,8 +2450,8 @@
                             sHtml += `
                                 <div style="display:flex; align-items:center; background:#f8f9fa; padding:16px; border-radius:16px;">
                                     <div style="width:28px; color:#8e8e93; font-size:15px; font-weight:700;">${idx + 1}.</div>
-                                    <div style="flex-grow:1; font-weight:600; color:#1c1c1e; font-size:15px;">${s.title || '無題'}</div>
-                                    <div style="color:#5f6368; font-size:12px; font-weight:600; background:#ffffff; padding:4px 10px; border-radius:999px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">${s.duration || '-'}</div>
+                                    <div style="flex-grow:1; font-weight:600; color:#1c1c1e; font-size:15px;">${escapeHtml(s.title || '無題')}</div>
+                                    <div style="color:#5f6368; font-size:12px; font-weight:600; background:#ffffff; padding:4px 10px; border-radius:999px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">${escapeHtml(s.duration || '-')}</div>
                                 </div>`;
                         });
                         sHtml += "</div>";
@@ -2651,13 +2663,12 @@
                                         <span class="material-icons">group_add</span>
                                     </div>
                                     <div style="flex:1;">
-                                        <div style="font-size:15px; font-weight:600; color:#1c1c1e;"><strong style="color:#1a73e8;">${bData.name}</strong> からの招待</div>
-                                        <div style="font-size:13px; color:#8e8e93; margin-top:2px;">バンドへ参加しますか？</div>
+                                        <div style="font-size:15px; font-weight:600; color:#1c1c1e;"><strong style="color:#1a73e8;">${escapeHtml(bData.name)}</strong> の古い招待</div>
+                                        <div style="font-size:13px; color:#8e8e93; margin-top:2px;">新しい招待リンクを発行してもらってください。</div>
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:12px; padding-left:60px;">
                                     <button class="btn-outline" style="flex:1; justify-content:center; padding:10px 0; font-size:14px; border:none; background:#f2f2f7; color:#5f6368;" onclick="rejectInvite('${bid}')">削除</button>
-                                    <button class="btn-primary" style="flex:1; padding:10px 0; font-size:14px;" onclick="acceptInviteFromNotif('${bid}', '${bData.name}')">参加する</button>
                                 </div>
                             </div>`;
                         } else {

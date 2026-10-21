@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <script defer src="/js/image-cache.js"></script>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>LMC Mobile - 合わせ予約</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -547,10 +547,13 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, limit, onSnapshot, Timestamp, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import {getDownloadURL, getStorage, ref as storageRef, uploadBytes} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
+        import {createBooking, loadPublicProfile, loadPublicProfiles, removeBooking, sendEmailCode, updateBooking, verifyEmailCode} from './js/app-api.js';
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
+        const storage = getStorage(app);
         const MY_LIFF_ID = "2008162165-vVODNp12"; const MY_PAGE_URL = "/mypage.html";
         const REGISTRATION_URL = "/userregist.html?sec=LMC&jumpedurl=" + encodeURIComponent(location.origin + "/booking.html");
         
@@ -558,7 +561,8 @@
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
         const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
         const CACHE_KEY_SYSTEM_SETTINGS = 'lmc_system_settings_cache';
-        const CACHE_KEY_ALL_USERS = 'lmc_all_users_cache'; // ユーザー本名動的取得用
+        localStorage.removeItem('lmc_all_users_cache');
+        const CACHE_KEY_ALL_USERS = 'lmc_public_profiles_cache_v2'; // 公開項目だけを保持
         const CACHE_KEY_SYSTEM_SETTINGS_UPDATED = 'lmc_system_settings_updated';
         const CACHE_KEY_ALL_USERS_UPDATED = 'lmc_all_users_updated';
         const CACHE_KEY_LAST_LOGIN_UPDATED = 'lmc_last_login_updated';
@@ -634,8 +638,7 @@
         async function loadAllUsers() {
             if (isCacheFresh(CACHE_KEY_ALL_USERS_UPDATED)) return;
             try {
-                const qs = await getDocs(collection(db,"users")); 
-                allUsersCache = qs.docs.map(d => ({id:d.id, ...d.data()})); 
+                allUsersCache = await loadPublicProfiles(auth);
                 localStorage.setItem(CACHE_KEY_ALL_USERS, JSON.stringify(allUsersCache));
                 localStorage.setItem(CACHE_KEY_ALL_USERS_UPDATED, String(Date.now()));
             } catch(e) { console.warn("User cache refresh failed:", e); }
@@ -762,10 +765,13 @@
             document.getElementById('crop-image-target').src = "";
         };
 
-        async function uploadImageToExternal(blob){
-            const fd = new FormData(); fd.append('files', blob, 'image.jpg');
-            const res = await fetch('https://ul.h3z.jp/uploader-work/work.php', { method: 'POST', body: fd });
-            const json = await res.json(); return json.files[0].url;
+        async function uploadImageSecure(blob){
+            if (!blob || blob.size > 5 * 1024 * 1024) throw new Error('画像は5MB以内にしてください。');
+            const contentType = ['image/jpeg','image/png','image/webp'].includes(blob.type) ? blob.type : 'image/jpeg';
+            const extension = contentType === 'image/png' ? 'png' : contentType === 'image/webp' ? 'webp' : 'jpg';
+            const target = storageRef(storage, `user-images/${currentUser}/${crypto.randomUUID()}.${extension}`);
+            await uploadBytes(target, blob, {contentType, cacheControl:'public,max-age=604800'});
+            return getDownloadURL(target);
         }
 
         window.handleHeaderImageEdit = async (inp) => {
@@ -774,7 +780,7 @@
                     const file = inp.files[0];
                     inp.value = "";
                     const b = await openCropModal(file, 3); // 3:1 ratio
-                    const url = await uploadImageToExternal(b);
+                    const url = await uploadImageSecure(b);
                     await updateDoc(doc(db, "users", currentUser), { headerImage: url });
                     
                     currentUserData.headerImage = url;
@@ -1614,8 +1620,7 @@
             if (cached) return cached;
             if (!data?.creatorId) return null;
             try {
-                const snapshot = await getDoc(doc(db, 'users', data.creatorId));
-                const user = snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null;
+                const user = await loadPublicProfile(auth, data.creatorId);
                 if (user) allUsersCache.push(user);
                 return user;
             } catch (error) {
@@ -1897,18 +1902,18 @@
             try{ 
                 if(eid){
                     delete bd.createdAt; 
-                    await updateDoc(doc(db,"bookings",eid),bd); 
+                    await updateBooking(auth, eid, {bandId:bd.bandId, startTime:st.toISOString(), endTime:et.toISOString(), userName:bd.userName});
                     await showCustomAlert("予約内容を保存しました。");
                 } else {
-                    await addDoc(collection(db,"bookings"),bd); 
-                    await showCustomAlert(mode==='lottery'?"抽選希望を受け付けました。設定時刻に自動抽選されます。":"予約が完了しました。");
+                    const result = await createBooking(auth, {bandId:bd.bandId, startTime:st.toISOString(), endTime:et.toISOString(), userName:bd.userName});
+                    await showCustomAlert(result.booking.status==='pending'?"抽選希望を受け付けました。設定時刻に自動抽選されます。":"予約が完了しました。");
                 } 
                 closeModal('modal-booking'); 
             }catch(e){await showCustomAlert(e.message, "エラー")} 
         };
         
         window.addToGoogleCalendar=()=>{ if(!editingBookingData)return; const t=editingBookingData.bandName||"練習", s=new Date(editingBookingData.startTime).toISOString().replace(/-|:|\.\d\d\d/g,""), e=new Date(editingBookingData.endTime).toISOString().replace(/-|:|\.\d\d\d/g,""); window.open(`https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(t)}&dates=${s}/${e}`, '_blank'); };
-        window.deleteBooking=async()=>{ const eid=document.getElementById('editingBookingId').value; if(eid && await showCustomConfirm("この予約を削除しますか？", "予約削除")){try{await deleteDoc(doc(db,"bookings",eid)); await showCustomAlert("予約を削除しました。"); closeModal('modal-booking');}catch(e){await showCustomAlert(e.message, "エラー")}} };
+        window.deleteBooking=async()=>{ const eid=document.getElementById('editingBookingId').value; if(eid && await showCustomConfirm("この予約を削除しますか？", "予約削除")){try{await removeBooking(auth,eid); await showCustomAlert("予約を削除しました。"); closeModal('modal-booking');}catch(e){await showCustomAlert(e.message, "エラー")}} };
         
         // --- ナビゲーション即時描画 ---
         function renderNav() {
@@ -2116,13 +2121,12 @@
                                         <span class="material-icons" style="font-size: 20px;">group_add</span>
                                     </div>
                                     <div class="notif-content" style="flex:1;">
-                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${bData.name}</strong> からの招待</div>
-                                        <div style="font-size:12px; color:#536471; margin-top:2px;">バンドへ参加しますか？</div>
+                                        <div class="notif-text" style="font-size: 15px;"><strong style="color:#1f1f1f;">${escapeHtml(bData.name)}</strong> の古い招待</div>
+                                        <div style="font-size:12px; color:#536471; margin-top:2px;">新しい招待リンクを発行してもらってください。</div>
                                     </div>
                                 </div>
                                 <div style="display:flex; gap:8px; width:100%; padding-left: 56px; box-sizing: border-box;">
                                     <button class="btn-secondary" style="margin:0; flex:1; padding:8px 0; font-size:13px; background:#f1f3f4; color:#1f1f1f;" onclick="rejectInvite('${bid}')">削除</button>
-                                    <button class="btn-primary" style="margin:0; flex:1; padding:8px 0; font-size:13px;" onclick="acceptInviteFromNotif('${bid}', '${bData.name}')">参加する</button>
                                 </div>
                             </div>`;
                         } else {
@@ -2153,21 +2157,18 @@
         window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
         window.sendAuthCode = async () => {
             const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
             try {
-                await updateDoc(doc(db, "users", currentUser), { tempEmail: email, authCode: code });
-                await addDoc(collection(db, "mail_queue"), { to: email, subject: "認証コード", body: `コード: ${code}`, userId: currentUser, createdAt: serverTimestamp() });
+                await sendEmailCode(auth, email);
                 showCustomAlert("コードを送信しました。");
                 document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
             } catch(e) { showCustomAlert(e.message); }
         };
         window.verifyAuthCode = async () => {
             const input = document.getElementById('inputAuthCode').value.trim();
-            const userData = (await getDoc(doc(db, "users", currentUser))).data();
-            if (userData.authCode === input) {
-                await updateDoc(doc(db, "users", currentUser), { Email: userData.tempEmail, tempEmail: deleteField(), authCode: deleteField() });
+            try {
+                await verifyEmailCode(auth, input);
                 showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
-            } else { showCustomAlert("コードが正しくありません。"); }
+            } catch (error) { showCustomAlert(error.message); }
         };
         window.backToEmailInput = () => {
             document.getElementById('email-step-2').classList.add('hidden');
@@ -2175,21 +2176,7 @@
         };
         
         window.acceptInviteFromNotif = async (bid, bName) => {
-            try {
-                await updateDoc(doc(db, "bands", bid), {
-                    memberIds: arrayUnion(currentUser),
-                    memberNames: arrayUnion(currentProfile.displayName)
-                });
-                
-                if (currentUserData.pendingInvites && currentUserData.pendingInvites.includes(bid)) {
-                    await updateDoc(doc(db, "users", currentUser), { pendingInvites: arrayRemove(bid) });
-                    currentUserData.pendingInvites = currentUserData.pendingInvites.filter(id => id !== bid);
-                }
-                
-                showCustomAlert(`${bName} に参加しました！`);
-                openNotificationModal();
-                checkNotifications();
-            } catch(e) { showCustomAlert("参加処理に失敗しました。"); }
+            await showCustomAlert(`${bName || 'このバンド'}の招待は旧形式です。安全な新しい招待リンクを発行してもらってください。`);
         };
 
         window.rejectInvite = async (bid) => {

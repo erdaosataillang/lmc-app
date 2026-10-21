@@ -6,6 +6,7 @@ const {FieldValue, Timestamp, getFirestore} = require("firebase-admin/firestore"
 const {logger} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
+const {onDocumentWritten} = require("firebase-functions/v2/firestore");
 const {defineSecret} = require("firebase-functions/params");
 const {randomBytes} = require("node:crypto");
 const {
@@ -36,6 +37,23 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost",
   "http://localhost:5000",
 ]);
+const authAttempts = new Map();
+
+function authRateLimited(request) {
+  const forwarded = (request.get("x-forwarded-for") || "").split(",")[0].trim();
+  const key = forwarded || request.ip || "unknown";
+  const now = Date.now();
+  const previous = authAttempts.get(key) || [];
+  const recent = previous.filter((timestamp) => now - timestamp < 60_000);
+  recent.push(now);
+  authAttempts.set(key, recent);
+  if (authAttempts.size > 5000) {
+    for (const [candidate, timestamps] of authAttempts) {
+      if (!timestamps.some((timestamp) => now - timestamp < 60_000)) authAttempts.delete(candidate);
+    }
+  }
+  return recent.length > 20;
+}
 
 function roleValues(value) {
   if (!value) return [];
@@ -83,6 +101,11 @@ exports.createLineFirebaseToken = onRequest({
   }
   if (request.method !== "POST") {
     response.status(405).json({error: "method_not_allowed"});
+    return;
+  }
+  if (authRateLimited(request)) {
+    response.set("Retry-After", "60");
+    response.status(429).json({error: "rate_limited"});
     return;
   }
   if (origin && !ALLOWED_ORIGINS.has(origin) && !/^http:\/\/localhost:\d+$/.test(origin)) {
@@ -144,6 +167,31 @@ exports.createLineFirebaseToken = onRequest({
   } catch (error) {
     logger.error("LINE Firebase authentication failed", {message: error.message});
     response.status(500).json({error: "authentication_failed"});
+  }
+});
+
+exports.syncUserAuthorization = onDocumentWritten({
+  document: "users/{userId}",
+  region: "asia-northeast1",
+  memory: "256MiB",
+  maxInstances: 5,
+}, async (event) => {
+  const before = event.data?.before?.exists ? event.data.before.data() : null;
+  const after = event.data?.after?.exists ? event.data.after.data() : null;
+  const beforeState = JSON.stringify({role: before?.role ?? null, roll: before?.roll ?? null});
+  const afterState = JSON.stringify({role: after?.role ?? null, roll: after?.roll ?? null});
+  if (beforeState === afterState && before !== null) return;
+  const uid = event.params.userId;
+  try {
+    await getAuth().setCustomUserClaims(uid, {
+      line: true,
+      registered: after !== null,
+      admin: after ? hasAdminAccess(after) : false,
+    });
+    await getAuth().revokeRefreshTokens(uid);
+  } catch (error) {
+    if (error.code === "auth/user-not-found") return;
+    throw error;
   }
 });
 
@@ -399,3 +447,6 @@ exports.runScheduledLottery = onSchedule({
 
 // 日程調整専用のAPI。既存のチャット認証・予約機能から独立。
 exports.lmcScheduleApi = require("./schedule-api").lmcScheduleApi;
+
+// LIFF本体の機密データ・招待・予約・メール認証を検証するAPI。
+exports.lmcAppApi = require("./app-api").lmcAppApi;

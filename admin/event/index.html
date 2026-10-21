@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Events - LMC Admin</title>
     <!-- Tailwind CSS -->
@@ -85,7 +86,7 @@
 
     <!-- Logic -->
     <script type="module">
-        import { initAdminPage, db } from "/js/admin-common.js";
+        import { initAdminPage, db, escapeHtml } from "/js/admin-common.js";
         import { collection, onSnapshot, setDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let eventsData = [];
@@ -156,13 +157,13 @@
                             ${statusBadge}
                         </div>
                         
-                        <h4 class="text-xl font-black text-gray-800 mb-1">${evt.event}</h4>
+                        <h4 class="text-xl font-black text-gray-800 mb-1">${escapeHtml(evt.event)}</h4>
                         <p class="text-[11px] text-gray-400 font-extrabold uppercase tracking-widest mb-6">
-                            <i class="fa-regular fa-clock mr-1"></i> ${dateStr}
+                            <i class="fa-regular fa-clock mr-1"></i> ${escapeHtml(dateStr)}
                         </p>
 
                         <div class="flex items-center justify-between border-t border-gray-50 pt-4 mt-auto">
-                            <span class="text-[9px] text-gray-300 font-bold uppercase tracking-widest">ID: ${evt.id}</span>
+                            <span class="text-[9px] text-gray-300 font-bold uppercase tracking-widest">ID: ${escapeHtml(evt.id)}</span>
                             <button onclick="requestDeleteEvent('${evt.id}')" class="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center">
                                 <i class="fa-solid fa-trash-can text-sm"></i>
                             </button>

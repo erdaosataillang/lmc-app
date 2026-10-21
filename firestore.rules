@@ -2,55 +2,116 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isVerifiedLineUser() {
+    function isLineUser() {
       return request.auth != null && request.auth.token.line == true;
     }
-
-    function isAdmin() {
-      return isVerifiedLineUser() && request.auth.token.admin == true;
+    function isRegisteredLineUser() {
+      return isLineUser() && request.auth.token.registered == true;
     }
-
+    function isAdmin() {
+      return isRegisteredLineUser() && request.auth.token.admin == true;
+    }
+    function isSelf(userId) {
+      return isLineUser() && userId == request.auth.uid;
+    }
     function isBandMember(bandId) {
-      return isVerifiedLineUser() &&
+      return isRegisteredLineUser() &&
         get(/databases/$(database)/documents/bands/$(bandId)).data.memberIds is list &&
         get(/databases/$(database)/documents/bands/$(bandId)).data.memberIds.hasAny([request.auth.uid]);
     }
+    function isBandCreator(bandId) {
+      return isRegisteredLineUser() &&
+        get(/databases/$(database)/documents/bands/$(bandId)).data.creatorId == request.auth.uid;
+    }
+    function safeDisplayText(value, maximum) {
+      return value is string && value.size() <= maximum && !value.matches(".*[<>\\\"'].*");
+    }
+    function safeNewUser() {
+      return request.resource.data.keys().hasOnly([
+          "affiliations", "birthday", "createdAt", "feeStatus", "icon", "kana", "lastLogin",
+          "lineDisplayName", "lineUserId", "name", "oldId", "org", "part", "role",
+          "selectedBandId", "selectedEventId", "status", "studentId", "tel", "year",
+          "faculty", "schoolName", "bio", "notificationSettings", "headerImage"
+        ]) &&
+        request.resource.data.lineUserId == request.auth.uid &&
+        request.resource.data.role in ["user_normal", "lmc_normal", "urakata_normal"] &&
+        safeDisplayText(request.resource.data.name, 120) &&
+        (!request.resource.data.keys().hasAny(["kana"]) || safeDisplayText(request.resource.data.kana, 120)) &&
+        request.resource.data.affiliations is list &&
+        request.resource.data.affiliations.size() <= 2 &&
+        request.resource.data.affiliations.hasAny(["urakata"]);
+    }
+    function safeSelfUserUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        "name", "kana", "icon", "headerImage", "year", "faculty", "schoolName", "part",
+        "bio", "studentId", "tel", "birthday", "notificationSettings", "selectedBandId",
+        "selectedEventId", "status", "pendingInvites", "lastLogin"
+      ]) &&
+      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["name"]) || safeDisplayText(request.resource.data.name, 120)) &&
+      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["kana"]) || safeDisplayText(request.resource.data.kana, 120));
+    }
 
     match /users/{userId} {
-      allow read: if isVerifiedLineUser();
-      allow create: if isAdmin() || (isVerifiedLineUser() && userId == request.auth.uid);
-      allow update: if isAdmin() || (isVerifiedLineUser() && userId == request.auth.uid);
+      allow get: if isAdmin() || isSelf(userId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() || (isSelf(userId) && safeNewUser());
+      allow update: if isAdmin() || (isSelf(userId) && safeSelfUserUpdate());
       allow delete: if isAdmin();
     }
 
     match /bands/{bandId} {
-      allow read: if isVerifiedLineUser();
+      allow read: if isRegisteredLineUser();
       allow create: if isAdmin() ||
-        (isVerifiedLineUser() && request.resource.data.memberIds is list &&
+        (isRegisteredLineUser() && request.resource.data.creatorId == request.auth.uid &&
+          safeDisplayText(request.resource.data.name, 120) &&
+          request.resource.data.memberIds is list && request.resource.data.memberIds.size() == 1 &&
           request.resource.data.memberIds.hasAny([request.auth.uid]));
-      allow update: if isAdmin() || isBandMember(bandId) ||
-        (isVerifiedLineUser() &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes"])) ||
-        (isVerifiedLineUser() && resource.data.memberIds is list &&
-          request.resource.data.memberIds is list &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["memberIds", "memberNames"]) &&
-          request.resource.data.memberIds.hasAll(resource.data.memberIds) &&
-          request.resource.data.memberIds.hasAny([request.auth.uid]) &&
-          request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1);
-      allow delete: if isAdmin() || isBandMember(bandId);
+      allow update: if isAdmin() ||
+        (isBandCreator(bandId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "name", "icon", "headerImage", "songs", "timelineDescription", "performanceDates",
+            "latestCuesheetUrl", "latestCueSheetId", "cueSheetId", "events", "isArchived",
+            "updatedAt", "memberIds", "memberNames"
+          ]) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["name"]) || safeDisplayText(request.resource.data.name, 120)) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["timelineDescription"]) || safeDisplayText(request.resource.data.timelineDescription, 500)) &&
+          request.resource.data.memberIds is list && request.resource.data.memberIds.hasAny([request.auth.uid])) ||
+        (isBandMember(bandId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            "name", "icon", "headerImage", "songs", "timelineDescription", "performanceDates",
+            "latestCuesheetUrl", "latestCueSheetId", "cueSheetId", "events", "isArchived", "updatedAt"
+          ]) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["name"]) || safeDisplayText(request.resource.data.name, 120)) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["timelineDescription"]) || safeDisplayText(request.resource.data.timelineDescription, 500))) ||
+        (isRegisteredLineUser() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(["likes"]) &&
+          request.resource.data.likes is list &&
+          (
+            (!resource.data.keys().hasAny(["likes"]) &&
+              request.resource.data.likes.size() == 1 &&
+              request.resource.data.likes.hasAny([request.auth.uid])) ||
+            (resource.data.keys().hasAny(["likes"]) && resource.data.likes is list &&
+              (
+                (request.resource.data.likes.size() == resource.data.likes.size() + 1 &&
+                  request.resource.data.likes.hasAll(resource.data.likes) &&
+                  !resource.data.likes.hasAny([request.auth.uid]) &&
+                  request.resource.data.likes.hasAny([request.auth.uid])) ||
+                (resource.data.likes.size() == request.resource.data.likes.size() + 1 &&
+                  resource.data.likes.hasAll(request.resource.data.likes) &&
+                  resource.data.likes.hasAny([request.auth.uid]) &&
+                  !request.resource.data.likes.hasAny([request.auth.uid]))
+              ))
+          ));
+      allow delete: if isAdmin() || isBandCreator(bandId);
     }
 
     match /bookings/{bookingId} {
-      allow read: if isVerifiedLineUser();
-      allow create: if isAdmin() ||
-        (isVerifiedLineUser() && request.resource.data.creatorId == request.auth.uid);
-      allow update, delete: if isAdmin() ||
-        (isVerifiedLineUser() && resource.data.creatorId == request.auth.uid) ||
-        (resource.data.bandId is string && isBandMember(resource.data.bandId));
+      allow read: if isRegisteredLineUser();
+      allow write: if isAdmin();
     }
 
     match /cuesheets/{cueSheetId} {
-      allow read: if isVerifiedLineUser();
+      allow read: if isRegisteredLineUser();
       allow create: if isAdmin() ||
         (request.resource.data.bandId is string && isBandMember(request.resource.data.bandId));
       allow update, delete: if isAdmin() ||
@@ -58,22 +119,25 @@ service cloud.firestore {
     }
 
     match /events/{eventId} {
-      allow read: if isVerifiedLineUser();
+      allow read: if isRegisteredLineUser();
       allow write: if isAdmin();
     }
-
     match /system/{documentId} {
-      allow read: if isVerifiedLineUser();
+      allow read: if isRegisteredLineUser();
       allow write: if isAdmin();
     }
-
     match /lotteryRuns/{runId} {
-      allow read: if isVerifiedLineUser();
+      allow read: if isRegisteredLineUser();
       allow write: if isAdmin();
     }
-
     match /mail_queue/{messageId} {
-      allow create: if isVerifiedLineUser() && request.resource.data.userId == request.auth.uid;
+      allow read, write: if false;
+    }
+    match /bandInvites/{inviteId} {
+      allow read, write: if false;
+    }
+    match /emailVerifications/{verificationId} {
+      allow read, write: if false;
     }
   }
 }
