@@ -147,7 +147,7 @@
         import {signInWithCustomToken} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
         import {loadPublicProfile} from './js/app-api.js';
-        import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-2';
+        import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal} from './js/notification-popover.js?v=20261022-1';
 
         let entries = [];
@@ -184,15 +184,13 @@
             document.getElementById('headerProfileButton').onclick = () => openUnifiedProfileModal(cachedUser);
             const seen = new Set(readCachedJson('lmc_seen_my_band_bookings', []));
             const hasUnreadBooking = getCachedMyBookings().some(booking => !seen.has(booking.id));
-            const needsEmail = cachedUser && !(cachedUser.Email || cachedUser.email);
             const hasInvite = Array.isArray(cachedUser.pendingInvites) && cachedUser.pendingInvites.length > 0;
-            document.getElementById('headerNotifBadge').classList.toggle('show', hasUnreadBooking || needsEmail || hasInvite);
+            document.getElementById('headerNotifBadge').classList.toggle('show', hasUnreadBooking || hasInvite);
         }
 
         window.openNotificationModal = () => {
             const bookings = getCachedMyBookings();
             let html = '';
-            if (!(cachedUser.Email || cachedUser.email)) html += `<div class="notification-item"><span class="material-icons" style="color:#d93025;">warning</span><div><strong>メールアドレスを登録してください</strong><div style="font-size:12px; color:#536471; margin-top:4px;">マイページから登録できます。</div></div></div>`;
             html += bookings.map(booking => {
                 const start = new Date(booking.startTime);
                 return `<div class="notification-item" onclick="window.location.href='/booking.html'" style="cursor:pointer;"><span class="material-icons" style="color:#137333;">groups</span><div><strong>${escapeHtml(booking.bandName || '参加バンド')} の合わせ予約</strong><div style="font-size:12px; color:#536471; margin-top:4px;">${start.getMonth()+1}月${start.getDate()}日 ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}</div></div></div>`;

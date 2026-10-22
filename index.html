@@ -592,7 +592,7 @@
                         <div id="bandCreatorActions" class="hidden" style="padding: 24px 16px; display:flex; flex-direction:column; gap:16px;">
                             <div style="font-size: 14px; font-weight: 700; color: #5f6368; border-bottom: 1px solid #efefef; padding-bottom: 8px;">バンド管理</div>
                             <div style="display:flex; flex-direction:column; gap:12px;">
-                               <button id="btnArchive" class="btn-secondary" style="margin:0; border-radius: 8px; font-weight: 600;" onclick="archiveBand()">出演を辞退する</button>
+                               <button id="btnArchive" class="btn-secondary" style="margin:0; border-radius: 8px; font-weight: 600;" onclick="unregisterBandFromEvent()">イベントへの出演登録を解除する</button>
                                 <button id="btnRestore" class="btn-secondary hidden" style="margin:0; border-radius: 8px; font-weight: 600;" onclick="restoreBand()">復元する</button>
                                 <button class="btn-danger" style="margin:0; border-radius: 8px; font-weight: 600;" onclick="deleteBand()">バンドを解散する</button>
                             </div>
@@ -673,31 +673,6 @@
         </div>
     </div>
 
-    <!-- メール認証 -->
-    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
-        <div class="modal-content" style="padding: 24px;">
-            <div id="email-step-1">
-                <h3 style="font-size: 18px; margin-top:0;">メールアドレス登録</h3>
-                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
-                <div class="form-group">
-                    <label class="form-label">アドレス</label>
-                    <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
-                </div>
-                <button class="btn-primary" onclick="sendAuthCode()">認証コード送信</button>
-                <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
-            </div>
-            <div id="email-step-2" class="hidden">
-                <h3 style="font-size: 18px; margin-top:0;">認証コード入力</h3>
-                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">メールの6桁の数字を入力してください。</p>
-                <div class="form-group">
-                    <input type="number" id="inputAuthCode" class="form-input auth-code-input" placeholder="000000" maxlength="6">
-                </div>
-                <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
-                <button class="btn-secondary" onclick="backToEmailInput()">戻る</button>
-            </div>
-        </div>
-    </div>
-
     <!-- 全画面画像ビューア -->
     <div id="fullscreen-viewer">
         <button class="viewer-close-btn" onclick="closeFullscreenViewer()"><span class="material-icons">close</span></button>
@@ -708,12 +683,12 @@
     </div>
 
     <script type="module">
-      import { app, db, auth, MY_LIFF_ID } from './js/common.js?v=20261022-2';
+      import { app, db, auth, MY_LIFF_ID } from './js/common.js?v=20261022-3';
         import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import {getDownloadURL, getStorage, ref as storageRef, uploadBytes} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
-        import {acceptBandInvite, createBandInvite, leaveBandSecurely, loadPublicProfiles, sendEmailCode, verifyEmailCode} from './js/app-api.js';
+        import {acceptBandInvite, createBandInvite, leaveBandSecurely, loadPublicProfiles} from './js/app-api.js';
         import {openUnifiedNotificationModal, setUnifiedNotificationContent} from './js/notification-popover.js?v=20261022-1';
         
         const MY_PAGE_URL = "/mypage.html";
@@ -1504,7 +1479,7 @@
             
             document.getElementById('bandCreatorActions').classList.toggle('hidden', !canE);
             document.getElementById('bandMemberActions').classList.toggle('hidden', canE);
-            document.getElementById('btnArchive').classList.toggle('hidden', data.isArchived);
+            document.getElementById('btnArchive').classList.add('hidden');
             document.getElementById('btnRestore').classList.toggle('hidden', !data.isArchived);
             document.getElementById('detailBandName').readOnly = !canE;
             
@@ -1528,6 +1503,11 @@
                 currentBandLatestEventId = currentActiveEventId;
                 const ev = targetEvents.find(e => e.id === currentBandLatestEventId);
                 if(eventNameEl) eventNameEl.innerText = ev ? ev.name : "現在のイベント";
+                const unregisterButton = document.getElementById('btnArchive');
+                if (unregisterButton) {
+                    unregisterButton.textContent = `${ev?.name || '現在のイベント'}への出演登録を解除する`;
+                    unregisterButton.classList.toggle('hidden', !canE);
+                }
             } else {
                 if(eventNameEl) eventNameEl.innerText = currentActiveEventId ? "このイベントには未登録" : "次のイベント未設定";
             }
@@ -1675,9 +1655,15 @@
             try { await updateDoc(doc(db, "bands", bid), { name: name }); showCustomAlert("更新しました。"); } catch(e) { showCustomAlert(e.message); }
         };
 
-        window.archiveBand = async () => {
+        window.unregisterBandFromEvent = async () => {
             const bid = document.getElementById('detailBandId').value;
-            if(await showCustomConfirm("アーカイブしますか？")) { await updateDoc(doc(db, "bands", bid), { isArchived: true }); closeModal('modal-band-detail'); }
+            if (!currentActiveEventId || !currentBandLatestEventId) return showCustomAlert("解除できる出演登録がありません。");
+            const eventName = targetEvents.find(event => event.id === currentActiveEventId)?.name || "現在のイベント";
+            if(await showCustomConfirm(`${eventName}への出演登録を解除しますか？`)) {
+                await updateDoc(doc(db, "bands", bid), {events: arrayRemove(currentActiveEventId), updatedAt: serverTimestamp()});
+                closeModal('modal-band-detail');
+                showCustomAlert(`${eventName}への出演登録を解除しました。`);
+            }
         };
         window.restoreBand = async () => {
             const bid = document.getElementById('detailBandId').value;
@@ -1806,9 +1792,6 @@
         // --- メール・通知ロジック ---
         function checkNotifications() { 
             let hasNotification = false;
-            if(!(currentUserData?.Email || currentUserData?.email)) {
-                hasNotification = true;
-            }
             if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 hasNotification = true;
             }
@@ -1824,17 +1807,6 @@
             openUnifiedNotificationModal();
 
             let html = "";
-            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
-            if (!hasEmail) {
-                html += `
-                <div class="notification-item clickable" onclick="openEmailRegisterModal()">
-                    <div class="notif-icon-box warning"><span class="material-icons">warning</span></div>
-                    <div class="notif-content">
-                        <div class="notif-text" style="font-weight:bold;">重要: メールアドレスを登録してください</div>
-                    </div>
-                </div>`;
-            }
-
             if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 for (const bid of currentUserData.pendingInvites) {
                     try {
@@ -1877,27 +1849,6 @@
             
             setUnifiedNotificationContent(html);
             checkNotifications(); 
-        };
-
-        window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
-        window.sendAuthCode = async () => {
-            const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
-            try {
-                await sendEmailCode(auth, email);
-                showCustomAlert("コードを送信しました。");
-                document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
-            } catch(e) { showCustomAlert(e.message); }
-        };
-        window.verifyAuthCode = async () => {
-            const input = document.getElementById('inputAuthCode').value.trim();
-            try {
-                await verifyEmailCode(auth, input);
-                showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
-            } catch (error) { showCustomAlert(error.message); }
-        };
-        window.backToEmailInput = () => {
-            document.getElementById('email-step-2').classList.add('hidden');
-            document.getElementById('email-step-1').classList.remove('hidden');
         };
 
         // --- その他UIロジック ---

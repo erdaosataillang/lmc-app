@@ -320,31 +320,6 @@
         </div>
     </div>
 
-    <!-- メール認証モーダル -->
-    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
-        <div class="user-modal-content" style="padding: 24px;">
-            <div id="email-step-1">
-                <h3 style="font-size: 18px; font-weight:700; margin-top:0; color:#1c1c1e;">メールアドレス登録</h3>
-                <p style="font-size:13px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
-                <div class="form-group">
-                    <label class="form-label">アドレス</label>
-                    <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
-                </div>
-                <button class="btn-primary" onclick="sendAuthCode()">認証コード送信</button>
-                <button class="btn-outline" style="width:100%; margin-top:12px; justify-content:center; padding:14px; font-size:15px; border-radius:16px;" onclick="closeModal('modal-email-register')">キャンセル</button>
-            </div>
-            <div id="email-step-2" class="hidden">
-                <h3 style="font-size: 18px; font-weight:700; margin-top:0; color:#1c1c1e;">認証コード入力</h3>
-                <p style="font-size:13px; color:#5f6368; margin-bottom:20px;">メールの6桁の数字を入力してください。</p>
-                <div class="form-group">
-                    <input type="number" id="inputAuthCode" class="form-input" style="letter-spacing: 6px; text-align: center; font-size: 24px; font-weight: bold;" placeholder="000000" maxlength="6">
-                </div>
-                <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
-                <button class="btn-outline" style="width:100%; margin-top:12px; justify-content:center; padding:14px; font-size:15px; border-radius:16px;" onclick="backToEmailInput()">戻る</button>
-            </div>
-        </div>
-    </div>
-
     <div class="container">
         <!-- オリジナルヘッダー -->
         <div class="app-header">
@@ -831,7 +806,7 @@
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, orderBy, where, setDoc, updateDoc, serverTimestamp, writeBatch, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
-        import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-2';
+        import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal, setUnifiedNotificationContent} from './js/notification-popover.js?v=20261022-1';
 
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
@@ -2613,9 +2588,6 @@
 
         function checkNotifications() {
             let hasNotification = false;
-            if(!(currentUserData?.Email || currentUserData?.email)) {
-                hasNotification = true;
-            }
             if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 hasNotification = true;
             }
@@ -2630,20 +2602,6 @@
             openUnifiedNotificationModal();
 
             let html = "";
-            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
-            if (!hasEmail) {
-                html += `
-                <div style="padding:20px; border-bottom:1px solid rgba(0,0,0,0.05); display:flex; align-items:flex-start; gap:16px; cursor:pointer; transition:background 0.2s;" onclick="openEmailRegisterModal()">
-                    <div style="width:40px; height:40px; border-radius:50%; background:#fde8e8; display:flex; align-items:center; justify-content:center; color:#ff3b30; flex-shrink:0;">
-                        <span class="material-icons">warning</span>
-                    </div>
-                    <div>
-                        <div style="font-weight:700; font-size:15px; color:#1c1c1e; margin-bottom:4px;">重要: メールアドレスを登録してください</div>
-                        <div style="font-size:13px; color:#8e8e93;">アカウントの保護と重要な通知のために必要です。</div>
-                    </div>
-                </div>`;
-            }
-
             if (currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 for (const bid of currentUserData.pendingInvites) {
                     try {
@@ -2686,8 +2644,6 @@
             setUnifiedNotificationContent(html);
             checkNotifications();
         };
-
-        window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
 
         async function initApp() {
             renderNav();

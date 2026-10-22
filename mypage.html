@@ -135,7 +135,6 @@
                 <div class="card">
                     <div class="info-row"><div class="row-icon"><span class="material-icons-round">school</span></div><div class="row-copy"><div class="row-label">所属</div><div class="row-value" id="affiliationValue">読み込み中...</div></div></div>
                     <div class="info-row"><div class="row-icon"><span class="material-icons-round">badge</span></div><div class="row-copy"><div class="row-label">学籍番号</div><div class="row-value" id="studentIdValue">未設定</div></div></div>
-                    <div class="info-row"><div class="row-icon"><span class="material-icons-round">mail</span></div><div class="row-copy"><div class="row-label">メールアドレス</div><div class="row-value" id="emailValue">未設定</div></div><span class="material-icons-round" style="color:#a6afbf;font-size:19px">lock</span></div>
                     <div class="info-row"><div class="row-icon"><span class="material-icons-round">phone</span></div><div class="row-copy"><div class="row-label">電話番号</div><div class="row-value" id="telValue">未設定</div></div></div>
                 </div>
             </section>
@@ -237,7 +236,6 @@
             text('partValue', partLabels[String(user.part || '').toLowerCase()] || '–');
             text('affiliationValue', [user.year ? `${user.year}年` : '', user.faculty || ''].filter(Boolean).join('・') || '未設定');
             text('studentIdValue', user.studentId || '未設定');
-            text('emailValue', user.Email || user.email || '未設定');
             text('telValue', user.tel || '未設定');
             const badges = document.getElementById('roleBadges'); badges.replaceChildren();
             const roles = getRoles(user);
@@ -270,7 +268,6 @@
 
         function renderNotificationState() {
             const notices=[];
-            if (!(currentUserData?.Email || currentUserData?.email)) notices.push({icon:'mail',title:'メールアドレスが未登録です',body:'重要なお知らせを受け取るため、登録画面から設定してください。'});
             const invites = Array.isArray(currentUserData?.pendingInvites) ? currentUserData.pendingInvites.length : 0;
             if (invites) notices.push({icon:'group_add',title:`バンド招待が${invites}件あります`,body:'マイバンドの通知から確認できます。'});
             notificationItems = notices;

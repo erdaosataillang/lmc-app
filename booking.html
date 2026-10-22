@@ -422,31 +422,6 @@
         </div>
     </div>
 
-    <!-- メール認証 -->
-    <div id="modal-email-register" class="modal-overlay" onclick="if(event.target===this && !document.getElementById('email-step-2').classList.contains('hidden')) return;">
-        <div class="modal-content" style="padding: 24px;">
-            <div id="email-step-1">
-                <h3 style="font-size: 18px; margin-top:0;">メールアドレス登録</h3>
-                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">認証コードを送信します。</p>
-                <div class="form-group">
-                    <label class="form-label">アドレス</label>
-                    <input type="email" id="inputUserEmail" class="form-input" placeholder="example@example.com">
-                </div>
-                <button class="btn-primary" onclick="sendAuthCode()">認証コード送信</button>
-                <button class="btn-secondary" onclick="closeModal('modal-email-register')">キャンセル</button>
-            </div>
-            <div id="email-step-2" class="hidden">
-                <h3 style="font-size: 18px; margin-top:0;">認証コード入力</h3>
-                <p style="font-size:12px; color:#5f6368; margin-bottom:20px;">メールの6桁の数字を入力してください。</p>
-                <div class="form-group">
-                    <input type="number" id="inputAuthCode" class="form-input auth-code-input" placeholder="000000" maxlength="6">
-                </div>
-                <button class="btn-primary" onclick="verifyAuthCode()">認証する</button>
-                <button class="btn-secondary" onclick="backToEmailInput()">戻る</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Twitter(X)風 マイステータスモーダル -->
     <div id="modal-user-status" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-user-status')">
         <div class="modal-content" style="padding: 0; overflow: hidden; background: #ffffff;">
@@ -549,8 +524,8 @@
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import {getDownloadURL, getStorage, ref as storageRef, uploadBytes} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
-        import {createBooking, loadPublicProfile, loadPublicProfiles, removeBooking, sendEmailCode, updateBooking, verifyEmailCode} from './js/app-api.js';
-        import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-2';
+        import {createBooking, loadPublicProfile, loadPublicProfiles, removeBooking, updateBooking} from './js/app-api.js';
+        import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal, setUnifiedNotificationContent} from './js/notification-popover.js?v=20261022-1';
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
@@ -2036,9 +2011,6 @@
 
         function checkNotifications() { 
             let hasNotification = false;
-            if(!(currentUserData?.Email || currentUserData?.email)) {
-                hasNotification = true;
-            }
             if(currentUserData?.pendingInvites && currentUserData.pendingInvites.length > 0) {
                 hasNotification = true;
             }
@@ -2065,17 +2037,6 @@
             openUnifiedNotificationModal();
 
             let html = "";
-            const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
-            if (!hasEmail) {
-                html += `
-                <div class="notification-item clickable" onclick="openEmailRegisterModal()">
-                    <div class="notif-icon-box warning"><span class="material-icons">warning</span></div>
-                    <div class="notif-content">
-                        <div class="notif-text" style="font-weight:bold;">重要: メールアドレスを登録してください</div>
-                    </div>
-                </div>`;
-            }
-
             html += lotteryNotificationHtml();
             html += myBandBookingNotificationHtml();
 
@@ -2131,27 +2092,6 @@
             checkNotifications(); 
         };
 
-        window.openEmailRegisterModal = () => { closeModal('modal-notification'); openModal('modal-email-register'); };
-        window.sendAuthCode = async () => {
-            const email = document.getElementById('inputUserEmail').value.trim(); if (!email.includes('@')) return showCustomAlert("正しい形式で入力。");
-            try {
-                await sendEmailCode(auth, email);
-                showCustomAlert("コードを送信しました。");
-                document.getElementById('email-step-1').classList.add('hidden'); document.getElementById('email-step-2').classList.remove('hidden');
-            } catch(e) { showCustomAlert(e.message); }
-        };
-        window.verifyAuthCode = async () => {
-            const input = document.getElementById('inputAuthCode').value.trim();
-            try {
-                await verifyEmailCode(auth, input);
-                showCustomAlert("認証に成功しました！"); closeModal('modal-email-register'); location.reload();
-            } catch (error) { showCustomAlert(error.message); }
-        };
-        window.backToEmailInput = () => {
-            document.getElementById('email-step-2').classList.add('hidden');
-            document.getElementById('email-step-1').classList.remove('hidden');
-        };
-        
         window.acceptInviteFromNotif = async (bid, bName) => {
             await showCustomAlert(`${bName || 'このバンド'}の招待は旧形式です。安全な新しい招待リンクを発行してもらってください。`);
         };

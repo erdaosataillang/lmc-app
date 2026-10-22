@@ -37,6 +37,7 @@ function ensureProfilePopover() {
         .unified-profile-backdrop.open{display:flex;animation:unifiedProfileFade .16s ease-out}
         .unified-profile-card{width:min(100%,420px);background:#fff;border-radius:26px;overflow:hidden;box-shadow:0 24px 70px rgba(15,23,42,.28);animation:unifiedProfileUp .22s cubic-bezier(.2,.8,.2,1)}
         .unified-profile-cover{height:112px;background:linear-gradient(135deg,#c2e7ff,#0b57d0);background-position:center;background-size:cover;position:relative}
+        .unified-profile-edit-cover{position:absolute;top:14px;left:14px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(0,0,0,.42);color:#fff;display:none;place-items:center;padding:0;cursor:pointer}
         .unified-profile-close{position:absolute;top:14px;right:14px;width:34px;height:34px;border:0;border-radius:50%;background:rgba(0,0,0,.42);color:#fff;display:grid;place-items:center;padding:0;cursor:pointer}
         .unified-profile-body{padding:0 20px 22px}
         .unified-profile-avatar{width:82px;height:82px;border-radius:50%;border:4px solid #fff;background:#fff;object-fit:cover;margin-top:-42px;position:relative;box-shadow:0 4px 14px rgba(15,23,42,.14)}
@@ -61,6 +62,8 @@ function ensureProfilePopover() {
     root.innerHTML = `
         <section class="unified-profile-card" role="dialog" aria-modal="true" aria-label="マイプロフィール">
             <div class="unified-profile-cover" data-profile-cover>
+                <button class="unified-profile-edit-cover" type="button" aria-label="ヘッダー画像を変更"><span class="material-icons">add_a_photo</span></button>
+                <input data-profile-cover-input type="file" accept="image/*" hidden>
                 <button class="unified-profile-close" type="button" aria-label="閉じる"><span class="material-icons">close</span></button>
             </div>
             <div class="unified-profile-body">
@@ -82,6 +85,14 @@ function ensureProfilePopover() {
     root.addEventListener("click", event => { if (event.target === root) close(); });
     root.querySelector(".unified-profile-close").addEventListener("click", close);
     root.querySelector(".unified-profile-action").addEventListener("click", () => { window.location.href = "/mypage.html"; });
+    const editCover = root.querySelector(".unified-profile-edit-cover");
+    const coverInput = root.querySelector("[data-profile-cover-input]");
+    editCover.addEventListener("click", () => coverInput.click());
+    coverInput.addEventListener("change", async () => {
+        if (!coverInput.files?.[0] || typeof window.handleHeaderImageEdit !== "function") return;
+        close();
+        await window.handleHeaderImageEdit(coverInput);
+    });
     document.addEventListener("keydown", event => { if (event.key === "Escape" && root.classList.contains("open")) close(); });
     return root;
 }
@@ -94,6 +105,7 @@ export function openUnifiedProfileModal(userData = null) {
     const name = root.querySelector("[data-profile-name]");
     const sub = root.querySelector("[data-profile-sub]");
     const tags = root.querySelector("[data-profile-tags]");
+    const editCover = root.querySelector(".unified-profile-edit-cover");
 
     cover.style.backgroundImage = user.headerImage ? `url("${safeImageUrl(user.headerImage)}")` : "linear-gradient(135deg,#c2e7ff,#0b57d0)";
     icon.src = safeImageUrl(user.icon);
@@ -113,6 +125,7 @@ export function openUnifiedProfileModal(userData = null) {
         tags.appendChild(tag);
     });
     tags.hidden = tagValues.length === 0;
+    editCover.style.display = typeof window.handleHeaderImageEdit === "function" ? "grid" : "none";
 
     root.classList.add("open");
     root.setAttribute("aria-hidden", "false");
