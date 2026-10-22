@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import {openUnifiedProfileModal} from "./profile-popover.js";
+import {openUnifiedProfileModal} from "./profile-popover.js?v=20261022-2";
 
 const firebaseConfig = { 
     apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", 
@@ -26,25 +26,10 @@ export const renderHeaderIcons = (d, targetId = 'headerIconCal') => {
     el.onclick = () => openUnifiedProfileModal(d);
 };
 
-export const openUserStatusModal = async (userData) => {
-    const modal = document.getElementById('modal-user-status');
-    if (!modal) return;
-    
-    // バンド数取得処理など
-    const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js");
-    const q = query(collection(db, "bands"), where("memberIds", "array-contains", userData.id || auth.currentUser.uid));
-    const snap = await getDocs(q);
-    
-    document.getElementById('modalUserIcon').src = safeImageUrl(userData.icon);
-    document.getElementById('modalUserName').textContent = `${userData.name || '名称未設定'} さん`;
-    document.getElementById('modalUserBandCount').innerText = snap.size;
-    
-    modal.classList.add('open');
-};
+export const openUserStatusModal = (userData = null) => openUnifiedProfileModal(userData);
 
 // 【重要】windowオブジェクトに紐付ける（HTMLの onclick="..." で使うため）
 window.renderHeaderIcons = renderHeaderIcons;
-window.openUserStatusModal = openUserStatusModal;
 window.closeModal = (id) => document.getElementById(id).classList.remove('open');
 
 window.renderHeaderIcons = (d) => {
@@ -76,60 +61,7 @@ window.renderHeaderIcons = (d) => {
     }
 };
 
-// 【修正版】共通のステータスモーダル表示ロジック
-window.openUserStatusModal = async (userData = null) => {
-    // 1. ユーザーIDを取得する（userDataが渡されていればそれを使用し、なければ現在のログインユーザーを使用）
-    let uid = null;
-    let targetUser = userData;
-
-    if (userData && userData.id) {
-        uid = userData.id;
-    } else if (auth.currentUser) {
-        uid = auth.currentUser.uid;
-    } else {
-        // まだユーザーがロードされていない場合、キャッシュから取得を試みる
-        const cached = localStorage.getItem('lmc_user_cache');
-        if (cached) {
-            const parsed = JSON.parse(cached);
-            uid = parsed.id;
-            targetUser = parsed;
-        }
-    }
-
-    if (!uid) {
-        console.error("ユーザーIDが特定できませんでした");
-        return;
-    }
-
-    const modal = document.getElementById('modal-user-status');
-    if (!modal) return;
-
-    // ...以降の処理は同じ...
-    document.getElementById('modalUserIcon').src = safeImageUrl(targetUser.icon);
-    document.getElementById('modalUserName').textContent = `${targetUser.name || '名称未設定'} さん`;
-    
-    // バンド数をリセット
-    const elBandCount = document.getElementById('modalUserBandCount');
-    if (elBandCount) elBandCount.innerText = "...";
-
-    // Firestoreからバンド数をカウント
-    try {
-        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js");
-        const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid));
-        const querySnapshot = await getDocs(q);
-        if (elBandCount) elBandCount.innerText = querySnapshot.size;
-    } catch (error) {
-        console.error("バンド数取得失敗:", error);
-    }
-
-    // ヘッダー背景の設定
-    const headerBg = document.getElementById('modalHeaderBg');
-    headerBg.style.background = targetUser.headerImage 
-        ? `url("${safeImageUrl(targetUser.headerImage)}") center/cover no-repeat`
-        : `linear-gradient(135deg, #c2e7ff 0%, #0b57d0 100%)`;
-
-    modal.classList.add('open');
-};
+window.openUserStatusModal = openUserStatusModal;
 
 export function renderNav() {
     const container = document.getElementById('nav-container');

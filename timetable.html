@@ -147,7 +147,8 @@
         import {signInWithCustomToken} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
         import {loadPublicProfile} from './js/app-api.js';
-        import {openUnifiedProfileModal} from './js/profile-popover.js';
+        import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-2';
+        import {openUnifiedNotificationModal} from './js/notification-popover.js?v=20261022-1';
 
         let entries = [];
         let selectedDate = '';
@@ -196,12 +197,11 @@
                 const start = new Date(booking.startTime);
                 return `<div class="notification-item" onclick="window.location.href='/booking.html'" style="cursor:pointer;"><span class="material-icons" style="color:#137333;">groups</span><div><strong>${escapeHtml(booking.bandName || '参加バンド')} の合わせ予約</strong><div style="font-size:12px; color:#536471; margin-top:4px;">${start.getMonth()+1}月${start.getDate()}日 ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}</div></div></div>`;
             }).join('');
-            document.getElementById('notificationList').innerHTML = html || '<div style="padding:42px 20px; text-align:center; color:#8e8e93;">通知はありません</div>';
+            openUnifiedNotificationModal(html);
             const seen = new Set(readCachedJson('lmc_seen_my_band_bookings', []));
             bookings.forEach(booking => seen.add(booking.id));
             localStorage.setItem('lmc_seen_my_band_bookings', JSON.stringify([...seen].slice(-200)));
             updateHeader();
-            document.getElementById('modal-notification').classList.add('open');
         };
 
         window.openProfileModal = () => {

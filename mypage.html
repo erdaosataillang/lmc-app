@@ -196,6 +196,7 @@
         import {collection, doc, getDoc, getDocs, query, updateDoc, where} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
         import {signInWithCustomToken, signOut} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
+        import {openUnifiedNotificationItems} from './js/notification-popover.js?v=20261022-1';
 
         const DEFAULT_ICON = 'https://ul.h3z.jp/Vnukmtvq.jpg';
         const REGISTRATION_URL = '/userregist.html?sec=LMC&jumpedurl=' + encodeURIComponent(location.origin + '/mypage.html');
@@ -203,6 +204,7 @@
         const roleLabels = {admin:'管理者', lmc_all:'LMC全体', lmc_admin:'LMC管理', lmc_user:'LMC一般', urakata_all:'裏方統括', urakata_user:'裏方一般'};
         let currentUserId = '';
         let currentUserData = null;
+        let notificationItems = [];
         let myBands = [];
 
         const text = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value ?? ''; };
@@ -271,6 +273,7 @@
             if (!(currentUserData?.Email || currentUserData?.email)) notices.push({icon:'mail',title:'メールアドレスが未登録です',body:'重要なお知らせを受け取るため、登録画面から設定してください。'});
             const invites = Array.isArray(currentUserData?.pendingInvites) ? currentUserData.pendingInvites.length : 0;
             if (invites) notices.push({icon:'group_add',title:`バンド招待が${invites}件あります`,body:'マイバンドの通知から確認できます。'});
+            notificationItems = notices;
             document.getElementById('notificationBadge').classList.toggle('show', notices.length > 0);
             const list=document.getElementById('notificationList'); list.replaceChildren();
             if (!notices.length) { const empty=document.createElement('div'); empty.className='empty'; empty.textContent='新しい通知はありません'; list.appendChild(empty); return; }
@@ -315,7 +318,7 @@
 
         document.getElementById('openEditButton').addEventListener('click',openEdit);
         document.getElementById('openEditLink').addEventListener('click',openEdit);
-        document.getElementById('notificationButton').addEventListener('click',() => openOverlay('notificationOverlay'));
+        document.getElementById('notificationButton').addEventListener('click',() => openUnifiedNotificationItems(notificationItems));
         document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click',() => closeOverlay(button.dataset.close)));
         document.querySelectorAll('.overlay').forEach(overlay => overlay.addEventListener('click',event => { if (event.target===overlay) closeOverlay(overlay.id); }));
         document.getElementById('profileForm').addEventListener('submit',async event => {

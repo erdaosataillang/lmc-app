@@ -103,7 +103,7 @@ export function openUnifiedProfileModal(userData = null) {
     root.querySelector("[data-profile-band-count]").textContent = String(joinedBandCount(user));
 
     tags.replaceChildren();
-    const tagValues = [user.grade || user.year, user.part, user.faculty, ...(Array.isArray(user.affiliations) ? user.affiliations.map(value => value === "lmc" ? "LMC" : value === "urakata" ? "裏方" : value) : [])]
+    const tagValues = [user.grade || user.year, user.part, user.faculty]
         .filter((value, index, values) => value && values.indexOf(value) === index)
         .slice(0, 5);
     tagValues.forEach(value => {

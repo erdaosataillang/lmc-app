@@ -708,12 +708,13 @@
     </div>
 
     <script type="module">
-      import { app, db, auth, MY_LIFF_ID } from './js/common.js';
+      import { app, db, auth, MY_LIFF_ID } from './js/common.js?v=20261022-2';
         import { collection, addDoc, getDocs, doc, getDoc, updateDoc, deleteDoc, deleteField, query, where, orderBy, onSnapshot, arrayUnion, arrayRemove, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import {getDownloadURL, getStorage, ref as storageRef, uploadBytes} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
         import {acceptBandInvite, createBandInvite, leaveBandSecurely, loadPublicProfiles, sendEmailCode, verifyEmailCode} from './js/app-api.js';
+        import {openUnifiedNotificationModal, setUnifiedNotificationContent} from './js/notification-popover.js?v=20261022-1';
         
         const MY_PAGE_URL = "/mypage.html";
         const REGISTRATION_URL = "https://lmc-mobile.sorairosystem.com/userregist?sec=LMC&jumpedurl=https://lmc-mobile.sorairosystem.com/";
@@ -1820,9 +1821,7 @@
         }
 
         window.openNotificationModal = async () => {
-            const list = document.getElementById('notificationList'); 
-            list.innerHTML = "<div style='text-align:center; padding:20px; color:#999;'>読み込み中...</div>";
-            openModal('modal-notification');
+            openUnifiedNotificationModal();
 
             let html = "";
             const hasEmail = currentUserData && (currentUserData.Email || currentUserData.email);
@@ -1873,10 +1872,10 @@
 
             
             if(html === "") {
-                html = "<div style='padding:20px; color:#999; text-align:center; font-size:13px;'>通知はありません</div>";
+                html = "";
             }
             
-            list.innerHTML = html;
+            setUnifiedNotificationContent(html);
             checkNotifications(); 
         };
 
