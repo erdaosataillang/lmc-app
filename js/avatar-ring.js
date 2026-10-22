@@ -20,11 +20,12 @@ function injectStyles() {
         .part-ring-layer svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; transform:rotate(-90deg); }
         .part-ring-circle { fill:none; stroke:var(--part-ring-color,#b9c8df); stroke-width:3; stroke-linecap:round; stroke-dasharray:100; stroke-dashoffset:0; filter:drop-shadow(0 0 3px var(--part-ring-glow,rgba(185,200,223,.4))); }
         .part-ring-orbit { position:absolute; inset:0; opacity:0; }
-        .part-ring-orbit::after { content:""; position:absolute; left:50%; top:-1px; width:6px; height:6px; margin-left:-3px; border-radius:50%; background:var(--part-ring-color,#b9c8df); box-shadow:0 0 6px 2px var(--part-ring-glow,rgba(185,200,223,.4)); }
-        .part-avatar-ring.part-ring-animate .part-ring-circle { animation:lmcPartRingSweep 1.2s cubic-bezier(.2,.7,.15,1) both; }
-        .part-avatar-ring.part-ring-animate .part-ring-orbit { animation:lmcPartRingOrbit 1.2s cubic-bezier(.35,.05,.2,1) both; }
+        .part-ring-dot { position:absolute; inset:0; transform:rotate(var(--part-dot-angle)); }
+        .part-ring-dot::after { content:""; position:absolute; left:50%; top:-1px; width:var(--part-dot-size); height:var(--part-dot-size); transform:translateX(-50%); border-radius:50%; background:var(--part-ring-color,#b9c8df); opacity:var(--part-dot-opacity); box-shadow:0 0 6px 1px var(--part-ring-glow,rgba(185,200,223,.4)); }
+        .part-avatar-ring.part-ring-animate .part-ring-circle { animation:lmcPartRingSweep 2s cubic-bezier(.2,.72,.15,1) both; }
+        .part-avatar-ring.part-ring-animate .part-ring-orbit { animation:lmcPartRingOrbit 2s cubic-bezier(.3,.08,.2,1) both; }
         @keyframes lmcPartRingSweep { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
-        @keyframes lmcPartRingOrbit { 0% { transform:rotate(0); opacity:0; } 8% { opacity:1; } 88% { opacity:1; } 100% { transform:rotate(360deg); opacity:0; } }
+        @keyframes lmcPartRingOrbit { 0% { transform:rotate(0); opacity:0; } 6% { opacity:1; } 90% { opacity:1; } 100% { transform:rotate(360deg); opacity:0; } }
         @media (prefers-reduced-motion:reduce) { .part-avatar-ring.part-ring-animate .part-ring-circle { animation:none; stroke-dashoffset:0; } .part-avatar-ring.part-ring-animate .part-ring-orbit { display:none; animation:none; } }
     `;
     document.head.appendChild(style);
@@ -56,7 +57,7 @@ export function applyPartAvatarRing(element, userData = {}) {
         layer = document.createElement('span');
         layer.className = 'part-ring-layer';
         layer.setAttribute('aria-hidden', 'true');
-        layer.innerHTML = '<svg viewBox="0 0 40 40"><circle class="part-ring-circle" cx="20" cy="20" r="18" pathLength="100"></circle></svg><span class="part-ring-orbit"></span>';
+        layer.innerHTML = '<svg viewBox="0 0 40 40"><circle class="part-ring-circle" cx="20" cy="20" r="18" pathLength="100"></circle></svg><span class="part-ring-orbit"><i class="part-ring-dot" style="--part-dot-angle:0deg;--part-dot-size:6px;--part-dot-opacity:1"></i><i class="part-ring-dot" style="--part-dot-angle:-13deg;--part-dot-size:5px;--part-dot-opacity:.78"></i><i class="part-ring-dot" style="--part-dot-angle:-26deg;--part-dot-size:4px;--part-dot-opacity:.56"></i><i class="part-ring-dot" style="--part-dot-angle:-39deg;--part-dot-size:3px;--part-dot-opacity:.36"></i></span>';
         element.appendChild(layer);
     }
 
