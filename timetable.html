@@ -142,13 +142,14 @@
     </div>
 
     <script type="module">
-        import {db, auth} from './js/common.js';
+        import {db, auth} from './js/common.js?v=20261022-4';
         import {doc, getDoc, updateDoc, arrayUnion, arrayRemove} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
         import {signInWithCustomToken} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
         import {loadPublicProfile} from './js/app-api.js';
         import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal} from './js/notification-popover.js?v=20261022-1';
+        import {applyPartAvatarRing} from './js/avatar-ring.js?v=20261022-1';
 
         let entries = [];
         let selectedDate = '';
@@ -181,7 +182,9 @@
         function updateHeader() {
             cachedUser = readCachedJson('lmc_user_cache', {});
             document.getElementById('headerAvatar').src = safeImageUrl(cachedUser.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
-            document.getElementById('headerProfileButton').onclick = () => openUnifiedProfileModal(cachedUser);
+            const profileButton = document.getElementById('headerProfileButton');
+            applyPartAvatarRing(profileButton, cachedUser);
+            profileButton.onclick = () => openUnifiedProfileModal(cachedUser);
             const seen = new Set(readCachedJson('lmc_seen_my_band_bookings', []));
             const hasUnreadBooking = getCachedMyBookings().some(booking => !seen.has(booking.id));
             const hasInvite = Array.isArray(cachedUser.pendingInvites) && cachedUser.pendingInvites.length > 0;

@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebas
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 import {openUnifiedProfileModal} from "./profile-popover.js?v=20261022-3";
+import {applyPartAvatarRing} from "./avatar-ring.js?v=20261022-1";
 
 const firebaseConfig = { 
     apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", 
@@ -23,6 +24,7 @@ export const renderHeaderIcons = (d, targetId = 'headerIconCal') => {
     const el = document.getElementById(targetId);
     if (!el) return;
     el.replaceChildren(Object.assign(document.createElement('img'), {src: safeImageUrl(d.icon), alt: ''}));
+    applyPartAvatarRing(el, d);
     el.onclick = () => openUnifiedProfileModal(d);
 };
 
@@ -46,6 +48,7 @@ window.renderHeaderIcons = (d) => {
     if (el) {
         el.replaceChildren(Object.assign(document.createElement('img'), {src: safeImageUrl(d.icon), alt: ''}));
         el.className = "header-avatar " + r;
+        applyPartAvatarRing(el, d);
         el.onclick = () => openUnifiedProfileModal(d);
     }
     
