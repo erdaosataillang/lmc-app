@@ -59,6 +59,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /userAdminMemos/{userId} {
+      allow read, write: if isAdmin();
+    }
+
     match /bands/{bandId} {
       allow read: if isRegisteredLineUser();
       allow create: if isAdmin() ||

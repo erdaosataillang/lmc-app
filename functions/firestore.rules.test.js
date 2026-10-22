@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const {after, before, beforeEach} = test;
 const {assertFails, assertSucceeds, initializeTestEnvironment} = require("@firebase/rules-unit-testing");
-const {collection, doc, getDocs, setDoc, updateDoc} = require("firebase/firestore");
+const {collection, doc, getDoc, getDocs, setDoc, updateDoc} = require("firebase/firestore");
 
 let environment;
 const projectId = "demo-lmc-security";
@@ -23,6 +23,7 @@ beforeEach(async () => {
     const db = context.firestore();
     await setDoc(doc(db, "users", "member"), {name: "一般", role: "lmc_normal", lineUserId: "member"});
     await setDoc(doc(db, "users", "other"), {name: "他人", tel: "09000000000", role: "lmc_normal", lineUserId: "other"});
+    await setDoc(doc(db, "userAdminMemos", "member"), {memo: "管理者専用"});
     await setDoc(doc(db, "bands", "band-a"), {name: "A", creatorId: "other", memberIds: ["other"], memberNames: ["他人"]});
   });
 });
@@ -39,6 +40,15 @@ test("一般ユーザーは自分を管理者へ昇格できない", async () =>
 
 test("一般ユーザーは個人情報を含むユーザー一覧を取得できない", async () => {
   await assertFails(getDocs(collection(userDb(), "users")));
+});
+
+test("管理メモは管理者だけが読み書きできる", async () => {
+  await assertFails(getDoc(doc(userDb(), "userAdminMemos", "member")));
+  await assertFails(setDoc(doc(userDb(), "userAdminMemos", "member"), {memo: "改ざん"}));
+
+  const adminDb = environment.authenticatedContext("admin", {line: true, registered: true, admin: true}).firestore();
+  await assertSucceeds(getDoc(doc(adminDb, "userAdminMemos", "member")));
+  await assertSucceeds(setDoc(doc(adminDb, "userAdminMemos", "member"), {memo: "更新"}));
 });
 
 test("一般ユーザーは招待処理を迂回してバンドへ参加できない", async () => {

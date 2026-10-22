@@ -286,6 +286,14 @@
                     <input type="text" id="create-headerImage" class="edit-input font-mono text-[10px]" placeholder="https://...">
                 </div>
 
+                <div>
+                    <div class="flex items-center justify-between mb-1 ml-1">
+                        <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">管理メモ</label>
+                        <span class="text-[9px] font-bold text-amber-600">管理画面のみ</span>
+                    </div>
+                    <textarea id="create-adminMemo" maxlength="2000" rows="4" class="edit-input resize-y min-h-[96px] leading-relaxed" placeholder="引き継ぎ事項や対応履歴など"></textarea>
+                </div>
+
                 <div class="pt-4 flex justify-end gap-3">
                     <button onclick="window.closeCreateUserModal()" class="px-5 py-2.5 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition-all text-xs">キャンセル</button>
                     <button id="create-user-submit-btn" class="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:bg-indigo-700 transition-all text-xs uppercase tracking-widest active:scale-95">登録する</button>
@@ -297,9 +305,10 @@
     <!-- Logic -->
     <script type="module">
         import { initAdminPage, db, escapeHtml, safeImageUrl } from "/js/admin-common.js";
-        import { collection, onSnapshot, doc, updateDoc, deleteDoc, addDoc, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, onSnapshot, doc, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let usersData = [];
+        let adminMemosByUser = new Map();
         let filteredData = [];
         let userSearchQuery = "";
         let userShowOnlyCurrent = true;
@@ -414,7 +423,7 @@
             
             onSnapshot(collection(db, 'users'), 
                 (s) => {
-                    usersData = s.docs.map(d => ({id:d.id, ...d.data()}));
+                    usersData = s.docs.map(d => ({id:d.id, ...d.data(), adminMemo: adminMemosByUser.get(d.id) || ''}));
                     renderUsers();
                     const loader = document.getElementById('initial-loader');
                     if (loader) {
@@ -427,6 +436,14 @@
                     const statusTextEl = document.getElementById('loading-status-text');
                     if (statusTextEl) statusTextEl.innerText = "データの読み込みに失敗しました。";
                 }
+            );
+            onSnapshot(collection(db, 'userAdminMemos'),
+                (s) => {
+                    adminMemosByUser = new Map(s.docs.map(d => [d.id, toSafeString(d.data().memo).slice(0, 2000)]));
+                    usersData.forEach(userData => { userData.adminMemo = adminMemosByUser.get(userData.id) || ''; });
+                    renderUsers();
+                },
+                (error) => console.error("Error fetching admin memos:", error)
             );
         });
 
@@ -733,6 +750,17 @@
                                 <div class="font-bold text-gray-800 text-sm">${birthStr}</div>
                             </div>
 
+                            <div class="animate-item col-span-full bg-amber-50/70 p-4 rounded-[24px] border border-amber-100" style="animation-delay: 0.45s">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2 text-amber-700">
+                                        <i class="fa-solid fa-note-sticky text-xs"></i>
+                                        <span class="text-[9px] font-black uppercase tracking-widest">管理メモ</span>
+                                    </div>
+                                    <span class="text-[9px] font-bold text-amber-500">管理画面のみ</span>
+                                </div>
+                                <div class="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap break-words">${user.adminMemo ? escapeHtml(toSafeString(user.adminMemo)) : '<span class="text-gray-400">メモはありません</span>'}</div>
+                            </div>
+
                             <div class="animate-item bg-gray-50/50 p-3 rounded-2xl col-span-full flex items-center justify-between group mt-2" style="animation-delay: 0.5s">
                                 <div class="flex items-center gap-2">
                                     <span class="text-[8px] font-black text-gray-300 uppercase tracking-tighter">システムID:</span>
@@ -841,6 +869,14 @@
                                 <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest block mb-1 ml-1">ヘッダー画像URL</label>
                                 <input type="text" id="edit-headerImage" value="${escapeHtml(user.headerImage || '')}" class="edit-input font-mono text-[10px]" placeholder="https://...">
                             </div>
+
+                            <div>
+                                <div class="flex items-center justify-between mb-1 ml-1">
+                                    <label class="text-[9px] font-black text-gray-400 uppercase tracking-widest">管理メモ</label>
+                                    <span class="text-[9px] font-bold text-amber-600">管理画面のみ・最大2,000文字</span>
+                                </div>
+                                <textarea id="edit-adminMemo" maxlength="2000" rows="5" class="edit-input resize-y min-h-[112px] leading-relaxed" placeholder="引き継ぎ事項や対応履歴など">${escapeHtml(toSafeString(user.adminMemo))}</textarea>
+                            </div>
                         </div>
                     </div>
                 `;
@@ -865,7 +901,10 @@
                 return;
             }
             try {
-                await deleteDoc(doc(db, 'users', userId));
+                const batch = writeBatch(db);
+                batch.delete(doc(db, 'users', userId));
+                batch.delete(doc(db, 'userAdminMemos', userId));
+                await batch.commit();
                 window.closeUserDetail();
                 selectedUserIds.delete(userId);
                 updateSelectionUI();
@@ -897,16 +936,24 @@
             const tel = document.getElementById('edit-tel')?.value?.replace(/\D/g, '');
             const birthdayInput = document.getElementById('edit-birthday')?.value;
             const headerImage = document.getElementById('edit-headerImage')?.value;
+            const adminMemo = document.getElementById('edit-adminMemo')?.value?.trim().slice(0, 2000) || '';
 
             let birthday = null;
             if (birthdayInput) birthday = Timestamp.fromDate(new Date(birthdayInput));
             
             try {
-                await updateDoc(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, role, roll, tel, birthday, headerImage });
+                const batch = writeBatch(db);
+                batch.update(doc(db, 'users', userId), { name, kana, year, faculty, studentId, part, role, roll, tel, birthday, headerImage });
+                const memoRef = doc(db, 'userAdminMemos', userId);
+                if (adminMemo) batch.set(memoRef, { memo: adminMemo, updatedAt: Timestamp.now() }, { merge: true });
+                else batch.delete(memoRef);
+                await batch.commit();
+                if (adminMemo) adminMemosByUser.set(userId, adminMemo);
+                else adminMemosByUser.delete(userId);
                 isEditing = false;
                 const updatedUser = usersData.find(u => u.id === userId);
                 if (updatedUser) {
-                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, role, roll, tel, birthday, headerImage });
+                    Object.assign(updatedUser, { name, kana, year, faculty, studentId, part, role, roll, tel, birthday, headerImage, adminMemo });
                     renderModalContent(updatedUser);
                 }
             } catch (err) {
@@ -946,6 +993,7 @@
             document.getElementById('create-tel').value = '';
             document.getElementById('create-birthday').value = '';
             document.getElementById('create-headerImage').value = '';
+            document.getElementById('create-adminMemo').value = '';
             
             if (modal) modal.classList.remove('hidden');
         };
@@ -983,12 +1031,15 @@
             const tel = document.getElementById('create-tel')?.value?.replace(/\D/g, '') || '';
             const birthdayInput = document.getElementById('create-birthday')?.value;
             const headerImage = document.getElementById('create-headerImage')?.value?.trim() || '';
+            const adminMemo = document.getElementById('create-adminMemo')?.value?.trim().slice(0, 2000) || '';
 
             let birthday = null;
             if (birthdayInput) birthday = Timestamp.fromDate(new Date(birthdayInput));
 
             try {
-                await addDoc(collection(db, 'users'), {
+                const userRef = doc(collection(db, 'users'));
+                const batch = writeBatch(db);
+                batch.set(userRef, {
                     name,
                     kana,
                     year,
@@ -1003,6 +1054,8 @@
                     isVirtual: true,
                     createdAt: Timestamp.now()
                 });
+                if (adminMemo) batch.set(doc(db, 'userAdminMemos', userRef.id), { memo: adminMemo, updatedAt: Timestamp.now() });
+                await batch.commit();
                 window.closeCreateUserModal();
             } catch (err) {
                 console.error("Error creating user:", err);
