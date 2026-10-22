@@ -195,6 +195,35 @@
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
         input:checked + .slider { background-color: #0b57d0; }
         input:checked + .slider:before { transform: translateX(22px); }
+
+        /* 新規予約シート */
+        #modal-booking { clip-path:none; background:rgba(15,23,42,.42); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); align-items:flex-end; justify-content:center; padding:0; }
+        #modal-booking.open { clip-path:none; }
+        .booking-compose-sheet { width:100%; max-width:480px; max-height:94dvh; background:#f6f7fb; border-radius:28px 28px 0 0; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 -18px 60px rgba(15,23,42,.24); transform:translateY(36px); opacity:.7; transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .22s ease; }
+        #modal-booking.open .booking-compose-sheet { transform:translateY(0); opacity:1; }
+        .booking-compose-handle { width:38px; height:4px; border-radius:999px; background:#cbd2dc; margin:9px auto 2px; flex:none; }
+        .booking-compose-header { display:flex; align-items:center; gap:12px; padding:10px 18px 14px; background:rgba(255,255,255,.96); border-bottom:1px solid #e9edf2; flex:none; }
+        .booking-compose-close { width:36px; height:36px; border:0; border-radius:50%; background:#f1f3f6; color:#536471; display:grid; place-items:center; padding:0; cursor:pointer; flex:none; }
+        .booking-compose-title { margin:0; font-size:19px; color:#172033; font-weight:800; line-height:1.25; }
+        .booking-compose-subtitle { font-size:11px; color:#778198; margin-top:3px; }
+        .booking-compose-body { padding:18px 16px calc(24px + env(safe-area-inset-bottom,0px)); flex:1; overflow-y:auto; overscroll-behavior:contain; }
+        .booking-section-label { margin:2px 4px 8px; color:#778198; font-size:12px; font-weight:800; letter-spacing:.04em; }
+        #modal-booking .setting-card { border-radius:20px; border:1px solid #e9edf2; box-shadow:0 5px 18px rgba(30,41,59,.045); margin-bottom:18px; }
+        #modal-booking .setting-row { padding:15px 16px; }
+        #modal-booking .setting-icon { border-radius:11px; }
+        .booking-actions { margin-top:24px; display:flex; flex-direction:column; gap:10px; }
+        .booking-actions #btnSaveBooking { border-radius:999px!important; box-shadow:0 8px 22px rgba(11,87,208,.22); }
+
+        /* 月表示から日表示への遷移 */
+        .day-cell.opening-day { position:relative; z-index:4; animation:dayCellPick .18s cubic-bezier(.2,.8,.2,1) both; }
+        #calMonthView.calendar-month-depart .month-grid { animation:calendarMonthDepart .18s ease-in both; transform-origin:center center; }
+        #calDayView.calendar-view-enter-day { animation:calendarDayEnter .34s cubic-bezier(.16,1,.3,1) both; }
+        #calMonthView.calendar-view-enter-month { animation:calendarMonthEnter .3s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes dayCellPick { 50% { transform:scale(1.12); background:#dbeafe; box-shadow:0 8px 22px rgba(11,87,208,.22); } 100% { transform:scale(1.04); } }
+        @keyframes calendarMonthDepart { to { opacity:0; transform:scale(.96) translateY(-8px); filter:blur(2px); } }
+        @keyframes calendarDayEnter { from { opacity:0; transform:translate3d(24px,18px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
+        @keyframes calendarMonthEnter { from { opacity:0; transform:translate3d(-18px,8px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
+        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month { animation:none!important; } .booking-compose-sheet { transition:none; } }
         
         /* 通知・モーダル関連 */
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
@@ -295,17 +324,18 @@
     <div id="nav-container"></div>
 
     <!-- 新規予約・編集 フルスクリーンオーバーレイ -->
-    <div id="modal-booking" class="pop-overlay">
-        <div class="search-header-bar" style="justify-content: flex-start; gap: 12px;">
-            <button onclick="closeModal('modal-booking')" style="border:none; background:none; padding:8px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-left:-8px; transition: background 0.2s;">
-                <span class="material-icons" style="font-size: 24px; color: #1f1f1f;">close</span>
-            </button>
-            <h3 style="margin:0; font-size: 18px; color: #1f1f1f;" id="bookingModalTitle">予約の確認</h3>
+    <div id="modal-booking" class="pop-overlay" onclick="if(event.target===this) closeModal('modal-booking')">
+      <div class="booking-compose-sheet">
+        <div class="booking-compose-handle"></div>
+        <div class="booking-compose-header">
+            <button class="booking-compose-close" onclick="closeModal('modal-booking')" aria-label="閉じる"><span class="material-icons">close</span></button>
+            <div><h3 class="booking-compose-title" id="bookingModalTitle">新規予約</h3><div class="booking-compose-subtitle">日時とバンドを確認して予約します</div></div>
         </div>
-        <div style="padding: 20px 16px; flex: 1; overflow-y: auto;">
+        <div class="booking-compose-body">
             <input type="hidden" id="editingBookingId">
             
             <!-- 日付と時間のカード -->
+            <div class="booking-section-label">予約日時</div>
             <div class="setting-card">
                 <div class="setting-row">
                     <div class="setting-label">
@@ -356,6 +386,7 @@
             </div>
 
             <!-- バンド/イベント名入力のカード -->
+            <div class="booking-section-label">予約内容</div>
             <div class="setting-card">
                 <div class="setting-row" id="groupBandSelect">
                     <div class="setting-label" style="width: 100px;">
@@ -377,12 +408,13 @@
                 </div>
             </div>
             
-            <div style="margin-top: 32px; display:flex; flex-direction:column; gap:12px;">
+            <div class="booking-actions">
                 <button id="btnSaveBooking" class="btn-primary" style="padding: 16px; font-size:16px; border-radius: 16px;" onclick="saveBooking()">予約を確定する</button>
                 <button id="btnAddToGCal" class="btn-google hidden" style="padding: 16px; font-size:15px; border-radius: 16px; margin-top: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);" onclick="addToGoogleCalendar()"><span class="material-icons" style="color:#34A853;">calendar_today</span> カレンダーに追加</button>
                 <button id="btnDeleteBooking" class="btn-danger hidden" style="padding: 16px; font-size:15px; border-radius: 16px; background:#fff; color:#d93025; border:1px solid #fad2cf; margin-top: 0;" onclick="deleteBooking()">この予約を削除</button>
             </div>
         </div>
+      </div>
     </div>
     
     <!-- 検索フルスクリーンオーバーレイ -->
@@ -918,7 +950,43 @@
             }, (error) => console.warn("Band refresh failed:", error));
         }
         
-        window.switchCalendarView=(m, keepDate = false)=>{ calendarMode=m; if(m==='day'){ if(!keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } } } updateViewMenuUI(); renderCalendar(); };
+        let calendarViewTransitioning = false;
+        function animateCalendarEntry(mode) {
+            const view = document.getElementById(mode === 'day' ? 'calDayView' : 'calMonthView');
+            if (!view || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const className = mode === 'day' ? 'calendar-view-enter-day' : 'calendar-view-enter-month';
+            view.classList.remove(className);
+            void view.offsetWidth;
+            view.classList.add(className);
+            view.addEventListener('animationend', () => view.classList.remove(className), {once:true});
+        }
+        function openDayFromMonthCell(cell, parts) {
+            if (calendarViewTransitioning) return;
+            displayDate.setFullYear(parseInt(parts[1]), parseInt(parts[2])-1, parseInt(parts[3]));
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                window.switchCalendarView('day', true);
+                return;
+            }
+            calendarViewTransitioning = true;
+            cell.classList.add('opening-day');
+            document.getElementById('calMonthView')?.classList.add('calendar-month-depart');
+            setTimeout(() => {
+                document.getElementById('calMonthView')?.classList.remove('calendar-month-depart');
+                window.switchCalendarView('day', true);
+                calendarViewTransitioning = false;
+            }, 170);
+        }
+        window.switchCalendarView=(m, keepDate = false)=>{
+            const previousMode = calendarMode;
+            calendarMode=m;
+            if(m==='day' && !keepDate){ const t=new Date(); if(displayDate.getMonth()===t.getMonth()&&displayDate.getFullYear()===t.getFullYear()) { displayDate.setDate(t.getDate()); } else { displayDate.setDate(1); } }
+            updateViewMenuUI();
+            renderCalendar();
+            if (previousMode !== m) {
+                document.getElementById('calMainScroll').scrollTop = 0;
+                animateCalendarEntry(m);
+            }
+        };
         function updateViewMenuUI(){ const isMonth = (calendarMode === 'month'); document.getElementById('calMonthView').classList.toggle('hidden', !isMonth); document.getElementById('calDayView').classList.toggle('hidden', isMonth); const switcher = document.getElementById('viewSwitcher'); switcher.classList.toggle('day-mode', !isMonth); document.querySelectorAll('.switcher-item').forEach(el => { el.classList.toggle('active', el.dataset.mode === calendarMode); }); }
         
         window.changeDate=(d)=>{ 
@@ -978,8 +1046,7 @@
                     if (cell && cell.id && !cell.classList.contains('other-month')) {
                         const parts = cell.id.split('-');
                         if(parts.length === 4) {
-                            displayDate.setFullYear(parseInt(parts[1]), parseInt(parts[2])-1, parseInt(parts[3]));
-                            switchCalendarView('day', true);
+                            openDayFromMonthCell(cell, parts);
                         }
                     }
                 });
