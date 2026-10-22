@@ -97,7 +97,7 @@
             <div class="header-copy"><div class="title">タイムテーブル</div><div class="event-name" id="eventName">読み込み中...</div></div>
             <div class="header-actions">
                 <button class="notification-btn" onclick="openNotificationModal()" aria-label="通知"><span class="material-icons">notifications</span><span class="notification-badge" id="headerNotifBadge"></span></button>
-                <button class="header-avatar" onclick="openProfileModal()" aria-label="マイページ"><img id="headerAvatar" src="https://ul.h3z.jp/Vnukmtvq.jpg" alt=""></button>
+                <button class="header-avatar" id="headerProfileButton" aria-label="マイページ"><img id="headerAvatar" src="https://ul.h3z.jp/Vnukmtvq.jpg" alt=""></button>
             </div>
         </header>
         <section class="content">
@@ -147,6 +147,7 @@
         import {signInWithCustomToken} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
         import {loadPublicProfile} from './js/app-api.js';
+        import {openUnifiedProfileModal} from './js/profile-popover.js';
 
         let entries = [];
         let selectedDate = '';
@@ -179,6 +180,7 @@
         function updateHeader() {
             cachedUser = readCachedJson('lmc_user_cache', {});
             document.getElementById('headerAvatar').src = safeImageUrl(cachedUser.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
+            document.getElementById('headerProfileButton').onclick = () => openUnifiedProfileModal(cachedUser);
             const seen = new Set(readCachedJson('lmc_seen_my_band_bookings', []));
             const hasUnreadBooking = getCachedMyBookings().some(booking => !seen.has(booking.id));
             const needsEmail = cachedUser && !(cachedUser.Email || cachedUser.email);

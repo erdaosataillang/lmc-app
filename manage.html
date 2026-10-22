@@ -354,7 +354,7 @@
                     <span class="material-icons" style="color:#5f6368;">notifications</span>
                     <span class="notification-badge" id="headerNotifBadge"></span>
                 </div>
-                <div class="header-avatar" id="headerIconAdmin" onclick="openUserStatusModal()">
+                <div class="header-avatar" id="headerIconAdmin">
                     <img src="https://ul.h3z.jp/Vnukmtvq.jpg" alt="Avatar">
                 </div>
             </div>
@@ -831,6 +831,7 @@
         import { getFirestore, collection, addDoc, getDocs, doc, getDoc, query, orderBy, where, setDoc, updateDoc, serverTimestamp, writeBatch, arrayRemove, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
+        import {openUnifiedProfileModal} from './js/profile-popover.js';
 
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig);
@@ -2712,6 +2713,8 @@
                 if (avatarImg) {
                     avatarImg.src = currentUserData.icon || 'https://ul.h3z.jp/Vnukmtvq.jpg';
                 }
+                const avatarButton = document.getElementById('headerIconAdmin');
+                if (avatarButton) avatarButton.onclick = () => openUnifiedProfileModal(currentUserData);
 
                 const settingsSnap = await getDoc(doc(db, "system", "settings"));
                 if (settingsSnap.exists()) {

@@ -550,6 +550,7 @@
         import {getDownloadURL, getStorage, ref as storageRef, uploadBytes} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
         import {createBooking, loadPublicProfile, loadPublicProfiles, removeBooking, sendEmailCode, updateBooking, verifyEmailCode} from './js/app-api.js';
+        import {openUnifiedProfileModal} from './js/profile-popover.js';
         
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig); const db = getFirestore(app); const auth = getAuth(app);
@@ -689,7 +690,7 @@
             }
             if(!r && isU) r=d.job?`ring-${d.job}`:"ring-rainbow";
             const el = document.getElementById('headerIconCal');
-            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=openUserStatusModal; }
+            if(el){ el.innerHTML=`<img src="${d.icon||'https://ul.h3z.jp/Vnukmtvq.jpg'}">`; el.className="header-avatar "+r; el.onclick=()=>openUnifiedProfileModal(d); }
             
             // 管理者タブ表示制御
             const hasAdminRole = hasAdminAccess(d);

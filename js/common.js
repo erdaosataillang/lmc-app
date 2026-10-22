@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+import {openUnifiedProfileModal} from "./profile-popover.js";
 
 const firebaseConfig = { 
     apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", 
@@ -22,7 +23,7 @@ export const renderHeaderIcons = (d, targetId = 'headerIconCal') => {
     const el = document.getElementById(targetId);
     if (!el) return;
     el.replaceChildren(Object.assign(document.createElement('img'), {src: safeImageUrl(d.icon), alt: ''}));
-    el.onclick = () => openUserStatusModal(d);
+    el.onclick = () => openUnifiedProfileModal(d);
 };
 
 export const openUserStatusModal = async (userData) => {
@@ -60,7 +61,7 @@ window.renderHeaderIcons = (d) => {
     if (el) {
         el.replaceChildren(Object.assign(document.createElement('img'), {src: safeImageUrl(d.icon), alt: ''}));
         el.className = "header-avatar " + r;
-        el.onclick = () => window.openUserStatusModal(d);
+        el.onclick = () => openUnifiedProfileModal(d);
     }
     
     // 管理者タブ表示制御
