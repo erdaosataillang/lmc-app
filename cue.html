@@ -340,7 +340,6 @@
         // 共通のパート名フォーマット関数
         window.formatPart = (partName) => {
             if (!partName) return '';
-            const lower = partName.toLowerCase().replace(/ /g, ' ').trim();
             const partMap = {
                 'vocal': 'Vo.', 'vocals': 'Vo.', 'ボーカル': 'Vo.', 'ヴォーカル': 'Vo.', 'vo': 'Vo.', 'vo.': 'Vo.',
                 'guitar': 'Gt.', 'ギター': 'Gt.', 'gt': 'Gt.', 'gt.': 'Gt.',
@@ -353,7 +352,17 @@
                 'percussion': 'Per.', 'パーカッション': 'Per.', 'per': 'Per.', 'per.': 'Per.',
                 'dj': 'DJ'
             };
-            return partMap[lower] || partName;
+            const rawParts = Array.isArray(partName)
+                ? partName.flat(Infinity)
+                : (typeof partName === 'object'
+                    ? Object.entries(partName).filter(([, enabled]) => Boolean(enabled)).map(([name]) => name)
+                    : String(partName).split(/[,、/|・]+/));
+            const formatted = rawParts.map(value => {
+                const original = String(value ?? '').replace(/\s+/g, ' ').trim();
+                if (!original) return '';
+                return partMap[original.toLowerCase()] || original;
+            }).filter(Boolean);
+            return [...new Set(formatted)].join(' / ');
         };
         // カタカナをひらがなに変換する関数
         window.toHiragana = (str) => {
