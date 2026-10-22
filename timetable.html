@@ -142,14 +142,14 @@
     </div>
 
     <script type="module">
-        import {db, auth} from './js/common.js?v=20261022-5';
+        import {db, auth} from './js/common.js?v=20261022-6';
         import {doc, getDoc, updateDoc, arrayUnion, arrayRemove} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
         import {signInWithCustomToken} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
         import {signInFirebaseWithLine} from './js/line-firebase-auth.js';
         import {loadPublicProfile} from './js/app-api.js';
         import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal} from './js/notification-popover.js?v=20261022-1';
-        import {applyPartAvatarRing} from './js/avatar-ring.js?v=20261022-2';
+        import {applyPartAvatarRing} from './js/avatar-ring.js?v=20261022-3';
 
         let entries = [];
         let selectedDate = '';

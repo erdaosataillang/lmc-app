@@ -52,7 +52,6 @@ export function applyPartAvatarRing(element, userData = {}) {
     element.classList.add('part-avatar-ring');
 
     let layer = element.querySelector('.part-ring-layer');
-    const layerWasMissing = !layer;
     if (!layer) {
         layer = document.createElement('span');
         layer.className = 'part-ring-layer';
@@ -62,7 +61,7 @@ export function applyPartAvatarRing(element, userData = {}) {
     }
 
     const signature = `${palette.color}:${partText(userData.part)}`;
-    if (layerWasMissing || element.dataset.partRingAnimated !== signature) {
+    if (element.dataset.partRingAnimated !== signature) {
         element.dataset.partRingAnimated = signature;
         element.classList.remove('part-ring-animate');
         void element.offsetWidth;
