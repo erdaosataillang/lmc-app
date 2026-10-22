@@ -46,6 +46,22 @@
         .switcher-item.active { color: #0b57d0; }
         .switcher-slide { position: absolute; width: 44px; height: 28px; background: white; border-radius: 18px; top: 2px; left: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1; }
         .view-switcher.day-mode .switcher-slide { transform: translateX(42px); }
+
+        /* 表示中の月に合わせて変わる季節ヘッダー */
+        .seasonal-calendar-hero { --season-start:#eef4ff; --season-end:#dce9ff; --season-ink:#31567d; position:relative; min-height:86px; margin-bottom:12px; padding:16px 18px; box-sizing:border-box; border-radius:22px; overflow:hidden; color:var(--season-ink); background:linear-gradient(135deg,var(--season-start),var(--season-end)); box-shadow:0 5px 18px rgba(30,41,59,.07); isolation:isolate; }
+        .seasonal-calendar-hero::before,.seasonal-calendar-hero::after { content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.28); z-index:-1; }
+        .seasonal-calendar-hero::before { width:118px; height:118px; right:-35px; top:-56px; }
+        .seasonal-calendar-hero::after { width:74px; height:74px; right:52px; bottom:-50px; }
+        .seasonal-calendar-copy { position:relative; z-index:2; max-width:78%; }
+        .seasonal-calendar-kicker { font-size:10px; line-height:1; font-weight:800; letter-spacing:.12em; opacity:.7; text-transform:uppercase; margin-bottom:7px; }
+        .seasonal-calendar-title { font-size:18px; line-height:1.25; font-weight:800; letter-spacing:.01em; }
+        .seasonal-calendar-subtitle { margin-top:4px; font-size:11px; line-height:1.45; font-weight:500; opacity:.78; }
+        .seasonal-calendar-symbol { position:absolute; right:18px; top:50%; transform:translateY(-50%) rotate(-7deg); font-size:42px; line-height:1; opacity:.86; filter:drop-shadow(0 5px 9px rgba(30,41,59,.12)); }
+        .seasonal-calendar-hero.refreshing .seasonal-calendar-copy { animation:seasonCopyIn .34s cubic-bezier(.16,1,.3,1) both; }
+        .seasonal-calendar-hero.refreshing .seasonal-calendar-symbol { animation:seasonSymbolIn .42s cubic-bezier(.16,1,.3,1) both; }
+        @keyframes seasonCopyIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes seasonSymbolIn { from { opacity:0; transform:translateY(-42%) rotate(5deg) scale(.8); } to { opacity:.86; transform:translateY(-50%) rotate(-7deg) scale(1); } }
+        @media (max-height:700px) { .seasonal-calendar-hero { min-height:68px; padding:12px 16px; } .seasonal-calendar-subtitle { display:none; } .seasonal-calendar-symbol { font-size:34px; } }
         
         /* 月カレンダー */
         .month-grid { background: white; border-radius: 20px; padding: 12px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -223,7 +239,7 @@
         @keyframes calendarMonthDepart { to { opacity:0; transform:scale(.96) translateY(-8px); filter:blur(2px); } }
         @keyframes calendarDayEnter { from { opacity:0; transform:translate3d(24px,18px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
         @keyframes calendarMonthEnter { from { opacity:0; transform:translate3d(-18px,8px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
-        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month { animation:none!important; } .booking-compose-sheet { transition:none; } }
+        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month,.seasonal-calendar-hero.refreshing .seasonal-calendar-copy,.seasonal-calendar-hero.refreshing .seasonal-calendar-symbol { animation:none!important; } .booking-compose-sheet { transition:none; } }
         
         /* 通知・モーダル関連 */
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
@@ -294,6 +310,14 @@
             <div style="display:flex; align-items:center;"><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span><div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px; font-weight:bold;"></div><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span></div>
         </div>
         <div class="scroll-content" id="calMainScroll">
+            <div id="seasonalCalendarHero" class="seasonal-calendar-hero" aria-live="polite">
+                <div class="seasonal-calendar-copy">
+                    <div class="seasonal-calendar-kicker" id="seasonalCalendarKicker"></div>
+                    <div class="seasonal-calendar-title" id="seasonalCalendarTitle"></div>
+                    <div class="seasonal-calendar-subtitle" id="seasonalCalendarSubtitle"></div>
+                </div>
+                <span class="seasonal-calendar-symbol" id="seasonalCalendarSymbol" aria-hidden="true"></span>
+            </div>
             <div id="calMonthView" style="position: relative; overflow: hidden; width: 100%;"></div>
             <div id="calDayView" class="hidden">
                 <!-- 週間ストリップ -->
@@ -995,9 +1019,46 @@
             const dir = d > 0 ? 1 : -1;
             renderCalendar(false, dir); 
         };
+
+        const seasonalCalendarThemes = [
+            { kicker:'WINTER', title:'凛とした空気の1月', subtitle:'新しい一年の予定を、ここから。', symbol:'❄️', start:'#e7f3ff', end:'#c9e4f7', ink:'#285574' },
+            { kicker:'LATE WINTER', title:'春を待つ2月', subtitle:'冬の終わりに、次の音を重ねよう。', symbol:'✨', start:'#ececff', end:'#d9dcf7', ink:'#4c4f82' },
+            { kicker:'EARLY SPRING', title:'春の気配が届く3月', subtitle:'少しずつ軽くなる季節です。', symbol:'🌱', start:'#e8f5e9', end:'#d3eddb', ink:'#376344' },
+            { kicker:'SPRING', title:'桜が彩る4月', subtitle:'新しい出会いと音楽の季節。', symbol:'🌸', start:'#fff0f4', end:'#f8dce7', ink:'#874b62' },
+            { kicker:'FRESH GREEN', title:'新緑がまぶしい5月', subtitle:'爽やかな時間を合わせよう。', symbol:'🌿', start:'#e7f5e8', end:'#ccebd5', ink:'#376849' },
+            { kicker:'RAINY SEASON', title:'雨音を楽しむ6月', subtitle:'雨の日も、心地よいリズムで。', symbol:'☂️', start:'#e7f0fa', end:'#ceddf0', ink:'#3e5f7d' },
+            { kicker:'SUMMER', title:'夏空が広がる7月', subtitle:'長い一日に、音を響かせよう。', symbol:'☀️', start:'#e5f6ff', end:'#bee8f8', ink:'#23617b' },
+            { kicker:'MIDSUMMER', title:'きらめく夏の8月', subtitle:'熱い季節の予定をひと目で。', symbol:'🌻', start:'#fff3d6', end:'#ffe0a8', ink:'#795222' },
+            { kicker:'EARLY AUTUMN', title:'秋の風を感じる9月', subtitle:'少し穏やかな時間の中で。', symbol:'🌾', start:'#f7f0dc', end:'#ebdfbd', ink:'#6e5b31' },
+            { kicker:'AUTUMN', title:'深まる秋の10月', subtitle:'音楽に集中できる季節です。', symbol:'🍂', start:'#f8eadc', end:'#efd1b8', ink:'#754b31' },
+            { kicker:'LATE AUTUMN', title:'木々が色づく11月', subtitle:'紅葉の季節に、予定を整えよう。', symbol:'🍁', start:'#f9e5d3', end:'#efc4a6', ink:'#7b422b' },
+            { kicker:'WINTER LIGHTS', title:'冬の灯りがともる12月', subtitle:'一年の締めくくりも忘れずに。', symbol:'❄️', start:'#e9eff8', end:'#d2dced', ink:'#3f5573' }
+        ];
+        function updateSeasonalCalendarHero(month) {
+            const hero = document.getElementById('seasonalCalendarHero');
+            const theme = seasonalCalendarThemes[month - 1];
+            if (!hero || !theme) return;
+            const monthKey = `${displayDate.getFullYear()}-${month}`;
+            if (hero.dataset.monthKey === monthKey) return;
+            hero.dataset.monthKey = monthKey;
+            hero.style.setProperty('--season-start', theme.start);
+            hero.style.setProperty('--season-end', theme.end);
+            hero.style.setProperty('--season-ink', theme.ink);
+            document.getElementById('seasonalCalendarKicker').textContent = theme.kicker;
+            document.getElementById('seasonalCalendarTitle').textContent = theme.title;
+            document.getElementById('seasonalCalendarSubtitle').textContent = theme.subtitle;
+            document.getElementById('seasonalCalendarSymbol').textContent = theme.symbol;
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                hero.classList.remove('refreshing');
+                void hero.offsetWidth;
+                hero.classList.add('refreshing');
+                hero.addEventListener('animationend', () => hero.classList.remove('refreshing'), {once:true});
+            }
+        }
         
         function renderCalendar(useCache = false, animationDirection = 0){ 
             const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; 
+            updateSeasonalCalendarHero(m);
             if(calendarMode==='month'){
                 document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; 
                 renderMonthView(y, m-1, useCache, animationDirection);
