@@ -52,16 +52,15 @@
         .seasonal-calendar-hero::before,.seasonal-calendar-hero::after { content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.28); z-index:-1; }
         .seasonal-calendar-hero::before { width:118px; height:118px; right:-35px; top:-56px; }
         .seasonal-calendar-hero::after { width:74px; height:74px; right:52px; bottom:-50px; }
-        .seasonal-calendar-copy { position:relative; z-index:2; max-width:78%; }
-        .seasonal-calendar-kicker { font-size:10px; line-height:1; font-weight:800; letter-spacing:.12em; opacity:.7; text-transform:uppercase; margin-bottom:7px; }
-        .seasonal-calendar-title { font-size:18px; line-height:1.25; font-weight:800; letter-spacing:.01em; }
-        .seasonal-calendar-subtitle { margin-top:4px; font-size:11px; line-height:1.45; font-weight:500; opacity:.78; }
-        .seasonal-calendar-symbol { position:absolute; right:18px; top:50%; transform:translateY(-50%) rotate(-7deg); font-size:42px; line-height:1; opacity:.86; filter:drop-shadow(0 5px 9px rgba(30,41,59,.12)); }
+        .seasonal-calendar-copy { position:relative; z-index:2; max-width:72%; min-height:54px; display:flex; align-items:center; }
+        .seasonal-calendar-title { font-size:19px; line-height:1.25; font-weight:800; letter-spacing:.01em; }
+        .seasonal-calendar-art { position:absolute; right:10px; top:50%; width:94px; height:72px; transform:translateY(-50%) rotate(-3deg); color:var(--season-ink); opacity:.68; filter:drop-shadow(0 5px 9px rgba(30,41,59,.1)); }
+        .seasonal-calendar-art * { vector-effect:non-scaling-stroke; }
         .seasonal-calendar-hero.refreshing .seasonal-calendar-copy { animation:seasonCopyIn .34s cubic-bezier(.16,1,.3,1) both; }
-        .seasonal-calendar-hero.refreshing .seasonal-calendar-symbol { animation:seasonSymbolIn .42s cubic-bezier(.16,1,.3,1) both; }
+        .seasonal-calendar-hero.refreshing .seasonal-calendar-art { animation:seasonArtIn .42s cubic-bezier(.16,1,.3,1) both; }
         @keyframes seasonCopyIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes seasonSymbolIn { from { opacity:0; transform:translateY(-42%) rotate(5deg) scale(.8); } to { opacity:.86; transform:translateY(-50%) rotate(-7deg) scale(1); } }
-        @media (max-height:700px) { .seasonal-calendar-hero { min-height:68px; padding:12px 16px; } .seasonal-calendar-subtitle { display:none; } .seasonal-calendar-symbol { font-size:34px; } }
+        @keyframes seasonArtIn { from { opacity:0; transform:translateY(-42%) rotate(4deg) scale(.84); } to { opacity:.68; transform:translateY(-50%) rotate(-3deg) scale(1); } }
+        @media (max-height:700px) { .seasonal-calendar-hero { min-height:64px; padding:10px 16px; } .seasonal-calendar-copy { min-height:44px; } .seasonal-calendar-art { width:74px; height:54px; } }
         
         /* 月カレンダー */
         .month-grid { background: white; border-radius: 20px; padding: 12px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
@@ -239,7 +238,7 @@
         @keyframes calendarMonthDepart { to { opacity:0; transform:scale(.96) translateY(-8px); filter:blur(2px); } }
         @keyframes calendarDayEnter { from { opacity:0; transform:translate3d(24px,18px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
         @keyframes calendarMonthEnter { from { opacity:0; transform:translate3d(-18px,8px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
-        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month,.seasonal-calendar-hero.refreshing .seasonal-calendar-copy,.seasonal-calendar-hero.refreshing .seasonal-calendar-symbol { animation:none!important; } .booking-compose-sheet { transition:none; } }
+        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month,.seasonal-calendar-hero.refreshing .seasonal-calendar-copy,.seasonal-calendar-hero.refreshing .seasonal-calendar-art { animation:none!important; } .booking-compose-sheet { transition:none; } }
         
         /* 通知・モーダル関連 */
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
@@ -312,11 +311,25 @@
         <div class="scroll-content" id="calMainScroll">
             <div id="seasonalCalendarHero" class="seasonal-calendar-hero" aria-live="polite">
                 <div class="seasonal-calendar-copy">
-                    <div class="seasonal-calendar-kicker" id="seasonalCalendarKicker"></div>
                     <div class="seasonal-calendar-title" id="seasonalCalendarTitle"></div>
-                    <div class="seasonal-calendar-subtitle" id="seasonalCalendarSubtitle"></div>
                 </div>
-                <span class="seasonal-calendar-symbol" id="seasonalCalendarSymbol" aria-hidden="true"></span>
+                <svg class="seasonal-calendar-art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <defs>
+                        <symbol id="calendar-art-newyear" viewBox="0 0 120 90"><circle cx="60" cy="28" r="16" fill="currentColor" opacity=".12"/><path d="M17 67h86M27 67l12-27 12 27M69 67l12-27 12 27M34 51h10M76 51h10M53 67V48h14v19"/><path d="M45 23c9-8 21-8 30 0"/></symbol>
+                        <symbol id="calendar-art-valentine" viewBox="0 0 120 90"><path d="M60 70 25 39C10 24 34 8 48 25l12 14 12-14c14-17 38-1 23 14L60 70Z" fill="currentColor" opacity=".1"/><path d="M60 70 25 39C10 24 34 8 48 25l12 14 12-14c14-17 38-1 23 14L60 70Z"/><path d="m78 51 7-7M82 55l7-7"/></symbol>
+                        <symbol id="calendar-art-graduation" viewBox="0 0 120 90"><path d="m15 37 45-20 45 20-45 20-45-20Z" fill="currentColor" opacity=".1"/><path d="m15 37 45-20 45 20-45 20-45-20ZM34 47v17c14 10 38 10 52 0V47M102 39v24"/><circle cx="102" cy="68" r="4"/></symbol>
+                        <symbol id="calendar-art-welcome" viewBox="0 0 120 90"><path d="M22 70C39 52 44 34 47 16M98 70C81 52 76 34 73 16"/><path d="M41 29c-9-7-18 4-8 10-4 10 10 13 14 4 9 5 15-8 6-13 3-10-11-12-12-1ZM79 29c9-7 18 4 8 10 4 10-10 13-14 4-9 5-15-8-6-13-3-10 11-12 12-1Z" fill="currentColor" opacity=".1"/><path d="M41 29c-9-7-18 4-8 10-4 10 10 13 14 4 9 5 15-8 6-13 3-10-11-12-12-1ZM79 29c9-7 18 4 8 10 4 10-10 13-14 4-9 5-15-8-6-13-3-10 11-12 12-1Z"/></symbol>
+                        <symbol id="calendar-art-goldenweek" viewBox="0 0 120 90"><path d="M24 16v58M24 23h73"/><path d="M45 25c2 10-2 18-13 22 11 5 15 12 13 22 13-7 20-14 24-22-4-8-11-15-24-22ZM75 25c2 8-1 14-8 18 7 4 10 10 8 18 10-5 16-11 19-18-3-7-9-13-19-18Z" fill="currentColor" opacity=".1"/><path d="M45 25c2 10-2 18-13 22 11 5 15 12 13 22 13-7 20-14 24-22-4-8-11-15-24-22ZM75 25c2 8-1 14-8 18 7 4 10 10 8 18 10-5 16-11 19-18-3-7-9-13-19-18Z"/></symbol>
+                        <symbol id="calendar-art-rain" viewBox="0 0 120 90"><path d="M20 48c5-27 75-27 80 0-11-7-20-7-27 0-9-7-18-7-26 0-8-7-17-7-27 0Z" fill="currentColor" opacity=".1"/><path d="M20 48c5-27 75-27 80 0-11-7-20-7-27 0-9-7-18-7-26 0-8-7-17-7-27 0ZM60 20v48c0 12 16 12 16 1"/><path d="M30 66l-3 7M43 61l-3 7M91 62l-3 7"/></symbol>
+                        <symbol id="calendar-art-tanabata" viewBox="0 0 120 90"><path d="M31 76c9-23 13-43 13-64M47 31l-14-9M44 45l16-10M40 58l-14-8M43 68l17-8"/><path d="m83 14 4 10 11 1-8 7 3 11-10-6-10 6 3-11-8-7 11-1 4-10Z" fill="currentColor" opacity=".12"/><path d="m83 14 4 10 11 1-8 7 3 11-10-6-10 6 3-11-8-7 11-1 4-10ZM77 50v25M89 48v20"/></symbol>
+                        <symbol id="calendar-art-festival" viewBox="0 0 120 90"><path d="M60 48V75M60 48 39 28M60 48 81 28M60 48 31 48M60 48 89 48M60 48 45 68M60 48 75 68"/><path d="M60 16v8M29 25l7 6M91 25l-7 6M18 49h8M102 49h-8"/><circle cx="60" cy="48" r="7" fill="currentColor" opacity=".14"/><path d="M17 77h86"/></symbol>
+                        <symbol id="calendar-art-moon" viewBox="0 0 120 90"><circle cx="75" cy="32" r="22" fill="currentColor" opacity=".12"/><circle cx="75" cy="32" r="22"/><path d="M19 76c10-21 17-35 28-49M33 76c-1-15 2-27 10-39M18 48l21 6M28 38l17 6M42 50l11-10M38 63l15-8"/></symbol>
+                        <symbol id="calendar-art-halloween" viewBox="0 0 120 90"><path d="M62 23c1-8 6-12 14-13"/><path d="M60 27c30-13 47 7 38 32-8 23-68 23-76 0-9-25 8-45 38-32Z" fill="currentColor" opacity=".1"/><path d="M60 27c30-13 47 7 38 32-8 23-68 23-76 0-9-25 8-45 38-32ZM42 47l8-7 7 9M78 47l-8-7-7 9M42 61c11 8 25 8 36 0"/></symbol>
+                        <symbol id="calendar-art-autumnlive" viewBox="0 0 120 90"><path d="M67 19v41c0 9-10 15-19 12-8-3-7-13 1-17 5-2 12-2 18 1M67 27l27-7v34c0 9-10 15-19 12-8-3-7-13 1-17 5-2 12-2 18 1"/><path d="M20 28c15 1 24 8 27 22-15-1-24-8-27-22ZM18 67c13-12 24-14 36-5-13 12-25 14-36 5Z" fill="currentColor" opacity=".1"/><path d="M20 28c15 1 24 8 27 22-15-1-24-8-27-22ZM18 67c13-12 24-14 36-5-13 12-25 14-36 5Z"/></symbol>
+                        <symbol id="calendar-art-christmas" viewBox="0 0 120 90"><path d="m60 10 4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1 4-9Z" fill="currentColor" opacity=".14"/><path d="M60 35 39 58h12L34 76h52L69 58h12L60 35ZM55 76v-9h10v9"/><rect x="84" y="55" width="22" height="21" rx="2" fill="currentColor" opacity=".1"/><path d="M84 55h22v21H84V55ZM95 55v21M84 63h22M95 55c-9-1-9-11-2-9 3 1 3 5 2 9ZM95 55c9-1 9-11 2-9-3 1-3 5-2 9Z"/></symbol>
+                    </defs>
+                    <use id="seasonalCalendarArtUse" href="#calendar-art-newyear"></use>
+                </svg>
             </div>
             <div id="calMonthView" style="position: relative; overflow: hidden; width: 100%;"></div>
             <div id="calDayView" class="hidden">
@@ -1021,18 +1034,18 @@
         };
 
         const seasonalCalendarThemes = [
-            { kicker:'WINTER', title:'凛とした空気の1月', subtitle:'新しい一年の予定を、ここから。', symbol:'❄️', start:'#e7f3ff', end:'#c9e4f7', ink:'#285574' },
-            { kicker:'LATE WINTER', title:'春を待つ2月', subtitle:'冬の終わりに、次の音を重ねよう。', symbol:'✨', start:'#ececff', end:'#d9dcf7', ink:'#4c4f82' },
-            { kicker:'EARLY SPRING', title:'春の気配が届く3月', subtitle:'少しずつ軽くなる季節です。', symbol:'🌱', start:'#e8f5e9', end:'#d3eddb', ink:'#376344' },
-            { kicker:'SPRING', title:'桜が彩る4月', subtitle:'新しい出会いと音楽の季節。', symbol:'🌸', start:'#fff0f4', end:'#f8dce7', ink:'#874b62' },
-            { kicker:'FRESH GREEN', title:'新緑がまぶしい5月', subtitle:'爽やかな時間を合わせよう。', symbol:'🌿', start:'#e7f5e8', end:'#ccebd5', ink:'#376849' },
-            { kicker:'RAINY SEASON', title:'雨音を楽しむ6月', subtitle:'雨の日も、心地よいリズムで。', symbol:'☂️', start:'#e7f0fa', end:'#ceddf0', ink:'#3e5f7d' },
-            { kicker:'SUMMER', title:'夏空が広がる7月', subtitle:'長い一日に、音を響かせよう。', symbol:'☀️', start:'#e5f6ff', end:'#bee8f8', ink:'#23617b' },
-            { kicker:'MIDSUMMER', title:'きらめく夏の8月', subtitle:'熱い季節の予定をひと目で。', symbol:'🌻', start:'#fff3d6', end:'#ffe0a8', ink:'#795222' },
-            { kicker:'EARLY AUTUMN', title:'秋の風を感じる9月', subtitle:'少し穏やかな時間の中で。', symbol:'🌾', start:'#f7f0dc', end:'#ebdfbd', ink:'#6e5b31' },
-            { kicker:'AUTUMN', title:'深まる秋の10月', subtitle:'音楽に集中できる季節です。', symbol:'🍂', start:'#f8eadc', end:'#efd1b8', ink:'#754b31' },
-            { kicker:'LATE AUTUMN', title:'木々が色づく11月', subtitle:'紅葉の季節に、予定を整えよう。', symbol:'🍁', start:'#f9e5d3', end:'#efc4a6', ink:'#7b422b' },
-            { kicker:'WINTER LIGHTS', title:'冬の灯りがともる12月', subtitle:'一年の締めくくりも忘れずに。', symbol:'❄️', start:'#e9eff8', end:'#d2dced', ink:'#3f5573' }
+            { title:'お正月', art:'newyear', start:'#f8eee1', end:'#ead6bd', ink:'#76502e' },
+            { title:'バレンタイン', art:'valentine', start:'#fff0f4', end:'#f4d4df', ink:'#88485e' },
+            { title:'卒業・追いコン', art:'graduation', start:'#eef0fb', end:'#daddf1', ink:'#535a82' },
+            { title:'新歓', art:'welcome', start:'#fff0f4', end:'#f8dce7', ink:'#874b62' },
+            { title:'ゴールデンウィーク', art:'goldenweek', start:'#e7f5e8', end:'#ccebd5', ink:'#376849' },
+            { title:'梅雨', art:'rain', start:'#e7f0fa', end:'#ceddf0', ink:'#3e5f7d' },
+            { title:'七夕', art:'tanabata', start:'#e8edff', end:'#d2d9f3', ink:'#455784' },
+            { title:'夏祭り', art:'festival', start:'#fff0dd', end:'#f7d2ae', ink:'#7a4e2a' },
+            { title:'お月見', art:'moon', start:'#f4efd9', end:'#e5d9b4', ink:'#665a32' },
+            { title:'ハロウィン', art:'halloween', start:'#f5e7dc', end:'#e7c4a7', ink:'#744a2e' },
+            { title:'学園祭・秋ライブ', art:'autumnlive', start:'#f3e6d8', end:'#e6c9ac', ink:'#70492f' },
+            { title:'クリスマス', art:'christmas', start:'#e7f1ed', end:'#c9dfd6', ink:'#315f50' }
         ];
         function updateSeasonalCalendarHero(month) {
             const hero = document.getElementById('seasonalCalendarHero');
@@ -1044,10 +1057,8 @@
             hero.style.setProperty('--season-start', theme.start);
             hero.style.setProperty('--season-end', theme.end);
             hero.style.setProperty('--season-ink', theme.ink);
-            document.getElementById('seasonalCalendarKicker').textContent = theme.kicker;
             document.getElementById('seasonalCalendarTitle').textContent = theme.title;
-            document.getElementById('seasonalCalendarSubtitle').textContent = theme.subtitle;
-            document.getElementById('seasonalCalendarSymbol').textContent = theme.symbol;
+            document.getElementById('seasonalCalendarArtUse').setAttribute('href', `#calendar-art-${theme.art}`);
             if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
                 hero.classList.remove('refreshing');
                 void hero.offsetWidth;
