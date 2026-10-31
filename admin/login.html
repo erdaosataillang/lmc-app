@@ -48,6 +48,8 @@
                     <i class="fa-solid fa-spinner fa-spin text-blue-500 text-2xl"></i>
                     <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-2">Authenticating...</p>
                 </div>
+
+                <p id="login-error" class="hidden rounded-2xl bg-red-50 px-4 py-3 text-left text-xs font-bold leading-relaxed text-red-600"></p>
             </div>
 
             <div class="mt-10 pt-8 border-t border-gray-50">
@@ -69,55 +71,77 @@
         import { signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { signInFirebaseWithLine } from "/js/line-firebase-auth.js";
 
+        let redirecting = false;
+
         // URLパラメータからリダイレクト先を取得
         const getRedirectUrl = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const redirectPath = urlParams.get('redirect');
-            // パラメータがない、または不正な場合はデフォルトでダッシュボードへ
-            return redirectPath || "/admin/";
+            if (!redirectPath) return "/admin/";
+            try {
+                const target = new URL(redirectPath, window.location.origin);
+                if (target.origin !== window.location.origin || !target.pathname.startsWith('/admin/') || target.pathname === '/admin/login.html') {
+                    return "/admin/";
+                }
+                return `${target.pathname}${target.search}${target.hash}`;
+            } catch (_) {
+                return "/admin/";
+            }
+        };
+
+        const setLoginState = (loading, message = '') => {
+            const btn = document.getElementById('btn-login');
+            const spinner = document.getElementById('loading-spinner');
+            const error = document.getElementById('login-error');
+            btn.classList.toggle('hidden', loading);
+            spinner.classList.toggle('hidden', !loading);
+            error.textContent = message;
+            error.classList.toggle('hidden', !message);
+        };
+
+        const redirectToAdmin = () => {
+            if (redirecting) return;
+            redirecting = true;
+            window.location.replace(getRedirectUrl());
         };
 
         // すでにログインしている場合は自動リダイレクト
         onAuthStateChanged(auth, async (user) => {
             if (user && !user.isAnonymous) {
-                const tokenResult = await user.getIdTokenResult();
-                if (tokenResult.claims.line !== true) return;
-                if (tokenResult.claims.admin !== true) {
-                    document.getElementById('btn-login').classList.remove('hidden');
-                    document.getElementById('loading-spinner').classList.add('hidden');
-                    alert('このアカウントには管理権限がありません。');
-                    return;
+                try {
+                    const tokenResult = await user.getIdTokenResult();
+                    if (tokenResult.claims.line === true && tokenResult.claims.admin === true) {
+                        redirectToAdmin();
+                    }
+                } catch (error) {
+                    console.warn('Existing admin session could not be verified.', error);
                 }
-                const target = getRedirectUrl();
-                console.log(`Authenticated, redirecting to ${target}...`);
-                window.location.href = target;
             }
         });
 
         window.handleLineLogin = async () => {
-            const btn = document.getElementById('btn-login');
-            const spinner = document.getElementById('loading-spinner');
-
             try {
-                btn.classList.add('hidden');
-                spinner.classList.remove('hidden');
+                setLoginState(true);
 
                 // LIFF初期化
                 await liff.init({ liffId: LIFF_ID });
 
                 if (!liff.isLoggedIn()) {
                     // LINEログイン画面へ遷移
-                    liff.login();
+                    liff.login({ redirectUri: window.location.href });
+                    return;
                 } else {
                     // LINEログイン済みの場合はFirebase認証へ連携
                     const profile = await liff.getProfile();
-                    await signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId);
+                    await signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId, { requiredClaims: ['admin'] });
+                    redirectToAdmin();
                 }
             } catch (error) {
                 console.error("Login failed:", error);
-                alert("ログインに失敗しました。もう一度お試しください。");
-                btn.classList.remove('hidden');
-                spinner.classList.add('hidden');
+                const message = error?.code === 'auth/required-claim-missing'
+                    ? 'このLINEアカウントには管理権限がありません。'
+                    : 'ログインに失敗しました。もう一度お試しください。';
+                setLoginState(false, message);
             }
         };
 
