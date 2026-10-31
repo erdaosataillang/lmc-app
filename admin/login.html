@@ -67,9 +67,9 @@
 
     <!-- Logic -->
     <script type="module">
-        import { auth, LIFF_ID } from "/js/admin-common.js?v=20261031-2";
+        import { auth, LIFF_ID } from "/js/admin-common.js?v=20261031-3";
         import { signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { signInFirebaseWithLine } from "/js/line-firebase-auth.js?v=20261031-2";
+        import { signInFirebaseWithLine } from "/js/line-firebase-auth.js?v=20261031-3";
 
         let redirecting = false;
         let loginPromise = null;
@@ -109,16 +109,12 @@
 
         const initializeLiff = () => {
             if (!liffInitPromise) {
-                liffInitPromise = liff.init({ liffId: LIFF_ID });
+                liffInitPromise = liff.init({
+                    liffId: LIFF_ID,
+                    withLoginOnExternalBrowser: true
+                });
             }
             return liffInitPromise;
-        };
-
-        const getLineLoginReturnUrl = () => {
-            const returnUrl = new URL('/admin/login.html', window.location.origin);
-            const redirect = new URLSearchParams(window.location.search).get('redirect');
-            if (redirect) returnUrl.searchParams.set('redirect', redirect);
-            return returnUrl.href;
         };
 
         const withTimeout = (promise, milliseconds) => Promise.race([
@@ -144,14 +140,14 @@
             if (loginPromise) return loginPromise;
             loginPromise = (async () => {
                 setLoginState(true);
+                sessionStorage.setItem('lmc_admin_auth_pending', 'true');
+                sessionStorage.setItem('lmc_admin_redirect', getRedirectUrl());
 
-                // 初期化はページ内で一度だけ実行する。外部ブラウザではLINEログイン後に同じページへ戻る。
+                // 管理用LIFFの登録済みエンドポイント /admin へ戻り、そこでFirebase認証を完了する。
                 await withTimeout(initializeLiff(), 15000);
 
                 if (!liff.isLoggedIn()) {
-                    if (liff.isInClient()) throw new Error('LINE login did not complete');
-                    liff.login({ redirectUri: getLineLoginReturnUrl() });
-                    return;
+                    throw new Error('LINE login did not complete');
                 }
 
                 const profile = await liff.getProfile();
@@ -180,6 +176,15 @@
             try {
                 if (typeof auth.authStateReady === 'function') await auth.authStateReady();
                 if (redirecting) return;
+                const authError = new URLSearchParams(window.location.search).get('authError');
+                if (authError) {
+                    sessionStorage.removeItem('lmc_admin_auth_pending');
+                    const message = authError === 'permission'
+                        ? 'このLINEアカウントには管理権限がありません。'
+                        : 'LINE認証を完了できませんでした。もう一度お試しください。';
+                    setLoginState(false, message);
+                    return;
+                }
                 await authenticateWithLine();
             } catch (_) {
                 // authenticateWithLine側で再試行できる状態とメッセージを表示する。

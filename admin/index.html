@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- LIFF SDK: 管理ログインの戻り先 /admin で認証を完了する -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
     <style>
@@ -143,8 +145,10 @@
 
     <!-- Logic -->
     <script type="module">
-        import { initAdminPage, db } from "/js/admin-common.js";
+        import { initAdminPage, db, auth, LIFF_ID } from "/js/admin-common.js?v=20261031-3";
+        import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { signInFirebaseWithLine } from "/js/line-firebase-auth.js?v=20261031-3";
 
         // 安全装置: 5秒経っても初期化が終わらなければ強制解除
         const safetyTimer = setTimeout(() => {
@@ -152,9 +156,8 @@
             if (loader) loader.remove();
         }, 5000);
 
-        initAdminPage('dashboard', (user) => {
+        const startDashboard = () => initAdminPage('dashboard', (user) => {
             clearTimeout(safetyTimer);
-            console.log("Admin Dashboard Loaded.");
 
             // 各統計データのリアルタイム監視
             // 1. バンド数
@@ -178,6 +181,44 @@
                 document.getElementById('stat-user-count').innerText = snapshot.size;
             }, (err) => console.error("User stat error:", err));
         });
+
+        const completePendingLineLogin = async () => {
+            if (sessionStorage.getItem('lmc_admin_auth_pending') !== 'true') return false;
+
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) throw new Error('LINE login did not complete');
+
+                const profile = await liff.getProfile();
+                await signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId, {
+                    requiredClaims: ['admin'],
+                    forceReauthentication: true
+                });
+
+                sessionStorage.removeItem('lmc_admin_auth_pending');
+                const target = sessionStorage.getItem('lmc_admin_redirect') || '/admin/';
+                sessionStorage.removeItem('lmc_admin_redirect');
+
+                if (target !== '/admin/' && target.startsWith('/admin/')) {
+                    window.location.replace(target);
+                    return true;
+                }
+                window.history.replaceState(null, '', '/admin/');
+                return false;
+            } catch (error) {
+                console.error('Admin LINE callback failed:', error);
+                sessionStorage.removeItem('lmc_admin_auth_pending');
+                const reason = error?.code === 'auth/required-claim-missing' ? 'permission' : 'failed';
+                window.location.replace(`/admin/login.html?authError=${reason}`);
+                return true;
+            }
+        };
+
+        (async () => {
+            if (typeof auth.authStateReady === 'function') await auth.authStateReady();
+            if (await completePendingLineLogin()) return;
+            startDashboard();
+        })();
     </script>
 </body>
 </html>
