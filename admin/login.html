@@ -109,12 +109,16 @@
 
         const initializeLiff = () => {
             if (!liffInitPromise) {
-                liffInitPromise = liff.init({
-                    liffId: LIFF_ID,
-                    withLoginOnExternalBrowser: true
-                });
+                liffInitPromise = liff.init({ liffId: LIFF_ID });
             }
             return liffInitPromise;
+        };
+
+        const getLineLoginReturnUrl = () => {
+            const returnUrl = new URL('/admin/login.html', window.location.origin);
+            const redirect = new URLSearchParams(window.location.search).get('redirect');
+            if (redirect) returnUrl.searchParams.set('redirect', redirect);
+            return returnUrl.href;
         };
 
         const withTimeout = (promise, milliseconds) => Promise.race([
@@ -145,7 +149,9 @@
                 await withTimeout(initializeLiff(), 15000);
 
                 if (!liff.isLoggedIn()) {
-                    throw new Error('LINE login did not complete');
+                    if (liff.isInClient()) throw new Error('LINE login did not complete');
+                    liff.login({ redirectUri: getLineLoginReturnUrl() });
+                    return;
                 }
 
                 const profile = await liff.getProfile();
