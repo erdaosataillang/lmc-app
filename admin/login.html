@@ -67,11 +67,13 @@
 
     <!-- Logic -->
     <script type="module">
-        import { auth, LIFF_ID } from "/js/admin-common.js";
+        import { auth, LIFF_ID } from "/js/admin-common.js?v=20261031-2";
         import { signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { signInFirebaseWithLine } from "/js/line-firebase-auth.js";
+        import { signInFirebaseWithLine } from "/js/line-firebase-auth.js?v=20261031-2";
 
         let redirecting = false;
+        let loginPromise = null;
+        let liffInitPromise = null;
 
         // URLパラメータからリダイレクト先を取得
         const getRedirectUrl = () => {
@@ -105,6 +107,21 @@
             window.location.replace(getRedirectUrl());
         };
 
+        const initializeLiff = () => {
+            if (!liffInitPromise) {
+                liffInitPromise = liff.init({
+                    liffId: LIFF_ID,
+                    withLoginOnExternalBrowser: true
+                });
+            }
+            return liffInitPromise;
+        };
+
+        const withTimeout = (promise, milliseconds) => Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('LINE initialization timed out')), milliseconds))
+        ]);
+
         // すでにログインしている場合は自動リダイレクト
         onAuthStateChanged(auth, async (user) => {
             if (user && !user.isAnonymous) {
@@ -119,41 +136,47 @@
             }
         });
 
-        window.handleLineLogin = async () => {
-            try {
+        const authenticateWithLine = async () => {
+            if (loginPromise) return loginPromise;
+            loginPromise = (async () => {
                 setLoginState(true);
 
-                // LIFF初期化
-                await liff.init({ liffId: LIFF_ID });
+                // 初期化はページ内で一度だけ実行する。外部ブラウザではLINEログイン後に同じページへ戻る。
+                await withTimeout(initializeLiff(), 15000);
 
                 if (!liff.isLoggedIn()) {
-                    // LINEログイン画面へ遷移
-                    liff.login({ redirectUri: window.location.href });
-                    return;
-                } else {
-                    // LINEログイン済みの場合はFirebase認証へ連携
-                    const profile = await liff.getProfile();
-                    await signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId, { requiredClaims: ['admin'] });
-                    redirectToAdmin();
+                    throw new Error('LINE login did not complete');
                 }
-            } catch (error) {
+
+                const profile = await liff.getProfile();
+                await signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId, {
+                    requiredClaims: ['admin'],
+                    forceReauthentication: true
+                });
+                redirectToAdmin();
+            })().catch(error => {
                 console.error("Login failed:", error);
                 const message = error?.code === 'auth/required-claim-missing'
                     ? 'このLINEアカウントには管理権限がありません。'
-                    : 'ログインに失敗しました。もう一度お試しください。';
+                    : 'LINE認証を完了できませんでした。もう一度お試しください。';
                 setLoginState(false, message);
-            }
+                throw error;
+            }).finally(() => {
+                loginPromise = null;
+            });
+            return loginPromise;
         };
 
-        // 自動チェック (既にLINEログイン済みの場合の処理)
+        window.handleLineLogin = () => authenticateWithLine().catch(() => {});
+
+        // Firebaseの既存セッションを先に確認し、必要な場合だけLIFFを開始する。
         window.addEventListener('load', async () => {
             try {
-                await liff.init({ liffId: LIFF_ID });
-                if (liff.isLoggedIn()) {
-                    window.handleLineLogin();
-                }
-            } catch (e) {
-                console.log("LIFF Init background check skipped.");
+                if (typeof auth.authStateReady === 'function') await auth.authStateReady();
+                if (redirecting) return;
+                await authenticateWithLine();
+            } catch (_) {
+                // authenticateWithLine側で再試行できる状態とメッセージを表示する。
             }
         });
     </script>

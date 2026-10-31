@@ -11,9 +11,10 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
     const requiredClaims = Array.isArray(options.requiredClaims)
         ? options.requiredClaims.filter(claim => typeof claim === "string" && claim)
         : [];
+    const forceReauthentication = options.forceReauthentication === true;
 
     const existingUser = auth.currentUser;
-    if (existingUser && !existingUser.isAnonymous && existingUser.uid === lineUserId) {
+    if (!forceReauthentication && existingUser && !existingUser.isAnonymous && existingUser.uid === lineUserId) {
         try {
             // 管理画面など権限が必要な入口では、変更後のクレームを必ず取り直す。
             const tokenResult = await existingUser.getIdTokenResult(requiredClaims.length > 0);

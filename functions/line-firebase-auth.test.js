@@ -66,3 +66,33 @@ test("最新の管理者セッションは再認証せずに利用する", async
   assert.equal(result, user);
   assert.equal(signInCalled, false);
 });
+
+test("管理ログインを強制した場合は既存セッションを使わず再認証する", async () => {
+  let refreshCalled = false;
+  const existingUser = {
+    uid: "line-user",
+    isAnonymous: false,
+    getIdTokenResult: async () => {
+      refreshCalled = true;
+      return {claims: {line: true, registered: true, admin: true}};
+    },
+  };
+  const signedInUser = {
+    uid: "line-user",
+    getIdTokenResult: async () => ({claims: {line: true, registered: true, admin: true}}),
+  };
+  const auth = {currentUser: existingUser, authStateReady: async () => {}};
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ok: true, json: async () => ({customToken: "fresh-token"})});
+  try {
+    const helper = loadHelper({getIDToken: () => "id-token", getAccessToken: () => "access-token"});
+    const result = await helper(auth, async () => ({user: signedInUser}), "line-user", {
+      requiredClaims: ["admin"],
+      forceReauthentication: true,
+    });
+    assert.equal(result, signedInUser);
+    assert.equal(refreshCalled, false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
