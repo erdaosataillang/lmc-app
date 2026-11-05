@@ -68,8 +68,66 @@
     height: 100%;
 }
 
+.lmc-mascot-state {
+    display: flex;
+    min-height: 180px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 32px 20px;
+    color: #64748b;
+    text-align: center;
+}
+
+.lmc-mascot-state--compact {
+    min-height: 142px;
+    padding: 20px 14px;
+}
+
+.lmc-mascot-image {
+    display: block;
+    width: 150px;
+    max-width: 48vw;
+    height: auto;
+    margin: -20px 0 -12px;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 18px rgba(79, 70, 229, .13));
+    transform-origin: 50% 72%;
+    animation: lmcMascotBreathe 3.6s ease-in-out infinite;
+}
+
+.lmc-mascot-state--compact .lmc-mascot-image {
+    width: 116px;
+    margin: -18px 0 -13px;
+}
+
+.lmc-mascot-title {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.5;
+}
+
+.lmc-mascot-note {
+    max-width: 280px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+@keyframes lmcMascotBreathe {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-4px) scale(1.018); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .lmc-wave-loader {
         opacity: .88;
+    }
+
+    .lmc-mascot-image {
+        animation: none;
     }
 }

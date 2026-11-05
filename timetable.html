@@ -322,7 +322,7 @@
             }
             const posts = uniqueBandEntries();
             if (!posts.length) {
-                container.innerHTML = '<div class="state"><span class="material-icons" style="font-size:46px; color:#c7c7cc;">forum</span><br>出演バンドはまだありません</div>';
+                container.innerHTML = '<div class="state lmc-mascot-state"><img class="lmc-mascot-image" src="/assets/mascot/lmc-cat.png" alt=""><div class="lmc-mascot-title">出演バンドはまだありません</div><div class="lmc-mascot-note">公開されると、ここにタイムラインが表示されます</div></div>';
                 return;
             }
             container.innerHTML = `<div class="timeline-feed">${posts.map(entry => {
@@ -488,7 +488,7 @@
             });
             const container = document.getElementById('scheduleList');
             if (dayEntries.length === 0) {
-                container.innerHTML = '<div class="state"><span class="material-icons" style="font-size:46px; color:#c7c7cc;">event_busy</span><br>出演予定はありません</div>';
+                container.innerHTML = '<div class="state lmc-mascot-state"><img class="lmc-mascot-image" src="/assets/mascot/lmc-cat.png" alt=""><div class="lmc-mascot-title">出演予定はありません</div><div class="lmc-mascot-note">別の日付も確認してみてください</div></div>';
                 return;
             }
             container.innerHTML = dayEntries.map((entry, index) => {
