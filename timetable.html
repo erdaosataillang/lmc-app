@@ -11,7 +11,6 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="/css/lmc-loader.css?v=20261105-6">
     <script defer src="/js/lmc-cat.js?v=20261105-2"></script>
-    <script defer src="/js/lmc-loader-transition.js"></script>
     <style>
         html { width:100%; height:100%; overflow:hidden; overscroll-behavior:none; }
         body { margin:0; width:100%; height:100vh; height:100dvh; overflow:hidden; background:#f1f4f9; color:#1f1f1f; font-family:'Roboto','Noto Sans JP',sans-serif; }
@@ -46,6 +45,10 @@
         .band-sub { font-size:11px; color:#8e8e93; margin-top:4px; }
         .mine { font-size:10px; color:#137333; background:#e6f4ea; padding:4px 8px; border-radius:999px; font-weight:700; }
         .state { text-align:center; padding:64px 20px; color:#8e8e93; font-size:14px; line-height:1.6; }
+        .schedule-list { min-height:180px; transform:translateZ(0); backface-visibility:hidden; }
+        .quiet-loading-state { min-height:180px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; color:#778198; font-size:12px; }
+        .quiet-loading-icon { width:44px; height:44px; display:grid; place-items:center; border-radius:15px; background:#e8f0fe; color:#5475a4; font-size:22px; }
+        #bandProfileBody { min-height:180px; transform:translateZ(0); backface-visibility:hidden; }
         .bottom-nav { position:fixed; bottom:0; left:0; width:100%; box-sizing:border-box; background:rgba(255,255,255,.88); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border-top:1px solid rgba(224,227,231,.7); display:flex; justify-content:space-around; padding:8px 0 calc(8px + env(safe-area-inset-bottom, 0px)); z-index:2000; transform:translateZ(0); }
         .nav-item { display:flex; flex-direction:column; align-items:center; flex:1; gap:4px; color:#5f6368; font-size:9px; font-weight:600; cursor:pointer; }
         .nav-icon { font-size:22px; padding:4px 10px; border-radius:16px; }
@@ -105,7 +108,7 @@
         </header>
         <section class="content">
             <div class="day-tabs" id="dayTabs"></div>
-            <div id="scheduleList"><div class="state lmc-loading-state" role="status"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>タイムテーブルを読み込み中...</span></div></div>
+            <div id="scheduleList" class="schedule-list" aria-live="polite"></div>
         </section>
     </main>
     <div id="nav-container"></div>
@@ -166,12 +169,48 @@
         localStorage.removeItem('lmc_all_users_cache');
         let allUsersCache = readCachedJson('lmc_public_profiles_cache_v2', []);
         let editingBandCopyId = null;
+        let scheduleContentToken = 0;
+        let profileContentToken = 0;
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-        window.closeModal = id => document.getElementById(id)?.classList.remove('open');
+        window.closeModal = id => {
+            document.getElementById(id)?.classList.remove('open');
+            if (id === 'modal-band-profile') profileContentToken++;
+        };
 
         function readCachedJson(key, fallback) {
             try { return JSON.parse(localStorage.getItem(key) || '') || fallback; }
             catch (_) { return fallback; }
+        }
+
+        function quietLoadingMarkup(label) {
+            return `<div class="quiet-loading-state" role="status"><span class="material-icons quiet-loading-icon">view_timeline</span><span>${escapeHtml(label)}</span></div>`;
+        }
+
+        function revealUpdatedContent(element) {
+            if (!element || reduceMotion.matches || typeof element.animate !== 'function') return;
+            element.getAnimations().forEach(animation => animation.cancel());
+            const animation = element.animate([
+                {opacity:.55, transform:'translate3d(0,3px,0)'},
+                {opacity:1, transform:'translate3d(0,0,0)'}
+            ], {duration:170, easing:'cubic-bezier(.2,.8,.2,1)', fill:'both'});
+            animation.finished.then(() => animation.cancel()).catch(() => {});
+        }
+
+        function setScheduleContent(html, token = scheduleContentToken, animate = true) {
+            if (token !== scheduleContentToken) return false;
+            const container = document.getElementById('scheduleList');
+            container.innerHTML = html;
+            if (animate) revealUpdatedContent(container);
+            return true;
+        }
+
+        function setBandProfileContent(html, token = profileContentToken, animate = true) {
+            if (token !== profileContentToken) return false;
+            const container = document.getElementById('bandProfileBody');
+            container.innerHTML = html;
+            if (animate) revealUpdatedContent(container);
+            return true;
         }
 
         function getCachedMyBookings() {
@@ -314,19 +353,20 @@
             return `<div class="member-stack">${avatars || '<span class="member-stack-placeholder"><span class="material-icons" style="font-size:16px;">group</span></span>'}<span class="member-stack-label">${count ? `${count}人のメンバー` : 'メンバーを見る'}</span></div>`;
         }
 
-        async function renderTimeline() {
-            const container = document.getElementById('scheduleList');
+        async function renderTimeline(token = ++scheduleContentToken) {
+            let delayedPlaceholder = null;
             if (!timelineBandsLoaded) {
-                container.innerHTML = '<div class="state lmc-loading-state" role="status"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>タイムラインを読み込み中...</span></div>';
+                delayedPlaceholder = setTimeout(() => setScheduleContent(quietLoadingMarkup('タイムラインを確認しています'), token, false), 220);
                 await loadTimelineBands();
-                if (viewMode !== 'timeline') return;
+                clearTimeout(delayedPlaceholder);
+                if (token !== scheduleContentToken || viewMode !== 'timeline') return;
             }
             const posts = uniqueBandEntries();
             if (!posts.length) {
-                container.innerHTML = '<div class="state lmc-mascot-state"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">出演バンドはまだありません</div><div class="lmc-mascot-note">公開されると、ここにタイムラインが表示されます</div></div>';
+                setScheduleContent('<div class="state lmc-mascot-state"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">出演バンドはまだありません</div><div class="lmc-mascot-note">公開されると、ここにタイムラインが表示されます</div></div>', token);
                 return;
             }
-            container.innerHTML = `<div class="timeline-feed">${posts.map(entry => {
+            setScheduleContent(`<div class="timeline-feed">${posts.map(entry => {
                 const band = bandProfiles.get(entry.bandId) || entry;
                 const icon = safeImageUrl(band.icon || entry.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
                 const likes = Array.isArray(band.likes) ? band.likes : [];
@@ -347,7 +387,7 @@
                         </div>
                     </div>
                 </article>`;
-            }).join('')}</div>`;
+            }).join('')}</div>`, token);
         }
 
         async function getBandMembers(band) {
@@ -364,7 +404,7 @@
             return ids.map((id, index) => allUsersCache.find(user => user.id === id) || {id, name:band.memberNames?.[index] || 'メンバー'});
         }
 
-        function renderBandProfile(band, members) {
+        function renderBandProfile(band, members, token = profileContentToken) {
             const icon = safeImageUrl(band.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg';
             const cover = safeImageUrl(band.headerImage || band.coverImage);
             document.getElementById('bandProfileCover').style.background = cover ? `url(${cover}) center/cover` : 'linear-gradient(135deg,#dbeafe,#c4b5fd)';
@@ -372,7 +412,7 @@
             const liked = !!currentUser && likes.includes(currentUser);
             const editable = canEditBandCopy(band);
             const songs = Array.isArray(band.songs) ? band.songs.map(song => typeof song === 'string' ? song : song?.title).filter(Boolean) : [];
-            document.getElementById('bandProfileBody').innerHTML = `
+            setBandProfileContent(`
                 <img class="band-profile-icon" src="${icon}" alt="">
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-top:7px;">
                     <div style="min-width:0;"><div style="font-size:21px; font-weight:850; overflow-wrap:anywhere;">${escapeHtml(band.name || '名称未設定')}</div><div style="font-size:13px; color:#536471; margin-top:3px;">@LMC_BAND</div></div>
@@ -381,20 +421,25 @@
                 <div style="font-size:14px; line-height:1.65; margin-top:14px; white-space:pre-wrap;">${escapeHtml(bandDescription(band))}</div>
                 <div class="band-stat-row"><div class="band-stat"><strong>${members.length}</strong><span>メンバー</span></div><div class="band-stat"><strong>${songs.length}</strong><span>登録曲</span></div><div class="band-stat"><strong>${likes.length}</strong><span>いいね</span></div></div>
                 <div class="profile-section-title">バンドメンバー</div>
-                <div>${members.length ? members.map(member => `<div class="member-detail-row"><img src="${safeImageUrl(member.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" alt=""><div style="min-width:0;"><div style="font-size:15px; font-weight:800;">${escapeHtml(member.name || 'メンバー')}</div><div style="font-size:12px; color:#536471; margin-top:3px;">${escapeHtml([member.grade, member.part, member.job].filter(Boolean).join(' · ') || 'LMCメンバー')}</div></div></div>`).join('') : '<div style="padding:18px 0; color:#8e8e93; font-size:13px;">メンバー情報はまだ登録されていません。</div>'}</div>`;
+                <div>${members.length ? members.map(member => `<div class="member-detail-row"><img src="${safeImageUrl(member.icon) || 'https://ul.h3z.jp/Vnukmtvq.jpg'}" alt=""><div style="min-width:0;"><div style="font-size:15px; font-weight:800;">${escapeHtml(member.name || 'メンバー')}</div><div style="font-size:12px; color:#536471; margin-top:3px;">${escapeHtml([member.grade, member.part, member.job].filter(Boolean).join(' · ') || 'LMCメンバー')}</div></div></div>`).join('') : '<div style="padding:18px 0; color:#8e8e93; font-size:13px;">メンバー情報はまだ登録されていません。</div>'}</div>`, token);
         }
 
         window.openBandProfile = async bandId => {
-            document.getElementById('bandProfileBody').innerHTML = '<div class="state lmc-loading-state" role="status"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>プロフィールを読み込み中...</span></div>';
+            const token = ++profileContentToken;
+            document.getElementById('bandProfileBody').innerHTML = '';
+            const delayedPlaceholder = setTimeout(() => setBandProfileContent(quietLoadingMarkup('プロフィールを確認しています'), token, false), 220);
             document.getElementById('modal-band-profile').classList.add('open');
             if (!bandProfiles.has(bandId)) {
                 try { const snapshot = await getDoc(doc(db,'bands',bandId)); if (snapshot.exists()) bandProfiles.set(bandId,{id:snapshot.id,...snapshot.data()}); }
                 catch (_) {}
             }
             await ensureLiffUser(false);
+            if (token !== profileContentToken || !document.getElementById('modal-band-profile').classList.contains('open')) return;
             const band = bandProfiles.get(bandId) || uniqueBandEntries().find(entry => entry.bandId === bandId) || {id:bandId};
             const members = await getBandMembers(band);
-            renderBandProfile(band, members);
+            clearTimeout(delayedPlaceholder);
+            if (token !== profileContentToken) return;
+            renderBandProfile(band, members, token);
         };
 
         window.openBandCopyEditor = async bandId => {
@@ -465,6 +510,7 @@
         };
 
         function renderSchedule() {
+            const token = ++scheduleContentToken;
             const dates = [...new Set(entries.map(entry => entry.date).filter(Boolean))].sort();
             if (!selectedDate || !dates.includes(selectedDate)) selectedDate = dates[0] || '';
             document.getElementById('dayTabs').innerHTML = dates.map(date =>
@@ -476,7 +522,7 @@
             document.getElementById('timelineTab').onclick = () => { viewMode = 'timeline'; renderSchedule(); };
 
             if (viewMode === 'timeline') {
-                renderTimeline();
+                renderTimeline(token);
                 return;
             }
 
@@ -487,12 +533,11 @@
                 if (b.time) return 1;
                 return (a.order || 0) - (b.order || 0);
             });
-            const container = document.getElementById('scheduleList');
             if (dayEntries.length === 0) {
-                container.innerHTML = '<div class="state lmc-mascot-state"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">出演予定はありません</div><div class="lmc-mascot-note">別の日付も確認してみてください</div></div>';
+                setScheduleContent('<div class="state lmc-mascot-state"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">出演予定はありません</div><div class="lmc-mascot-note">別の日付も確認してみてください</div></div>', token);
                 return;
             }
-            container.innerHTML = dayEntries.map((entry, index) => {
+            setScheduleContent(dayEntries.map((entry, index) => {
                 const iconUrl = safeImageUrl(entry.icon);
                 return `
                 <article class="schedule-card" onclick="openBandProfile('${escapeHtml(entry.bandId || '')}')" style="cursor:pointer;">
@@ -504,12 +549,14 @@
                     </div>
                     <span class="material-icons" style="color:#c7c7cc;">chevron_right</span>
                 </article>`;
-            }).join('');
+            }).join(''), token);
         }
 
         async function main() {
             renderNav();
             updateHeader();
+            const token = ++scheduleContentToken;
+            const initialLoadingTimer = setTimeout(() => setScheduleContent(quietLoadingMarkup('タイムテーブルを確認しています'), token, false), 220);
             try {
                 const lineUserId = await ensureLiffUser(true);
                 if (!lineUserId) return;
@@ -519,30 +566,33 @@
                 if (!activeEventId) {
                     document.getElementById('eventName').innerText = '次のイベントは未設定です';
                     document.getElementById('dayTabs').innerHTML = '';
-                    document.getElementById('scheduleList').innerHTML = '<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">event_busy</span><br><strong style="color:#3c4043;">次のイベントはまだ設定されていません</strong><br><span style="font-size:12px;">イベントが公開されると、ここにタイムテーブルが表示されます。</span></div>';
+                    setScheduleContent('<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">event_busy</span><br><strong style="color:#3c4043;">次のイベントはまだ設定されていません</strong><br><span style="font-size:12px;">イベントが公開されると、ここにタイムテーブルが表示されます。</span></div>', token);
                     return;
                 }
                 const eventSnapshot = await getDoc(doc(db, 'events', activeEventId));
                 if (!eventSnapshot.exists()) {
                     document.getElementById('eventName').innerText = 'イベントを確認できません';
                     document.getElementById('dayTabs').innerHTML = '';
-                    document.getElementById('scheduleList').innerHTML = '<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">event_busy</span><br>設定されたイベントが見つかりません。<br><span style="font-size:12px;">管理者による設定をお待ちください。</span></div>';
+                    setScheduleContent('<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">event_busy</span><br>設定されたイベントが見つかりません。<br><span style="font-size:12px;">管理者による設定をお待ちください。</span></div>', token);
                     return;
                 }
                 const eventData = eventSnapshot.data();
                 document.getElementById('eventName').innerText = eventData.event || eventData.name || '現在のイベント';
                 const timetable = eventData.timetable || {};
                 if (timetable.published !== true) {
-                    document.getElementById('scheduleList').innerHTML = '<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">construction</span><br>タイムテーブルは準備中です</div>';
+                    setScheduleContent('<div class="state"><span class="material-icons" style="font-size:48px; color:#c7c7cc;">construction</span><br>タイムテーブルは準備中です</div>', token);
                     return;
                 }
                 entries = Array.isArray(timetable.entries) ? timetable.entries : [];
                 showTimes = timetable.showTimes !== false;
+                clearTimeout(initialLoadingTimer);
                 renderSchedule();
             } catch (error) {
                 console.error('Timetable load failed:', error);
                 document.getElementById('eventName').innerText = 'タイムテーブル';
-                document.getElementById('scheduleList').innerHTML = '<div class="state">タイムテーブルを読み込めませんでした<br><button class="day-tab" style="margin-top:14px;" onclick="location.reload()">再読み込み</button></div>';
+                setScheduleContent('<div class="state">タイムテーブルを読み込めませんでした<br><button class="day-tab" style="margin-top:14px;" onclick="location.reload()">再読み込み</button></div>', token);
+            } finally {
+                clearTimeout(initialLoadingTimer);
             }
         }
         main();
