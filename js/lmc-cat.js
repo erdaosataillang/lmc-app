@@ -7,60 +7,62 @@
             this.dataset.ready = 'true';
             this.setAttribute('aria-hidden', 'true');
             this.innerHTML = `
-                <svg class="lmc-vector-cat__svg" viewBox="0 0 120 100" focusable="false" aria-hidden="true">
+                <svg class="lmc-vector-cat__svg" viewBox="0 0 150 110" focusable="false" aria-hidden="true">
                     <defs>
-                        <linearGradient id="lmcCatBodyGradient" x1="24" y1="24" x2="101" y2="88" gradientUnits="userSpaceOnUse">
-                            <stop offset="0" stop-color="#5b86ff"/>
-                            <stop offset=".58" stop-color="#4f5ee9"/>
+                        <linearGradient id="lmcCatBodyGradient" x1="32" y1="22" x2="126" y2="103" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#5f8cff"/>
+                            <stop offset=".56" stop-color="#5364ed"/>
                             <stop offset="1" stop-color="#4338ca"/>
                         </linearGradient>
-                        <linearGradient id="lmcCatTailGradient" x1="8" y1="20" x2="38" y2="78" gradientUnits="userSpaceOnUse">
-                            <stop offset="0" stop-color="#8b5cf6"/>
+                        <linearGradient id="lmcCatTailGradient" x1="13" y1="18" x2="49" y2="91" gradientUnits="userSpaceOnUse">
+                            <stop offset="0" stop-color="#9167f7"/>
                             <stop offset="1" stop-color="#3730a3"/>
                         </linearGradient>
                     </defs>
 
-                    <g class="lmc-vector-cat__tail">
-                        <path d="M39 76C19 82 7 68 12 51C15 41 21 36 15 27" fill="none" stroke="url(#lmcCatTailGradient)" stroke-width="9" stroke-linecap="round"/>
-                        <rect x="10.7" y="12" width="5.5" height="18" rx="2.75" fill="#8b5cf6"/>
-                        <path d="M13 12C19 10 23 12 24 16C20 15 17 16 14 19Z" fill="#8b5cf6"/>
-                        <ellipse cx="9.5" cy="28.5" rx="7.5" ry="6" transform="rotate(-18 9.5 28.5)" fill="#8b5cf6"/>
-                        <path d="M14 38L20 41" stroke="#c4b5fd" stroke-width="3.2" stroke-linecap="round"/>
-                    </g>
-
-                    <g class="lmc-vector-cat__body">
-                        <path d="M36 32L43 8C44 4 48 4 51 8L63 25C69 23 75 23 81 25C86 14 98 12 108 20C103 24 104 30 109 37C107 38 105 39 102 40C108 53 108 69 101 80C95 90 85 94 73 94H45C28 94 18 84 18 68C18 51 25 39 36 32Z" fill="url(#lmcCatBodyGradient)"/>
-
-                        <path d="M40 29L45.5 13L56 27Z" fill="#d8b4fe"/>
-                        <g class="lmc-vector-cat__ear-fold">
-                            <path d="M82 25C87 15 98 15 106 20C99 23 97 27 101 36Z" fill="#312e81"/>
-                            <path d="M91 24C95 21 99 21 103 22C100 25 100 28 102 31Z" fill="#d8b4fe"/>
+                    <g class="lmc-vector-cat__wander">
+                        <g class="lmc-vector-cat__tail">
+                            <path d="M49 88C25 96 11 79 17 59C21 46 27 40 20 29" fill="none" stroke="url(#lmcCatTailGradient)" stroke-width="10" stroke-linecap="round"/>
+                            <rect x="15.5" y="10" width="6" height="21" rx="3" fill="#9167f7"/>
+                            <path d="M18 10C25 8 30 11 30 16C26 14 22 16 19 20Z" fill="#9167f7"/>
+                            <ellipse cx="14" cy="30" rx="8.5" ry="6.5" transform="rotate(-18 14 30)" fill="#9167f7"/>
+                            <path d="M19 43L26 46" stroke="#d8b4fe" stroke-width="3.6" stroke-linecap="round"/>
                         </g>
 
-                        <path d="M19 59C23 50 31 46 39 47C44 59 44 75 39 89C26 86 19 79 18 68C18 65 18 62 19 59Z" fill="#3730a3" opacity=".82"/>
+                        <g class="lmc-vector-cat__body">
+                            <path d="M47 36L54 9C55 4 60 4 63 9L76 27C83 24 90 24 96 27C102 14 118 13 130 23C124 28 126 35 132 42C129 44 126 45 123 45C132 60 132 79 122 92C114 102 102 105 87 105H58C37 105 24 94 24 75C24 56 32 43 47 36Z" fill="url(#lmcCatBodyGradient)"/>
 
-                        <g class="lmc-vector-cat__face">
-                            <rect class="lmc-vector-cat__eye lmc-vector-cat__eye--left" x="47" y="40" width="7" height="17" rx="3.5" fill="#fff"/>
-                            <rect class="lmc-vector-cat__eye lmc-vector-cat__eye--right" x="77" y="40" width="7" height="17" rx="3.5" fill="#fff"/>
-                            <path d="M61 53C64 59 70 59 73 53" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
-                            <path d="M35 51L44 49M34 57L43 56M88 49L97 51M89 56L98 58" stroke="#d8b4fe" stroke-width="3.2" stroke-linecap="round"/>
-                        </g>
+                            <path d="M51 32L57 14L69 30Z" fill="#d8b4fe"/>
+                            <g class="lmc-vector-cat__ear-fold">
+                                <path d="M97 27C104 15 118 16 128 23C120 26 119 32 124 41Z" fill="#312e81"/>
+                                <path d="M108 25C113 22 119 22 124 24C120 27 120 31 123 34Z" fill="#d8b4fe"/>
+                            </g>
 
-                        <g class="lmc-vector-cat__wave">
-                            <rect class="lmc-vector-cat__wave-bar" x="57" y="67" width="5" height="11" rx="2.5" fill="#fbbf6a"/>
-                            <rect class="lmc-vector-cat__wave-bar" x="65" y="62" width="5" height="20" rx="2.5" fill="#fbbf6a"/>
-                            <rect class="lmc-vector-cat__wave-bar" x="73" y="67" width="5" height="11" rx="2.5" fill="#fbbf6a"/>
-                        </g>
+                            <path d="M25 65C29 53 38 49 48 50C54 65 53 84 47 100C32 96 24 87 24 75C24 71 24 68 25 65Z" fill="#3730a3" opacity=".84"/>
 
-                        <path d="M38 86C44 77 53 76 61 82C68 75 79 77 86 86L88 94H36Z" fill="#c4b5fd" opacity=".9"/>
+                            <g class="lmc-vector-cat__face">
+                                <rect class="lmc-vector-cat__eye lmc-vector-cat__eye--left" x="62" y="43" width="8" height="19" rx="4" fill="#fff"/>
+                                <rect class="lmc-vector-cat__eye lmc-vector-cat__eye--right" x="94" y="43" width="8" height="19" rx="4" fill="#fff"/>
+                                <path d="M77 57C81 64 87 64 91 57" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+                                <path d="M47 55L57 53M46 62L56 61M106 53L116 55M107 61L117 63" stroke="#d8b4fe" stroke-width="3.6" stroke-linecap="round"/>
+                            </g>
 
-                        <g class="lmc-vector-cat__paw lmc-vector-cat__paw--left">
-                            <ellipse cx="44" cy="89" rx="13" ry="8" fill="#818cf8"/>
-                            <path d="M44 87V94M50 87V94" stroke="#4338ca" stroke-width="2.5" stroke-linecap="round"/>
-                        </g>
-                        <g class="lmc-vector-cat__paw lmc-vector-cat__paw--right">
-                            <ellipse cx="82" cy="89" rx="13" ry="8" fill="#818cf8"/>
-                            <path d="M80 87V94M86 87V94" stroke="#4338ca" stroke-width="2.5" stroke-linecap="round"/>
+                            <g class="lmc-vector-cat__wave">
+                                <rect class="lmc-vector-cat__wave-bar" x="72" y="73" width="5.5" height="12" rx="2.75" fill="#fbbf6a"/>
+                                <rect class="lmc-vector-cat__wave-bar" x="81" y="67" width="5.5" height="23" rx="2.75" fill="#fbbf6a"/>
+                                <rect class="lmc-vector-cat__wave-bar" x="90" y="73" width="5.5" height="12" rx="2.75" fill="#fbbf6a"/>
+                            </g>
+
+                            <path d="M48 95C55 84 65 83 75 91C83 82 96 84 104 95L105 105H45Z" fill="#c4b5fd" opacity=".92"/>
+
+                            <g class="lmc-vector-cat__paw lmc-vector-cat__paw--left">
+                                <ellipse cx="57" cy="100" rx="14" ry="8.5" fill="#818cf8"/>
+                                <path d="M57 97V105M64 97V105" stroke="#4338ca" stroke-width="2.7" stroke-linecap="round"/>
+                            </g>
+                            <g class="lmc-vector-cat__paw lmc-vector-cat__paw--right">
+                                <ellipse cx="99" cy="100" rx="14" ry="8.5" fill="#818cf8"/>
+                                <path d="M97 97V105M104 97V105" stroke="#4338ca" stroke-width="2.7" stroke-linecap="round"/>
+                            </g>
                         </g>
                     </g>
                 </svg>`;
