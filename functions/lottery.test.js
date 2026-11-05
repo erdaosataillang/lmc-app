@@ -53,3 +53,16 @@ test("keeps one-hour assignments and shortens only bands that cannot fit", () =>
   assert.equal(bandB.end - bandB.start, 60 * 60 * 1000);
   assert.equal(result.failedBands.length, 0);
 });
+
+test("終日イベントの日は候補を確定せず全件を落選として扱う", () => {
+  const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
+  const bookings = [
+    {id: "concert", type: "event", status: "confirmed", startTime: at(9), endTime: at(20)},
+    {id: "a1", bandId: "a", bandName: "A", type: "normal", status: "pending", startTime: at(9), endTime: at(12)},
+    {id: "b1", bandId: "b", bandName: "B", type: "normal", status: "pending", startTime: at(13), endTime: at(15)},
+  ];
+  const result = calculateLottery(bookings, () => 0.5);
+  assert.equal(result.assignments.length, 0);
+  assert.deepEqual(result.candidateDocIds.sort(), ["a1", "b1"]);
+  assert.deepEqual(result.failedBands.map((band) => band.id).sort(), ["a", "b"]);
+});

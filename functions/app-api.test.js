@@ -65,6 +65,15 @@ test("登録済みバンドと自由入力の同時指定・未指定を拒否�
   assert.throws(() => _test.parseBookingBody({bandId: "b1", customBandName: "別バンド", ...times}), /どちらかを指定/);
 });
 
+test("定期演奏会の開始日から終了日までを予約不可日として判定する", () => {
+  const event = {startDate: "2030-10-22", endDate: "2030-10-24"};
+  assert.equal(_test.eventIncludesDate(event, "2030-10-21"), false);
+  assert.equal(_test.eventIncludesDate(event, "2030-10-22"), true);
+  assert.equal(_test.eventIncludesDate(event, "2030-10-23"), true);
+  assert.equal(_test.eventIncludesDate(event, "2030-10-24"), true);
+  assert.equal(_test.eventIncludesDate(event, "2030-10-25"), false);
+});
+
 test("日本時間の日付キーを作る", () => {
   assert.equal(_test.dateKeyInTokyo(new Date("2026-10-21T16:00:00.000Z")), "2026-10-22");
 });

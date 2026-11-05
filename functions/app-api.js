@@ -146,11 +146,29 @@ function customBandId(uid, bandName) {
   return `custom_${sha256(`${uid}\u0000${normalizedName}`).slice(0, 32)}`;
 }
 
+function eventIncludesDate(eventData, dateKey) {
+  const startDate = eventData?.startDate || eventData?.date;
+  const endDate = eventData?.endDate || startDate;
+  const validDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+  return validDate(startDate) && validDate(endDate) && endDate >= startDate &&
+    dateKey >= startDate && dateKey <= endDate;
+}
+
 async function bookingStatus(db, start) {
   const settings = (await db.doc("system/settings").get()).data() || {};
+  const dateKey = dateKeyInTokyo(start);
+  const activeEventId = cleanOptionalText(settings.activeEventId, 160);
+  if (activeEventId) {
+    const eventSnapshot = await db.doc(`events/${activeEventId}`).get();
+    const eventData = eventSnapshot.data() || {};
+    if (eventSnapshot.exists && eventIncludesDate(eventData, dateKey)) {
+      const eventName = cleanOptionalText(eventData.event || eventData.name, 120) || "定期演奏会";
+      throw new HttpError(409, "active_event_day_blocked", `${eventName}の開催日は、合わせ予約ができません。`);
+    }
+  }
   const mode = settings.reservationMode || settings.bookingMode || "first_come";
   if (mode !== "lottery") return "confirmed";
-  const run = await db.doc(`lotteryRuns/${dateKeyInTokyo(start)}`).get();
+  const run = await db.doc(`lotteryRuns/${dateKey}`).get();
   return run.exists ? "confirmed" : "pending";
 }
 
@@ -429,4 +447,4 @@ exports.lmcAppApi = onRequest({
   }
 });
 
-exports._test = {customBandId, dateKeyInTokyo, parseBookingBody, publicProfile, sha256};
+exports._test = {customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicProfile, sha256};

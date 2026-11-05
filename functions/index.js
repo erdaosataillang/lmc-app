@@ -80,6 +80,14 @@ function hasAdminAccess(userData = {}) {
   });
 }
 
+function eventIncludesDate(eventData, dateKey) {
+  const startDate = eventData?.startDate || eventData?.date;
+  const endDate = eventData?.endDate || startDate;
+  const validDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+  return validDate(startDate) && validDate(endDate) && endDate >= startDate &&
+    dateKey >= startDate && dateKey <= endDate;
+}
+
 exports.createLineFirebaseToken = onRequest({
   region: "asia-northeast1",
   memory: "256MiB",
@@ -362,6 +370,17 @@ exports.runScheduledLottery = onSchedule({
   }
 
   const {start, end} = tokyoDayBounds(dateKey);
+  let activeEventBlock = null;
+  if (typeof settings.activeEventId === "string" && settings.activeEventId) {
+    const eventSnapshot = await db.doc(`events/${settings.activeEventId}`).get();
+    const eventData = eventSnapshot.data() || {};
+    if (eventSnapshot.exists && eventIncludesDate(eventData, dateKey)) {
+      activeEventBlock = {
+        id: settings.activeEventId,
+        name: eventData.event || eventData.name || "定期演奏会",
+      };
+    }
+  }
   const bookingSnapshot = await db.collection("bookings")
       .where("startTime", ">=", Timestamp.fromDate(start))
       .where("startTime", "<", Timestamp.fromDate(end))
@@ -375,6 +394,15 @@ exports.runScheduledLottery = onSchedule({
       endTime: data.endTime.toDate(),
     };
   });
+  if (activeEventBlock) {
+    bookings.push({
+      id: `active-event-${activeEventBlock.id}`,
+      type: "event",
+      status: "confirmed",
+      startTime: start,
+      endTime: end,
+    });
+  }
   const result = calculateLottery(bookings);
   const operationCount = 1 + result.assignments.length + result.candidateDocIds.length;
   if (operationCount > 500) {
@@ -384,7 +412,9 @@ exports.runScheduledLottery = onSchedule({
   const batch = db.batch();
   batch.create(runRef, {
     targetDate: dateKey,
-    status: result.candidateCount === 0 ? "no_candidates" : "completed",
+    status: activeEventBlock ? "blocked_event" : (result.candidateCount === 0 ? "no_candidates" : "completed"),
+    activeEventId: activeEventBlock?.id || null,
+    activeEventName: activeEventBlock?.name || null,
     durationMinutes: result.duration,
     hasMixedDurations: result.assignments.some((assignment) => assignment.durationMinutes === 30) &&
       result.assignments.some((assignment) => assignment.durationMinutes === 60),

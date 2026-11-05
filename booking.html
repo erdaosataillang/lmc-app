@@ -43,7 +43,9 @@
         .scroll-content { flex-grow: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 16px; padding-bottom: 20px; -webkit-overflow-scrolling: touch; overflow-x: hidden; }
         
         /* カレンダーコントロール */
-        .calendar-controls { --season-start:#eef4ff; --season-end:#dce9ff; --season-ink:#31567d; display:flex; justify-content:space-between; align-items:center; position:relative; overflow:hidden; isolation:isolate; color:var(--season-ink); background:linear-gradient(125deg,var(--season-start),var(--season-end),var(--season-start)); background-size:180% 180%; padding:8px 16px; border-radius:24px; margin:0 16px 12px; box-shadow:0 2px 8px rgba(0,0,0,.05); flex-shrink:0; z-index:400; animation:seasonGradientDrift 12s ease-in-out infinite; }
+        .calendar-controls { --season-start:#eef4ff; --season-end:#dce9ff; --season-ink:#31567d; display:flex; justify-content:space-between; align-items:center; position:relative; overflow:hidden; isolation:isolate; color:var(--season-ink); background:linear-gradient(125deg,var(--season-start),var(--season-end),var(--season-start)); background-size:180% 180%; padding:8px 16px; border-radius:24px; margin:0 16px 12px; box-shadow:0 2px 8px rgba(0,0,0,.05); flex-shrink:0; z-index:400; animation:seasonGradientDrift 12s ease-in-out infinite; transition:color .55s ease; }
+        .seasonal-theme-fade { position:absolute!important; inset:0; z-index:0!important; opacity:0; pointer-events:none; background-size:180% 180%!important; transition:opacity .55s ease; animation:seasonGradientDrift 12s ease-in-out infinite; }
+        .seasonal-theme-fade.is-visible { opacity:1; }
         .calendar-controls::before,.calendar-controls::after { content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.25); z-index:0; pointer-events:none; }
         .calendar-controls::before { width:92px; height:92px; right:-24px; top:-58px; animation:seasonOrbOne 8s ease-in-out infinite; }
         .calendar-controls::after { width:58px; height:58px; left:38%; bottom:-45px; animation:seasonOrbTwo 10s ease-in-out infinite; }
@@ -55,7 +57,8 @@
         .view-switcher.day-mode .switcher-slide { transform: translateX(42px); }
 
         /* 月ごとの行事をほのかに示すコントロール背景 */
-        .seasonal-calendar-art { position:absolute; left:53%; top:72%; width:108px; height:64px; transform:translate(-50%,-50%) rotate(-2deg); color:var(--season-ink); opacity:.15; pointer-events:none; z-index:1; animation:seasonArtFloat 6s ease-in-out infinite; }
+        .seasonal-calendar-art { position:absolute; left:53%; top:72%; width:108px; height:64px; transform:translate(-50%,-50%) rotate(-2deg); color:var(--season-ink); opacity:.15; pointer-events:none; z-index:1; animation:seasonArtFloat 6s ease-in-out infinite; transition:opacity .24s ease,color .55s ease; }
+        .seasonal-calendar-art.is-changing { opacity:0; }
         .seasonal-calendar-art * { vector-effect:non-scaling-stroke; }
         .seasonal-calendar-art-defs { position:absolute; width:0; height:0; overflow:hidden; pointer-events:none; }
         @keyframes seasonGradientDrift { 0%,100% { background-position:0% 50%; } 50% { background-position:100% 50%; } }
@@ -75,6 +78,8 @@
         .day-cell.unavailable .day-num { color: #cf1322; }
         .day-cell.partial-event { background-color: #fff7e6; border-color: #ffd591; }
         .day-cell.partial-event .day-num { color: #d46b08; }
+        .day-cell.concert-event-day { background:linear-gradient(145deg,#e6f4ea,#f0f8f2); border-color:#9ed1ad; box-shadow:inset 0 0 0 1px rgba(19,115,51,.05); }
+        .day-cell.concert-event-day .day-num { color:#0d652d; font-weight:800; }
         .status-label { font-size: 8px; color: #cf1322; font-weight: bold; height: 12px; transform: scale(0.9); }
         .event-dots { display: flex; gap: 2px; margin-top: 2px; justify-content: center; min-height: 5px; align-items: center; } 
         .dot { width: 4px; height: 4px; border-radius: 50%; background: #34A853; } .dot.event { background: #137333; transform: scale(1.2); }
@@ -127,6 +132,10 @@
         .booking-detail-person { display:flex; align-items:center; gap:12px; }
         .booking-detail-person img { width:48px; height:48px; border-radius:50%; object-fit:cover; background:#f1f3f4; }
         .my-band-pill { display:inline-flex; align-items:center; gap:4px; color:#137333; background:#e6f4ea; border-radius:999px; padding:4px 9px; font-size:11px; font-weight:700; margin-top:7px; }
+        #bookingDetailBody { min-height:180px; opacity:1; transition:opacity .16s ease; }
+        #bookingDetailBody.booking-detail-changing { opacity:0; }
+        .booking-detail-wait { min-height:180px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px; color:#778198; font-size:12px; }
+        .booking-detail-wait .material-icons { width:42px; height:42px; display:grid; place-items:center; border-radius:14px; background:#edf3fc; color:#5475a4; font-size:21px; }
         
         .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; } .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
         
@@ -260,7 +269,7 @@
         @keyframes calendarMonthDepart { to { opacity:0; transform:scale(.96) translateY(-8px); filter:blur(2px); } }
         @keyframes calendarDayEnter { from { opacity:0; transform:translate3d(24px,18px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
         @keyframes calendarMonthEnter { from { opacity:0; transform:translate3d(-18px,8px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
-        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month,.calendar-controls,.calendar-controls::before,.calendar-controls::after,.seasonal-calendar-art { animation:none!important; } .booking-compose-sheet { transition:none; } }
+        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month,.calendar-controls,.calendar-controls::before,.calendar-controls::after,.seasonal-calendar-art,.seasonal-theme-fade { animation:none!important; } .booking-compose-sheet,.seasonal-theme-fade,.seasonal-calendar-art,#bookingDetailBody { transition:none; } }
         
         /* 通知・モーダル関連 */
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
@@ -323,6 +332,7 @@
             </div>
         </div>
         <div class="calendar-controls" id="seasonalCalendarControls">
+            <div class="seasonal-theme-fade" id="seasonalThemeFade" aria-hidden="true"></div>
             <div class="view-switcher" id="viewSwitcher">
                 <div class="switcher-slide"></div>
                 <div class="switcher-item active" data-mode="month" onclick="switchCalendarView('month')">月</div>
@@ -637,6 +647,7 @@
         const CACHE_KEY_BANDS = 'lmc_bands_cache';
         const CACHE_KEY_BOOKINGS_PREFIX = 'lmc_bookings_';
         const CACHE_KEY_SYSTEM_SETTINGS = 'lmc_system_settings_cache';
+        const CACHE_KEY_ACTIVE_EVENT = 'lmc_active_concert_event_cache';
         localStorage.removeItem('lmc_all_users_cache');
         const CACHE_KEY_ALL_USERS = 'lmc_public_profiles_cache_v2'; // 公開項目だけを保持
         const CACHE_KEY_SYSTEM_SETTINGS_UPDATED = 'lmc_system_settings_updated';
@@ -668,6 +679,9 @@
         let currentBandsUnsub = null;
         let currentLotteryRunUnsub = null;
         let currentSettingsUnsub = null;
+        let currentActiveEventUnsub = null;
+        let activeConcertEventId = null;
+        let activeConcertEventData = null;
         let monthSyncToken = null;
         let daySyncToken = null;
 
@@ -696,12 +710,97 @@
             }catch(e){ console.warn("System settings refresh failed:", e); }
         }
 
+        function isValidDateKey(value) {
+            return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+        }
+
+        function activeConcertIncludesDate(dateObj) {
+            if (!activeConcertEventData) return false;
+            const start = activeConcertEventData.startDate || activeConcertEventData.date;
+            const end = activeConcertEventData.endDate || start;
+            if (!isValidDateKey(start) || !isValidDateKey(end) || end < start) return false;
+            const dateKey = formatDateKey(dateObj);
+            return dateKey >= start && dateKey <= end;
+        }
+
+        function getActiveConcertTitle() {
+            return activeConcertEventData?.event || activeConcertEventData?.name || '定期演奏会';
+        }
+
+        function activeConcertBookingForDate(dateObj) {
+            if (!activeConcertIncludesDate(dateObj)) return null;
+            const start = new Date(dateObj);
+            const end = new Date(dateObj);
+            start.setHours(9, 0, 0, 0);
+            end.setHours(20, 0, 0, 0);
+            return {
+                id:`active-concert-${activeConcertEventId}-${formatDateKey(dateObj)}`,
+                title:getActiveConcertTitle(),
+                bandName:getActiveConcertTitle(),
+                creatorId:'system-active-event',
+                userName:'LMC運営',
+                type:'event',
+                status:'confirmed',
+                source:'active_concert',
+                systemManaged:true,
+                startTime:start.toISOString(),
+                endTime:end.toISOString()
+            };
+        }
+
+        function appendActiveConcertEvent(bookings, dateObj) {
+            const eventBooking = activeConcertBookingForDate(dateObj);
+            if (!eventBooking || bookings.some(item => item.id === eventBooking.id || item.source === 'active_concert')) return bookings;
+            return [...bookings, eventBooking];
+        }
+
+        function appendActiveConcertEventsForMonth(bookings, year, month) {
+            let result = bookings;
+            const lastDay = new Date(year, month, 0).getDate();
+            for (let day = 1; day <= lastDay; day += 1) {
+                result = appendActiveConcertEvent(result, new Date(year, month - 1, day));
+            }
+            return result;
+        }
+
+        function refreshCalendarForActiveEvent() {
+            updateDayBanner();
+            if (calendarMode === 'month') {
+                applyBookingDataToMonth(loadedBookingsCache, displayDate.getFullYear(), displayDate.getMonth() + 1);
+            } else {
+                const dayKey = formatDateKey(displayDate);
+                renderDayEvents(loadedBookingsCache.filter(item => formatDateKey(new Date(item.startTime)) === dayKey));
+            }
+        }
+
+        function startActiveConcertEventListener(eventId) {
+            if (currentActiveEventUnsub && activeConcertEventId === eventId) return;
+            const previousEventId = activeConcertEventId;
+            if (currentActiveEventUnsub) currentActiveEventUnsub();
+            currentActiveEventUnsub = null;
+            activeConcertEventId = eventId || null;
+            if (previousEventId !== activeConcertEventId) activeConcertEventData = null;
+            if (!activeConcertEventId) {
+                activeConcertEventData = null;
+                localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
+                refreshCalendarForActiveEvent();
+                return;
+            }
+            currentActiveEventUnsub = onSnapshot(doc(db, 'events', activeConcertEventId), (snapshot) => {
+                activeConcertEventData = snapshot.exists() ? {id:snapshot.id, ...snapshot.data()} : null;
+                if (activeConcertEventData) localStorage.setItem(CACHE_KEY_ACTIVE_EVENT, JSON.stringify(activeConcertEventData));
+                else localStorage.removeItem(CACHE_KEY_ACTIVE_EVENT);
+                refreshCalendarForActiveEvent();
+            }, (error) => console.warn('Active concert event refresh failed:', error));
+        }
+
         function startSystemSettingsListener() {
             if (document.hidden || bookingPageHidden) return;
             if (currentSettingsUnsub) currentSettingsUnsub();
             currentSettingsUnsub = onSnapshot(doc(db, "system", "settings"), (snapshot) => {
                 if (!snapshot.exists()) {
                     systemSettingsReady = false;
+                    startActiveConcertEventListener(null);
                     updateDayBanner();
                     return;
                 }
@@ -709,6 +808,7 @@
                 systemSettingsReady = true;
                 localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS, JSON.stringify(currentSystemSettings));
                 localStorage.setItem(CACHE_KEY_SYSTEM_SETTINGS_UPDATED, String(Date.now()));
+                startActiveConcertEventListener(currentSystemSettings.activeEventId || null);
                 updateDayBanner();
             }, (error) => {
                 systemSettingsReady = false;
@@ -889,6 +989,16 @@
                 const cachedSys = localStorage.getItem(CACHE_KEY_SYSTEM_SETTINGS);
                 if (cachedSys) {
                     try { currentSystemSettings = JSON.parse(cachedSys); } catch(e) {}
+                }
+                const cachedActiveEvent = localStorage.getItem(CACHE_KEY_ACTIVE_EVENT);
+                if (cachedActiveEvent) {
+                    try {
+                        const parsedEvent = JSON.parse(cachedActiveEvent);
+                        if (parsedEvent?.id && parsedEvent.id === currentSystemSettings.activeEventId) {
+                            activeConcertEventId = parsedEvent.id;
+                            activeConcertEventData = parsedEvent;
+                        }
+                    } catch(e) {}
                 }
                 const cachedUsers = localStorage.getItem(CACHE_KEY_ALL_USERS);
                 if (cachedUsers) {
@@ -1084,17 +1194,43 @@
             { art:'autumnlive', start:'#f3e6d8', end:'#e6c9ac', ink:'#70492f' },
             { art:'christmas', start:'#e7f1ed', end:'#c9dfd6', ink:'#315f50' }
         ];
+        let seasonalThemeTransitionToken = 0;
         function updateSeasonalCalendarControls(month) {
             const hero = document.getElementById('seasonalCalendarControls');
             const theme = seasonalCalendarThemes[month - 1];
             if (!hero || !theme) return;
             const monthKey = `${displayDate.getFullYear()}-${month}`;
             if (hero.dataset.monthKey === monthKey) return;
+            const art = document.getElementById('seasonalCalendarArtUse');
+            const artSvg = art?.closest('svg');
+            const fade = document.getElementById('seasonalThemeFade');
+            const applyImmediately = !hero.dataset.monthKey || !fade || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             hero.dataset.monthKey = monthKey;
-            hero.style.setProperty('--season-start', theme.start);
-            hero.style.setProperty('--season-end', theme.end);
             hero.style.setProperty('--season-ink', theme.ink);
-            document.getElementById('seasonalCalendarArtUse').setAttribute('href', `#calendar-art-${theme.art}`);
+            const nextGradient = `linear-gradient(125deg,${theme.start},${theme.end},${theme.start})`;
+            if (applyImmediately) {
+                hero.style.setProperty('--season-start', theme.start);
+                hero.style.setProperty('--season-end', theme.end);
+                art?.setAttribute('href', `#calendar-art-${theme.art}`);
+                return;
+            }
+            const token = ++seasonalThemeTransitionToken;
+            fade.classList.remove('is-visible');
+            fade.style.background = nextGradient;
+            void fade.offsetWidth;
+            fade.classList.add('is-visible');
+            artSvg?.classList.add('is-changing');
+            setTimeout(() => {
+                if (token !== seasonalThemeTransitionToken) return;
+                art?.setAttribute('href', `#calendar-art-${theme.art}`);
+                artSvg?.classList.remove('is-changing');
+            }, 220);
+            setTimeout(() => {
+                if (token !== seasonalThemeTransitionToken) return;
+                hero.style.setProperty('--season-start', theme.start);
+                hero.style.setProperty('--season-end', theme.end);
+                fade.classList.remove('is-visible');
+            }, 560);
         }
         
         function renderCalendar(useCache = false, animationDirection = 0){ 
@@ -1246,21 +1382,23 @@
 
         function applyBookingDataToMonth(bookings, y, m) {
             document.querySelectorAll(`.day-cell[id^="day-${y}-${m}-"]`).forEach(cell => {
-                cell.classList.remove('unavailable', 'partial-event');
+                cell.classList.remove('unavailable', 'partial-event', 'concert-event-day');
                 const st = cell.querySelector('.status-label');
                 if(st) { st.innerText = ""; st.style.color = ""; }
             });
             document.querySelectorAll(`.event-dots[id^="dots-${y}-${m}-"]`).forEach(el => el.innerHTML = "");
 
             const stats = {};
-            bookings.forEach(bk => {
+            const calendarBookings = appendActiveConcertEventsForMonth(bookings, y, m);
+            calendarBookings.forEach(bk => {
                 const d = new Date(bk.startTime); 
                 if (d.getFullYear() === y && (d.getMonth() + 1) === m) {
                     const key = `day-${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-                    if (!stats[key]) stats[key] = { count: 0, mineCount: 0, eventType: null, hasConfirmedLottery: false };
+                    if (!stats[key]) stats[key] = { count: 0, mineCount: 0, eventType: null, hasConfirmedLottery: false, activeConcert:false };
                     if (bk.type === 'event') {
                         const e = bk.endTime ? new Date(bk.endTime) : new Date(bk.startTime); const sH = d.getHours(); const eH = e.getHours(); const isAllDay = (sH <= 9 && eH >= 20);
                         if (isAllDay) { stats[key].eventType = 'unavailable'; } else if (stats[key].eventType !== 'unavailable') { stats[key].eventType = 'partial'; }
+                        if (bk.source === 'active_concert') stats[key].activeConcert = true;
                     } else {
                         stats[key].count++;
                         if (myBandsAll.some(band => band.id === bk.bandId)) stats[key].mineCount++;
@@ -1272,8 +1410,9 @@
                 const data = stats[key]; const cell = document.getElementById(key); if (!cell) return;
                 if (data.eventType === 'unavailable') {
                     cell.classList.add('unavailable');
+                    if (data.activeConcert) cell.classList.add('concert-event-day');
                     const st = cell.querySelector('.status-label');
-                    if(st) st.innerText = "不可";
+                    if(st) st.innerText = data.activeConcert ? "定演" : "不可";
                 } else {
                     if (data.eventType === 'partial') cell.classList.add('partial-event');
                     if (data.hasConfirmedLottery) {
@@ -1296,6 +1435,7 @@
         }
 
         function renderDayEvents(evs) {
+            evs = appendActiveConcertEvent(evs, displayDate);
             document.querySelectorAll('.event-block').forEach(el=>el.remove()); 
 
             if(evs.length===0) return; 
@@ -1340,9 +1480,10 @@
                 div.setAttribute('role', 'button');
                 if(d.type==='event'){
                     const title = d.title || 'イベント';
+                    const isActiveConcert = d.source === 'active_concert';
                     div.classList.add('special-event');
                     div.setAttribute('aria-label', `${title}の詳細を表示`);
-                    div.innerHTML=`<div class="event-block-inner"><span class="event-block-icon"><span class="material-icons">event</span></span><div class="event-block-copy"><div class="event-title">${escapeHtml(title)}</div><div class="event-meta"><span class="material-icons">schedule</span>予定</div></div><span class="material-icons event-block-open">arrow_outward</span></div>`;
+                    div.innerHTML=`<div class="event-block-inner"><span class="event-block-icon"><span class="material-icons">${isActiveConcert ? 'event_busy' : 'event'}</span></span><div class="event-block-copy"><div class="event-title">${escapeHtml(title)}</div><div class="event-meta"><span class="material-icons">schedule</span>${isActiveConcert ? '終日イベント・予約不可' : '予定'}</div></div><span class="material-icons event-block-open">arrow_outward</span></div>`;
                 } else { 
                     const realName = getRealName(d.creatorId, d.userName);
                     const title = d.bandName || '名称未設定';
@@ -1507,6 +1648,14 @@
                 banner.style.color = '#5f6368'; 
                 banner.style.border = '1px solid #dadce0'; 
                 banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px; vertical-align:middle;">history</span> 過去の予約</div><div style="font-size:11px;">この日の新規予約は終了しています。</div>`;
+                return;
+            }
+
+            if (activeConcertIncludesDate(displayDate)) {
+                banner.style.backgroundColor = '#e6f4ea';
+                banner.style.color = '#0d652d';
+                banner.style.border = '1px solid #b7dfc2';
+                banner.innerHTML = `<div style="font-weight:bold; font-size:14px;"><span class="material-icons" style="font-size:18px; vertical-align:middle;">event_busy</span> ${escapeHtml(getActiveConcertTitle())}</div><div style="font-size:11px;">終日イベントのため、合わせ予約はできません。</div>`;
                 return;
             }
 
@@ -1698,7 +1847,7 @@
         }
         
         function handleTouchStart(e){ 
-            if(isPastDate(displayDate)) return; // 過去日はブロック
+            if(isPastDate(displayDate) || activeConcertIncludesDate(displayDate)) return;
             if(e.target.closest('.event-block'))return;
             const h=parseInt(e.target.dataset.hour); if(isNaN(h))return; 
             selectionTimer=setTimeout(()=>{isSelecting=true; selectionStartHour=h; selectionEndHour=h; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate)navigator.vibrate(50);},500); 
@@ -1706,7 +1855,7 @@
         function handleTouchMove(e){ if(!isSelecting){clearTimeout(selectionTimer);return;} e.preventDefault(); const t=document.elementFromPoint(e.touches[0].clientX,e.touches[0].clientY); if(t&&t.classList.contains('time-content')){selectionEndHour=parseInt(t.dataset.hour); updateSelectionUI();} }
         function handleTouchEnd(e){ clearTimeout(selectionTimer); if(isSelecting){isSelecting=false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(e);} }
         function handleMouseDown(e){ 
-            if(isPastDate(displayDate)) return; // 過去日はブロック
+            if(isPastDate(displayDate) || activeConcertIncludesDate(displayDate)) return;
             if(e.target.closest('.event-block'))return;
             if(!e.target.classList.contains('time-content'))return; 
             isSelecting=true; selectionStartHour=parseInt(e.target.dataset.hour); selectionEndHour=selectionStartHour; updateSelectionUI(); 
@@ -1724,7 +1873,11 @@
         };
         
         function openBookingModalRange(e){ 
-            if(isPastDate(displayDate)) return; // 念のためここでもブロック
+            if(isPastDate(displayDate)) return;
+            if(activeConcertIncludesDate(displayDate)) {
+                showCustomAlert(`${getActiveConcertTitle()}の開催日は、合わせ予約ができません。`, '終日イベント');
+                return;
+            }
             document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); 
             const s=Math.min(selectionStartHour,selectionEndHour), e_hr=Math.max(selectionStartHour,selectionEndHour); 
             document.getElementById('bookingModalTitle').innerText="新規予約"; 
@@ -1766,6 +1919,7 @@
         }
 
         async function getBookingCreator(data) {
+            if (data?.systemManaged) return {name:'LMC運営', part:'終日イベント'};
             const cached = allUsersCache.find(user => user.id === data?.creatorId);
             if (cached) return cached;
             if (!data?.creatorId) return null;
@@ -1789,12 +1943,19 @@
             bookingDetailTarget = {id, data, event:e};
             const body = document.getElementById('bookingDetailBody');
             const actions = document.getElementById('bookingDetailActions');
-            const canEdit = data.creatorId === currentUser || hasAdminAccess(currentUserData);
+            const canEdit = !data.systemManaged && (data.creatorId === currentUser || hasAdminAccess(currentUserData));
             actions.style.display = canEdit ? 'block' : 'none';
-            body.innerHTML = `<div class="lmc-loading-state" role="status" style="padding:44px 0;"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>予約詳細を読み込み中...</span></div>`;
+            body.classList.add('booking-detail-changing');
+            body.setAttribute('aria-busy', 'true');
+            const delayedPlaceholder = setTimeout(() => {
+                if (requestToken !== bookingDetailRequestToken || !detailModal.classList.contains('open')) return;
+                body.innerHTML = `<div class="booking-detail-wait" role="status"><span class="material-icons">event_note</span><span>予約詳細を確認しています</span></div>`;
+                body.classList.remove('booking-detail-changing');
+            }, 220);
             openModal('modal-booking-detail');
 
             const [band, creator] = await Promise.all([getBookingBandProfile(data), getBookingCreator(data)]);
+            clearTimeout(delayedPlaceholder);
             if (requestToken !== bookingDetailRequestToken || !bookingDetailTarget || bookingDetailTarget.id !== id || !detailModal.classList.contains('open')) return;
             const start = new Date(data.startTime);
             const end = new Date(data.endTime);
@@ -1809,9 +1970,9 @@
             const memberCount = Array.isArray(band?.memberIds) ? band.memberIds.length : null;
             const songCount = Array.isArray(band?.songs) ? band.songs.length : null;
             const profileText = band?.description || band?.profile || band?.bio || band?.comment || '';
-            const stateText = data.status === 'pending' ? '抽選待ち' : (data.source === 'lottery' ? '抽選確定' : '予約確定');
+            const stateText = data.systemManaged ? '終日イベント' : (data.status === 'pending' ? '抽選待ち' : (data.source === 'lottery' ? '抽選確定' : '予約確定'));
 
-            body.innerHTML = `
+            const detailHtml = `
                 <div class="booking-detail-hero">
                     <img class="booking-detail-band-icon" src="${bandIcon}" alt="">
                     <div style="min-width:0; flex:1;">
@@ -1844,6 +2005,10 @@
                            </div>
                            <div style="font-size:13px; color:#536471; line-height:1.65; margin-top:12px; white-space:pre-wrap;">${escapeHtml(profileText || 'プロフィールはまだ登録されていません。')}</div>`}
                 </div>`;
+            body.classList.add('booking-detail-changing');
+            body.innerHTML = detailHtml;
+            body.setAttribute('aria-busy', 'false');
+            requestAnimationFrame(() => body.classList.remove('booking-detail-changing'));
         };
 
         window.editCurrentBookingFromDetail = () => {
@@ -1902,6 +2067,10 @@
         window.handleNewBooking = (e) => { 
             if(isPastDate(displayDate)) {
                 showCustomAlert("過去の日付には予約できません。");
+                return;
+            }
+            if(activeConcertIncludesDate(displayDate)) {
+                showCustomAlert(`${getActiveConcertTitle()}の開催日は、合わせ予約ができません。`, '終日イベント');
                 return;
             }
             isSelecting = false; 
@@ -2040,6 +2209,7 @@
             const st=new Date(displayDate), et=new Date(displayDate); 
             st.setHours(sH,sM,0,0); et.setHours(eH,eM,0,0); 
             if(st>=et)return await showCustomAlert("終了時間は開始時間より後の時間を設定してください。", "時間不正"); 
+            if(activeConcertIncludesDate(st))return await showCustomAlert(`${getActiveConcertTitle()}の開催日は、合わせ予約ができません。`, "終日イベント");
             bd.startTime=st; bd.endTime=et; 
 
             // 保存直前にサーバー上の設定と抽選実行記録を確認する。
@@ -2165,7 +2335,9 @@
                         iconColor = '#137333';
                         iconBg = '#e6f4ea';
                     } else if (failedBandIds.includes(bandId)) {
-                        resultText = '今回は枠を確保できませんでした。空いている時間は先着で予約できます。';
+                        resultText = run.status === 'blocked_event'
+                            ? `${run.activeEventName || '定期演奏会'}の開催日のため、合わせ予約は行われません。`
+                            : '今回は枠を確保できませんでした。空いている時間は先着で予約できます。';
                         icon = 'event_busy';
                         iconColor = '#b06000';
                         iconBg = '#fef7e0';
@@ -2340,10 +2512,10 @@
             document.querySelectorAll('.time-content.selecting').forEach(el => el.classList.remove('selecting'));
         }
         function stopBookingActivity() {
-            for (const unsubscribe of [currentMonthUnsub, currentDayUnsub, currentBandsUnsub, currentLotteryRunUnsub, currentSettingsUnsub]) {
+            for (const unsubscribe of [currentMonthUnsub, currentDayUnsub, currentBandsUnsub, currentLotteryRunUnsub, currentSettingsUnsub, currentActiveEventUnsub]) {
                 if (unsubscribe) unsubscribe();
             }
-            currentMonthUnsub = currentDayUnsub = currentBandsUnsub = currentLotteryRunUnsub = currentSettingsUnsub = null;
+            currentMonthUnsub = currentDayUnsub = currentBandsUnsub = currentLotteryRunUnsub = currentSettingsUnsub = currentActiveEventUnsub = null;
             clearInterval(bookingClock);
             bookingClock = null;
             cancelBookingSelection();
