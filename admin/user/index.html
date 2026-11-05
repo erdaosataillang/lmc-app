@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/lmc-loader.css">
     <style>
         /* 万が一の真っ白防止用 */
         body.loading-failed { display: block !important; }
@@ -57,9 +58,9 @@
 </head>
 <body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
     <!-- ローディング画面 -->
-    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300">
-        <div class="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-        <p class="text-xs font-bold text-gray-400 tracking-widest uppercase">Initializing System...</p>
+    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300" role="status" aria-live="polite">
+        <img class="lmc-wave-loader" src="/assets/lmc-wave-loader.svg" alt="">
+        <p class="lmc-loading-label">部員情報を準備中...</p>
     </div>
 
     <!-- サイドバーコンテナ -->
@@ -137,7 +138,8 @@
         <div id="members-content-area">
             <!-- グリッド表示 -->
             <div id="users-grid-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-12">
-                <div class="col-span-full py-10 text-center text-gray-400 font-bold">
+                <div class="col-span-full py-10 lmc-loading-state" role="status">
+                    <img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt="">
                     <span id="loading-status-text">部員データを読み込み中...</span>
                 </div>
             </div>
@@ -918,7 +920,7 @@
             const saveBtn = document.getElementById('save-user-btn');
             if (saveBtn) {
                 saveBtn.disabled = true;
-                saveBtn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> 保存中...';
+                saveBtn.innerHTML = '<img class="lmc-wave-loader lmc-wave-loader--button" src="/assets/lmc-wave-loader.svg" alt="">保存中...';
             }
             const name = document.getElementById('edit-name')?.value;
             const kana = document.getElementById('edit-kana')?.value;
@@ -1013,7 +1015,7 @@
             const submitBtn = document.getElementById('create-user-submit-btn');
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch animate-spin"></i> 登録中...';
+                submitBtn.innerHTML = '<img class="lmc-wave-loader lmc-wave-loader--button" src="/assets/lmc-wave-loader.svg" alt="">登録中...';
             }
 
             const kana = document.getElementById('create-kana')?.value?.trim() || '';

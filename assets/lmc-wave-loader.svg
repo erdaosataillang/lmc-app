@@ -1,0 +1,60 @@
+<!--
+  Adapted for LMC from yui540/css-animations loading-3.svg.
+  Copyright (c) 2026 yui540. Licensed under the MIT License.
+  See /licenses/yui540-css-animations.LICENSE.txt
+-->
+<svg width="72" height="52" viewBox="0 0 72 52" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lmcWaveGradient" x1="8" y1="26" x2="64" y2="26" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#60A5FA"/>
+      <stop offset="0.5" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <style>
+      .bar {
+        fill: url(#lmcWaveGradient);
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: lmcWave 1.08s cubic-bezier(.45,.05,.55,.95) infinite both;
+      }
+      .bar:nth-child(1), .bar:nth-child(9) { animation-delay: -.12s; }
+      .bar:nth-child(2), .bar:nth-child(8) { animation-delay: -.24s; }
+      .bar:nth-child(3), .bar:nth-child(7) { animation-delay: -.36s; }
+      .bar:nth-child(4), .bar:nth-child(6) { animation-delay: -.48s; }
+      .bar:nth-child(5) { animation-delay: -.6s; }
+      .glow {
+        fill: #818CF8;
+        opacity: .16;
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: lmcGlow 1.08s ease-in-out infinite;
+      }
+      @keyframes lmcWave {
+        0%, 100% { transform: scaleY(.42); opacity: .48; }
+        50% { transform: scaleY(1); opacity: 1; }
+      }
+      @keyframes lmcGlow {
+        0%, 100% { transform: scale(.78); opacity: .08; }
+        50% { transform: scale(1); opacity: .2; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bar, .glow { animation: none; }
+        .bar { opacity: .82; }
+        .bar:nth-child(odd) { transform: scaleY(.62); }
+        .glow { opacity: .1; }
+      }
+    </style>
+  </defs>
+  <ellipse class="glow" cx="36" cy="26" rx="31" ry="22"/>
+  <g>
+    <rect class="bar" x="9" y="19" width="4" height="14" rx="2"/>
+    <rect class="bar" x="15.25" y="15" width="4" height="22" rx="2"/>
+    <rect class="bar" x="21.5" y="11" width="4" height="30" rx="2"/>
+    <rect class="bar" x="27.75" y="7" width="4" height="38" rx="2"/>
+    <rect class="bar" x="34" y="4" width="4" height="44" rx="2"/>
+    <rect class="bar" x="40.25" y="7" width="4" height="38" rx="2"/>
+    <rect class="bar" x="46.5" y="11" width="4" height="30" rx="2"/>
+    <rect class="bar" x="52.75" y="15" width="4" height="22" rx="2"/>
+    <rect class="bar" x="59" y="19" width="4" height="14" rx="2"/>
+  </g>
+</svg>

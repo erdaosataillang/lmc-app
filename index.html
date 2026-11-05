@@ -149,7 +149,7 @@
         .band-create-submit:not(:disabled):active { transform: scale(.975); box-shadow: 0 7px 18px rgba(79, 70, 229, .24); }
         .band-create-submit:disabled { opacity: .42; box-shadow: none; cursor: default; }
         .band-create-submit .material-icons { font-size: 19px; }
-        .band-create-spinner { display: none; width: 17px; height: 17px; border: 2px solid rgba(255,255,255,.38); border-top-color: white; border-radius: 50%; animation: spin .75s linear infinite; }
+        .band-create-spinner { display: none; width: 27px; height: 18px; filter: brightness(0) invert(1); }
         .band-create-submit.loading .band-create-spinner { display: block; }
         .band-create-submit.loading .band-create-arrow { display: none; }
         .band-create-cancel { display: block; margin: 7px auto 0; padding: 9px 16px; border: 0; background: transparent; color: #64748b; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; }
@@ -197,6 +197,7 @@
     </style>
     <!-- ▼ ここに外部CSSの読み込みを追記 (優先させるためstyleタグの下に置きます) ▼ -->
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/lmc-loader.css">
 </head>
 <body>
     <!-- カスタムダイアログ -->
@@ -392,7 +393,7 @@
             <div class="band-create-actions band-create-animate">
                 <div class="band-create-note"><span class="material-icons">link</span><span>結成後に招待リンクが発行されます。リンクを送るだけでメンバーを追加できます。</span></div>
                 <button type="button" id="createBandButton" class="band-create-submit" onclick="saveBand()" disabled>
-                    <span class="band-create-spinner" aria-hidden="true"></span>
+                    <img class="band-create-spinner" src="/assets/lmc-wave-loader.svg" alt="">
                     <span id="createBandButtonLabel">バンドを結成する</span>
                     <span class="material-icons band-create-arrow">arrow_forward</span>
                 </button>
@@ -505,9 +506,9 @@
                     <!-- Cueシート -->
                     <div id="tab-content-cuesheet" class="hidden">
                         <div style="padding: 16px;">
-                            <div id="digitalCueLoading" class="hidden" style="text-align:center; padding: 30px; color:#666; font-size:13px;">
-                                <span class="material-icons" style="animation:spin 1s linear infinite; vertical-align:middle; margin-right:4px;">sync</span>
-                                データを読み込み中...
+                            <div id="digitalCueLoading" class="hidden lmc-loading-state" style="padding:30px;" role="status">
+                                <img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt="">
+                                <span>データを読み込み中...</span>
                             </div>
 
                             <div id="digitalCueContainer" class="hidden" style="background:#fafafa; border:1px solid #e0e0e0; border-radius:12px; padding:14px; margin-bottom:16px;">
@@ -1221,7 +1222,7 @@
             const tabs = document.getElementById('bandTabs');
             const slider = document.getElementById('bandSlider');
             tabs.innerHTML = '<div class="band-tab active">読み込み中...</div>';
-            slider.innerHTML = '<div class="band-slide"><div style="text-align:center; color:#999; margin-top:40px;">読み込み中...</div></div>';
+            slider.innerHTML = '<div class="band-slide"><div class="lmc-loading-state" role="status" style="grid-column:1/-1; margin-top:40px;"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>バンドを読み込み中...</span></div></div>';
         }
 
         function renderBandTabs() {
@@ -1560,7 +1561,7 @@
                     div.innerHTML = `<img src="${safeImageUrl(u.icon)}" class="member-avatar-small"><div class="member-info-rich" style="flex:1;"><div class="member-name-rich">${escapeHtml(u.name)}${uid === data.creatorId ? '<span class="member-role-badge">リーダー</span>' : ''}</div><div style="font-size:10px; color:#999;">${escapeHtml(u.part?getPartLabel(u.part):'')}</div></div>${delBtn}`;
                     div.querySelector('.remove-member-button')?.addEventListener('click', event => { event.stopPropagation(); removeMember(bid, uid, u.name || 'メンバー'); });
                 } else {
-                    div.innerHTML = `<div class="member-avatar-small" style="background:#f1f3f4; display:flex; align-items:center; justify-content:center;"><span class="material-icons" style="font-size:16px; color:#9aa0a6; animation: spin 1s linear infinite;">sync</span></div><div class="member-info-rich" style="flex:1;"><div class="member-name-rich" style="color:#9aa0a6;">読み込み中...</div><div style="font-size:10px; color:#ccc;">${uid.substring(0,8)}...</div></div>`;
+                    div.innerHTML = `<div class="member-avatar-small" style="background:#f1f3f4; display:flex; align-items:center; justify-content:center;"><img class="lmc-wave-loader lmc-wave-loader--button" src="/assets/lmc-wave-loader.svg" alt=""></div><div class="member-info-rich" style="flex:1;"><div class="member-name-rich" style="color:#9aa0a6;">読み込み中...</div><div style="font-size:10px; color:#ccc;">${uid.substring(0,8)}...</div></div>`;
                 }
                 mList.appendChild(div);
             });

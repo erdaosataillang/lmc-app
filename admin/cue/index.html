@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/lmc-loader.css">
     <style>
         /* 万が一の真っ白防止用 */
         body.loading-failed { display: block !important; }
@@ -18,9 +19,9 @@
 </head>
 <body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
     <!-- ローディング画面 (真っ白防止) -->
-    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300">
-        <div class="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin mb-4"></div>
-        <p class="text-xs font-bold text-gray-400 tracking-widest uppercase">Initializing System...</p>
+    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300" role="status" aria-live="polite">
+        <img class="lmc-wave-loader" src="/assets/lmc-wave-loader.svg" alt="">
+        <p class="lmc-loading-label">Cueシートを準備中...</p>
     </div>
 
     <!-- サイドバーコンテナ -->
@@ -54,7 +55,7 @@
         <!-- Cueシートリスト -->
         <div id="cuesheets-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="col-span-full py-10 text-center text-gray-400 font-bold">
-                <span id="loading-status-text">Loading Cue Sheets...</span>
+                <span id="loading-status-text">Cueシートを読み込み中...</span>
             </div>
         </div>
     </main>
@@ -90,8 +91,8 @@
 
             <!-- Uploading Overlay -->
             <div id="add-cuesheet-loader" class="uploading-overlay hidden flex-col gap-3 text-center">
-                <i class="fa-solid fa-spinner fa-spin text-emerald-600 text-3xl"></i>
-                <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Uploading...</span>
+                <img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt="">
+                <span class="lmc-loading-label">アップロード中...</span>
             </div>
         </div>
     </div>

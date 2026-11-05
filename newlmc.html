@@ -18,6 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght=300;400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/lmc-loader.css">
   
   <!-- Firebase Compat SDK (ブラウザ動作最適化) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -477,9 +478,9 @@
               
               <!-- イベント表示用コンテナ -->
               <div id="dynamic-events-list-container" class="space-y-3.5">
-                <div class="text-center py-12 text-gray-400 text-xs">
-                  <div class="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                  予定情報を同期中...
+                <div class="lmc-loading-state py-12 text-gray-400 text-xs" role="status">
+                  <img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt="">
+                  <span>予定情報を同期中...</span>
                 </div>
               </div>
             </div>
@@ -1266,8 +1267,8 @@
 
         // メンバーリストの非同期フェッチ処理（usersコレクションから本名とふりがなを引っ張る）
         membersList.innerHTML = `
-          <div class="text-gray-400 py-4 flex items-center gap-2 text-xs font-bold animate-pulse pl-1">
-            <div class="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <div class="text-gray-400 py-4 flex items-center gap-2 text-xs font-bold pl-1" role="status">
+            <img class="lmc-wave-loader lmc-wave-loader--button" src="/assets/lmc-wave-loader.svg" alt="">
             <span>メンバーの個人情報を同期中...</span>
           </div>
         `;
@@ -2043,8 +2044,8 @@
         }
 
         resultDiv.innerHTML = `
-          <div class="flex items-center justify-center gap-2 py-8 text-xs font-bold text-gray-400">
-            <div class="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+          <div class="flex items-center justify-center gap-2 py-8 text-xs font-bold text-gray-400" role="status">
+            <img class="lmc-wave-loader lmc-wave-loader--button" src="/assets/lmc-wave-loader.svg" alt="">
             <span>あなただけのセットリストを構築中...</span>
           </div>
         `;

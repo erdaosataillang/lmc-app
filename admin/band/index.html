@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/lmc-loader.css">
     <style>
         /* 万が一の真っ白防止用 */
         body.loading-failed { display: block !important; }
@@ -18,9 +19,9 @@
 </head>
 <body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
     <!-- ローディング画面 (真っ白防止) -->
-    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300">
-        <div class="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-        <p class="text-xs font-bold text-gray-400 tracking-widest uppercase">Initializing System...</p>
+    <div id="initial-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center transition-opacity duration-300" role="status" aria-live="polite">
+        <img class="lmc-wave-loader" src="/assets/lmc-wave-loader.svg" alt="">
+        <p class="lmc-loading-label">バンド情報を準備中...</p>
     </div>
 
     <!-- サイドバーコンテナ -->
@@ -86,8 +87,8 @@
                     <tbody id="bands-list-body" class="text-sm">
                         <tr>
                             <td colspan="4" class="px-8 py-10 text-center text-gray-400 font-bold">
-                                <div class="flex flex-col items-center justify-center gap-2">
-                                    <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-500"></i>
+                                <div class="lmc-loading-state" role="status">
+                                    <img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt="">
                                     <span id="loading-status-text">Connecting to Database...</span>
                                 </div>
                             </td>

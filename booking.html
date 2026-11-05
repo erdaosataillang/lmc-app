@@ -6,6 +6,7 @@
     <title>LMC Mobile - 合わせ予約</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="/css/lmc-loader.css">
     <!-- Cropper.js (画像切り抜き用) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -150,9 +151,7 @@
         .search-input-wrapper input { width: 100%; padding: 14px 14px 14px 44px; border-radius: 999px; border: none; background: #f1f3f4; font-size: 16px; outline: none; box-sizing: border-box; transition: background 0.3s; }
         .search-input-wrapper input:focus { background: #e8f0fe; }
         
-        /* 同期アイコンの左回り回転 */
-        .sync-indicator { margin-right: 12px; animation: spin-reverse 1.5s linear infinite; display: flex; }
-        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+        .sync-indicator { margin-right: 12px; display: flex; }
         
         /* 現在時刻表示用のスタイル */
         .current-time-line { position: absolute; left: 50px; width: calc(100% - 50px); border-top: 2px solid #ea4335; z-index: 50; pointer-events: none; display: none; }
@@ -283,7 +282,7 @@
             <!-- ヘッダー右側のアクションボタン群 -->
             <div class="header-actions">
                 <div id="syncIndicator" class="sync-indicator hidden">
-                    <span class="material-icons" style="font-size: 20px; color: #5f6368;">sync</span>
+                    <img class="lmc-wave-loader lmc-wave-loader--button" src="/assets/lmc-wave-loader.svg" alt="同期中">
                 </div>
                 <div id="btnSearch" class="header-icon-btn" onclick="openSearchModal(event)">
                     <span class="material-icons">search</span>
@@ -1715,7 +1714,7 @@
             const actions = document.getElementById('bookingDetailActions');
             const canEdit = data.creatorId === currentUser || hasAdminAccess(currentUserData);
             actions.style.display = canEdit ? 'block' : 'none';
-            body.innerHTML = `<div style="padding:44px 0; text-align:center; color:#8e8e93;"><span class="material-icons" style="animation:spin 1s linear infinite;">sync</span><div style="margin-top:8px;">詳細を読み込んでいます</div></div>`;
+            body.innerHTML = `<div class="lmc-loading-state" role="status" style="padding:44px 0;"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>予約詳細を読み込み中...</span></div>`;
             openModal('modal-booking-detail');
 
             const [band, creator] = await Promise.all([getBookingBandProfile(data), getBookingCreator(data)]);

@@ -9,6 +9,7 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/lmc-loader.css">
     <style>
         /* ベース設定: コンテンツ部分はモダンなフォント */
         html { width: 100%; height: 100%; overflow: hidden; background: rgb(241, 244, 249); overscroll-behavior: none; }
@@ -390,7 +391,7 @@
                 <button id="concert-event-apply" class="btn-primary concert-event-apply" type="button" onclick="applyConcertEventSelection()" disabled>現在の定期演奏会</button>
             </div>
 
-            <div id="concert-loading" style="text-align:center; padding:40px; color:#8e8e93; font-size:15px; font-weight:500;">読み込み中...</div>
+            <div id="concert-loading" class="lmc-loading-state" style="padding:40px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>イベント情報を読み込み中...</span></div>
 
             <div id="concert-content-area" class="hidden">
                 <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;">
@@ -516,7 +517,7 @@
         </div>
         <div class="content-area" style="padding-top:12px;">
             <button class="btn-primary" style="margin-bottom:20px;" onclick="openAdminEventEditor()"><span class="material-icons" style="font-size:18px; vertical-align:middle; margin-right:6px;">add</span>新しいイベントを作成</button>
-            <div id="adminEventList"><div style="text-align:center; padding:40px; color:#8e8e93;">読み込み中...</div></div>
+            <div id="adminEventList"><div class="lmc-loading-state" style="padding:40px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>イベントを読み込み中...</span></div></div>
         </div>
     </div>
 
@@ -656,7 +657,7 @@
                     <span style="font-size:13px; color:#1c1c1e; font-weight:600;">現役生のみ</span>
                 </div>
             </div>
-            <div id="adminUserList">読み込み中...</div>
+            <div id="adminUserList"><div class="lmc-loading-state" style="padding:40px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>部員情報を読み込み中...</span></div></div>
         </div>
     </div>
 
@@ -709,7 +710,7 @@
 
             <div class="card">
                 <h3 style="font-size:18px; margin:0 0 16px; color:#1c1c1e; font-weight:700;">所属バンド</h3>
-                <div id="admin-user-band-list" style="font-size:15px; line-height:1.6;">読み込み中...</div>
+                <div id="admin-user-band-list" style="font-size:15px; line-height:1.6;"><div class="lmc-loading-state" style="padding:20px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt=""><span>所属バンドを読み込み中...</span></div></div>
             </div>
             <div style="font-size:12px; color:#c7c7cc; text-align:center; margin-top:24px; font-family:monospace;">User ID: <span id="admin-edit-docId"></span></div>
         </div>
@@ -740,7 +741,7 @@
             </div>
 
             <button id="loadBandCuesButton" class="btn-outline" style="margin-bottom:12px;" onclick="loadBandCuesForSearch()">曲名検索用のデータを読み込む</button>
-            <div id="adminBandList">読み込み中...</div>
+            <div id="adminBandList"><div class="lmc-loading-state" style="padding:40px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>バンドを読み込み中...</span></div></div>
         </div>
     </div>
 
@@ -761,7 +762,7 @@
 
             <div class="card">
                 <h3 style="font-size:18px; margin:0 0 16px; color:#1c1c1e; font-weight:700;">Cueシート</h3>
-                <div id="bd-detail-cuesheet-area" style="font-size:15px;"><span style="color:#8e8e93;">読み込み中...</span></div>
+                <div id="bd-detail-cuesheet-area" style="font-size:15px;"><div class="lmc-loading-state" style="padding:20px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt=""><span>Cueシートを読み込み中...</span></div></div>
             </div>
 
             <div class="card">
@@ -775,12 +776,12 @@
 
             <div class="card">
                 <h3 style="font-size:18px; margin:0 0 16px; color:#1c1c1e; font-weight:700;">メンバー一覧</h3>
-                <div id="bd-detail-members-list" style="font-size:15px; line-height:1.6;">読み込み中...</div>
+                <div id="bd-detail-members-list" style="font-size:15px; line-height:1.6;"><div class="lmc-loading-state" style="padding:20px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt=""><span>メンバーを読み込み中...</span></div></div>
             </div>
 
             <div class="card">
                 <h3 style="font-size:18px; margin:0 0 16px; color:#1c1c1e; font-weight:700;">楽曲一覧 (Songs)</h3>
-                <div id="bd-detail-songs-list" style="font-size:15px; line-height:1.6;">読み込み中...</div>
+                <div id="bd-detail-songs-list" style="font-size:15px; line-height:1.6;"><div class="lmc-loading-state" style="padding:20px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt=""><span>楽曲情報を読み込み中...</span></div></div>
             </div>
 
             <div class="card">
@@ -838,6 +839,7 @@
 
         const MY_PAGE_URL = "/mypage.html";
         const DIGITAL_CUE_PATH = 'cue.html';
+        const lmcLoadingMarkup = (label = '読み込み中...', size = 'medium') => `<div class="lmc-loading-state" role="status"><img class="lmc-wave-loader lmc-wave-loader--${size}" src="/assets/lmc-wave-loader.svg" alt=""><span>${label}</span></div>`;
         let concertBandsCache = [];
         let concertTimetableDraft = [];
         let concertTimetableDates = [];
@@ -1399,7 +1401,7 @@
                 return;
             }
 
-            loadingEl.innerHTML = 'イベント情報を読み込み中...';
+            loadingEl.innerHTML = '<img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt=""><span>イベント情報を読み込み中...</span>';
             loadingEl.classList.remove('hidden');
             contentEl.classList.add('hidden');
 
@@ -1516,7 +1518,7 @@
                 renderAdminEvents();
                 return;
             }
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:#8e8e93;">イベントを読み込み中...</div>';
+            container.innerHTML = `<div style="padding:40px;">${lmcLoadingMarkup('イベントを読み込み中...')}</div>`;
             try {
                 await ensureEventsCache(forceRefresh);
                 renderAdminEvents();
@@ -1888,7 +1890,7 @@
         window.openAdminUsers = async () => {
             openPage('admin-users');
             const container = document.getElementById('adminUserList');
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:#8e8e93;">読み込み中...</div>';
+            container.innerHTML = `<div style="padding:40px;">${lmcLoadingMarkup('部員情報を読み込み中...')}</div>`;
             try {
                 if (allUsersCache.length === 0) {
                     const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
@@ -2084,7 +2086,7 @@
 
         async function loadAdminUserBands(uid) {
             const container = document.getElementById('admin-user-band-list');
-            container.innerHTML = '<div style="text-align:center; padding:10px; color:#8e8e93;">読み込み中...</div>';
+            container.innerHTML = `<div style="padding:10px;">${lmcLoadingMarkup('所属バンドを読み込み中...', 'small')}</div>`;
             try {
                 const q = query(collection(db, "bands"), where("memberIds", "array-contains", uid));
                 const qs = await getDocs(q);
@@ -2146,7 +2148,7 @@
             if (bandsLoaded) { filterAndRenderBands(); return; }
             if (bandsLoadPromise) return bandsLoadPromise;
             const container = document.getElementById('adminBandList');
-            container.innerHTML = '<div style="text-align:center; padding:40px; color:#8e8e93;">読み込み中...</div>';
+            container.innerHTML = `<div style="padding:40px;">${lmcLoadingMarkup('バンドを読み込み中...')}</div>`;
             bandsLoadPromise = (async () => {
                 try {
                     const usersPromise = allUsersCache.length === 0 ? getDocs(collection(db, "users")) : Promise.resolve(null);
@@ -2336,9 +2338,9 @@
             const songsContainer = document.getElementById('bd-detail-songs-list');
             const cueArea = document.getElementById('bd-detail-cuesheet-area');
 
-            membersContainer.innerHTML = '<div style="color:#8e8e93; text-align:center; padding:20px;">読み込み中...</div>';
-            songsContainer.innerHTML = '<div style="color:#8e8e93; text-align:center; padding:20px;">読み込み中...</div>';
-            cueArea.innerHTML = '<span style="color:#8e8e93;">読み込み中...</span>';
+            membersContainer.innerHTML = `<div style="padding:20px;">${lmcLoadingMarkup('メンバーを読み込み中...', 'small')}</div>`;
+            songsContainer.innerHTML = `<div style="padding:20px;">${lmcLoadingMarkup('楽曲情報を読み込み中...', 'small')}</div>`;
+            cueArea.innerHTML = `<div style="padding:20px;">${lmcLoadingMarkup('Cueシートを読み込み中...', 'small')}</div>`;
 
             document.getElementById('bd-detail-existing').innerText = "-";
             document.getElementById('bd-detail-sync').innerText = "-";

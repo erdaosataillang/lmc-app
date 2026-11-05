@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/lmc-loader.css">
     <!-- LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
@@ -45,8 +46,10 @@
                 </button>
 
                 <div id="loading-spinner" class="hidden py-4">
-                    <i class="fa-solid fa-spinner fa-spin text-blue-500 text-2xl"></i>
-                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mt-2">Authenticating...</p>
+                    <div class="lmc-loading-state" role="status" aria-live="polite">
+                        <img class="lmc-wave-loader lmc-wave-loader--medium" src="/assets/lmc-wave-loader.svg" alt="">
+                        <p class="lmc-loading-label">LINE認証中...</p>
+                    </div>
                 </div>
 
                 <p id="login-error" class="hidden rounded-2xl bg-red-50 px-4 py-3 text-left text-xs font-bold leading-relaxed text-red-600"></p>
