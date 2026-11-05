@@ -85,22 +85,196 @@
     padding: 20px 14px;
 }
 
-.lmc-mascot-image {
-    display: block;
-    width: 110px !important;
-    max-width: 34vw !important;
-    height: auto;
-    margin: -14px 0 -8px;
-    object-fit: contain;
-    filter: drop-shadow(0 10px 18px rgba(79, 70, 229, .13));
-    transform-origin: 50% 72%;
-    animation: lmcMascotWalk 7.2s linear infinite;
-    will-change: transform;
+.lmc-css-cat,
+.lmc-css-cat * {
+    box-sizing: border-box;
 }
 
-.lmc-mascot-state--compact .lmc-mascot-image {
-    width: 88px !important;
-    margin: -12px 0 -7px;
+.lmc-css-cat {
+    position: relative;
+    display: block;
+    width: 108px;
+    height: 82px;
+    margin: -5px 0 3px;
+    filter: drop-shadow(0 9px 14px rgba(79, 70, 229, .16));
+}
+
+.lmc-mascot-state--compact .lmc-css-cat {
+    margin: -11px 0 -4px;
+    transform: scale(.82);
+}
+
+.lmc-css-cat__tail {
+    position: absolute;
+    top: 31px;
+    left: 5px;
+    z-index: 0;
+    width: 43px;
+    height: 34px;
+    border-top: 7px solid #6366f1;
+    border-left: 7px solid #4f46e5;
+    border-radius: 30px 0 0;
+    transform: rotate(-13deg);
+    transform-origin: 100% 85%;
+    animation: lmcCatTail 1.55s ease-in-out infinite;
+}
+
+.lmc-css-cat__tail::before {
+    content: '';
+    position: absolute;
+    top: -22px;
+    left: -5px;
+    width: 5px;
+    height: 18px;
+    border-radius: 5px;
+    background: #8b5cf6;
+}
+
+.lmc-css-cat__tail::after {
+    content: '';
+    position: absolute;
+    top: -12px;
+    left: -10px;
+    width: 12px;
+    height: 9px;
+    border-radius: 55% 45% 55% 45%;
+    background: #8b5cf6;
+    transform: rotate(-18deg);
+}
+
+.lmc-css-cat__body {
+    position: absolute;
+    top: 14px;
+    left: 30px;
+    z-index: 1;
+    width: 72px;
+    height: 60px;
+    border-radius: 46% 48% 40% 42%;
+    background: linear-gradient(145deg, #4f7cff 0%, #4f46e5 58%, #4338ca 100%);
+    transform-origin: 50% 100%;
+    animation: lmcCatBodyStep .72s ease-in-out infinite;
+}
+
+.lmc-css-cat__ear {
+    position: absolute;
+    top: -15px;
+    width: 24px;
+    height: 27px;
+    background: #4f6ff1;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.lmc-css-cat__ear::after {
+    content: '';
+    position: absolute;
+    inset: 8px 6px 3px;
+    background: #d8b4fe;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
+.lmc-css-cat__ear--left {
+    left: 7px;
+    transform: rotate(-5deg);
+}
+
+.lmc-css-cat__ear--right {
+    top: -11px;
+    right: 6px;
+    height: 23px;
+    background: #3730a3;
+    transform: rotate(12deg) skewX(-9deg);
+}
+
+.lmc-css-cat__eye {
+    position: absolute;
+    top: 21px;
+    width: 5px;
+    height: 11px;
+    border-radius: 5px;
+    background: #fff;
+    transform-origin: center;
+    animation: lmcCatBlink 4.8s ease-in-out infinite;
+}
+
+.lmc-css-cat__eye--left { left: 19px; }
+.lmc-css-cat__eye--right { right: 19px; }
+
+.lmc-css-cat__mouth {
+    position: absolute;
+    top: 33px;
+    left: 31px;
+    width: 11px;
+    height: 7px;
+    border-bottom: 2px solid #fff;
+    border-radius: 0 0 10px 10px;
+}
+
+.lmc-css-cat__wave {
+    position: absolute;
+    bottom: 12px;
+    left: 29px;
+    display: flex;
+    height: 13px;
+    align-items: center;
+    gap: 2px;
+}
+
+.lmc-css-cat__wave i {
+    display: block;
+    width: 4px;
+    height: 8px;
+    border-radius: 4px;
+    background: #fbbf6a;
+    animation: lmcCatWave 1.1s ease-in-out infinite;
+}
+
+.lmc-css-cat__wave i:nth-child(2) {
+    height: 13px;
+    animation-delay: -.2s;
+}
+
+.lmc-css-cat__wave i:nth-child(3) {
+    animation-delay: -.4s;
+}
+
+.lmc-css-cat__belly {
+    position: absolute;
+    right: 17px;
+    bottom: 0;
+    width: 38px;
+    height: 15px;
+    border-radius: 50% 50% 35% 35%;
+    background: #a5b4fc;
+    opacity: .76;
+}
+
+.lmc-css-cat__paw {
+    position: absolute;
+    bottom: -4px;
+    z-index: 2;
+    width: 20px;
+    height: 13px;
+    border-radius: 55% 55% 44% 44%;
+    background: #818cf8;
+    transform-origin: 50% 100%;
+    animation: lmcCatPaw .72s ease-in-out infinite;
+}
+
+.lmc-css-cat__paw::after {
+    content: '';
+    position: absolute;
+    right: 6px;
+    bottom: 1px;
+    width: 2px;
+    height: 6px;
+    border-radius: 2px;
+    background: #4f46e5;
+}
+
+.lmc-css-cat__paw--left { left: 9px; }
+.lmc-css-cat__paw--right {
+    right: 8px;
+    animation-delay: -.36s;
 }
 
 .lmc-mascot-title {
@@ -118,23 +292,31 @@
     line-height: 1.55;
 }
 
-@keyframes lmcMascotWalk {
-    0%, 5% { transform: translate(-24px, 0) scaleX(1); }
-    11% { transform: translate(-18px, -2px) scaleX(1) rotate(-1deg); }
-    17% { transform: translate(-12px, 0) scaleX(1) rotate(1deg); }
-    23% { transform: translate(-6px, -2px) scaleX(1) rotate(-1deg); }
-    29% { transform: translate(0, 0) scaleX(1) rotate(1deg); }
-    35% { transform: translate(8px, -2px) scaleX(1) rotate(-1deg); }
-    41% { transform: translate(16px, 0) scaleX(1) rotate(1deg); }
-    47%, 49.9% { transform: translate(24px, 0) scaleX(1); }
-    50%, 54% { transform: translate(24px, 0) scaleX(-1); }
-    60% { transform: translate(16px, -2px) scaleX(-1) rotate(-1deg); }
-    66% { transform: translate(8px, 0) scaleX(-1) rotate(1deg); }
-    72% { transform: translate(0, -2px) scaleX(-1) rotate(-1deg); }
-    78% { transform: translate(-8px, 0) scaleX(-1) rotate(1deg); }
-    84% { transform: translate(-16px, -2px) scaleX(-1) rotate(-1deg); }
-    90%, 94.9% { transform: translate(-24px, 0) scaleX(-1); }
-    95%, 100% { transform: translate(-24px, 0) scaleX(1); }
+@keyframes lmcCatTail {
+    0%, 100% { transform: rotate(-18deg); }
+    50% { transform: rotate(7deg); }
+}
+
+@keyframes lmcCatBodyStep {
+    0%, 100% { transform: translateY(0) rotate(-.7deg); }
+    25% { transform: translateY(-2px) rotate(.7deg); }
+    50% { transform: translateY(0) rotate(.7deg); }
+    75% { transform: translateY(-2px) rotate(-.7deg); }
+}
+
+@keyframes lmcCatPaw {
+    0%, 45%, 100% { transform: translateY(0) rotate(0); }
+    20% { transform: translateY(-4px) rotate(-9deg); }
+}
+
+@keyframes lmcCatBlink {
+    0%, 43%, 47%, 100% { transform: scaleY(1); }
+    45% { transform: scaleY(.12); }
+}
+
+@keyframes lmcCatWave {
+    0%, 100% { transform: scaleY(.72); opacity: .72; }
+    50% { transform: scaleY(1); opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -142,7 +324,11 @@
         opacity: .88;
     }
 
-    .lmc-mascot-image {
+    .lmc-css-cat__tail,
+    .lmc-css-cat__body,
+    .lmc-css-cat__eye,
+    .lmc-css-cat__wave i,
+    .lmc-css-cat__paw {
         animation: none;
     }
 }
