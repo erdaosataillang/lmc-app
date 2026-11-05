@@ -6,7 +6,8 @@
     <title>LMC Mobile - 合わせ予約</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="/css/lmc-loader.css?v=20261105-4">
+    <link rel="stylesheet" href="/css/lmc-loader.css?v=20261105-5">
+    <script defer src="/js/lmc-cat.js?v=20261105-1"></script>
     <script defer src="/js/lmc-loader-transition.js"></script>
     <!-- Cropper.js (画像切り抜き用) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
@@ -1870,7 +1871,7 @@
             });
 
             if (filtered.length === 0) {
-                container.innerHTML = '<div class="lmc-mascot-state lmc-mascot-state--compact"><div class="lmc-css-cat" aria-hidden="true"><i class="lmc-css-cat__tail"></i><div class="lmc-css-cat__body"><i class="lmc-css-cat__ear lmc-css-cat__ear--left"></i><i class="lmc-css-cat__ear lmc-css-cat__ear--right"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--left"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--right"></i><i class="lmc-css-cat__mouth"></i><span class="lmc-css-cat__wave"><i></i><i></i><i></i></span><i class="lmc-css-cat__belly"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--left"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--right"></i></div></div><div class="lmc-mascot-title">該当する予約はありません</div><div class="lmc-mascot-note">検索条件を変えてみてください</div></div>';
+                container.innerHTML = '<div class="lmc-mascot-state lmc-mascot-state--compact"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">該当する予約はありません</div><div class="lmc-mascot-note">検索条件を変えてみてください</div></div>';
                 return;
             }
 

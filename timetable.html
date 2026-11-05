@@ -9,7 +9,8 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="/css/lmc-loader.css?v=20261105-4">
+    <link rel="stylesheet" href="/css/lmc-loader.css?v=20261105-5">
+    <script defer src="/js/lmc-cat.js?v=20261105-1"></script>
     <script defer src="/js/lmc-loader-transition.js"></script>
     <style>
         html { width:100%; height:100%; overflow:hidden; overscroll-behavior:none; }
@@ -322,7 +323,7 @@
             }
             const posts = uniqueBandEntries();
             if (!posts.length) {
-                container.innerHTML = '<div class="state lmc-mascot-state"><div class="lmc-css-cat" aria-hidden="true"><i class="lmc-css-cat__tail"></i><div class="lmc-css-cat__body"><i class="lmc-css-cat__ear lmc-css-cat__ear--left"></i><i class="lmc-css-cat__ear lmc-css-cat__ear--right"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--left"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--right"></i><i class="lmc-css-cat__mouth"></i><span class="lmc-css-cat__wave"><i></i><i></i><i></i></span><i class="lmc-css-cat__belly"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--left"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--right"></i></div></div><div class="lmc-mascot-title">出演バンドはまだありません</div><div class="lmc-mascot-note">公開されると、ここにタイムラインが表示されます</div></div>';
+                container.innerHTML = '<div class="state lmc-mascot-state"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">出演バンドはまだありません</div><div class="lmc-mascot-note">公開されると、ここにタイムラインが表示されます</div></div>';
                 return;
             }
             container.innerHTML = `<div class="timeline-feed">${posts.map(entry => {
@@ -488,7 +489,7 @@
             });
             const container = document.getElementById('scheduleList');
             if (dayEntries.length === 0) {
-                container.innerHTML = '<div class="state lmc-mascot-state"><div class="lmc-css-cat" aria-hidden="true"><i class="lmc-css-cat__tail"></i><div class="lmc-css-cat__body"><i class="lmc-css-cat__ear lmc-css-cat__ear--left"></i><i class="lmc-css-cat__ear lmc-css-cat__ear--right"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--left"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--right"></i><i class="lmc-css-cat__mouth"></i><span class="lmc-css-cat__wave"><i></i><i></i><i></i></span><i class="lmc-css-cat__belly"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--left"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--right"></i></div></div><div class="lmc-mascot-title">出演予定はありません</div><div class="lmc-mascot-note">別の日付も確認してみてください</div></div>';
+                container.innerHTML = '<div class="state lmc-mascot-state"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">出演予定はありません</div><div class="lmc-mascot-note">別の日付も確認してみてください</div></div>';
                 return;
             }
             container.innerHTML = dayEntries.map((entry, index) => {

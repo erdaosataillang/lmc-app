@@ -85,197 +85,69 @@
     padding: 20px 14px;
 }
 
-.lmc-css-cat,
-.lmc-css-cat * {
-    box-sizing: border-box;
-}
-
-.lmc-css-cat {
-    position: relative;
+.lmc-vector-cat {
     display: block;
-    width: 108px;
-    height: 82px;
-    margin: -5px 0 3px;
-    filter: drop-shadow(0 9px 14px rgba(79, 70, 229, .16));
+    width: 116px;
+    height: 97px;
+    margin: -8px 0 0;
+    filter: drop-shadow(0 9px 15px rgba(67, 56, 202, .18));
 }
 
-.lmc-mascot-state--compact .lmc-css-cat {
-    margin: -11px 0 -4px;
-    transform: scale(.82);
+.lmc-mascot-state--compact .lmc-vector-cat {
+    width: 96px;
+    height: 80px;
+    margin: -9px 0 -2px;
 }
 
-.lmc-css-cat__tail {
-    position: absolute;
-    top: 31px;
-    left: 5px;
-    z-index: 0;
-    width: 43px;
-    height: 34px;
-    border-top: 7px solid #6366f1;
-    border-left: 7px solid #4f46e5;
-    border-radius: 30px 0 0;
-    transform: rotate(-13deg);
-    transform-origin: 100% 85%;
-    animation: lmcCatTail 1.55s ease-in-out infinite;
+.lmc-vector-cat__svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
 }
 
-.lmc-css-cat__tail::before {
-    content: '';
-    position: absolute;
-    top: -22px;
-    left: -5px;
-    width: 5px;
-    height: 18px;
-    border-radius: 5px;
-    background: #8b5cf6;
+.lmc-vector-cat__tail {
+    transform-box: fill-box;
+    transform-origin: 88% 88%;
+    animation: lmcCatTail 1.7s ease-in-out infinite;
 }
 
-.lmc-css-cat__tail::after {
-    content: '';
-    position: absolute;
-    top: -12px;
-    left: -10px;
-    width: 12px;
-    height: 9px;
-    border-radius: 55% 45% 55% 45%;
-    background: #8b5cf6;
-    transform: rotate(-18deg);
-}
-
-.lmc-css-cat__body {
-    position: absolute;
-    top: 14px;
-    left: 30px;
-    z-index: 1;
-    width: 72px;
-    height: 60px;
-    border-radius: 46% 48% 40% 42%;
-    background: linear-gradient(145deg, #4f7cff 0%, #4f46e5 58%, #4338ca 100%);
+.lmc-vector-cat__body {
+    transform-box: fill-box;
     transform-origin: 50% 100%;
-    animation: lmcCatBodyStep .72s ease-in-out infinite;
+    animation: lmcCatBodyStep .78s ease-in-out infinite;
 }
 
-.lmc-css-cat__ear {
-    position: absolute;
-    top: -15px;
-    width: 24px;
-    height: 27px;
-    background: #4f6ff1;
-    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+.lmc-vector-cat__ear-fold {
+    transform-box: fill-box;
+    transform-origin: 28% 76%;
+    animation: lmcCatEar 4.6s ease-in-out infinite;
 }
 
-.lmc-css-cat__ear::after {
-    content: '';
-    position: absolute;
-    inset: 8px 6px 3px;
-    background: #d8b4fe;
-    clip-path: polygon(50% 0, 100% 100%, 0 100%);
-}
-
-.lmc-css-cat__ear--left {
-    left: 7px;
-    transform: rotate(-5deg);
-}
-
-.lmc-css-cat__ear--right {
-    top: -11px;
-    right: 6px;
-    height: 23px;
-    background: #3730a3;
-    transform: rotate(12deg) skewX(-9deg);
-}
-
-.lmc-css-cat__eye {
-    position: absolute;
-    top: 21px;
-    width: 5px;
-    height: 11px;
-    border-radius: 5px;
-    background: #fff;
+.lmc-vector-cat__eye {
+    transform-box: fill-box;
     transform-origin: center;
     animation: lmcCatBlink 4.8s ease-in-out infinite;
 }
 
-.lmc-css-cat__eye--left { left: 19px; }
-.lmc-css-cat__eye--right { right: 19px; }
-
-.lmc-css-cat__mouth {
-    position: absolute;
-    top: 33px;
-    left: 31px;
-    width: 11px;
-    height: 7px;
-    border-bottom: 2px solid #fff;
-    border-radius: 0 0 10px 10px;
+.lmc-vector-cat__paw {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: lmcCatPaw .78s ease-in-out infinite;
 }
 
-.lmc-css-cat__wave {
-    position: absolute;
-    bottom: 12px;
-    left: 29px;
-    display: flex;
-    height: 13px;
-    align-items: center;
-    gap: 2px;
+.lmc-vector-cat__paw--right {
+    animation-delay: -.39s;
 }
 
-.lmc-css-cat__wave i {
-    display: block;
-    width: 4px;
-    height: 8px;
-    border-radius: 4px;
-    background: #fbbf6a;
+.lmc-vector-cat__wave-bar {
+    transform-box: fill-box;
+    transform-origin: center;
     animation: lmcCatWave 1.1s ease-in-out infinite;
 }
 
-.lmc-css-cat__wave i:nth-child(2) {
-    height: 13px;
-    animation-delay: -.2s;
-}
-
-.lmc-css-cat__wave i:nth-child(3) {
-    animation-delay: -.4s;
-}
-
-.lmc-css-cat__belly {
-    position: absolute;
-    right: 17px;
-    bottom: 0;
-    width: 38px;
-    height: 15px;
-    border-radius: 50% 50% 35% 35%;
-    background: #a5b4fc;
-    opacity: .76;
-}
-
-.lmc-css-cat__paw {
-    position: absolute;
-    bottom: -4px;
-    z-index: 2;
-    width: 20px;
-    height: 13px;
-    border-radius: 55% 55% 44% 44%;
-    background: #818cf8;
-    transform-origin: 50% 100%;
-    animation: lmcCatPaw .72s ease-in-out infinite;
-}
-
-.lmc-css-cat__paw::after {
-    content: '';
-    position: absolute;
-    right: 6px;
-    bottom: 1px;
-    width: 2px;
-    height: 6px;
-    border-radius: 2px;
-    background: #4f46e5;
-}
-
-.lmc-css-cat__paw--left { left: 9px; }
-.lmc-css-cat__paw--right {
-    right: 8px;
-    animation-delay: -.36s;
-}
+.lmc-vector-cat__wave-bar:nth-child(2) { animation-delay: -.2s; }
+.lmc-vector-cat__wave-bar:nth-child(3) { animation-delay: -.4s; }
 
 .lmc-mascot-title {
     color: #334155;
@@ -314,6 +186,13 @@
     45% { transform: scaleY(.12); }
 }
 
+@keyframes lmcCatEar {
+    0%, 78%, 100% { transform: rotate(0); }
+    82% { transform: rotate(-7deg); }
+    86% { transform: rotate(4deg); }
+    90% { transform: rotate(0); }
+}
+
 @keyframes lmcCatWave {
     0%, 100% { transform: scaleY(.72); opacity: .72; }
     50% { transform: scaleY(1); opacity: 1; }
@@ -324,11 +203,12 @@
         opacity: .88;
     }
 
-    .lmc-css-cat__tail,
-    .lmc-css-cat__body,
-    .lmc-css-cat__eye,
-    .lmc-css-cat__wave i,
-    .lmc-css-cat__paw {
+    .lmc-vector-cat__tail,
+    .lmc-vector-cat__body,
+    .lmc-vector-cat__ear-fold,
+    .lmc-vector-cat__eye,
+    .lmc-vector-cat__wave-bar,
+    .lmc-vector-cat__paw {
         animation: none;
     }
 }

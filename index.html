@@ -197,7 +197,8 @@
     </style>
     <!-- ▼ ここに外部CSSの読み込みを追記 (優先させるためstyleタグの下に置きます) ▼ -->
     <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" href="/css/lmc-loader.css?v=20261105-4">
+    <link rel="stylesheet" href="/css/lmc-loader.css?v=20261105-5">
+    <script defer src="/js/lmc-cat.js?v=20261105-1"></script>
     <script defer src="/js/lmc-loader-transition.js"></script>
 </head>
 <body>
@@ -1353,7 +1354,7 @@
                         イベントが公開されるまで、参加中のバンドはここで確認できます。
                     </div>`;
                 myBandsAll.forEach(b => arcEl.appendChild(createCard(b)));
-                if (myBandsAll.length === 0) arcEl.insertAdjacentHTML('beforeend', '<div class="lmc-mascot-state" style="grid-column:span 2;"><div class="lmc-css-cat" aria-hidden="true"><i class="lmc-css-cat__tail"></i><div class="lmc-css-cat__body"><i class="lmc-css-cat__ear lmc-css-cat__ear--left"></i><i class="lmc-css-cat__ear lmc-css-cat__ear--right"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--left"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--right"></i><i class="lmc-css-cat__mouth"></i><span class="lmc-css-cat__wave"><i></i><i></i><i></i></span><i class="lmc-css-cat__belly"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--left"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--right"></i></div></div><div class="lmc-mascot-title">参加中のバンドはありません</div><div class="lmc-mascot-note">バンドに参加すると、ここに表示されます</div></div>');
+                if (myBandsAll.length === 0) arcEl.insertAdjacentHTML('beforeend', '<div class="lmc-mascot-state" style="grid-column:span 2;"><lmc-cat class="lmc-vector-cat"></lmc-cat><div class="lmc-mascot-title">参加中のバンドはありません</div><div class="lmc-mascot-note">バンドに参加すると、ここに表示されます</div></div>');
                 return;
             }
 
@@ -1379,15 +1380,7 @@
                 if(!s.children.length) {
                     s.innerHTML = `
                         <div class="lmc-mascot-state" style="grid-column:span 2; height:100%; padding-bottom:80px;">
-                            <div class="lmc-css-cat" aria-hidden="true">
-                                <i class="lmc-css-cat__tail"></i>
-                                <div class="lmc-css-cat__body">
-                                    <i class="lmc-css-cat__ear lmc-css-cat__ear--left"></i><i class="lmc-css-cat__ear lmc-css-cat__ear--right"></i>
-                                    <i class="lmc-css-cat__eye lmc-css-cat__eye--left"></i><i class="lmc-css-cat__eye lmc-css-cat__eye--right"></i>
-                                    <i class="lmc-css-cat__mouth"></i><span class="lmc-css-cat__wave"><i></i><i></i><i></i></span>
-                                    <i class="lmc-css-cat__belly"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--left"></i><i class="lmc-css-cat__paw lmc-css-cat__paw--right"></i>
-                                </div>
-                            </div>
+                            <lmc-cat class="lmc-vector-cat"></lmc-cat>
                             <div class="lmc-mascot-title">登録されているバンドがありません</div>
                             <div class="lmc-mascot-note">
                                 右下の <span style="display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; background:#c2e7ff; color:#001d35; border-radius:50%; font-weight:bold; font-size:13px; vertical-align:middle; margin:0 2px;">＋</span> ボタンから<br>
