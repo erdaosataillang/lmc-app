@@ -87,21 +87,39 @@
         .time-label { width: 50px; font-size: 12px; color: #5f6368; text-align: center; transform: translateY(-8px); }
         .time-content { flex-grow: 1; height: 100%; position: relative; border-left: 1px solid #f0f0f0; touch-action: pan-y; } .time-content.selecting { background-color: rgba(11, 87, 208, 0.2); }
         
-        /* 予約ブロックのデザイン (角丸強め) */
-        .event-block { position: absolute; left: 0; width: 100%; border-left: 4px solid transparent; border-radius: 8px; padding: 4px 6px; font-size: 11px; overflow: hidden; cursor: pointer; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.05); box-sizing: border-box; line-height: 1.2; }
-        .event-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; margin-bottom: 1px; } 
+        /* 予約ブロック */
+        .event-block { position:absolute; left:0; width:100%; border:1px solid transparent; border-radius:14px; padding:5px 7px; font-size:11px; overflow:hidden; cursor:pointer; z-index:10; box-shadow:0 5px 16px rgba(31,41,55,.09); box-sizing:border-box; line-height:1.2; transition:transform .16s ease,box-shadow .16s ease,filter .16s ease; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+        .event-block:active { transform:scale(.975); filter:saturate(1.06); }
+        .event-block:focus-visible { outline:3px solid rgba(11,87,208,.24); outline-offset:2px; }
+        .event-block-inner { height:100%; min-width:0; display:flex; align-items:center; gap:6px; }
+        .event-block-icon { width:24px; height:24px; border-radius:8px; background:rgba(255,255,255,.68); display:grid; place-items:center; flex:none; box-shadow:inset 0 0 0 1px rgba(255,255,255,.42); }
+        .event-block-icon .material-icons { font-size:15px; }
+        .event-block-copy { min-width:0; flex:1; }
+        .event-title { font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; margin:0; letter-spacing:.01em; }
+        .event-meta { display:flex; align-items:center; gap:3px; margin-top:2px; font-size:9px; opacity:.74; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .event-meta .material-icons { font-size:10px; }
+        .event-block-open { font-size:14px; opacity:.55; flex:none; }
+        .event-block.event-block-compact { padding:3px 5px; border-radius:10px; }
+        .event-block.event-block-compact .event-block-inner { gap:4px; }
+        .event-block.event-block-compact .event-block-icon { width:18px; height:18px; border-radius:6px; }
+        .event-block.event-block-compact .event-block-icon .material-icons { font-size:12px; }
+        .event-block.event-block-compact .event-meta,.event-block.event-block-compact .event-block-open { display:none; }
+        .event-block.event-block-compact .event-title { font-size:10px; }
         
         /* 即確定 (青系) */
-        .event-block.normal-confirmed { background: #e8f0fe; border-left-color: #0b57d0; color: #0b57d0; }
+        .event-block.normal-confirmed { background:linear-gradient(135deg,#e8f0fe,#dceaff); border-color:#c9ddff; color:#174ea6; }
         /* 抽選 確定前 (オレンジ系) */
-        .event-block.pending { opacity: 0.9; background: #fff8e1; border-color: #ffb300; color: #b06000; border-style: dashed; border-left-style: solid; border-width: 1px 1px 1px 4px; }
+        .event-block.pending { background:linear-gradient(135deg,#fff8e1,#fff0c2); border-color:#f5d47a; color:#8a4b00; border-style:dashed; }
         /* 抽選 確定後 (紫系) */
-        .event-block.lottery-confirmed { background: #f3e5f5; border-left-color: #ab47bc; color: #4a148c; }
+        .event-block.lottery-confirmed { background:linear-gradient(135deg,#f5e9f8,#eadcf5); border-color:#d8bde5; color:#6a1b7a; }
         /* 管理者による確定/イベント (緑系) */
-        .event-block.special-event { background: #e6f4ea; border-left-color: #137333; color: #0d652d; }
+        .event-block.special-event { background:linear-gradient(135deg,#e6f4ea,#d8f0df); border-color:#b9dfc5; color:#0d652d; }
         .event-block.my-band-booking { box-shadow: 0 0 0 2px #34a853, 0 4px 12px rgba(52,168,83,.2); }
         .event-block.my-band-booking::after { content: "参加中"; position:absolute; top:3px; right:4px; padding:2px 5px; border-radius:999px; background:#137333; color:white; font-size:8px; font-weight:700; }
         .event-block.my-band-booking .event-title { padding-right:36px; }
+
+        .booking-tap-hint { margin:0 2px 10px; display:flex; justify-content:center; align-items:center; gap:5px; color:#778198; font-size:11px; font-weight:600; }
+        .booking-tap-hint .material-icons { font-size:14px; color:#6b86ad; }
 
         .booking-detail-hero { background:linear-gradient(135deg,#e8f0fe,#f3e5f5); border-radius:22px; padding:18px; display:flex; align-items:center; gap:14px; }
         .booking-detail-band-icon { width:66px; height:66px; border-radius:20px; object-fit:cover; background:white; box-shadow:0 3px 12px rgba(0,0,0,.09); flex-shrink:0; }
@@ -227,6 +245,11 @@
         #modal-booking .setting-icon { border-radius:11px; }
         .booking-actions { margin-top:24px; display:flex; flex-direction:column; gap:10px; }
         .booking-actions #btnSaveBooking { border-radius:999px!important; box-shadow:0 8px 22px rgba(11,87,208,.22); }
+        .band-source-control { margin:0 0 14px; }
+        .band-picker-panel { display:flex; align-items:center; gap:12px; min-width:0; }
+        .band-picker-panel.hidden { display:none!important; }
+        .band-picker-copy { min-width:0; flex:1; }
+        .band-picker-caption { margin-top:5px; color:#8a94a6; font-size:11px; line-height:1.45; }
 
         /* 月表示から日表示への遷移 */
         .day-cell.opening-day { position:relative; z-index:4; animation:dayCellPick .18s cubic-bezier(.2,.8,.2,1) both; }
@@ -331,7 +354,7 @@
                 <div id="weekStrip" class="week-strip"></div>
                 
                 <div id="bookingModeBanner" style="margin:0 0 12px; padding:12px; border-radius:12px; font-size:13px; text-align:center; line-height:1.4;"></div>
-                <div style="font-size:11px; color:#999; text-align:center; margin-bottom:8px;">空き時間を長押し＆なぞって予約 / 予約をタップして詳細を表示</div>
+                <div class="booking-tap-hint"><span class="material-icons">touch_app</span><span>予約をタップすると、予約者とバンドの詳細を見られます</span></div>
                 <div class="timeline-container" id="timeline"></div>
             </div>
         </div>
@@ -419,13 +442,25 @@
             <!-- バンド/イベント名入力のカード -->
             <div class="booking-section-label">予約内容</div>
             <div class="setting-card">
-                <div class="setting-row" id="groupBandSelect">
-                    <div class="setting-label" style="width: 100px;">
-                        <div class="setting-icon" style="background:#e6f4ea; color:#137333;"><span class="material-icons">music_note</span></div>
-                        バンド
+                <div class="setting-row" id="groupBandSelect" style="display:block;">
+                    <div class="segmented-control band-source-control">
+                        <input type="radio" name="bandSource" id="bandSourceJoined" value="joined" checked onchange="toggleBandSource()">
+                        <label for="bandSourceJoined">参加中のバンド</label>
+                        <input type="radio" name="bandSource" id="bandSourceCustom" value="custom" onchange="toggleBandSource()">
+                        <label for="bandSourceCustom">その他のバンド</label>
                     </div>
-                    <div class="setting-value" style="flex:1; justify-content:flex-end; min-width:0;">
-                        <select id="selectBookingBand" class="minimal-select" style="width:100%; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding-right: 15px; direction: rtl;"></select>
+                    <div id="joinedBandPanel" class="band-picker-panel">
+                        <div class="setting-icon" style="background:#e6f4ea; color:#137333;"><span class="material-icons">groups</span></div>
+                        <div class="band-picker-copy">
+                            <select id="selectBookingBand" class="minimal-select" style="width:100%; max-width:100%; text-overflow:ellipsis; white-space:nowrap; overflow:hidden; padding-right:15px;"></select>
+                        </div>
+                    </div>
+                    <div id="customBandPanel" class="band-picker-panel hidden">
+                        <div class="setting-icon" style="background:#ede9fe; color:#6d4cc7;"><span class="material-icons">edit_note</span></div>
+                        <div class="band-picker-copy">
+                            <input type="text" id="inputCustomBandName" class="minimal-input" maxlength="120" autocomplete="off" placeholder="バンド名を入力" style="text-align:left; color:#26334d;">
+                            <div class="band-picker-caption">登録前・一度限りのバンドも予約できます</div>
+                        </div>
                     </div>
                 </div>
                 <div class="setting-row hidden" id="groupEventTitle">
@@ -626,6 +661,7 @@
         let currentLotteryRunData = null;
         let lotteryNotificationsCache = [];
         let bookingDetailTarget = null;
+        let bookingDetailRequestToken = 0;
         const bandProfileCache = new Map();
         let currentMonthUnsub = null;
         let currentDayUnsub = null;
@@ -637,8 +673,14 @@
 
         window.showCustomAlert = async function(message, title = "通知") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.add('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(); }; modal.classList.add('open'); }); }
         window.showCustomConfirm = async function(message, title = "確認") { return new Promise((resolve) => { const modal = document.getElementById('modal-custom-dialog'); document.getElementById('dialogTitle').innerText = title; document.getElementById('dialogMessage').innerText = message; const okBtn = document.getElementById('dialogBtnOk'); const cancelBtn = document.getElementById('dialogBtnCancel'); cancelBtn.classList.remove('hidden'); okBtn.onclick = () => { modal.classList.remove('open'); resolve(true); }; cancelBtn.onclick = () => { modal.classList.remove('open'); resolve(false); }; modal.classList.add('open'); }); }
-        window.openModal=(id)=>document.getElementById(id).classList.add('open');
-        window.closeModal=(id)=>document.getElementById(id).classList.remove('open');
+        window.openModal=(id)=>document.getElementById(id)?.classList.add('open');
+        window.closeModal=(id)=>{
+            document.getElementById(id)?.classList.remove('open');
+            if (id === 'modal-booking-detail') {
+                bookingDetailTarget = null;
+                bookingDetailRequestToken++;
+            }
+        };
         
         const isCacheFresh = (key) => Date.now() - Number(localStorage.getItem(key) || 0) < CACHE_FRESH_MS;
 
@@ -1291,24 +1333,42 @@
             const s=new Date(d.startTime), e=new Date(d.endTime), sM=(s.getHours()-9)*60+s.getMinutes(), eM=(e.getHours()-9)*60+e.getMinutes(), slots=document.querySelectorAll('.time-slot'); 
             if(slots[s.getHours()-9]){ 
                 const cA=slots[s.getHours()-9].querySelector('.time-content'), div=document.createElement('div'); 
-                div.className='event-block'; div.style.top=(s.getMinutes()+1)+"px"; div.style.height=(eM-sM-2)+"px"; div.style.left=l+"%"; div.style.width=w+"%"; 
+                const blockHeight = Math.max(24, eM-sM-2);
+                div.className='event-block'; div.style.top=(s.getMinutes()+1)+"px"; div.style.height=blockHeight+"px"; div.style.left=l+"%"; div.style.width=w+"%";
+                if (blockHeight < 46 || w < 35) div.classList.add('event-block-compact');
+                div.tabIndex = 0;
+                div.setAttribute('role', 'button');
                 if(d.type==='event'){
-                    div.classList.add('special-event'); div.innerHTML=`<div class="event-title">${d.title}</div>`;
+                    const title = d.title || 'イベント';
+                    div.classList.add('special-event');
+                    div.setAttribute('aria-label', `${title}の詳細を表示`);
+                    div.innerHTML=`<div class="event-block-inner"><span class="event-block-icon"><span class="material-icons">event</span></span><div class="event-block-copy"><div class="event-title">${escapeHtml(title)}</div><div class="event-meta"><span class="material-icons">schedule</span>予定</div></div><span class="material-icons event-block-open">arrow_outward</span></div>`;
                 } else { 
-                    // リアルネーム解決
                     const realName = getRealName(d.creatorId, d.userName);
-                    div.innerHTML=`<div class="event-title">${d.bandName}</div><div style="font-size:10px; opacity:0.8;">${realName}</div>`; 
-                    
+                    const title = d.bandName || '名称未設定';
+                    let stateIcon = 'music_note';
                     if(d.status==='pending'){
                         div.classList.add('pending');
+                        stateIcon = 'hourglass_top';
                     } else if(d.source==='lottery'){
                         div.classList.add('lottery-confirmed');
+                        stateIcon = 'verified';
                     } else {
                         div.classList.add('normal-confirmed');
+                        stateIcon = 'music_note';
                     }
-                    if (myBandsAll.some(band => band.id === d.bandId)) div.classList.add('my-band-booking');
+                    const belongsToMe = myBandsAll.some(band => band.id === d.bandId) || (d.isCustomBand === true && d.creatorId === currentUser);
+                    if (belongsToMe) div.classList.add('my-band-booking');
+                    div.setAttribute('aria-label', `${title}、${realName || '予約者'}の予約詳細を表示`);
+                    div.innerHTML=`<div class="event-block-inner"><span class="event-block-icon"><span class="material-icons">${stateIcon}</span></span><div class="event-block-copy"><div class="event-title">${escapeHtml(title)}</div><div class="event-meta"><span class="material-icons">person</span>${escapeHtml(realName || '予約者')}</div></div><span class="material-icons event-block-open">arrow_outward</span></div>`;
                 } 
-                div.onclick=(ev)=>{ev.stopPropagation(); openBookingDetailModal(d.id,d,ev);};
+                const stopTimelineGesture = (ev) => ev.stopPropagation();
+                div.addEventListener('pointerdown', stopTimelineGesture);
+                div.addEventListener('touchstart', stopTimelineGesture, {passive:true});
+                div.addEventListener('touchend', stopTimelineGesture, {passive:true});
+                div.addEventListener('mousedown', stopTimelineGesture);
+                div.addEventListener('click',(ev)=>{ev.preventDefault(); ev.stopPropagation(); openBookingDetailModal(d.id,d,ev);});
+                div.addEventListener('keydown',(ev)=>{if(ev.key==='Enter'||ev.key===' '){ev.preventDefault(); openBookingDetailModal(d.id,d,ev);}});
                 cA.appendChild(div); 
             } 
         }
@@ -1639,7 +1699,7 @@
         
         function handleTouchStart(e){ 
             if(isPastDate(displayDate)) return; // 過去日はブロック
-            if(e.target.classList.contains('event-block'))return; 
+            if(e.target.closest('.event-block'))return;
             const h=parseInt(e.target.dataset.hour); if(isNaN(h))return; 
             selectionTimer=setTimeout(()=>{isSelecting=true; selectionStartHour=h; selectionEndHour=h; updateSelectionUI(); document.getElementById('selectionToast').classList.add('show'); if(navigator.vibrate)navigator.vibrate(50);},500); 
         }
@@ -1647,6 +1707,7 @@
         function handleTouchEnd(e){ clearTimeout(selectionTimer); if(isSelecting){isSelecting=false; document.getElementById('selectionToast').classList.remove('show'); openBookingModalRange(e);} }
         function handleMouseDown(e){ 
             if(isPastDate(displayDate)) return; // 過去日はブロック
+            if(e.target.closest('.event-block'))return;
             if(!e.target.classList.contains('time-content'))return; 
             isSelecting=true; selectionStartHour=parseInt(e.target.dataset.hour); selectionEndHour=selectionStartHour; updateSelectionUI(); 
         }
@@ -1655,7 +1716,12 @@
         function updateSelectionUI(){ document.querySelectorAll('.time-content').forEach(el=>el.classList.remove('selecting')); if(selectionStartHour===null||selectionEndHour===null)return; const s=Math.min(selectionStartHour,selectionEndHour), e=Math.max(selectionStartHour,selectionEndHour); for(let h=s; h<=e; h++)document.querySelector(`.time-content[data-hour="${h}"]`)?.classList.add('selecting'); }
         
         window.toggleAllDay=()=>{ const isA=document.getElementById('checkAllDay').checked, area=document.getElementById('timeSelectArea'); if(isA){area.style.opacity="0.4"; area.style.pointerEvents="none"; document.getElementById('selectStartTime').value="9:00"; document.getElementById('selectEndTime').value="20:00";} else {area.style.opacity="1"; area.style.pointerEvents="auto";} };
-        window.toggleBookingInputs=()=>{ const t=document.querySelector('input[name="bookingType"]:checked')?.value||'normal'; if(t==='event'){document.getElementById('groupBandSelect').classList.add('hidden'); document.getElementById('groupEventTitle').classList.remove('hidden');} else {document.getElementById('groupBandSelect').classList.remove('hidden'); document.getElementById('groupEventTitle').classList.add('hidden');} };
+        window.toggleBookingInputs=()=>{ const t=document.querySelector('input[name="bookingType"]:checked')?.value||'normal'; if(t==='event'){document.getElementById('groupBandSelect').classList.add('hidden'); document.getElementById('groupEventTitle').classList.remove('hidden');} else {document.getElementById('groupBandSelect').classList.remove('hidden'); document.getElementById('groupEventTitle').classList.add('hidden'); window.toggleBandSource();} };
+        window.toggleBandSource=()=>{
+            const source=document.querySelector('input[name="bandSource"]:checked')?.value||'joined';
+            document.getElementById('joinedBandPanel').classList.toggle('hidden',source!=='joined');
+            document.getElementById('customBandPanel').classList.toggle('hidden',source!=='custom');
+        };
         
         function openBookingModalRange(e){ 
             if(isPastDate(displayDate)) return; // 念のためここでもブロック
@@ -1674,14 +1740,17 @@
             setupTimeSelects(`${s}:00`,`${e_hr+1}:00`); 
             document.getElementById('checkAllDay').checked=false; 
             toggleAllDay(); 
-            updateBandSelect(); 
+            const hasJoinedBands = updateBandSelect();
+            document.getElementById('inputCustomBandName').value='';
+            document.getElementById(hasJoinedBands ? 'bandSourceJoined' : 'bandSourceCustom').checked=true;
+            window.toggleBandSource();
             
             setModalOrigin('modal-booking', e);
             openModal('modal-booking'); 
         }
         
         async function getBookingBandProfile(data) {
-            if (!data?.bandId || data.type === 'event') return null;
+            if (!data?.bandId || data.type === 'event' || data.isCustomBand === true || String(data.bandId).startsWith('custom_')) return null;
             const localBand = myBandsAll.find(band => band.id === data.bandId);
             if (localBand) return localBand;
             if (bandProfileCache.has(data.bandId)) return bandProfileCache.get(data.bandId);
@@ -1711,6 +1780,12 @@
         }
 
         window.openBookingDetailModal = async (id, data, e) => {
+            e?.preventDefault?.();
+            e?.stopPropagation?.();
+            cancelBookingSelection();
+            const detailModal = document.getElementById('modal-booking-detail');
+            if (detailModal.classList.contains('open') && bookingDetailTarget?.id === id) return;
+            const requestToken = ++bookingDetailRequestToken;
             bookingDetailTarget = {id, data, event:e};
             const body = document.getElementById('bookingDetailBody');
             const actions = document.getElementById('bookingDetailActions');
@@ -1720,12 +1795,13 @@
             openModal('modal-booking-detail');
 
             const [band, creator] = await Promise.all([getBookingBandProfile(data), getBookingCreator(data)]);
-            if (!bookingDetailTarget || bookingDetailTarget.id !== id) return;
+            if (requestToken !== bookingDetailRequestToken || !bookingDetailTarget || bookingDetailTarget.id !== id || !detailModal.classList.contains('open')) return;
             const start = new Date(data.startTime);
             const end = new Date(data.endTime);
             const dateText = `${start.getFullYear()}年${start.getMonth()+1}月${start.getDate()}日`;
             const timeText = `${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}〜${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}`;
-            const isMine = !!data.bandId && myBandsAll.some(item => item.id === data.bandId);
+            const isMine = (!!data.bandId && myBandsAll.some(item => item.id === data.bandId)) || (data.isCustomBand === true && data.creatorId === currentUser);
+            const isCustomBand = data.isCustomBand === true || String(data.bandId || '').startsWith('custom_');
             const title = data.type === 'event' ? (data.title || 'イベント') : (band?.name || data.bandName || '名称未設定');
             const bandIcon = safeImageUrl(band?.icon || band?.image || band?.iconUrl);
             const creatorIcon = safeImageUrl(creator?.icon);
@@ -1742,6 +1818,7 @@
                         <div style="font-size:18px; font-weight:800; overflow-wrap:anywhere;">${escapeHtml(title)}</div>
                         <div style="font-size:13px; color:#536471; margin-top:5px;">${escapeHtml(dateText)} · ${escapeHtml(timeText)}</div>
                         ${isMine ? '<div class="my-band-pill"><span class="material-icons" style="font-size:14px;">groups</span>自分が参加しているバンド</div>' : ''}
+                        ${isCustomBand ? '<div style="display:inline-flex; margin:7px 0 0 6px; padding:4px 9px; border-radius:999px; background:#f1edff; color:#6548b8; font-size:11px; font-weight:700;">アプリ未登録</div>' : ''}
                     </div>
                 </div>
                 <div class="booking-detail-card">
@@ -1804,11 +1881,15 @@
             toggleAllDay(); 
             if(data.type==='event')document.getElementById('inputEventTitle').value=data.title||""; 
             else {
-                updateBandSelect(data.bandId);
+                const isCustomBand = data.isCustomBand === true || !data.bandId || String(data.bandId).startsWith('custom_');
+                updateBandSelect(isCustomBand ? '' : data.bandId);
+                document.getElementById(isCustomBand ? 'bandSourceCustom' : 'bandSourceJoined').checked = true;
+                document.getElementById('inputCustomBandName').value = isCustomBand ? (data.bandName || '') : '';
                 const bandSelect = document.getElementById('selectBookingBand');
-                if (data.bandId && ![...bandSelect.options].some(option => option.value === data.bandId)) {
+                if (!isCustomBand && data.bandId && ![...bandSelect.options].some(option => option.value === data.bandId)) {
                     bandSelect.appendChild(new Option(data.bandName || '予約中のバンド', data.bandId, true, true));
                 }
+                window.toggleBandSource();
             }
             
             setModalOrigin('modal-booking', e);
@@ -1816,7 +1897,7 @@
         }
         
         function setupTimeSelects(ds,de){ const sSel=document.getElementById('selectStartTime'), eSel=document.getElementById('selectEndTime'), opts=[]; for(let h=9;h<=20;h++){ opts.push(`${h}:00`); if(h<20)opts.push(`${h}:30`); } sSel.innerHTML=""; eSel.innerHTML=""; opts.forEach(t=>{sSel.appendChild(new Option(t,t)); eSel.appendChild(new Option(t,t));}); if(ds)sSel.value=ds; if(de)eSel.value=de; }
-        function updateBandSelect(bid=""){ const s=document.getElementById('selectBookingBand'); s.innerHTML=""; const active=myBandsAll.filter(b=>!b.isArchived); if(active.length===0)s.appendChild(new Option("なし","")); else active.forEach(b=>{const op=new Option(b.name,b.id); if(b.id===bid)op.selected=true; s.appendChild(op);}); }
+        function updateBandSelect(bid=""){ const s=document.getElementById('selectBookingBand'); s.innerHTML=""; const active=myBandsAll.filter(b=>!b.isArchived); if(active.length===0)s.appendChild(new Option("参加中のバンドがありません","")); else active.forEach(b=>{const op=new Option(b.name,b.id); if(b.id===bid)op.selected=true; s.appendChild(op);}); return active.length>0; }
         
         window.handleNewBooking = (e) => { 
             if(isPastDate(displayDate)) {
@@ -1931,9 +2012,17 @@
             }
             
             if(t==='normal'){
-                const bS=document.getElementById('selectBookingBand'); 
-                if(!bS.value)return await showCustomAlert("予約するバンドを選択してください。", "入力エラー"); 
-                bd.bandId=bS.value; bd.bandName=bS.options[bS.selectedIndex].text;
+                const bandSource=document.querySelector('input[name="bandSource"]:checked')?.value||'joined';
+                if(bandSource==='custom'){
+                    const customBandName=document.getElementById('inputCustomBandName').value.trim();
+                    if(!customBandName)return await showCustomAlert("バンド名を入力してください。", "入力エラー");
+                    bd.customBandName=customBandName;
+                    bd.bandName=customBandName;
+                } else {
+                    const bS=document.getElementById('selectBookingBand');
+                    if(!bS.value)return await showCustomAlert("予約するバンドを選択するか、『その他のバンド』に名前を入力してください。", "入力エラー");
+                    bd.bandId=bS.value; bd.bandName=bS.options[bS.selectedIndex].text;
+                }
             } else {
                 const tit=document.getElementById('inputEventTitle').value.trim(); 
                 if(!tit)return await showCustomAlert("イベント名または理由を入力してください。", "入力エラー"); 
@@ -1981,12 +2070,15 @@
             } 
             
             try{ 
+                const bookingPayload={startTime:st.toISOString(),endTime:et.toISOString(),userName:bd.userName};
+                if(bd.customBandName) bookingPayload.customBandName=bd.customBandName;
+                else bookingPayload.bandId=bd.bandId;
                 if(eid){
                     delete bd.createdAt; 
-                    await updateBooking(auth, eid, {bandId:bd.bandId, startTime:st.toISOString(), endTime:et.toISOString(), userName:bd.userName});
+                    await updateBooking(auth, eid, bookingPayload);
                     await showCustomAlert("予約内容を保存しました。");
                 } else {
-                    const result = await createBooking(auth, {bandId:bd.bandId, startTime:st.toISOString(), endTime:et.toISOString(), userName:bd.userName});
+                    const result = await createBooking(auth, bookingPayload);
                     await showCustomAlert(result.booking.status==='pending'?"抽選希望を受け付けました。設定時刻に自動抽選されます。":"予約が完了しました。");
                 } 
                 closeModal('modal-booking'); 

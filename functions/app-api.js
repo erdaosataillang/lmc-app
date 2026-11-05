@@ -128,11 +128,22 @@ function parseBookingBody(body) {
   if (start.getTime() < Date.now() - 5 * 60 * 1000) {
     throw new HttpError(400, "booking_in_past", "過去の時間は予約できません。");
   }
+  const hasBandId = typeof body.bandId === "string" && body.bandId.trim() !== "";
+  const hasCustomBandName = typeof body.customBandName === "string" && body.customBandName.trim() !== "";
+  if (hasBandId === hasCustomBandName) {
+    throw new HttpError(400, "invalid_band", "参加中のバンド、またはその他のバンド名のどちらかを指定してください。");
+  }
   return {
-    bandId: cleanText(body.bandId, 160, "バンド"),
+    bandId: hasBandId ? cleanText(body.bandId, 160, "バンド") : "",
+    customBandName: hasCustomBandName ? cleanText(body.customBandName, 120, "バンド名") : "",
     start,
     end,
   };
+}
+
+function customBandId(uid, bandName) {
+  const normalizedName = bandName.normalize("NFKC").toLocaleLowerCase("ja");
+  return `custom_${sha256(`${uid}\u0000${normalizedName}`).slice(0, 32)}`;
 }
 
 async function bookingStatus(db, start) {
@@ -152,11 +163,13 @@ async function assertBandMember(db, bandId, uid) {
 }
 
 async function saveBooking(db, identity, body, bookingId) {
-  const {bandId, start, end} = parseBookingBody(body);
+  const {bandId: requestedBandId, customBandName, start, end} = parseBookingBody(body);
   const [band, user] = await Promise.all([
-    assertBandMember(db, bandId, identity.uid),
+    customBandName ? Promise.resolve(null) : assertBandMember(db, requestedBandId, identity.uid),
     db.doc(`users/${identity.uid}`).get(),
   ]);
+  const bandId = customBandName ? customBandId(identity.uid, customBandName) : requestedBandId;
+  const bandName = customBandName || cleanOptionalText(band.get("name"), 120) || "名称未設定";
   const status = await bookingStatus(db, start);
   const bookingRef = bookingId ? db.doc(`bookings/${bookingId}`) : db.collection("bookings").doc();
   await db.runTransaction(async (transaction) => {
@@ -184,7 +197,8 @@ async function saveBooking(db, identity, body, bookingId) {
     }
     const value = {
       bandId,
-      bandName: cleanOptionalText(band.get("name"), 120) || "名称未設定",
+      bandName,
+      isCustomBand: Boolean(customBandName),
       creatorId: bookingId ? undefined : identity.uid,
       userName: bookingId ? undefined : cleanOptionalText(user.get("name") || user.get("lineDisplayName"), 120),
       type: "normal",
@@ -415,4 +429,4 @@ exports.lmcAppApi = onRequest({
   }
 });
 
-exports._test = {dateKeyInTokyo, parseBookingBody, publicProfile, sha256};
+exports._test = {customBandId, dateKeyInTokyo, parseBookingBody, publicProfile, sha256};
