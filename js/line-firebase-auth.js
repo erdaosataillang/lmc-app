@@ -1,4 +1,7 @@
 const TOKEN_ENDPOINT = "https://asia-northeast1-urakata-app.cloudfunctions.net/createLineFirebaseToken";
+const errorReporterReady = typeof window !== "undefined"
+    ? import("./error-reporter.js")
+    : Promise.resolve(null);
 
 /**
  * LINEが検証したユーザーIDをFirebase Authの固定UIDとして使用する。
@@ -6,6 +9,10 @@ const TOKEN_ENDPOINT = "https://asia-northeast1-urakata-app.cloudfunctions.net/c
  */
 export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUserId, options = {}) {
     if (!auth || !lineUserId) throw new Error("LINE user is not ready");
+    const activateErrorReporter = () => errorReporterReady
+        .then(module => module?.setErrorReporterAuth(auth))
+        .catch(() => {});
+    activateErrorReporter();
     if (typeof auth.authStateReady === "function") await auth.authStateReady();
 
     const requiredClaims = Array.isArray(options.requiredClaims)
@@ -20,6 +27,7 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
             const tokenResult = await existingUser.getIdTokenResult(requiredClaims.length > 0);
             const hasRequiredClaims = requiredClaims.every(claim => tokenResult.claims[claim] === true);
             if (tokenResult.claims.line === true && tokenResult.claims.registered === true && hasRequiredClaims) {
+                activateErrorReporter();
                 return existingUser;
             }
         } catch (error) {
@@ -60,5 +68,6 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
             throw error;
         }
     }
+    activateErrorReporter();
     return credential.user;
 }

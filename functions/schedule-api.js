@@ -5,6 +5,7 @@ const {getFirestore,FieldValue,Timestamp}=require("firebase-admin/firestore");
 const {randomBytes}=require("node:crypto");
 const {safeEqual,sha256Base64Url,validPkceChallenge,validPkceVerifier}=require("./chat-auth");
 const {validateSlots,validateText,profileForSchedule,validateDateRange,validateAvailability}=require("./schedule-validation");
+const {discordErrorWebhookUrl,notifyDiscordAlert}=require("./discord-alerts");
 const REDIRECT="https://erdaosataillang.github.io/lmc-schedule/";
 const LMC="https://lmc-mobile.sorairosystem.com";
 const allowed=new Set([LMC,"https://erdaosataillang.github.io","http://localhost:5173","http://127.0.0.1:5173"]);
@@ -12,7 +13,7 @@ function deny(status,message){const e=new Error(message);e.status=status;throw e
 async function identity(request){const token=(request.get("authorization")||"").replace(/^Bearer\s+/i,"");let user;try{user=await getAuth().verifyIdToken(token,true);}catch{deny(401,"裏方アカウントでログインしてください。");}if(user.line!==true||user.registered!==true)deny(403,"裏方の登録アカウントが必要です。");const snapshot=await getFirestore().doc(`users/${user.uid}`).get();const profile=snapshot.exists?profileForSchedule(user.uid,snapshot.data()):null;if(!profile)deny(403,"この裏方アカウントは利用できません。");return profile;}
 async function poll(ref,transaction){const snap=transaction?await transaction.get(ref):await ref.get();if(!snap.exists)deny(404,"日程調整が見つかりません。リンクを確認してください。");return snap.data();}
 function publicPoll(id,p){return {id,title:p.title,project:p.project,projectId:p.projectId,organizer:p.organizer,ownerId:p.ownerId,slots:p.slots||[],...(["availability","shift"].includes(p.mode)?{mode:p.mode,dateFrom:p.dateFrom,dateTo:p.dateTo}:{}),...(p.confirmed?{confirmed:p.confirmed}:{}),...(p.confirmedSlot?{confirmedSlot:p.confirmedSlot}:{})};}
-exports.lmcScheduleApi=onRequest({region:"asia-northeast1",memory:"256MiB",timeoutSeconds:30,maxInstances:10},async(request,response)=>{
+exports.lmcScheduleApi=onRequest({region:"asia-northeast1",memory:"256MiB",timeoutSeconds:30,maxInstances:10,secrets:[discordErrorWebhookUrl]},async(request,response)=>{
  const origin=request.get("origin");if(origin&&allowed.has(origin)){response.set("Access-Control-Allow-Origin",origin);response.set("Vary","Origin");}
  response.set("Access-Control-Allow-Headers","Content-Type, Authorization");response.set("Access-Control-Allow-Methods","GET, POST, PATCH, OPTIONS");response.set("Cache-Control","no-store");
  if(request.method==="OPTIONS"){response.status(allowed.has(origin)?204:403).send("");return;}if(origin&&!allowed.has(origin)){response.status(403).json({error:"許可されていない接続元です。"});return;}
@@ -42,5 +43,5 @@ exports.lmcScheduleApi=onRequest({region:"asia-northeast1",memory:"256MiB",timeo
  if(request.method==="PATCH"&&!match[2]){let result;await db.runTransaction(async t=>{const p=await poll(ref,t);if(p.mode==="shift")deny(400,"シフトは各自の登録内容を更新してください。");if(p.ownerId!==user.id)deny(403,"日程の確定は主催者のみ操作できます。");if(p.confirmed||p.confirmedSlot)deny(409,"この日程はすでに確定しています。");if(["availability","shift"].includes(p.mode)){const confirmed=validateAvailability([body.slot],p)[0];t.update(ref,{confirmedSlot:confirmed});result={...p,confirmedSlot:confirmed};return;}if(!p.slots.some(s=>s.id===body.slotId))deny(400,"有効な候補を選択してください。");t.update(ref,{confirmed:body.slotId});result={...p,confirmed:body.slotId};});response.json({poll:publicPoll(ref.id,result)});return;}
  }
  deny(404,"操作が見つかりません。");
- }catch(error){if(error.status){response.status(error.status).json({error:error.message});}else{console.error("Schedule request failed",{code:error.code});response.status(503).json({error:"接続に失敗しました。入力を残したまま、もう一度お試しください。"});}}
+ }catch(error){if(error.status){response.status(error.status).json({error:error.message});}else{console.error("Schedule request failed",{code:error.code});await notifyDiscordAlert({source:"lmcScheduleApi",kind:"server",page:request.path,message:error.message,stack:error.stack});response.status(503).json({error:"接続に失敗しました。入力を残したまま、もう一度お試しください。"});}}
 });

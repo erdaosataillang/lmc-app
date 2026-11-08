@@ -5,6 +5,7 @@ const {FieldValue, Timestamp, getFirestore} = require("firebase-admin/firestore"
 const {logger} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
 const {createHash, randomBytes, randomInt, timingSafeEqual} = require("node:crypto");
+const {discordErrorWebhookUrl, notifyDiscordAlert} = require("./discord-alerts");
 
 const ALLOWED_ORIGINS = new Set([
   "https://lmc-mobile.sorairosystem.com",
@@ -15,6 +16,7 @@ const ALLOWED_ORIGINS = new Set([
 const PUBLIC_PROFILE_FIELDS = ["name", "kana", "icon", "headerImage", "year", "faculty", "part", "bio", "lineDisplayName"];
 const INVITE_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const EMAIL_CODE_LIFETIME_MS = 10 * 60 * 1000;
+const clientErrorAttempts = new Map();
 
 class HttpError extends Error {
   constructor(status, code, message) {
@@ -36,6 +38,23 @@ function safeEqual(left, right) {
 
 function originAllowed(origin) {
   return !origin || ALLOWED_ORIGINS.has(origin) || /^http:\/\/localhost:\d+$/.test(origin);
+}
+
+function clientErrorAllowed(uid, now = Date.now()) {
+  const previous = clientErrorAttempts.get(uid) || [];
+  const recent = previous.filter((timestamp) => now - timestamp < 60_000);
+  if (recent.length >= 5) {
+    clientErrorAttempts.set(uid, recent);
+    return false;
+  }
+  recent.push(now);
+  clientErrorAttempts.set(uid, recent);
+  if (clientErrorAttempts.size > 5000) {
+    for (const [key, timestamps] of clientErrorAttempts) {
+      if (!timestamps.some((timestamp) => now - timestamp < 60_000)) clientErrorAttempts.delete(key);
+    }
+  }
+  return true;
 }
 
 function applyCors(request, response) {
@@ -369,6 +388,21 @@ async function route(request, response) {
   const path = request.path.replace(/\/+$/, "") || "/";
   const identity = await authenticate(request);
 
+  if (request.method === "POST" && path === "/client-errors") {
+    if (!clientErrorAllowed(identity.uid)) {
+      response.status(202).json({accepted: false});
+      return;
+    }
+    const allowedKinds = new Set(["error", "unhandledrejection", "console", "api", "manual"]);
+    const kind = allowedKinds.has(request.body?.kind) ? request.body.kind : "error";
+    const message = cleanOptionalText(request.body?.message, 1600) || "Unknown client error";
+    const stack = cleanOptionalText(request.body?.stack, 4000);
+    const page = cleanOptionalText(request.body?.page, 300) || "/";
+    await notifyDiscordAlert({source: "client", kind, message, stack, page, uid: identity.uid});
+    response.status(202).json({accepted: true});
+    return;
+  }
+
   if (request.method === "GET" && path === "/profiles") {
     const snapshots = await db.collection("users").get();
     response.json({profiles: snapshots.docs.map(publicProfile)});
@@ -428,6 +462,7 @@ exports.lmcAppApi = onRequest({
   memory: "256MiB",
   timeoutSeconds: 30,
   maxInstances: 10,
+  secrets: [discordErrorWebhookUrl],
 }, async (request, response) => {
   if (!applyCors(request, response)) {
     response.status(403).json({error: "origin_not_allowed"});
@@ -441,10 +476,20 @@ exports.lmcAppApi = onRequest({
     await route(request, response);
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 500;
-    if (status >= 500) logger.error("LMC app API failed", {path: request.path, message: error.message});
-    else logger.warn("LMC app API rejected request", {path: request.path, code: error.code});
+    if (status >= 500) {
+      logger.error("LMC app API failed", {path: request.path, message: error.message});
+      await notifyDiscordAlert({
+        source: "lmcAppApi",
+        kind: "server",
+        page: request.path,
+        message: error.message,
+        stack: error.stack,
+      });
+    } else {
+      logger.warn("LMC app API rejected request", {path: request.path, code: error.code});
+    }
     response.status(status).json({error: error.code || "internal_error", message: status < 500 ? error.message : "処理に失敗しました。"});
   }
 });
 
-exports._test = {customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicProfile, sha256};
+exports._test = {clientErrorAllowed, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicProfile, sha256};

@@ -15,7 +15,15 @@ async function api(path, options = {}) {
     });
     let payload = null;
     if (response.status !== 204) payload = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(payload?.message || `処理に失敗しました (${response.status})`);
+    if (!response.ok) {
+        if (response.status >= 500) {
+            globalThis.LMCErrorReporter?.capture({
+                kind: "api",
+                message: `${options.method || "GET"} ${path} failed (${response.status})`
+            });
+        }
+        throw new Error(payload?.message || `処理に失敗しました (${response.status})`);
+    }
     return payload;
 }
 

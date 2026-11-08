@@ -6,7 +6,7 @@
     "node": "22"
   },
   "scripts": {
-    "test": "node --test app-api.test.js chat-auth.test.js line-firebase-auth.test.js lottery.test.js schedule-api.test.js",
+    "test": "node --test app-api.test.js chat-auth.test.js discord-alerts.test.js line-firebase-auth.test.js lottery.test.js schedule-api.test.js",
     "test:rules": "firebase emulators:exec --only firestore,storage '/usr/local/bin/node --test --test-concurrency=1 firestore.rules.test.js storage.rules.test.js'",
     "deploy": "firebase deploy --only firestore:rules,storage,functions"
   },

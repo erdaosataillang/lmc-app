@@ -25,6 +25,11 @@ const {
   tokyoDateParts,
   tokyoDayBounds,
 } = require("./lottery");
+const {
+  discordErrorWebhookUrl,
+  notifyDiscordAlert,
+  withDiscordErrorAlert,
+} = require("./discord-alerts");
 
 initializeApp();
 const db = getFirestore();
@@ -93,6 +98,7 @@ exports.createLineFirebaseToken = onRequest({
   memory: "256MiB",
   timeoutSeconds: 30,
   maxInstances: 10,
+  secrets: [discordErrorWebhookUrl],
 }, async (request, response) => {
   const origin = request.get("origin");
   if (origin && (ALLOWED_ORIGINS.has(origin) || /^http:\/\/localhost:\d+$/.test(origin))) {
@@ -174,6 +180,13 @@ exports.createLineFirebaseToken = onRequest({
     response.status(200).json({customToken});
   } catch (error) {
     logger.error("LINE Firebase authentication failed", {message: error.message});
+    await notifyDiscordAlert({
+      source: "createLineFirebaseToken",
+      kind: "server",
+      page: "/auth/line",
+      message: error.message,
+      stack: error.stack,
+    });
     response.status(500).json({error: "authentication_failed"});
   }
 });
@@ -183,7 +196,8 @@ exports.syncUserAuthorization = onDocumentWritten({
   region: "asia-northeast1",
   memory: "256MiB",
   maxInstances: 5,
-}, async (event) => {
+  secrets: [discordErrorWebhookUrl],
+}, withDiscordErrorAlert("syncUserAuthorization", async (event) => {
   const before = event.data?.before?.exists ? event.data.before.data() : null;
   const after = event.data?.after?.exists ? event.data.after.data() : null;
   const beforeState = JSON.stringify({role: before?.role ?? null, roll: before?.roll ?? null});
@@ -201,7 +215,7 @@ exports.syncUserAuthorization = onDocumentWritten({
     if (error.code === "auth/user-not-found") return;
     throw error;
   }
-});
+}));
 
 exports.createChatAuthorizationCode = onRequest({
   region: "asia-northeast1",
@@ -272,7 +286,7 @@ exports.lmcChatApi = onRequest({
   memory: "256MiB",
   timeoutSeconds: 30,
   maxInstances: 10,
-  secrets: [chatApiToken],
+  secrets: [chatApiToken, discordErrorWebhookUrl],
 }, async (request, response) => {
   response.set("Cache-Control", "no-store");
   response.set("Content-Type", "application/json; charset=utf-8");
@@ -330,6 +344,13 @@ exports.lmcChatApi = onRequest({
       return;
     }
     logger.error("LMC chat API failed", {message: error.message});
+    await notifyDiscordAlert({
+      source: "lmcChatApi",
+      kind: "server",
+      page: request.path,
+      message: error.message,
+      stack: error.stack,
+    });
     response.status(500).json({error: "internal_error"});
   }
 });
@@ -344,7 +365,8 @@ exports.runScheduledLottery = onSchedule({
   retryCount: 3,
   minBackoffSeconds: 60,
   maxBackoffSeconds: 300,
-}, async (event) => {
+  secrets: [discordErrorWebhookUrl],
+}, withDiscordErrorAlert("runScheduledLottery", async (event) => {
   const now = event.scheduleTime ? new Date(event.scheduleTime) : new Date();
   const settingsSnapshot = await db.doc("system/settings").get();
   if (!settingsSnapshot.exists) {
@@ -473,7 +495,7 @@ exports.runScheduledLottery = onSchedule({
     failures: result.failedBands.length,
     durationMinutes: result.duration,
   });
-});
+}));
 
 // 日程調整専用のAPI。既存のチャット認証・予約機能から独立。
 exports.lmcScheduleApi = require("./schedule-api").lmcScheduleApi;

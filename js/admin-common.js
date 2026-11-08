@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { setErrorReporterAuth } from "./error-reporter.js";
 
 if ('serviceWorker' in navigator && window.isSecureContext) {
     navigator.serviceWorker.register('/image-cache-sw.js', {scope: '/'}).catch(error => {
@@ -21,6 +22,7 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const LIFF_ID = "2008162165-WaEbbUrr"; 
+setErrorReporterAuth(auth);
 
 export function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -51,6 +53,7 @@ export function initAdminPage(activePageId, callback) {
 
     onAuthStateChanged(auth, async (user) => {
         clearTimeout(timeout);
+        setErrorReporterAuth(auth);
         const tokenResult = user && !user.isAnonymous ? await user.getIdTokenResult() : null;
         if (!user || user.isAnonymous || tokenResult?.claims?.line !== true || tokenResult?.claims?.admin !== true) {
             if (!window.location.href.includes('/admin/login.html')) {

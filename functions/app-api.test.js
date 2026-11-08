@@ -77,3 +77,10 @@ test("定期演奏会の開始日から終了日までを予約不可日とし�
 test("日本時間の日付キーを作る", () => {
   assert.equal(_test.dateKeyInTokyo(new Date("2026-10-21T16:00:00.000Z")), "2026-10-22");
 });
+
+test("クライアント障害通知はユーザーごとに1分5件まで", () => {
+  const uid = `reporter-${Date.now()}-${Math.random()}`;
+  for (let index = 0; index < 5; index += 1) assert.equal(_test.clientErrorAllowed(uid, 1000 + index), true);
+  assert.equal(_test.clientErrorAllowed(uid, 2000), false);
+  assert.equal(_test.clientErrorAllowed(uid, 61001), true);
+});
