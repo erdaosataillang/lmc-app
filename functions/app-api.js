@@ -398,7 +398,25 @@ async function route(request, response) {
     const message = cleanOptionalText(request.body?.message, 1600) || "Unknown client error";
     const stack = cleanOptionalText(request.body?.stack, 4000);
     const page = cleanOptionalText(request.body?.page, 300) || "/";
-    await notifyDiscordAlert({source: "client", kind, message, stack, page, uid: identity.uid});
+    const environment = cleanOptionalText(request.body?.environment, 120) || "Webアプリ";
+    const userAgent = cleanOptionalText(request.body?.userAgent, 600);
+    const viewport = cleanOptionalText(request.body?.viewport, 80);
+    const userSnapshot = await db.doc(`users/${identity.uid}`).get();
+    const userData = userSnapshot.data() || {};
+    await notifyDiscordAlert({
+      source: "client",
+      kind,
+      message,
+      stack,
+      page,
+      environment,
+      userAgent,
+      viewport,
+      online: request.body?.online,
+      uid: identity.uid,
+      userName: cleanOptionalText(userData.name || userData.lineDisplayName || identity.name, 120) || "名称未設定",
+      userIcon: cleanOptionalText(userData.icon || identity.picture, 1000),
+    });
     response.status(202).json({accepted: true});
     return;
   }

@@ -16,8 +16,7 @@ function redact(value, maxLength) {
     return truncate(value, maxLength)
         .replace(/([?&](?:code|token|access_token|id_token|key|secret|password)=)[^&#\s]+/gi, "$1[REDACTED]")
         .replace(/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi, "Bearer [REDACTED]")
-        .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[EMAIL]")
-        .replace(/(^|[^\d])(?:\+?81[-\s]?)?0\d{1,4}[-\s]?\d{1,4}[-\s]?\d{3,4}(?!\d)/g, "$1[PHONE]");
+        .replace(/https:\/\/discord(?:app)?\.com\/api\/webhooks\/[^\s]+/gi, "[DISCORD_WEBHOOK]");
 }
 
 function errorText(value) {
@@ -38,13 +37,30 @@ function fingerprint(value) {
     return (hash >>> 0).toString(36);
 }
 
+function detectEnvironment() {
+    const userAgent = navigator.userAgent || "";
+    let environment = "PC Webブラウザ";
+    try {
+        if (globalThis.liff?.isInClient?.()) environment = "LINE LIFFブラウザ";
+        else if (/\bLine\//i.test(userAgent)) environment = "LINE内ブラウザ";
+        else if (location.pathname.startsWith("/admin")) environment = "LMC Admin Web";
+        else if (/Android|iPhone|iPad|iPod|Mobile/i.test(userAgent)) environment = "モバイルWebブラウザ";
+    } catch (_) {}
+    return {
+        environment,
+        userAgent: truncate(userAgent, 600),
+        viewport: `${Math.round(innerWidth)} x ${Math.round(innerHeight)} / DPR ${devicePixelRatio || 1}`,
+        online: navigator.onLine,
+    };
+}
+
 function normalize(input = {}) {
     const kind = ["error", "unhandledrejection", "console", "api", "manual"].includes(input.kind) ? input.kind : "error";
     const sourceError = input.error instanceof Error ? input.error : null;
     const message = redact(input.message || sourceError?.message || "Unknown client error", 1600);
     const stack = redact(input.stack || sourceError?.stack || "", 4000);
     const page = location.pathname || "/";
-    return {kind, message, stack, page};
+    return {kind, message, stack, page, ...detectEnvironment()};
 }
 
 function shouldIgnore(report) {
