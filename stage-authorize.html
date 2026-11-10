@@ -31,7 +31,7 @@
     import {signInFirebaseWithLine} from "./js/line-firebase-auth.js";
 
     const endpoint = "https://asia-northeast1-urakata-app.cloudfunctions.net/receiptApi/auth/code";
-    const allowedRedirects = new Set(["https://app.urakatabu.com/stage-plan/"]);
+    const allowedRedirects = new Map([["stage", "https://app.urakatabu.com/stage-plan/"], ["stage-hosted", "https://urakata-stage-plan.web.app/stage-plan/"]]);
     const params = new URLSearchParams(location.search);
     const fail = message => {
       document.getElementById("spinner").style.display = "none";
@@ -45,8 +45,7 @@
       const redirectUri = params.get("redirect_uri");
       const state = params.get("state");
       const codeChallenge = params.get("code_challenge");
-      if (params.get("response_type") !== "code" || clientId !== "stage" ||
-          !allowedRedirects.has(redirectUri) || !state || !/^[A-Za-z0-9_-]{20,128}$/.test(state) ||
+      if (params.get("response_type") !== "code" || allowedRedirects.get(clientId) !== redirectUri || !state || !/^[A-Za-z0-9_-]{20,128}$/.test(state) ||
           params.get("code_challenge_method") !== "S256" || !/^[A-Za-z0-9_-]{43}$/.test(codeChallenge || "")) {
         throw new Error("ステージ図面からの認証情報が正しくありません。ステージ図面のログイン画面からやり直してください。");
       }
