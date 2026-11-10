@@ -5,7 +5,7 @@ const path = require("node:path");
 const test = require("node:test");
 const {after, before, beforeEach} = test;
 const {assertFails, assertSucceeds, initializeTestEnvironment} = require("@firebase/rules-unit-testing");
-const {collection, doc, getDoc, getDocs, setDoc, updateDoc} = require("firebase/firestore");
+const {collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc} = require("firebase/firestore");
 
 let environment;
 const projectId = "demo-lmc-security";
@@ -71,6 +71,19 @@ test("一般ユーザーは予約を直接確定できない", async () => {
 test("管理者は管理画面から予約を保存できる", async () => {
   const db = environment.authenticatedContext("admin", {line: true, registered: true, admin: true}).firestore();
   await assertSucceeds(setDoc(doc(db, "bookings", "admin-entry"), {type: "event", status: "confirmed"}));
+});
+
+test("Cueシートの改訂履歴はメンバーが追加でき、追加後は変更・削除できない", async () => {
+  const db = userDb("other");
+  await assertSucceeds(setDoc(doc(db, "cuesheets", "band-a_event-a"), {
+    bandId: "band-a", eventId: "event-a", bandName: "A",
+  }));
+  const revision = doc(db, "cuesheets", "band-a_event-a", "revisions", "revision-1");
+  await assertSucceeds(setDoc(revision, {
+    bandId: "band-a", eventId: "event-a", cueSheetId: "band-a_event-a", bandName: "A",
+  }));
+  await assertFails(updateDoc(revision, {bandName: "改ざん"}));
+  await assertFails(deleteDoc(revision));
 });
 
 test("未登録LINEユーザーは安全な初期プロフィールだけ作成できる", async () => {

@@ -122,6 +122,14 @@ service cloud.firestore {
         (resource.data.bandId is string && isBandMember(resource.data.bandId));
     }
 
+    match /cuesheets/{cueSheetId}/revisions/{revisionId} {
+      allow read: if isRegisteredLineUser();
+      allow create: if isAdmin() ||
+        (request.resource.data.bandId is string && isBandMember(request.resource.data.bandId));
+      // 提出履歴は監査用に不変とし、クライアントからの更新・削除を許可しない。
+      allow update, delete: if false;
+    }
+
     match /events/{eventId} {
       allow read: if isRegisteredLineUser();
       allow write: if isAdmin();

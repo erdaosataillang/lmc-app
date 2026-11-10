@@ -293,7 +293,8 @@
             updateDoc, 
             collection, 
             getDocs, 
-            serverTimestamp 
+            serverTimestamp,
+            writeBatch
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = typeof __firebase_config !== 'undefined' 
@@ -693,7 +694,8 @@
                         const cueData = cueDocSnap.data();
                         
                         if (!bandId && cueData.bandId) bandId = cueData.bandId;
-                        if (!eventId && cueData.eventId) eventId = cueData.eventId;
+                        // cueIDで過去分を開いた場合は、そのCueシート本来のイベントを優先する。
+                        if (cueData.eventId) eventId = cueData.eventId;
 
                         applyFormData(cueData);
 
@@ -728,6 +730,17 @@
                         return;
                     } else {
                         showToast('指定されたCueシートが見つかりませんでした', 'error');
+                    }
+                }
+
+                // 通常の提出リンクでも、同じバンド・イベントの既存Cueシートを復元する。
+                // イベントが変わればIDも変わるため、以前のイベント内容は残る。
+                if (!cueId && bandId && eventId) {
+                    const eventCueSnapshot = await getDoc(doc(db, 'cuesheets', `${bandId}_${eventId}`));
+                    if (eventCueSnapshot.exists() && eventCueSnapshot.data().archived !== true) {
+                        applyFormData(eventCueSnapshot.data());
+                        showToast('このイベントのCueシートを読み込みました', 'info');
+                        return;
                     }
                 }
 
@@ -1048,7 +1061,8 @@
                 return;
             }
 
-            const targetDocId = cueId || (bandId && selectedEventId ? `${bandId}_${selectedEventId}` : null);
+            // イベントごとに別ドキュメントへ保存し、過去イベントのCueシートを上書きしない。
+            const targetDocId = bandId && selectedEventId ? `${bandId}_${selectedEventId}` : cueId;
             if (!targetDocId) {
                 showToast('バンドIDまたはイベントIDが正しく取得できていません', 'error');
                 return;
@@ -1075,7 +1089,22 @@
                 };
 
                 const docRef = doc(db, 'cuesheets', targetDocId);
-                await setDoc(docRef, payload, { merge: true });
+                const existingSnapshot = await getDoc(docRef);
+                const revisionRef = doc(collection(docRef, 'revisions'));
+                const batch = writeBatch(db);
+                batch.set(docRef, {
+                    ...payload,
+                    archived: false,
+                    ...(existingSnapshot.exists() ? {} : {createdAt: serverTimestamp()})
+                }, {merge: true});
+                batch.set(revisionRef, {
+                    ...payload,
+                    cueSheetId: targetDocId,
+                    revisionId: revisionRef.id,
+                    savedBy: auth?.currentUser?.uid || '',
+                    savedAt: serverTimestamp()
+                });
+                await batch.commit();
 
                 if (bandId) {
                     try {

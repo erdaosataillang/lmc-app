@@ -1723,7 +1723,15 @@
                 const bandReqs = {};
                 candidates.forEach(c => {
                     if (!bandReqs[c.bandId]) bandReqs[c.bandId] = { id: c.bandId, name: c.bandName, requests: [], docIds: [] };
-                    bandReqs[c.bandId].requests.push({ start: c.startTime.toDate(), end: c.endTime.toDate() });
+                    bandReqs[c.bandId].requests.push({
+                        id: c.id,
+                        start: c.startTime.toDate(),
+                        end: c.endTime.toDate(),
+                        creatorId: c.creatorId || '',
+                        userName: c.userName || '',
+                        isCustomBand: c.isCustomBand === true,
+                        createdAt: c.createdAt || null
+                    });
                     bandReqs[c.bandId].docIds.push(c.id);
                 });
 
@@ -1818,7 +1826,18 @@
                             const assignedEnd = new Date(assignedStart);
                             assignedEnd.setMinutes(assignedStart.getMinutes() + duration);
 
-                            assignments.push({ bandId: band.id, bandName: band.name, start: assignedStart, end: assignedEnd, originalDocIds: band.docIds });
+                            assignments.push({
+                                bandId: band.id,
+                                bandName: band.name,
+                                start: assignedStart,
+                                end: assignedEnd,
+                                creatorId: req.creatorId,
+                                userName: req.userName,
+                                isCustomBand: req.isCustomBand === true,
+                                requestDocId: req.id,
+                                requestedAt: req.createdAt,
+                                originalDocIds: band.docIds
+                            });
                             isAssigned = true;
                             break;
                         }
@@ -1853,6 +1872,9 @@
                 assignments: tempLotterySchedule.assignments.map(assignment => ({
                     bandId: assignment.bandId,
                     bandName: assignment.bandName,
+                    creatorId: assignment.creatorId || null,
+                    userName: assignment.userName || null,
+                    winningRequestId: assignment.requestDocId || null,
                     startTime: assignment.start,
                     endTime: assignment.end,
                     durationMinutes: assignment.durationMinutes
@@ -1861,17 +1883,20 @@
             }, { merge: true });
             tempLotterySchedule.assignments.forEach(a => {
                 const ref = doc(collection(db, "bookings"));
-                const uid = auth.currentUser ? auth.currentUser.uid : "admin";
                 batch.set(ref, {
                     bandId: a.bandId,
                     bandName: a.bandName,
-                    creatorId: uid,
-                    userName: "抽選確定",
+                    creatorId: a.creatorId || (auth.currentUser ? auth.currentUser.uid : "admin"),
+                    userName: a.userName || "抽選確定",
+                    isCustomBand: a.isCustomBand === true,
                     startTime: a.start,
                     endTime: a.end,
                     type: 'normal',
                     status: 'confirmed',
                     source: 'lottery',
+                    winningRequestId: a.requestDocId || null,
+                    originalRequestIds: a.originalDocIds,
+                    requestedAt: a.requestedAt || null,
                     createdAt: serverTimestamp()
                 });
                 a.originalDocIds.forEach(oldId => batch.delete(doc(db, "bookings", oldId)));
