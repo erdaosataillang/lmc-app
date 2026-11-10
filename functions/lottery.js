@@ -79,6 +79,11 @@ function tryAllocate(bands, duration, lockedItems, random = Math.random) {
           bandName: band.name,
           start,
           end,
+          creatorId: request.creatorId || "",
+          userName: request.userName || "",
+          isCustomBand: request.isCustomBand === true,
+          requestDocId: request.id || "",
+          requestedAt: request.createdAt || null,
           originalDocIds: band.docIds,
         });
         assigned = true;
@@ -114,7 +119,15 @@ function calculateLottery(bookings, random = Math.random) {
       });
     }
     const band = grouped.get(candidate.bandId);
-    band.requests.push({start: candidate.startTime, end: candidate.endTime});
+    band.requests.push({
+      id: candidate.id,
+      start: candidate.startTime,
+      end: candidate.endTime,
+      creatorId: candidate.creatorId,
+      userName: candidate.userName,
+      isCustomBand: candidate.isCustomBand === true,
+      createdAt: candidate.createdAt || null,
+    });
     band.docIds.push(candidate.id);
   }
 

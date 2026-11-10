@@ -451,6 +451,9 @@ exports.runScheduledLottery = onSchedule({
     assignments: result.assignments.map((assignment) => ({
       bandId: assignment.bandId,
       bandName: assignment.bandName,
+      creatorId: assignment.creatorId || null,
+      userName: assignment.userName || null,
+      winningRequestId: assignment.requestDocId || null,
       startTime: Timestamp.fromDate(assignment.start),
       endTime: Timestamp.fromDate(assignment.end),
       durationMinutes: assignment.durationMinutes,
@@ -464,14 +467,18 @@ exports.runScheduledLottery = onSchedule({
     batch.create(confirmedRef, {
       bandId: assignment.bandId,
       bandName: assignment.bandName,
-      creatorId: "scheduled-lottery",
-      userName: "自動抽選",
+      creatorId: assignment.creatorId || "scheduled-lottery",
+      userName: assignment.userName || "自動抽選",
+      isCustomBand: assignment.isCustomBand === true,
       startTime: Timestamp.fromDate(assignment.start),
       endTime: Timestamp.fromDate(assignment.end),
       type: "normal",
       status: "confirmed",
       source: "lottery",
       lotteryDate: dateKey,
+      winningRequestId: assignment.requestDocId || null,
+      originalRequestIds: assignment.originalDocIds,
+      requestedAt: assignment.requestedAt || null,
       createdAt: FieldValue.serverTimestamp(),
     });
   }

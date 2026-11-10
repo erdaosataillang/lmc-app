@@ -54,6 +54,32 @@ test("keeps one-hour assignments and shortens only bands that cannot fit", () =>
   assert.equal(result.failedBands.length, 0);
 });
 
+test("抽選確定後も当選した希望を登録した人の情報を保持する", () => {
+  const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
+  const requestedAt = new Date("2026-09-20T12:00:00+09:00");
+  const result = calculateLottery([{
+    id: "request-user-1",
+    bandId: "band-a",
+    bandName: "A",
+    type: "normal",
+    status: "pending",
+    creatorId: "line-user-1",
+    userName: "山田太郎",
+    isCustomBand: true,
+    createdAt: requestedAt,
+    startTime: at(13),
+    endTime: at(15),
+  }], () => 0.5);
+
+  assert.equal(result.assignments.length, 1);
+  assert.equal(result.assignments[0].creatorId, "line-user-1");
+  assert.equal(result.assignments[0].userName, "山田太郎");
+  assert.equal(result.assignments[0].isCustomBand, true);
+  assert.equal(result.assignments[0].requestDocId, "request-user-1");
+  assert.equal(result.assignments[0].requestedAt, requestedAt);
+  assert.deepEqual(result.assignments[0].originalDocIds, ["request-user-1"]);
+});
+
 test("終日イベントの日は候補を確定せず全件を落選として扱う", () => {
   const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
   const bookings = [
