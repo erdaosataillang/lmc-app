@@ -5,10 +5,12 @@ const {logger} = require("firebase-functions");
 const {defineSecret} = require("firebase-functions/params");
 
 const discordErrorWebhookUrl = defineSecret("DISCORD_ERROR_WEBHOOK_URL");
+const discordActivityWebhookUrl = defineSecret("DISCORD_ACTIVITY_WEBHOOK_URL");
 const recentAlerts = new Map();
 const DEDUPLICATION_MS = 10 * 60 * 1000;
 const MAX_RECENT_ALERTS = 500;
 let missingWebhookLogged = false;
+let missingActivityWebhookLogged = false;
 
 function truncate(value, maxLength) {
   const text = String(value ?? "");
@@ -160,6 +162,83 @@ function discordPayload(alert, suppressed) {
   };
 }
 
+function activityKind(kind) {
+  return ({
+    lottery: {title: "抽選を実行しました", color: 0x6C8CD5},
+    registration: {title: "ユーザーが新規登録しました", color: 0x63B995},
+    cue_sheet: {title: "Cueシートが提出されました", color: 0xA985D6},
+  })[kind] || {title: "運用ログ", color: 0x7B8A9A};
+}
+
+function activityPayload(input = {}) {
+  const kind = activityKind(input.kind);
+  const fields = (Array.isArray(input.fields) ? input.fields : [])
+      .filter((field) => field?.name && field?.value !== undefined && field?.value !== null && field?.value !== "")
+      .slice(0, 20)
+      .map((field) => ({
+        name: truncate(redact(field.name, 256), 256),
+        value: truncate(redact(field.value, 1024), 1024),
+        inline: field.inline === true,
+      }));
+  const uid = truncate(input.uid || "", 180);
+  const userName = truncate(input.userName || "", 120);
+  const userIcon = safeImageUrl(input.userIcon);
+  if (userName) fields.push({name: "アカウント名", value: userName, inline: true});
+  if (uid) fields.push({name: "ユーザーID", value: uid, inline: false});
+
+  const embed = {
+    title: truncate(input.title || kind.title, 256),
+    color: kind.color,
+    fields: fields.slice(0, 25),
+    footer: {text: "LMCアプリ 運用ログ"},
+    timestamp: new Date().toISOString(),
+  };
+  const description = redact(input.description || "", 4000);
+  if (description) embed.description = description;
+  if (userName || userIcon) {
+    embed.author = {name: userName || "LMCユーザー"};
+    if (userIcon) embed.author.icon_url = userIcon;
+  }
+  if (userIcon) embed.thumbnail = {url: userIcon};
+  return {
+    username: "LMC Activity Log",
+    allowed_mentions: {parse: []},
+    embeds: [embed],
+  };
+}
+
+async function notifyDiscordActivity(input) {
+  const webhookUrl = discordActivityWebhookUrl.value().trim();
+  if (!webhookUrl) {
+    if (!missingActivityWebhookLogged) {
+      logger.warn("Discord activity webhook is not configured");
+      missingActivityWebhookLogged = true;
+    }
+    return {sent: false, reason: "not_configured"};
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(activityPayload(input)),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      logger.warn("Discord activity notification failed", {status: response.status});
+      return {sent: false, reason: `http_${response.status}`};
+    }
+    return {sent: true};
+  } catch (error) {
+    logger.warn("Discord activity notification failed", {message: error.name || "unknown"});
+    return {sent: false, reason: error.name || "network_error"};
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function notifyDiscordAlert(input) {
   const alert = normalizeAlert(input);
   const claim = claimAlert(alert.fingerprint);
@@ -208,8 +287,10 @@ function withDiscordErrorAlert(source, handler) {
 }
 
 module.exports = {
+  discordActivityWebhookUrl,
   discordErrorWebhookUrl,
+  notifyDiscordActivity,
   notifyDiscordAlert,
   withDiscordErrorAlert,
-  _test: {claimAlert, discordPayload, japaneseExplanation, japaneseKind, normalizeAlert, redact, safePage},
+  _test: {activityPayload, claimAlert, discordPayload, japaneseExplanation, japaneseKind, normalizeAlert, redact, safePage},
 };

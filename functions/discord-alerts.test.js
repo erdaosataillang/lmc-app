@@ -43,6 +43,26 @@ test("Discordでメンションを発生させない", () => {
   assert.ok(payload.embeds[0].fields.some(field => field.name === "発生環境" && field.value === "LINE LIFFブラウザ"));
 });
 
+test("運用ログは障害通知とは別の形式で個人と操作内容を表示する", () => {
+  const payload = _test.activityPayload({
+    kind: "lottery",
+    description: "手動抽選の実行結果です。",
+    uid: "U1234567890",
+    userName: "山田太郎",
+    userIcon: "https://example.com/avatar.png",
+    fields: [
+      {name: "実行方法", value: "手動", inline: true},
+      {name: "対象日", value: "2026-11-20", inline: true},
+    ],
+  });
+  assert.equal(payload.username, "LMC Activity Log");
+  assert.deepEqual(payload.allowed_mentions, {parse: []});
+  assert.equal(payload.embeds[0].title, "抽選を実行しました");
+  assert.equal(payload.embeds[0].author.name, "山田太郎");
+  assert.ok(payload.embeds[0].fields.some((field) => field.name === "実行方法" && field.value === "手動"));
+  assert.ok(payload.embeds[0].fields.some((field) => field.name === "ユーザーID" && field.value === "U1234567890"));
+});
+
 test("代表的なエラーを日本語で説明する", () => {
   assert.match(_test.japaneseExplanation("ReferenceError: liff is not defined", "error"), /読み込まれていない/);
   assert.match(_test.japaneseExplanation("Failed to fetch", "error"), /通信/);

@@ -1102,6 +1102,7 @@
                     cueSheetId: targetDocId,
                     revisionId: revisionRef.id,
                     savedBy: auth?.currentUser?.uid || '',
+                    submissionType: 'digital',
                     savedAt: serverTimestamp()
                 });
                 await batch.commit();

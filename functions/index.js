@@ -6,7 +6,7 @@ const {FieldValue, Timestamp, getFirestore} = require("firebase-admin/firestore"
 const {logger} = require("firebase-functions");
 const {onRequest} = require("firebase-functions/v2/https");
 const {onSchedule} = require("firebase-functions/v2/scheduler");
-const {onDocumentWritten} = require("firebase-functions/v2/firestore");
+const {onDocumentCreated, onDocumentWritten} = require("firebase-functions/v2/firestore");
 const {defineSecret} = require("firebase-functions/params");
 const {randomBytes} = require("node:crypto");
 const {
@@ -26,7 +26,9 @@ const {
   tokyoDayBounds,
 } = require("./lottery");
 const {
+  discordActivityWebhookUrl,
   discordErrorWebhookUrl,
+  notifyDiscordActivity,
   notifyDiscordAlert,
   withDiscordErrorAlert,
 } = require("./discord-alerts");
@@ -92,6 +94,151 @@ function eventIncludesDate(eventData, dateKey) {
   return validDate(startDate) && validDate(endDate) && endDate >= startDate &&
     dateKey >= startDate && dateKey <= endDate;
 }
+
+async function activityProfile(uid, fallback = {}) {
+  const profile = {
+    uid: typeof uid === "string" ? uid : "",
+    userName: fallback.userName || "",
+    userIcon: fallback.userIcon || "",
+  };
+  if (!profile.uid || profile.uid === "scheduled-lottery" || profile.uid === "admin") return profile;
+  try {
+    const snapshot = await db.doc(`users/${profile.uid}`).get();
+    if (!snapshot.exists) return profile;
+    const data = snapshot.data() || {};
+    return {
+      uid: profile.uid,
+      userName: data.name || data.lineDisplayName || data.displayName || profile.userName,
+      userIcon: data.icon || data.pictureUrl || profile.userIcon,
+    };
+  } catch (error) {
+    logger.warn("Activity profile lookup failed", {uid: profile.uid, message: error.message});
+    return profile;
+  }
+}
+
+function lotteryStatusLabel(status) {
+  return ({
+    completed: "完了",
+    no_candidates: "候補なし",
+    blocked_event: "イベント開催日のためブロック",
+  })[status] || status || "不明";
+}
+
+exports.logLotteryRun = onDocumentWritten({
+  document: "lotteryRuns/{dateKey}",
+  region: "asia-northeast1",
+  memory: "256MiB",
+  maxInstances: 5,
+  secrets: [discordActivityWebhookUrl],
+}, async (event) => {
+  const before = event.data?.before;
+  const after = event.data?.after;
+  if (!after?.exists) return;
+  const beforeExecutedAt = before?.exists ? before.get("executedAt")?.toMillis?.() : null;
+  const afterExecutedAt = after.get("executedAt")?.toMillis?.() ?? null;
+  if (before?.exists && beforeExecutedAt === afterExecutedAt) return;
+  const data = after.data() || {};
+  const isAutomatic = data.executionMode === "auto" || data.executedBy === "scheduled-lottery";
+  const profile = await activityProfile(data.executedBy, {
+    userName: data.executedByName || (isAutomatic ? "自動実行" : "管理者"),
+    userIcon: data.executedByIcon || "",
+  });
+  await notifyDiscordActivity({
+    kind: "lottery",
+    description: `${isAutomatic ? "自動" : "手動"}抽選の実行結果です。`,
+    uid: isAutomatic ? "" : profile.uid,
+    userName: profile.userName,
+    userIcon: profile.userIcon,
+    fields: [
+      {name: "実行方法", value: isAutomatic ? "自動" : "手動", inline: true},
+      {name: "対象日", value: data.targetDate || event.params.dateKey, inline: true},
+      {name: "結果", value: lotteryStatusLabel(data.status), inline: true},
+      {name: "抽選候補", value: `${Number(data.candidateCount) || 0}件`, inline: true},
+      {name: "対象バンド", value: `${Number(data.bandCount) || 0}組`, inline: true},
+      {name: "予約確定", value: `${Number(data.successCount) || 0}組`, inline: true},
+      {name: "落選・未確定", value: `${Array.isArray(data.failedBandIds) ? data.failedBandIds.length : 0}組`, inline: true},
+      {name: "確定枠", value: data.durationMinutes ? `${data.durationMinutes}分` : "なし", inline: true},
+      {name: "イベント", value: data.activeEventName || "なし", inline: true},
+    ],
+  });
+});
+
+exports.logNewUserRegistration = onDocumentCreated({
+  document: "users/{userId}",
+  region: "asia-northeast1",
+  memory: "256MiB",
+  maxInstances: 5,
+  secrets: [discordActivityWebhookUrl],
+}, async (event) => {
+  const data = event.data?.data() || {};
+  await notifyDiscordActivity({
+    kind: "registration",
+    uid: event.params.userId,
+    userName: data.name || data.lineDisplayName || data.displayName || "名前未設定",
+    userIcon: data.icon || data.pictureUrl || "",
+    fields: [
+      {name: "学年", value: data.year || data.grade || "未設定", inline: true},
+      {name: "パート", value: data.part || data.partName || "未設定", inline: true},
+    ],
+  });
+});
+
+exports.logCueSheetRevision = onDocumentCreated({
+  document: "cuesheets/{cueSheetId}/revisions/{revisionId}",
+  region: "asia-northeast1",
+  memory: "256MiB",
+  maxInstances: 5,
+  secrets: [discordActivityWebhookUrl],
+}, async (event) => {
+  const data = event.data?.data() || {};
+  const profile = await activityProfile(data.savedBy, {
+    userName: data.savedByName || "提出者不明",
+    userIcon: data.savedByIcon || "",
+  });
+  await notifyDiscordActivity({
+    kind: "cue_sheet",
+    description: "デジタルCueシートが提出・更新されました。",
+    uid: profile.uid,
+    userName: profile.userName,
+    userIcon: profile.userIcon,
+    fields: [
+      {name: "形式", value: "デジタル", inline: true},
+      {name: "バンド", value: data.bandName || "不明", inline: true},
+      {name: "イベントID", value: data.eventId || "未設定", inline: true},
+      {name: "CueシートID", value: event.params.cueSheetId, inline: false},
+      {name: "履歴ID", value: event.params.revisionId, inline: false},
+    ],
+  });
+});
+
+exports.logUploadedCueSheet = onDocumentCreated({
+  document: "cuesheets/{cueSheetId}",
+  region: "asia-northeast1",
+  memory: "256MiB",
+  maxInstances: 5,
+  secrets: [discordActivityWebhookUrl],
+}, async (event) => {
+  const data = event.data?.data() || {};
+  if (!data.fileUrl) return;
+  const profile = await activityProfile(data.submittedBy, {
+    userName: data.submittedByName || "管理者",
+    userIcon: data.submittedByIcon || "",
+  });
+  await notifyDiscordActivity({
+    kind: "cue_sheet",
+    description: "画像またはPDFのCueシートが提出されました。",
+    uid: profile.uid,
+    userName: profile.userName,
+    userIcon: profile.userIcon,
+    fields: [
+      {name: "形式", value: "画像・PDF", inline: true},
+      {name: "バンド", value: data.bandName || "不明", inline: true},
+      {name: "イベントID", value: data.eventId || "未設定", inline: true},
+      {name: "CueシートID", value: event.params.cueSheetId, inline: false},
+    ],
+  });
+});
 
 exports.createLineFirebaseToken = onRequest({
   region: "asia-northeast1",
@@ -434,6 +581,9 @@ exports.runScheduledLottery = onSchedule({
   const batch = db.batch();
   batch.create(runRef, {
     targetDate: dateKey,
+    executionMode: "auto",
+    executedBy: "scheduled-lottery",
+    executedByName: "自動実行",
     status: activeEventBlock ? "blocked_event" : (result.candidateCount === 0 ? "no_candidates" : "completed"),
     activeEventId: activeEventBlock?.id || null,
     activeEventName: activeEventBlock?.name || null,

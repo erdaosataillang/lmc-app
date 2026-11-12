@@ -120,6 +120,7 @@
         let cuesheetsData = [], bandsData = [];
         let cueSearchQuery = "";
         let currentConfirmAction = null;
+        let currentAdminUser = null;
         const storage = getStorage(app);
 
         const safetyTimer = setTimeout(() => {
@@ -129,6 +130,7 @@
 
         initAdminPage('cuesheets', (user) => {
             clearTimeout(safetyTimer);
+            currentAdminUser = user;
             console.log("Admin Cuesheets Module Loaded.");
 
             onSnapshot(collection(db, 'bands'), (s) => {
@@ -222,7 +224,16 @@
                 const url = await getDownloadURL(fileRef);
 
                 const band = bandsData.find(b => b.id === bid);
-                await addDoc(collection(db, 'cuesheets'), { bandId: bid, bandName: band?.name || "Unknown", fileUrl: url, createdAt: serverTimestamp() });
+                await addDoc(collection(db, 'cuesheets'), {
+                    bandId: bid,
+                    bandName: band?.name || "Unknown",
+                    fileUrl: url,
+                    submissionType: 'file',
+                    submittedBy: currentAdminUser?.uid || '',
+                    submittedByName: currentAdminUser?.displayName || '管理者',
+                    submittedByIcon: currentAdminUser?.photoURL || '',
+                    createdAt: serverTimestamp()
+                });
                 await updateDoc(doc(db, 'bands', bid), { latestCuesheetUrl: url });
                 window.closeAddCuesheetModal();
             } catch (err) { console.error(err); alert("Upload failed"); }
