@@ -111,6 +111,18 @@ function cleanOptionalText(value, maxLength) {
   return result;
 }
 
+function cleanOptionalHttpsUrl(value, maxLength = 1600) {
+  const result = cleanOptionalText(value, maxLength);
+  if (!result) return "";
+  try {
+    const url = new URL(result);
+    if (url.protocol !== "https:") throw new Error("invalid protocol");
+    return url.href;
+  } catch (_) {
+    throw new HttpError(400, "invalid_image_url", "画像URLが正しくありません。");
+  }
+}
+
 function dateKeyInTokyo(date) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
@@ -147,12 +159,26 @@ function parseBookingBody(body) {
   if (start.getTime() < Date.now() - 5 * 60 * 1000) {
     throw new HttpError(400, "booking_in_past", "過去の時間は予約できません。");
   }
+  const type = body.type === "event" ? "event" : "normal";
+  if (type === "event") {
+    return {
+      type,
+      title: cleanText(body.title, 120, "イベント名"),
+      eventMessage: cleanOptionalText(body.eventMessage, 1000),
+      eventImageUrl: cleanOptionalHttpsUrl(body.eventImageUrl),
+      bandId: "",
+      customBandName: "",
+      start,
+      end,
+    };
+  }
   const hasBandId = typeof body.bandId === "string" && body.bandId.trim() !== "";
   const hasCustomBandName = typeof body.customBandName === "string" && body.customBandName.trim() !== "";
   if (hasBandId === hasCustomBandName) {
     throw new HttpError(400, "invalid_band", "参加中のバンド、またはその他のバンド名のどちらかを指定してください。");
   }
   return {
+    type,
     bandId: hasBandId ? cleanText(body.bandId, 160, "バンド") : "",
     customBandName: hasCustomBandName ? cleanText(body.customBandName, 120, "バンド名") : "",
     start,
@@ -173,18 +199,19 @@ function eventIncludesDate(eventData, dateKey) {
     dateKey >= startDate && dateKey <= endDate;
 }
 
-async function bookingStatus(db, start) {
+async function bookingStatus(db, start, {eventBooking = false} = {}) {
   const settings = (await db.doc("system/settings").get()).data() || {};
   const dateKey = dateKeyInTokyo(start);
   const activeEventId = cleanOptionalText(settings.activeEventId, 160);
   if (activeEventId) {
     const eventSnapshot = await db.doc(`events/${activeEventId}`).get();
     const eventData = eventSnapshot.data() || {};
-    if (eventSnapshot.exists && eventIncludesDate(eventData, dateKey)) {
+    if (!eventBooking && eventSnapshot.exists && eventIncludesDate(eventData, dateKey)) {
       const eventName = cleanOptionalText(eventData.event || eventData.name, 120) || "定期演奏会";
       throw new HttpError(409, "active_event_day_blocked", `${eventName}の開催日は、合わせ予約ができません。`);
     }
   }
+  if (eventBooking) return "confirmed";
   const mode = settings.reservationMode || settings.bookingMode || "first_come";
   if (mode !== "lottery") return "confirmed";
   const run = await db.doc(`lotteryRuns/${dateKey}`).get();
@@ -200,14 +227,19 @@ async function assertBandMember(db, bandId, uid) {
 }
 
 async function saveBooking(db, identity, body, bookingId) {
-  const {bandId: requestedBandId, customBandName, start, end} = parseBookingBody(body);
+  const parsed = parseBookingBody(body);
+  const {type, bandId: requestedBandId, customBandName, start, end} = parsed;
+  const isEvent = type === "event";
+  if (isEvent && identity.admin !== true) {
+    throw new HttpError(403, "admin_required", "イベント予約は管理者のみ登録できます。");
+  }
   const [band, user] = await Promise.all([
-    customBandName ? Promise.resolve(null) : assertBandMember(db, requestedBandId, identity.uid),
+    isEvent || customBandName ? Promise.resolve(null) : assertBandMember(db, requestedBandId, identity.uid),
     db.doc(`users/${identity.uid}`).get(),
   ]);
-  const bandId = customBandName ? customBandId(identity.uid, customBandName) : requestedBandId;
-  const bandName = customBandName || cleanOptionalText(band.get("name"), 120) || "名称未設定";
-  const status = await bookingStatus(db, start);
+  const bandId = isEvent ? "" : (customBandName ? customBandId(identity.uid, customBandName) : requestedBandId);
+  const bandName = isEvent ? parsed.title : (customBandName || cleanOptionalText(band.get("name"), 120) || "名称未設定");
+  const status = await bookingStatus(db, start, {eventBooking: isEvent});
   const bookingRef = bookingId ? db.doc(`bookings/${bookingId}`) : db.collection("bookings").doc();
   await db.runTransaction(async (transaction) => {
     if (bookingId) {
@@ -235,10 +267,13 @@ async function saveBooking(db, identity, body, bookingId) {
     const value = {
       bandId,
       bandName,
-      isCustomBand: Boolean(customBandName),
+      isCustomBand: !isEvent && Boolean(customBandName),
       creatorId: bookingId ? undefined : identity.uid,
       userName: bookingId ? undefined : cleanOptionalText(user.get("name") || user.get("lineDisplayName"), 120),
-      type: "normal",
+      type,
+      title: isEvent ? parsed.title : "",
+      eventMessage: isEvent ? parsed.eventMessage : "",
+      eventImageUrl: isEvent ? parsed.eventImageUrl : "",
       status,
       startTime: Timestamp.fromDate(start),
       endTime: Timestamp.fromDate(end),
@@ -510,4 +545,4 @@ exports.lmcAppApi = onRequest({
   }
 });
 
-exports._test = {clientErrorAllowed, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicProfile, sha256};
+exports._test = {clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicProfile, sha256};

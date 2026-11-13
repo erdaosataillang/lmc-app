@@ -4,6 +4,7 @@
     const LOADER_SELECTOR = '.lmc-loading-state, .lmc-wave-loader';
     const INVALID_GHOST_HOSTS = new Set(['TABLE', 'TBODY', 'THEAD', 'TFOOT', 'TR', 'SELECT', 'OPTION']);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const activeGhosts = new WeakMap();
 
     const elementFromNode = node => node?.nodeType === Node.ELEMENT_NODE ? node : null;
 
@@ -11,10 +12,11 @@
         for (const node of nodes) {
             const element = elementFromNode(node);
             if (!element) continue;
+            if (element.matches('.lmc-loader-transition-ghost') || element.closest('.lmc-loader-transition-ghost')) continue;
             if (element.id === 'initial-loader') continue;
             if (element.matches(LOADER_SELECTOR)) return element;
             const loader = element.querySelector(LOADER_SELECTOR);
-            if (loader && !loader.closest('#initial-loader')) return loader;
+            if (loader && !loader.closest('#initial-loader') && !loader.closest('.lmc-loader-transition-ghost')) return loader;
         }
         return null;
     }
@@ -23,7 +25,9 @@
         const added = [...addedNodes].map(elementFromNode).filter(Boolean);
         const elements = added.length ? added : [...target.children];
         elements
-            .filter(element => !element.classList.contains('lmc-loader-transition-ghost'))
+            .filter(element => element.isConnected &&
+                !element.classList.contains('lmc-loader-transition-ghost') &&
+                !element.matches(LOADER_SELECTOR))
             .slice(0, 30)
             .forEach(element => {
                 if (typeof element.animate !== 'function') return;
@@ -41,14 +45,19 @@
     }
 
     function fadeLoader(loader, target) {
+        if (!target.isConnected || target.closest('.lmc-loader-transition-ghost')) return;
         if (INVALID_GHOST_HOSTS.has(target.tagName)) return;
         if (target.getBoundingClientRect().height < 18) return;
 
-        const ghost = document.createElement('div');
-        ghost.className = 'lmc-loader-transition-ghost';
         const loaderVisual = loader.matches('.lmc-wave-loader')
             ? loader
             : loader.querySelector('.lmc-wave-loader') || loader;
+        // ボタン内は短時間で何度も内容が変わるため、複製オーバーレイを作らない。
+        if (loaderVisual.matches('.lmc-wave-loader--button')) return;
+        activeGhosts.get(target)?.remove();
+        const ghost = document.createElement('div');
+        ghost.className = 'lmc-loader-transition-ghost';
+        ghost.dataset.lmcTransitionGhost = 'true';
         const clone = loaderVisual.cloneNode(true);
         clone.removeAttribute('id');
         clone.removeAttribute('role');
@@ -59,25 +68,28 @@
         const addedHostClass = getComputedStyle(target).position === 'static';
         if (addedHostClass) target.classList.add('lmc-loader-transition-host');
         target.append(ghost);
+        activeGhosts.set(target, ghost);
+
+        const cleanup = () => {
+            if (activeGhosts.get(target) === ghost) activeGhosts.delete(target);
+            ghost.remove();
+            if (addedHostClass && !activeGhosts.has(target)) target.classList.remove('lmc-loader-transition-host');
+        };
 
         if (typeof ghost.animate !== 'function') {
-            ghost.remove();
-            if (addedHostClass) target.classList.remove('lmc-loader-transition-host');
+            cleanup();
             return;
         }
 
         const animation = ghost.animate([
-            { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' },
-            { opacity: 0, transform: 'scale(.94)', filter: 'blur(2px)' }
+            { opacity: 1, transform: 'translate3d(0,0,0) scale(1)' },
+            { opacity: 0, transform: 'translate3d(0,-2px,0) scale(.96)' }
         ], {
             duration: 170,
             easing: 'cubic-bezier(.4,0,.8,.2)',
             fill: 'both'
         });
-        animation.finished.then(() => {
-            ghost.remove();
-            if (addedHostClass) target.classList.remove('lmc-loader-transition-host');
-        }).catch(() => ghost.remove());
+        animation.finished.then(cleanup).catch(cleanup);
     }
 
     function handleMutations(mutations) {

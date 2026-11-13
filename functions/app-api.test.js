@@ -65,6 +65,32 @@ test("登録済みバンドと自由入力の同時指定・未指定を拒否�
   assert.throws(() => _test.parseBookingBody({bandId: "b1", customBandName: "別バンド", ...times}), /どちらかを指定/);
 });
 
+test("管理画面用のイベント予約内容を受け付ける", () => {
+  const parsed = _test.parseBookingBody({
+    type: "event",
+    title: " 新歓ライブ ",
+    eventMessage: "当日は部室を終日使用します。",
+    eventImageUrl: "https://firebasestorage.googleapis.com/v0/b/example/o/event.jpg?alt=media",
+    startTime: "2030-10-22T00:00:00.000Z",
+    endTime: "2030-10-22T11:00:00.000Z",
+  });
+  assert.equal(parsed.type, "event");
+  assert.equal(parsed.title, "新歓ライブ");
+  assert.equal(parsed.eventMessage, "当日は部室を終日使用します。");
+  assert.match(parsed.eventImageUrl, /^https:\/\/firebasestorage\.googleapis\.com\//);
+  assert.equal(parsed.bandId, "");
+});
+
+test("イベント予約の画像はHTTPSだけを受け付ける", () => {
+  assert.throws(() => _test.parseBookingBody({
+    type: "event",
+    title: "新歓ライブ",
+    eventImageUrl: "javascript:alert(1)",
+    startTime: "2030-10-22T00:00:00.000Z",
+    endTime: "2030-10-22T11:00:00.000Z",
+  }), /画像URL/);
+});
+
 test("定期演奏会の開始日から終了日までを予約不可日として判定する", () => {
   const event = {startDate: "2030-10-22", endDate: "2030-10-24"};
   assert.equal(_test.eventIncludesDate(event, "2030-10-21"), false);
