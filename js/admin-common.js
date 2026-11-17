@@ -3,6 +3,12 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { setErrorReporterAuth } from "./error-reporter.js";
 
+const ADMIN_ORIGIN = "https://urakata-lmc-admin.web.app";
+const isLocalDevelopment = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+if (window.location.pathname.startsWith("/admin") && window.location.origin !== ADMIN_ORIGIN && !isLocalDevelopment) {
+    window.location.replace(`${ADMIN_ORIGIN}${window.location.pathname}${window.location.search}${window.location.hash}`);
+}
+
 if ('serviceWorker' in navigator && window.isSecureContext) {
     navigator.serviceWorker.register('/image-cache-sw.js', {scope: '/'}).catch(error => {
         console.warn('Image cache registration failed:', error);
