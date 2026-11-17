@@ -3,4 +3,6 @@ firebase-debug.log
 firebase-debug.*.log
 firepit-log.txt
 .discord-webhook-url
+.firebase-admin-public/
+.firebase/
 

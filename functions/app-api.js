@@ -9,6 +9,8 @@ const {discordErrorWebhookUrl, notifyDiscordAlert} = require("./discord-alerts")
 
 const ALLOWED_ORIGINS = new Set([
   "https://lmc-mobile.sorairosystem.com",
+  "https://urakata-lmc-admin.web.app",
+  "https://urakata-lmc-admin.firebaseapp.com",
   "https://liff.line.me",
   "http://localhost",
   "http://localhost:5000",

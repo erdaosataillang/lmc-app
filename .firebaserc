@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "urakata-app"
+  },
+  "targets": {
+    "urakata-app": {
+      "hosting": {
+        "lmc-admin": [
+          "urakata-lmc-admin"
+        ]
+      }
+    }
   }
 }

@@ -9,6 +9,47 @@
     "source": "functions",
     "runtime": "nodejs22"
   },
+  "hosting": [
+    {
+      "target": "lmc-admin",
+      "public": ".firebase-admin-public",
+      "predeploy": [
+        "node scripts/prepare-admin-hosting.cjs"
+      ],
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "/admin/",
+          "type": 302
+        }
+      ],
+      "headers": [
+        {
+          "source": "/admin/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "no-cache, no-store, must-revalidate"
+            }
+          ]
+        },
+        {
+          "source": "**/*.{js,css,svg}",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=300, must-revalidate"
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "emulators": {
     "firestore": {
       "port": 8089
