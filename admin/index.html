@@ -149,7 +149,7 @@
     <script type="module">
         import { initAdminPage, db, auth, LIFF_ID } from "/js/admin-common.js?v=20261031-3";
         import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, getCountFromServer, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { signInFirebaseWithLine } from "/js/line-firebase-auth.js?v=20261031-3";
 
         // 安全装置: 5秒経っても初期化が終わらなければ強制解除
@@ -158,31 +158,68 @@
             if (loader) loader.remove();
         }, 5000);
 
-        const startDashboard = () => initAdminPage('dashboard', (user) => {
-            clearTimeout(safetyTimer);
+        const DASHBOARD_STATS_CACHE_KEY = 'lmc_admin_dashboard_stats_v1';
+        const DASHBOARD_STATS_CACHE_TTL = 5 * 60 * 1000;
+        let dashboardStarted = false;
 
-            // 各統計データのリアルタイム監視
-            // 1. バンド数
-            onSnapshot(collection(db, 'bands'), (snapshot) => {
-                const count = snapshot.docs.filter(doc => !doc.data().isArchived).length;
-                document.getElementById('stat-band-count').innerText = count;
-            }, (err) => console.error("Band stat error:", err));
+        const renderDashboardStats = (stats) => {
+            document.getElementById('stat-band-count').innerText = stats.bands;
+            document.getElementById('stat-event-count').innerText = stats.events;
+            document.getElementById('stat-cue-count').innerText = stats.cuesheets;
+            document.getElementById('stat-user-count').innerText = stats.users;
+        };
 
-            // 2. イベント数
-            onSnapshot(collection(db, 'events'), (snapshot) => {
-                document.getElementById('stat-event-count').innerText = snapshot.size;
-            }, (err) => console.error("Event stat error:", err));
+        const getCachedDashboardStats = () => {
+            try {
+                const cached = JSON.parse(sessionStorage.getItem(DASHBOARD_STATS_CACHE_KEY) || 'null');
+                if (!cached?.savedAt || !cached?.stats || Date.now() - cached.savedAt >= DASHBOARD_STATS_CACHE_TTL) return null;
+                return cached.stats;
+            } catch {
+                sessionStorage.removeItem(DASHBOARD_STATS_CACHE_KEY);
+                return null;
+            }
+        };
 
-            // 3. Cueシート数
-            onSnapshot(collection(db, 'cuesheets'), (snapshot) => {
-                document.getElementById('stat-cue-count').innerText = snapshot.size;
-            }, (err) => console.error("Cue stat error:", err));
+        const loadDashboardStats = async () => {
+            const cached = getCachedDashboardStats();
+            if (cached) {
+                renderDashboardStats(cached);
+                return;
+            }
 
-            // 4. 部員数
-            onSnapshot(collection(db, 'users'), (snapshot) => {
-                document.getElementById('stat-user-count').innerText = snapshot.size;
-            }, (err) => console.error("User stat error:", err));
-        });
+            // 件数カードにリアルタイム監視は不要。集計クエリで全ドキュメントの再読込を防ぐ。
+            const [allBands, archivedBands, events, cuesheets, users] = await Promise.all([
+                getCountFromServer(collection(db, 'bands')),
+                getCountFromServer(query(collection(db, 'bands'), where('isArchived', '==', true))),
+                getCountFromServer(collection(db, 'events')),
+                getCountFromServer(collection(db, 'cuesheets')),
+                getCountFromServer(collection(db, 'users'))
+            ]);
+
+            const stats = {
+                bands: Math.max(0, allBands.data().count - archivedBands.data().count),
+                events: events.data().count,
+                cuesheets: cuesheets.data().count,
+                users: users.data().count
+            };
+            sessionStorage.setItem(DASHBOARD_STATS_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), stats }));
+            renderDashboardStats(stats);
+        };
+
+        const startDashboard = () => {
+            if (dashboardStarted) return;
+            dashboardStarted = true;
+
+            initAdminPage('dashboard', () => {
+                clearTimeout(safetyTimer);
+                loadDashboardStats().catch((error) => {
+                    console.error('Dashboard stats error:', error);
+                    ['stat-band-count', 'stat-event-count', 'stat-cue-count', 'stat-user-count'].forEach((id) => {
+                        document.getElementById(id).innerText = '—';
+                    });
+                });
+            });
+        };
 
         const completePendingLineLogin = async () => {
             if (sessionStorage.getItem('lmc_admin_auth_pending') !== 'true') return false;
