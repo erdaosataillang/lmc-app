@@ -24,12 +24,14 @@ function injectStyles() {
         .part-ring-dot::after { content:""; position:absolute; left:50%; top:-1px; width:var(--part-dot-size); height:var(--part-dot-size); transform:translateX(-50%); border-radius:50%; background:var(--part-ring-color,#b9c8df); opacity:var(--part-dot-opacity); box-shadow:0 0 6px 1px var(--part-ring-glow,rgba(185,200,223,.4)); }
         .part-avatar-ring.part-ring-animate .part-ring-circle { animation:lmcPartRingSweep 2s cubic-bezier(.2,.72,.15,1) both; }
         .part-avatar-ring.part-ring-animate .part-ring-orbit { animation:lmcPartRingOrbit 2s cubic-bezier(.3,.08,.2,1) both; }
-        .lmc-santa-hat { position:absolute; width:27px; height:25px; right:-9px; top:-11px; z-index:7; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(72,28,26,.2)); transform-origin:55% 80%; animation:lmcSantaHatSettle .46s cubic-bezier(.2,.9,.25,1.25) both; }
+        .lmc-santa-hat { position:absolute; width:29px; height:28px; right:-7px; top:-10px; z-index:7; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(89,37,47,.17)); transform-origin:36% 82%; animation:lmcSantaHatSettle .52s cubic-bezier(.18,.9,.24,1.28) both; }
         .lmc-santa-hat svg { display:block; width:100%; height:100%; overflow:visible; }
-        .lmc-santa-hat-cap { fill:#d94a46; }
-        .lmc-santa-hat-shadow { fill:#b93434; opacity:.5; }
-        .lmc-santa-hat-trim { fill:#fffaf5; stroke:#eadfd7; stroke-width:.65; }
-        @keyframes lmcSantaHatSettle { from { opacity:0; transform:translate3d(5px,-5px,0) rotate(18deg) scale(.72); } to { opacity:1; transform:translate3d(0,0,0) rotate(0) scale(1); } }
+        .lmc-santa-hat-cap { fill:#f06f7d; }
+        .lmc-santa-hat-shadow { fill:#d95768; opacity:.58; }
+        .lmc-santa-hat-trim { fill:#fffaf5; stroke:#eadbd5; stroke-width:.65; }
+        .lmc-santa-hat-highlight { fill:none; stroke:#ffadb5; stroke-width:1.2; stroke-linecap:round; opacity:.8; }
+        .lmc-santa-hat-sparkle { fill:#f6cf70; }
+        @keyframes lmcSantaHatSettle { from { opacity:0; transform:translate3d(5px,-6px,0) rotate(12deg) scale(.68); } 68% { transform:translate3d(-1px,1px,0) rotate(-10deg) scale(1.06); } to { opacity:1; transform:translate3d(0,0,0) rotate(-7deg) scale(1); } }
         @keyframes lmcPartRingSweep { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
         @keyframes lmcPartRingOrbit { 0% { transform:rotate(0); opacity:0; } 6% { opacity:1; } 90% { opacity:1; } 100% { transform:rotate(360deg); opacity:0; } }
         @media (prefers-reduced-motion:reduce) { .part-avatar-ring.part-ring-animate .part-ring-circle { animation:none; stroke-dashoffset:0; } .part-avatar-ring.part-ring-animate .part-ring-orbit { display:none; animation:none; } .lmc-santa-hat { animation:none; } }
@@ -66,11 +68,14 @@ export function setChristmasAvatarHat(element, active = isChristmasSeason()) {
     const hat = document.createElement('span');
     hat.className = 'lmc-santa-hat';
     hat.setAttribute('aria-hidden', 'true');
-    hat.innerHTML = `<svg viewBox="0 0 32 29" aria-hidden="true">
-        <path class="lmc-santa-hat-cap" d="M4.5 20.5C7.2 12.1 12.7 5.2 19.6 2.5c1.2 5.3 4.3 9.5 8.7 12.7-4.8-.5-8.7.9-11.6 4.5Z"/>
-        <path class="lmc-santa-hat-shadow" d="M16.7 19.7c3-3.6 6.8-5 11.6-4.5-2.3-1.7-4.2-3.6-5.7-5.8-1.2 4.5-3.2 7.3-5.9 10.3Z"/>
-        <rect class="lmc-santa-hat-trim" x="3.5" y="18.2" width="15.8" height="6.7" rx="3.35" transform="rotate(8 3.5 18.2)"/>
-        <circle class="lmc-santa-hat-trim" cx="28" cy="15.2" r="4"/>
+    hat.innerHTML = `<svg viewBox="0 0 34 31" aria-hidden="true">
+        <path class="lmc-santa-hat-cap" d="M4.4 21.1C6.6 13.6 11.5 6.4 17.7 3.3c1.2-.6 2.5.1 2.7 1.5.8 5.1 3.6 8.7 8.5 11-4.9-.5-9.3 1.5-12.3 6.4Z"/>
+        <path class="lmc-santa-hat-shadow" d="M16.6 22.2c3-4.9 7.4-6.9 12.3-6.4-2.5-1.2-4.5-2.7-5.8-4.6-.7 4.2-3 7.8-6.5 11Z"/>
+        <path class="lmc-santa-hat-highlight" d="M10.3 12.7c1.8-3 4-5.2 6.4-6.6"/>
+        <path class="lmc-santa-hat-trim" d="M3.8 19.1c4.8-.2 9.5.7 14 2.6 1.6.7 2.1 2.8.9 4.1-.7.7-1.8.9-2.7.5-3.8-1.5-7.8-2.3-12-2.1-1.5.1-2.7-1-2.7-2.5 0-1.4 1.1-2.5 2.5-2.6Z"/>
+        <circle class="lmc-santa-hat-trim" cx="29.2" cy="16.2" r="4.35"/>
+        <circle cx="28.1" cy="14.9" r="1.05" fill="#fff" opacity=".82"/>
+        <path class="lmc-santa-hat-sparkle" d="m30.6 4.1.8 1.8 1.9.8-1.9.8-.8 1.8-.8-1.8-1.9-.8 1.9-.8Z"/>
     </svg>`;
     element.appendChild(hat);
 }
