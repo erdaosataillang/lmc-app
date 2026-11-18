@@ -24,9 +24,15 @@ function injectStyles() {
         .part-ring-dot::after { content:""; position:absolute; left:50%; top:-1px; width:var(--part-dot-size); height:var(--part-dot-size); transform:translateX(-50%); border-radius:50%; background:var(--part-ring-color,#b9c8df); opacity:var(--part-dot-opacity); box-shadow:0 0 6px 1px var(--part-ring-glow,rgba(185,200,223,.4)); }
         .part-avatar-ring.part-ring-animate .part-ring-circle { animation:lmcPartRingSweep 2s cubic-bezier(.2,.72,.15,1) both; }
         .part-avatar-ring.part-ring-animate .part-ring-orbit { animation:lmcPartRingOrbit 2s cubic-bezier(.3,.08,.2,1) both; }
+        .lmc-santa-hat { position:absolute; width:27px; height:25px; right:-9px; top:-11px; z-index:7; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(72,28,26,.2)); transform-origin:55% 80%; animation:lmcSantaHatSettle .46s cubic-bezier(.2,.9,.25,1.25) both; }
+        .lmc-santa-hat svg { display:block; width:100%; height:100%; overflow:visible; }
+        .lmc-santa-hat-cap { fill:#d94a46; }
+        .lmc-santa-hat-shadow { fill:#b93434; opacity:.5; }
+        .lmc-santa-hat-trim { fill:#fffaf5; stroke:#eadfd7; stroke-width:.65; }
+        @keyframes lmcSantaHatSettle { from { opacity:0; transform:translate3d(5px,-5px,0) rotate(18deg) scale(.72); } to { opacity:1; transform:translate3d(0,0,0) rotate(0) scale(1); } }
         @keyframes lmcPartRingSweep { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
         @keyframes lmcPartRingOrbit { 0% { transform:rotate(0); opacity:0; } 6% { opacity:1; } 90% { opacity:1; } 100% { transform:rotate(360deg); opacity:0; } }
-        @media (prefers-reduced-motion:reduce) { .part-avatar-ring.part-ring-animate .part-ring-circle { animation:none; stroke-dashoffset:0; } .part-avatar-ring.part-ring-animate .part-ring-orbit { display:none; animation:none; } }
+        @media (prefers-reduced-motion:reduce) { .part-avatar-ring.part-ring-animate .part-ring-circle { animation:none; stroke-dashoffset:0; } .part-avatar-ring.part-ring-animate .part-ring-orbit { display:none; animation:none; } .lmc-santa-hat { animation:none; } }
     `;
     document.head.appendChild(style);
 }
@@ -43,6 +49,32 @@ export function getPartRingColor(part) {
     return match || { color: '#b9c8df', glow: 'rgba(185,200,223,.42)' };
 }
 
+function isChristmasSeason(date = new Date()) {
+    return date.getMonth() === 11 && date.getDate() <= 25;
+}
+
+export function setChristmasAvatarHat(element, active = isChristmasSeason()) {
+    if (!element) return;
+    injectStyles();
+    element.dataset.christmasHat = active ? 'on' : 'off';
+    const existing = element.querySelector('.lmc-santa-hat');
+    if (!active) {
+        existing?.remove();
+        return;
+    }
+    if (existing) return;
+    const hat = document.createElement('span');
+    hat.className = 'lmc-santa-hat';
+    hat.setAttribute('aria-hidden', 'true');
+    hat.innerHTML = `<svg viewBox="0 0 32 29" aria-hidden="true">
+        <path class="lmc-santa-hat-cap" d="M4.5 20.5C7.2 12.1 12.7 5.2 19.6 2.5c1.2 5.3 4.3 9.5 8.7 12.7-4.8-.5-8.7.9-11.6 4.5Z"/>
+        <path class="lmc-santa-hat-shadow" d="M16.7 19.7c3-3.6 6.8-5 11.6-4.5-2.3-1.7-4.2-3.6-5.7-5.8-1.2 4.5-3.2 7.3-5.9 10.3Z"/>
+        <rect class="lmc-santa-hat-trim" x="3.5" y="18.2" width="15.8" height="6.7" rx="3.35" transform="rotate(8 3.5 18.2)"/>
+        <circle class="lmc-santa-hat-trim" cx="28" cy="15.2" r="4"/>
+    </svg>`;
+    element.appendChild(hat);
+}
+
 export function applyPartAvatarRing(element, userData = {}) {
     if (!element) return;
     injectStyles();
@@ -50,6 +82,7 @@ export function applyPartAvatarRing(element, userData = {}) {
     element.style.setProperty('--part-ring-color', palette.color);
     element.style.setProperty('--part-ring-glow', palette.glow);
     element.classList.add('part-avatar-ring');
+    setChristmasAvatarHat(element, element.dataset.christmasHat ? element.dataset.christmasHat === 'on' : isChristmasSeason());
 
     let layer = element.querySelector('.part-ring-layer');
     if (!layer) {
