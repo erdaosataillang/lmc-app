@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import "./analytics.js?v=20261118-1";
 import { setErrorReporterAuth } from "./error-reporter.js";
 
 const ADMIN_ORIGIN = "https://app.urakatabu.com";
