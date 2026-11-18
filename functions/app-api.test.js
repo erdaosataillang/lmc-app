@@ -42,6 +42,16 @@ test("メンテナンス設定は公開可能な項目だけ返す", () => {
   assert.equal(_test.publicMaintenance({}).enabled, false);
 });
 
+test("予約者または予約対象バンドのメンバーは一般権限でも予約を管理できる", () => {
+  const booking = {creatorId: "creator", bandId: "band-1", type: "normal"};
+  assert.equal(_test.bookingCanBeManagedBy(booking, "creator", null), true);
+  assert.equal(_test.bookingCanBeManagedBy(booking, "member", {memberIds: ["member", "creator"]}), true);
+  assert.equal(_test.bookingCanBeManagedBy(booking, "outsider", {memberIds: ["member", "creator"]}), false);
+  assert.equal(_test.bookingCanBeManagedBy({...booking, isCustomBand: true}, "member", {memberIds: ["member"]}), false);
+  assert.equal(_test.bookingCanBeManagedBy({...booking, type: "event"}, "member", {memberIds: ["member"]}), false);
+  assert.equal(_test.bookingCanBeManagedBy({...booking, systemManaged: true}, "creator", {memberIds: ["creator"]}), false);
+});
+
 test("予約時間の不正値と過大な予約を拒否する", () => {
   assert.throws(() => _test.parseBookingBody({bandId: "b1", startTime: "bad", endTime: "bad"}), /予約時間/);
   assert.throws(() => _test.parseBookingBody({

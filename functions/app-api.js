@@ -238,6 +238,26 @@ async function assertBandMember(db, bandId, uid) {
   return band;
 }
 
+function bookingCanBeManagedBy(booking, uid, band) {
+  if (!booking || !uid) return false;
+  if (booking.systemManaged === true) return false;
+  if (booking.creatorId === uid) return true;
+  if (booking.type === "event" || booking.isCustomBand === true || !booking.bandId || String(booking.bandId).startsWith("custom_")) {
+    return false;
+  }
+  const memberIds = band?.get ? band.get("memberIds") : band?.memberIds;
+  return Array.isArray(memberIds) && memberIds.includes(uid);
+}
+
+async function canManageBookingInTransaction(transaction, db, booking, uid) {
+  if (bookingCanBeManagedBy(booking, uid, null)) return true;
+  if (booking.type === "event" || booking.isCustomBand === true || !booking.bandId || String(booking.bandId).startsWith("custom_")) {
+    return false;
+  }
+  const band = await transaction.get(db.doc(`bands/${booking.bandId}`));
+  return band.exists && bookingCanBeManagedBy(booking, uid, band);
+}
+
 async function saveBooking(db, identity, body, bookingId) {
   const parsed = parseBookingBody(body);
   const {type, bandId: requestedBandId, customBandName, start, end} = parsed;
@@ -259,9 +279,8 @@ async function saveBooking(db, identity, body, bookingId) {
       if (!existing.exists) throw new HttpError(404, "booking_not_found", "予約が見つかりません。");
       const data = existing.data();
       const isAdmin = identity.admin === true;
-      if (!isAdmin && data.creatorId !== identity.uid) throw new HttpError(403, "booking_owner_required", "この予約は編集できません。");
-      if (!isAdmin && data.status === "confirmed" && data.source === "lottery") {
-        throw new HttpError(403, "lottery_result_locked", "抽選結果は編集できません。");
+      if (!isAdmin && !await canManageBookingInTransaction(transaction, db, data, identity.uid)) {
+        throw new HttpError(403, "booking_participant_required", "予約した本人または参加バンドのメンバーだけ編集できます。");
       }
     }
     if (status === "confirmed") {
@@ -304,11 +323,8 @@ async function deleteBooking(db, identity, bookingId) {
     const snapshot = await transaction.get(ref);
     if (!snapshot.exists) return;
     const value = snapshot.data();
-    if (identity.admin !== true && value.creatorId !== identity.uid) {
-      throw new HttpError(403, "booking_owner_required", "この予約は削除できません。");
-    }
-    if (identity.admin !== true && value.status === "confirmed" && value.source === "lottery") {
-      throw new HttpError(403, "lottery_result_locked", "抽選結果は削除できません。");
+    if (identity.admin !== true && !await canManageBookingInTransaction(transaction, db, value, identity.uid)) {
+      throw new HttpError(403, "booking_participant_required", "予約した本人または参加バンドのメンバーだけ削除できます。");
     }
     transaction.delete(ref);
   });
@@ -564,4 +580,4 @@ exports.lmcAppApi = onRequest({
   }
 });
 
-exports._test = {clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicMaintenance, publicProfile, sha256};
+exports._test = {bookingCanBeManagedBy, clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicMaintenance, publicProfile, sha256};

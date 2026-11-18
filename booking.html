@@ -2014,6 +2014,13 @@
             }
         }
 
+        function canManageBooking(data, band = null) {
+            if (!data || data.systemManaged) return false;
+            if (hasAdminAccess(currentUserData) || data.creatorId === currentUser) return true;
+            if (data.type === 'event' || data.isCustomBand === true || !data.bandId || String(data.bandId).startsWith('custom_')) return false;
+            return myBandsAll.some(item => item.id === data.bandId) || (Array.isArray(band?.memberIds) && band.memberIds.includes(currentUser));
+        }
+
         window.openBookingDetailModal = async (id, data, e) => {
             e?.preventDefault?.();
             e?.stopPropagation?.();
@@ -2021,10 +2028,10 @@
             const detailModal = document.getElementById('modal-booking-detail');
             if (detailModal.classList.contains('open') && bookingDetailTarget?.id === id) return;
             const requestToken = ++bookingDetailRequestToken;
-            bookingDetailTarget = {id, data, event:e};
+            bookingDetailTarget = {id, data, event:e, band:null};
             const body = document.getElementById('bookingDetailBody');
             const actions = document.getElementById('bookingDetailActions');
-            const canEdit = !data.systemManaged && (data.creatorId === currentUser || hasAdminAccess(currentUserData));
+            const canEdit = canManageBooking(data);
             actions.style.display = canEdit ? 'block' : 'none';
             body.classList.add('booking-detail-changing');
             body.setAttribute('aria-busy', 'true');
@@ -2038,6 +2045,8 @@
             const [band, creator] = await Promise.all([getBookingBandProfile(data), getBookingCreator(data)]);
             clearTimeout(delayedPlaceholder);
             if (requestToken !== bookingDetailRequestToken || !bookingDetailTarget || bookingDetailTarget.id !== id || !detailModal.classList.contains('open')) return;
+            bookingDetailTarget.band = band;
+            actions.style.display = canManageBooking(data, band) ? 'block' : 'none';
             const start = new Date(data.startTime);
             const end = new Date(data.endTime);
             const dateText = `${start.getFullYear()}年${start.getMonth()+1}月${start.getDate()}日`;
@@ -2097,17 +2106,19 @@
             if (!bookingDetailTarget) return;
             const target = bookingDetailTarget;
             closeModal('modal-booking-detail');
-            openEditBookingModal(target.id, target.data, target.event);
+            openEditBookingModal(target.id, target.data, target.event, target.band);
         };
 
-        function openEditBookingModal(id, data, e){ 
+        function openEditBookingModal(id, data, e, band = null){
             const isAdmin=hasAdminAccess(currentUserData);
-            if(data.creatorId!==currentUser && !isAdmin){
+            const isCreator=data.creatorId===currentUser;
+            const isBandMember=!isCreator && data.type!=='event' && data.isCustomBand!==true && (myBandsAll.some(item=>item.id===data.bandId) || (Array.isArray(band?.memberIds) && band.memberIds.includes(currentUser)));
+            if(!canManageBooking(data, band)){
                 if(data.type==='event')showCustomAlert(`【${data.title}】\n既に予定が入っています。`, "予約不可"); 
-                else showCustomAlert("他のユーザーが作成した予約は編集できません。", "編集不可"); 
+                else showCustomAlert("予約した本人または参加バンドのメンバーだけ編集できます。", "編集不可");
                 return; 
             } 
-            document.getElementById('bookingModalTitle').innerText=data.creatorId!==currentUser ? "予約を管理者として編集" : "予約の確認";
+            document.getElementById('bookingModalTitle').innerText=isCreator ? "予約の確認" : (isAdmin ? "予約を管理者として編集" : (isBandMember ? "参加バンドの予約を編集" : "予約を編集"));
             document.getElementById('btnSaveBooking').innerText="変更を保存する"; 
             document.getElementById('btnDeleteBooking').classList.remove('hidden'); 
             document.getElementById('btnAddToGCal').classList.remove('hidden'); 
