@@ -19,6 +19,8 @@
 
   const pageLocation = safeUrl(window.location.href);
   const pageReferrer = safeUrl(document.referrer);
+  let identifiedUserId = "";
+  let pageViewSent = false;
   window.dataLayer = window.dataLayer || [];
   window.gtag = window.gtag || function gtag() {
     window.dataLayer.push(arguments);
@@ -45,11 +47,26 @@
     page_location: pageLocation,
     page_referrer: pageReferrer,
   });
-  window.gtag("event", "page_view", {
-    page_title: document.title,
-    page_location: pageLocation,
-    page_referrer: pageReferrer,
-  });
+
+  function sendPageView() {
+    if (pageViewSent) return;
+    pageViewSent = true;
+    window.gtag("event", "page_view", {
+      page_title: document.title,
+      page_location: pageLocation,
+      page_referrer: pageReferrer,
+    });
+  }
+
+  const pageViewTimer = window.setTimeout(sendPageView, 2500);
+  window.addEventListener("pagehide", sendPageView, {once: true});
+
+  async function anonymizeUserId(value) {
+    if (!value || !window.crypto?.subtle) return "";
+    const bytes = new TextEncoder().encode(`lmc-ga4-user:${value}`);
+    const digest = await window.crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  }
 
   const loader = document.createElement("script");
   loader.async = true;
@@ -57,6 +74,34 @@
   document.head.append(loader);
 
   window.LMCAnalytics = Object.freeze({
+    async setUser(user, properties = {}) {
+      const sourceId = typeof user === "string" ? user : user?.uid;
+      if (!sourceId || user?.isAnonymous === true) {
+        identifiedUserId = "";
+        window.gtag("config", MEASUREMENT_ID, {send_page_view: false, user_id: null});
+        return;
+      }
+
+      const hash = await anonymizeUserId(sourceId);
+      if (!hash) return;
+      const userId = `lmc_${hash}`;
+      const accountType = ["administrator", "member"].includes(properties.accountType)
+        ? properties.accountType
+        : "member";
+      window.gtag("config", MEASUREMENT_ID, {send_page_view: false, user_id: userId});
+      window.gtag("set", "user_properties", {account_type: accountType});
+
+      if (!pageViewSent) {
+        window.clearTimeout(pageViewTimer);
+        sendPageView();
+      } else if (identifiedUserId !== userId) {
+        window.gtag("event", "user_context", {
+          account_type: accountType,
+          page_location: pageLocation,
+        });
+      }
+      identifiedUserId = userId;
+    },
     trackEvent(name, parameters = {}) {
       if (!/^[a-z][a-z0-9_]{0,39}$/.test(name)) return;
       const safeParameters = {};

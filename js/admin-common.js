@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-import "./analytics.js?v=20261118-1";
+import "./analytics.js?v=20261118-2";
 import { setErrorReporterAuth } from "./error-reporter.js";
 
 const ADMIN_ORIGIN = "https://app.urakatabu.com";
@@ -65,6 +65,9 @@ export function initAdminPage(activePageId, callback) {
         clearTimeout(timeout);
         setErrorReporterAuth(auth);
         const tokenResult = user && !user.isAnonymous ? await user.getIdTokenResult() : null;
+        void window.LMCAnalytics?.setUser(user, {
+            accountType: tokenResult?.claims?.admin === true ? "administrator" : "member"
+        }).catch(() => {});
         if (!user || user.isAnonymous || tokenResult?.claims?.line !== true || tokenResult?.claims?.admin !== true) {
             if (window.location.pathname !== `${ADMIN_BASE_PATH}/login.html`) {
                 const redirect = encodeURIComponent(window.location.pathname + window.location.search);

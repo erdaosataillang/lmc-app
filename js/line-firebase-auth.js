@@ -19,6 +19,10 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
         ? options.requiredClaims.filter(claim => typeof claim === "string" && claim)
         : [];
     const forceReauthentication = options.forceReauthentication === true;
+    const activateAnalytics = user => {
+        const accountType = requiredClaims.includes("admin") ? "administrator" : "member";
+        void globalThis.window?.LMCAnalytics?.setUser(user, {accountType}).catch(() => {});
+    };
 
     const existingUser = auth.currentUser;
     if (!forceReauthentication && existingUser && !existingUser.isAnonymous && existingUser.uid === lineUserId) {
@@ -28,6 +32,7 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
             const hasRequiredClaims = requiredClaims.every(claim => tokenResult.claims[claim] === true);
             if (tokenResult.claims.line === true && tokenResult.claims.registered === true && hasRequiredClaims) {
                 activateErrorReporter();
+                activateAnalytics(existingUser);
                 return existingUser;
             }
         } catch (error) {
@@ -69,5 +74,6 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
         }
     }
     activateErrorReporter();
+    activateAnalytics(credential.user);
     return credential.user;
 }
