@@ -46,7 +46,7 @@
         .scroll-content { flex-grow: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; padding: 16px; padding-bottom: 20px; -webkit-overflow-scrolling: touch; overflow-x: hidden; }
         
         /* カレンダーコントロール */
-        .calendar-controls { --season-start:#eef4ff; --season-end:#dce9ff; --season-ink:#31567d; display:flex; justify-content:space-between; align-items:center; position:relative; overflow:hidden; isolation:isolate; color:var(--season-ink); background:linear-gradient(125deg,var(--season-start),var(--season-end),var(--season-start)); background-size:180% 180%; padding:8px 16px; border-radius:24px; margin:0 16px 12px; box-shadow:0 2px 8px rgba(0,0,0,.05); flex-shrink:0; z-index:400; animation:seasonGradientDrift 12s ease-in-out infinite; transition:color .55s ease; }
+        .calendar-controls { --season-start:#eef4ff; --season-end:#dce9ff; --season-ink:#31567d; display:flex; justify-content:space-between; align-items:center; gap:6px; position:relative; overflow:hidden; isolation:isolate; color:var(--season-ink); background:linear-gradient(125deg,var(--season-start),var(--season-end),var(--season-start)); background-size:180% 180%; padding:8px 10px; border-radius:24px; margin:0 16px 12px; box-shadow:0 2px 8px rgba(0,0,0,.05); flex-shrink:0; z-index:400; animation:seasonGradientDrift 12s ease-in-out infinite; transition:color .55s ease; }
         .seasonal-theme-fade { position:absolute!important; inset:0; z-index:0!important; opacity:0; pointer-events:none; background-size:180% 180%!important; transition:opacity .55s ease; animation:seasonGradientDrift 12s ease-in-out infinite; }
         .seasonal-theme-fade.is-visible { opacity:1; }
         .calendar-controls::before,.calendar-controls::after { content:""; position:absolute; border-radius:50%; background:rgba(255,255,255,.25); z-index:0; pointer-events:none; }
@@ -58,6 +58,25 @@
         .switcher-item.active { color: var(--season-ink); }
         .switcher-slide { position: absolute; width: 44px; height: 28px; background: rgba(255,255,255,.9); border-radius: 18px; top: 2px; left: 2px; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 1; }
         .view-switcher.day-mode .switcher-slide { transform: translateX(42px); }
+        .calendar-primary-actions,.calendar-date-nav { display:flex; align-items:center; }
+        .calendar-primary-actions { gap:5px; }
+        .calendar-date-nav { justify-content:flex-end; min-width:0; }
+        .calendar-date-nav .material-icons { cursor:pointer; padding:3px; border-radius:50%; transition:background-color .16s ease,transform .16s ease; }
+        .calendar-date-nav .material-icons:active { transform:scale(.9); background:rgba(255,255,255,.48); }
+        .date-display { margin:0 5px; min-width:66px; text-align:center; font-size:15px; font-weight:800; white-space:nowrap; }
+        .today-button { height:32px; min-width:44px; padding:0 10px; border:1px solid rgba(49,86,125,.18); border-radius:16px; color:var(--season-ink); background:rgba(255,255,255,.58); font:inherit; font-size:12px; font-weight:800; cursor:pointer; backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); transition:background-color .16s ease,transform .16s ease,opacity .16s ease,box-shadow .16s ease; }
+        .today-button:hover { background:rgba(255,255,255,.84); }
+        .today-button:active { transform:scale(.94); }
+        .today-button:focus-visible { outline:3px solid rgba(11,87,208,.22); outline-offset:2px; }
+        .today-button:disabled { opacity:.45; cursor:default; transform:none; box-shadow:none; }
+        .today-button.is-returning { animation:todayButtonReturn .32s cubic-bezier(.2,.8,.2,1); }
+        @keyframes todayButtonReturn { 50% { transform:scale(.9); background:rgba(255,255,255,.94); box-shadow:0 0 0 5px rgba(255,255,255,.22); } }
+        @media (max-width:360px) {
+            .calendar-controls { gap:2px; padding-inline:7px; }
+            .calendar-date-nav .material-icons { font-size:20px; padding:1px; }
+            .date-display { margin-inline:2px; min-width:62px; font-size:13px; }
+            .today-button { padding-inline:8px; min-width:42px; }
+        }
 
         /* 月ごとの行事をほのかに示すコントロール背景 */
         .seasonal-calendar-art { position:absolute; left:53%; top:72%; width:108px; height:64px; transform:translate(-50%,-50%) rotate(-2deg); color:var(--season-ink); opacity:.15; pointer-events:none; z-index:1; animation:seasonArtFloat 6s ease-in-out infinite; transition:opacity .24s ease,color .55s ease; }
@@ -284,7 +303,7 @@
         @keyframes calendarMonthDepart { to { opacity:0; transform:scale(.96) translateY(-8px); filter:blur(2px); } }
         @keyframes calendarDayEnter { from { opacity:0; transform:translate3d(24px,18px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
         @keyframes calendarMonthEnter { from { opacity:0; transform:translate3d(-18px,8px,0) scale(.985); } to { opacity:1; transform:translate3d(0,0,0) scale(1); } }
-        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month,.calendar-controls,.calendar-controls::before,.calendar-controls::after,.seasonal-calendar-art,.seasonal-theme-fade { animation:none!important; } .booking-compose-sheet,.seasonal-theme-fade,.seasonal-calendar-art,#bookingDetailBody { transition:none; } }
+        @media (prefers-reduced-motion:reduce) { .day-cell.opening-day,#calMonthView.calendar-month-depart .month-grid,#calDayView.calendar-view-enter-day,#calMonthView.calendar-view-enter-month,.calendar-controls,.calendar-controls::before,.calendar-controls::after,.seasonal-calendar-art,.seasonal-theme-fade,.today-button.is-returning { animation:none!important; } .booking-compose-sheet,.seasonal-theme-fade,.seasonal-calendar-art,#bookingDetailBody { transition:none; } }
         
         /* 通知・モーダル関連 */
         .notification-btn { position: relative; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 50%; }
@@ -348,12 +367,15 @@
         </div>
         <div class="calendar-controls" id="seasonalCalendarControls">
             <div class="seasonal-theme-fade" id="seasonalThemeFade" aria-hidden="true"></div>
-            <div class="view-switcher" id="viewSwitcher">
-                <div class="switcher-slide"></div>
-                <div class="switcher-item active" data-mode="month" onclick="switchCalendarView('month')">月</div>
-                <div class="switcher-item" data-mode="day" onclick="switchCalendarView('day')">日</div>
+            <div class="calendar-primary-actions">
+                <div class="view-switcher" id="viewSwitcher">
+                    <div class="switcher-slide"></div>
+                    <div class="switcher-item active" data-mode="month" onclick="switchCalendarView('month')">月</div>
+                    <div class="switcher-item" data-mode="day" onclick="switchCalendarView('day')">日</div>
+                </div>
+                <button class="today-button" id="btnToday" type="button" onclick="goToToday()" aria-label="今日に移動">今日</button>
             </div>
-            <div style="display:flex; align-items:center;"><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(-1)">chevron_left</span><div class="date-display" id="calHeaderDate" style="margin:0 10px; font-size:16px; font-weight:bold;"></div><span class="material-icons" style="cursor:pointer; padding:5px;" onclick="changeDate(1)">chevron_right</span></div>
+            <div class="calendar-date-nav"><span class="material-icons" onclick="changeDate(-1)" role="button" aria-label="前へ">chevron_left</span><div class="date-display" id="calHeaderDate"></div><span class="material-icons" onclick="changeDate(1)" role="button" aria-label="次へ">chevron_right</span></div>
             <svg class="seasonal-calendar-art" viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use id="seasonalCalendarArtUse" href="#calendar-art-newyear"></use></svg>
         </div>
         <div class="scroll-content" id="calMainScroll">
@@ -1220,6 +1242,24 @@
             renderCalendar(false, dir); 
         };
 
+        window.goToToday=()=>{
+            const today = new Date();
+            const previousDate = new Date(displayDate);
+            const isAlreadyToday = calendarMode === 'month'
+                ? previousDate.getFullYear() === today.getFullYear() && previousDate.getMonth() === today.getMonth()
+                : formatDateKey(previousDate) === formatDateKey(today);
+            if (isAlreadyToday) return;
+            const direction = today.getTime() > previousDate.getTime() ? 1 : -1;
+            displayDate = today;
+            document.getElementById('calMainScroll').scrollTop = 0;
+            const button = document.getElementById('btnToday');
+            button?.classList.remove('is-returning');
+            if (button) void button.offsetWidth;
+            button?.classList.add('is-returning');
+            button?.addEventListener('animationend', () => button.classList.remove('is-returning'), {once:true});
+            renderCalendar(false, direction);
+        };
+
         const seasonalCalendarThemes = [
             { art:'newyear', start:'#f8eee1', end:'#ead6bd', ink:'#76502e' },
             { art:'valentine', start:'#fff0f4', end:'#f4d4df', ink:'#88485e' },
@@ -1276,6 +1316,16 @@
         function renderCalendar(useCache = false, animationDirection = 0){ 
             const y=displayDate.getFullYear(), m=displayDate.getMonth()+1; 
             updateSeasonalCalendarControls(m);
+            const today = new Date();
+            const isTodayVisible = calendarMode === 'month'
+                ? y === today.getFullYear() && displayDate.getMonth() === today.getMonth()
+                : formatDateKey(displayDate) === formatDateKey(today);
+            const todayButton = document.getElementById('btnToday');
+            if (todayButton) {
+                todayButton.disabled = isTodayVisible;
+                if (isTodayVisible) todayButton.setAttribute('aria-current', 'date');
+                else todayButton.removeAttribute('aria-current');
+            }
             if(calendarMode==='month'){
                 document.getElementById('calHeaderDate').innerText=`${y}年 ${m}月`; 
                 renderMonthView(y, m-1, useCache, animationDirection);
