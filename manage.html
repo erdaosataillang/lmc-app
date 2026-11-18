@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <script src="/js/app-routing.js?v=20261118-1"></script>
     <script defer src="/js/image-cache.js"></script>
     <script defer src="/js/analytics.js?v=20261118-2"></script>
     <script defer src="/js/maintenance-guard.js?v=20261118-1"></script>
@@ -840,7 +841,7 @@
         let concertLoadPromise = null;
         let concertLoadedEventId = null;
 
-        const MY_PAGE_URL = "/mypage.html";
+        const MY_PAGE_URL = "/lmc/app/mypage.html";
         const DIGITAL_CUE_PATH = 'cue.html';
         const lmcLoadingMarkup = (label = '読み込み中...', size = 'medium') => `<div class="lmc-loading-state" role="status"><img class="lmc-wave-loader lmc-wave-loader--${size}" src="/assets/lmc-wave-loader.svg" alt=""><span>${label}</span></div>`;
         let concertBandsCache = [];
@@ -921,11 +922,11 @@
             const isAdmin = currentUserData ? checkAdminRole(currentUserData.role) : (localStorage.getItem('lmc_is_admin') === 'true');
 
             const items = [
-                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
-                { id: 'timetable', label: 'タイムテーブル', icon: 'view_timeline', href: '/timetable.html' },
-                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
-                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html', hidden: true },
-                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !isAdmin },
+                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/lmc/app/index.html' },
+                { id: 'timetable', label: 'タイムテーブル', icon: 'view_timeline', href: '/lmc/app/timetable.html' },
+                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/lmc/app/booking.html' },
+                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/lmc/app/cue.html', hidden: true },
+                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/lmc/app/manage.html', hidden: !isAdmin },
                 { id: 'mypage', label: 'マイページ', icon: 'account_circle', onClick: 'window.location.href="' + MY_PAGE_URL + '"' }
             ];
 

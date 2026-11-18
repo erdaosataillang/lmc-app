@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <script src="/js/app-routing.js?v=20261118-1"></script>
     <script defer src="/js/image-cache.js"></script>
     <script defer src="/js/analytics.js?v=20261118-2"></script>
     <script defer src="/js/maintenance-guard.js?v=20261118-1"></script>
@@ -698,9 +699,9 @@
         import {acceptBandInvite, createBandInvite, leaveBandSecurely, loadPublicProfiles} from './js/app-api.js';
         import {openUnifiedNotificationModal, setUnifiedNotificationContent} from './js/notification-popover.js?v=20261022-1';
         
-        const MY_PAGE_URL = "/mypage.html";
-        const REGISTRATION_URL = "https://lmc-mobile.sorairosystem.com/userregist?sec=LMC&jumpedurl=https://lmc-mobile.sorairosystem.com/";
-        const CUE_WEB_URL = "https://lmc-mobile.sorairosystem.com/cue.html";
+        const MY_PAGE_URL = "/lmc/app/mypage.html";
+        const REGISTRATION_URL = "/lmc/app/userregist.html?sec=LMC&jumpedurl=" + encodeURIComponent(location.origin + "/lmc/app/index.html");
+        const CUE_WEB_URL = location.origin + "/lmc/app/cue.html";
         const storage = getStorage(app);
 
         // キャッシュキー
@@ -1961,11 +1962,11 @@
             // キャッシュから判定
             const isAdmin = localStorage.getItem(CACHE_KEY_ADMIN) === 'true';  
             const items = [
-                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/index.html' },
-                { id: 'timetable', label: 'タイムテーブル', icon: 'view_timeline', href: '/timetable.html' },
-                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/booking.html' },
-                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/cue.html', hidden: true },
-                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/manage.html', hidden: !isAdmin },
+                { id: 'index', label: 'マイバンド', icon: 'groups', href: '/lmc/app/index.html' },
+                { id: 'timetable', label: 'タイムテーブル', icon: 'view_timeline', href: '/lmc/app/timetable.html' },
+                { id: 'booking', label: '合わせ予約', icon: 'calendar_month', href: '/lmc/app/booking.html' },
+                { id: 'cue', label: 'Cueシート', icon: 'description', href: '/lmc/app/cue.html', hidden: true },
+                { id: 'admin', label: '管理', icon: 'admin_panel_settings', href: '/lmc/app/manage.html', hidden: !isAdmin },
                 { id: 'mypage', label: 'マイページ', icon: 'account_circle', onClick: 'goToMyPage()' }
             ];
 

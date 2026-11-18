@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <script src="/js/app-routing.js?v=20261118-1"></script>
     <script defer src="/js/analytics.js?v=20261118-2"></script>
     <script defer src="/js/maintenance-guard.js?v=20261118-1"></script>
     <meta charset="UTF-8">
@@ -142,7 +143,7 @@
             </section>
 
             <section class="section">
-                <div class="section-head"><h2 class="section-title">参加中のバンド</h2><button class="section-link" onclick="location.href='/index.html'">すべて見る</button></div>
+                <div class="section-head"><h2 class="section-title">参加中のバンド</h2><button class="section-link" onclick="location.href='/lmc/app/index.html'">すべて見る</button></div>
                 <div class="bands" id="bandsList"><div class="card empty">バンド情報を読み込んでいます</div></div>
             </section>
 
@@ -162,11 +163,11 @@
     </div>
 
     <nav class="bottom-nav"><div class="nav-inner">
-        <a class="nav-item" href="/index.html"><span class="nav-icon-wrap"><span class="material-icons-round">groups</span></span><span>マイバンド</span></a>
-        <a class="nav-item" href="/timetable.html"><span class="nav-icon-wrap"><span class="material-icons-round">view_timeline</span></span><span>タイムテーブル</span></a>
-        <a class="nav-item" href="/booking.html"><span class="nav-icon-wrap"><span class="material-icons-round">calendar_month</span></span><span>合わせ予約</span></a>
-        <a class="nav-item" id="adminNav" href="/manage.html"><span class="nav-icon-wrap"><span class="material-icons-round">admin_panel_settings</span></span><span>管理</span></a>
-        <a class="nav-item active" href="/mypage.html"><span class="nav-icon-wrap"><span class="material-icons-round">account_circle</span></span><span>マイページ</span></a>
+        <a class="nav-item" href="/lmc/app/index.html"><span class="nav-icon-wrap"><span class="material-icons-round">groups</span></span><span>マイバンド</span></a>
+        <a class="nav-item" href="/lmc/app/timetable.html"><span class="nav-icon-wrap"><span class="material-icons-round">view_timeline</span></span><span>タイムテーブル</span></a>
+        <a class="nav-item" href="/lmc/app/booking.html"><span class="nav-icon-wrap"><span class="material-icons-round">calendar_month</span></span><span>合わせ予約</span></a>
+        <a class="nav-item" id="adminNav" href="/lmc/app/manage.html"><span class="nav-icon-wrap"><span class="material-icons-round">admin_panel_settings</span></span><span>管理</span></a>
+        <a class="nav-item active" href="/lmc/app/mypage.html"><span class="nav-icon-wrap"><span class="material-icons-round">account_circle</span></span><span>マイページ</span></a>
     </div></nav>
 
     <div class="overlay" id="editOverlay"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle">
@@ -200,7 +201,7 @@
         import {openUnifiedNotificationItems} from './js/notification-popover.js?v=20261022-1';
 
         const DEFAULT_ICON = 'https://ul.h3z.jp/Vnukmtvq.jpg';
-        const REGISTRATION_URL = '/userregist.html?sec=LMC&jumpedurl=' + encodeURIComponent(location.origin + '/mypage.html');
+        const REGISTRATION_URL = '/lmc/app/userregist.html?sec=LMC&jumpedurl=' + encodeURIComponent(location.origin + '/lmc/app/mypage.html');
         const partLabels = {vocal:'Vo', guitar:'Gt', bass:'Ba', drums:'Dr', drum:'Dr', keyboard:'Key', other:'Other'};
         const roleLabels = {admin:'管理者', lmc_all:'LMC全体', lmc_admin:'LMC管理', lmc_user:'LMC一般', urakata_all:'裏方統括', urakata_user:'裏方一般'};
         let currentUserId = '';
@@ -257,7 +258,7 @@
             const list = document.getElementById('bandsList'); list.replaceChildren();
             if (!myBands.length) { const empty=document.createElement('div'); empty.className='card empty'; empty.textContent='参加中のバンドはありません'; list.appendChild(empty); return; }
             myBands.slice(0,4).forEach(band => {
-                const a=document.createElement('a'); a.className='band'; a.href='/index.html';
+                const a=document.createElement('a'); a.className='band'; a.href='/lmc/app/index.html';
                 const icon=document.createElement('div'); icon.className='band-icon';
                 if (band.icon) { const img=document.createElement('img'); img.src=band.icon; img.alt=''; icon.appendChild(img); } else icon.textContent=(band.name || '?').charAt(0);
                 const copy=document.createElement('div'); copy.style.flex='1';
@@ -337,7 +338,7 @@
         document.getElementById('logoutButton').addEventListener('click',async () => {
             if (!confirm('この端末からログアウトしますか？')) return;
             await signOut(auth).catch(()=>{}); try { if (window.liff?.isLoggedIn()) window.liff.logout(); } catch {}
-            ['lmc_user_cache','lmc_bands_cache','lmc_is_admin'].forEach(key => localStorage.removeItem(key)); location.replace('/');
+            ['lmc_user_cache','lmc_bands_cache','lmc_is_admin'].forEach(key => localStorage.removeItem(key)); location.replace('/lmc/app/');
         });
 
         loadData().catch(error => { console.error('My page initialization failed:',error); showToast('マイページを読み込めませんでした'); });

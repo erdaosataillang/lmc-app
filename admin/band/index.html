@@ -273,7 +273,7 @@
                     </td>
                     <td class="px-8 py-5 text-right">
                         ${band.latestCueSheetId ? 
-                            `<a href="https://lmc-mobile.sorairosystem.com/cue.html?cueID=${band.latestCueSheetId}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm">
+                            `<a href="https://app.urakatabu.com/lmc/app/cue.html?cueID=${band.latestCueSheetId}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 shadow-sm">
                                 <i class="fa-solid fa-file-code"></i> Web Cue
                             </a>` : 
                         band.latestCuesheetUrl ? 
@@ -359,7 +359,7 @@
                                             <p class="text-[10px] text-gray-400 font-bold">${band.latestCueSheetId ? '提出済み' : '未提出'}</p>
                                         </div>
                                     </div>
-                                    <a href="https://lmc-mobile.sorairosystem.com/cue.html?${band.latestCueSheetId ? `cueID=${band.latestCueSheetId}` : `bandID=${band.id}&eventID=${band.events && band.events.length > 0 ? band.events[band.events.length - 1] : ''}`}" target="_blank" class="px-4 py-2 ${band.latestCueSheetId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-800 hover:bg-black'} text-white text-xs font-bold rounded-xl shadow-md transition-all shrink-0 ml-2">
+                                    <a href="https://app.urakatabu.com/lmc/app/cue.html?${band.latestCueSheetId ? `cueID=${band.latestCueSheetId}` : `bandID=${band.id}&eventID=${band.events && band.events.length > 0 ? band.events[band.events.length - 1] : ''}`}" target="_blank" class="px-4 py-2 ${band.latestCueSheetId ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-800 hover:bg-black'} text-white text-xs font-bold rounded-xl shadow-md transition-all shrink-0 ml-2">
                                         ${band.latestCueSheetId ? '開く' : '作成'}
                                     </a>
                                 </div>

@@ -84,7 +84,7 @@ function ensureProfilePopover() {
     };
     root.addEventListener("click", event => { if (event.target === root) close(); });
     root.querySelector(".unified-profile-close").addEventListener("click", close);
-    root.querySelector(".unified-profile-action").addEventListener("click", () => { window.location.href = "/mypage.html"; });
+    root.querySelector(".unified-profile-action").addEventListener("click", () => { window.location.href = "/lmc/app/mypage.html"; });
     const editCover = root.querySelector(".unified-profile-edit-cover");
     const coverInput = root.querySelector("[data-profile-cover-input]");
     editCover.addEventListener("click", () => coverInput.click());

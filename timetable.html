@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <script src="/js/app-routing.js?v=20261118-1"></script>
     <script defer src="/js/image-cache.js"></script>
     <script defer src="/js/analytics.js?v=20261118-2"></script>
     <script defer src="/js/maintenance-guard.js?v=20261118-1"></script>
@@ -128,7 +129,7 @@
                 <img id="profileIcon" src="https://ul.h3z.jp/Vnukmtvq.jpg" alt="" style="width:78px; height:78px; border-radius:50%; border:4px solid white; object-fit:cover; margin-top:-40px; position:relative; background:white;">
                 <div id="profileName" style="font-size:21px; font-weight:800; margin-top:7px;">マイページ</div>
                 <div id="profileSub" style="font-size:13px; color:#536471; margin-top:4px;"></div>
-                <button onclick="window.location.href='/mypage.html'" style="width:100%; border:0; border-radius:999px; background:#0b57d0; color:white; font-weight:700; padding:13px; margin-top:20px;">マイページを開く</button>
+                <button onclick="window.location.href='/lmc/app/mypage.html'" style="width:100%; border:0; border-radius:999px; background:#0b57d0; color:white; font-weight:700; padding:13px; margin-top:20px;">マイページを開く</button>
             </div>
         </div>
     </div>
@@ -240,7 +241,7 @@
             let html = '';
             html += bookings.map(booking => {
                 const start = new Date(booking.startTime);
-                return `<div class="notification-item" onclick="window.location.href='/booking.html'" style="cursor:pointer;"><span class="material-icons" style="color:#137333;">groups</span><div><strong>${escapeHtml(booking.bandName || '参加バンド')} の合わせ予約</strong><div style="font-size:12px; color:#536471; margin-top:4px;">${start.getMonth()+1}月${start.getDate()}日 ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}</div></div></div>`;
+                return `<div class="notification-item" onclick="window.location.href='/lmc/app/booking.html'" style="cursor:pointer;"><span class="material-icons" style="color:#137333;">groups</span><div><strong>${escapeHtml(booking.bandName || '参加バンド')} の合わせ予約</strong><div style="font-size:12px; color:#536471; margin-top:4px;">${start.getMonth()+1}月${start.getDate()}日 ${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}</div></div></div>`;
             }).join('');
             openUnifiedNotificationModal(html);
             const seen = new Set(readCachedJson('lmc_seen_my_band_bookings', []));
@@ -262,11 +263,11 @@
         function renderNav() {
             const isAdmin = localStorage.getItem('lmc_is_admin') === 'true';
             const items = [
-                {id:'index', label:'マイバンド', icon:'groups', href:'/index.html'},
-                {id:'timetable', label:'タイムテーブル', icon:'view_timeline', href:'/timetable.html'},
-                {id:'booking', label:'合わせ予約', icon:'calendar_month', href:'/booking.html'},
-                {id:'admin', label:'管理', icon:'admin_panel_settings', href:'/manage.html', hidden:!isAdmin},
-                {id:'mypage', label:'マイページ', icon:'account_circle', href:'/mypage.html'}
+                {id:'index', label:'マイバンド', icon:'groups', href:'/lmc/app/index.html'},
+                {id:'timetable', label:'タイムテーブル', icon:'view_timeline', href:'/lmc/app/timetable.html'},
+                {id:'booking', label:'合わせ予約', icon:'calendar_month', href:'/lmc/app/booking.html'},
+                {id:'admin', label:'管理', icon:'admin_panel_settings', href:'/lmc/app/manage.html', hidden:!isAdmin},
+                {id:'mypage', label:'マイページ', icon:'account_circle', href:'/lmc/app/mypage.html'}
             ];
             document.getElementById('nav-container').innerHTML = `<div class="bottom-nav">${items.filter(item => !item.hidden).map(item => `
                 <div class="nav-item ${item.id === 'timetable' ? 'active' : ''}" onclick="window.location.href='${item.href}'">

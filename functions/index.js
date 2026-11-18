@@ -38,6 +38,10 @@ const db = getFirestore();
 const chatApiToken = defineSecret("CHAT_API_TOKEN");
 
 const LINE_CHANNEL_ID = "2008162165";
+const LMC_APP_ORIGINS = new Set([
+  "https://app.urakatabu.com",
+  "https://lmc-mobile.sorairosystem.com",
+]);
 const ALLOWED_ORIGINS = new Set([
   "https://lmc-mobile.sorairosystem.com",
   "https://app.urakatabu.com",
@@ -374,7 +378,7 @@ exports.createChatAuthorizationCode = onRequest({
   maxInstances: 10,
 }, async (request, response) => {
   const origin = request.get("origin");
-  if (origin === "https://lmc-mobile.sorairosystem.com") {
+  if (LMC_APP_ORIGINS.has(origin)) {
     response.set("Access-Control-Allow-Origin", origin);
     response.set("Vary", "Origin");
   }
@@ -382,14 +386,14 @@ exports.createChatAuthorizationCode = onRequest({
   response.set("Access-Control-Allow-Methods", "POST, OPTIONS");
   response.set("Cache-Control", "no-store");
   if (request.method === "OPTIONS") {
-    response.status(origin === "https://lmc-mobile.sorairosystem.com" ? 204 : 403).send("");
+    response.status(LMC_APP_ORIGINS.has(origin) ? 204 : 403).send("");
     return;
   }
   if (request.method !== "POST") {
     response.status(405).json({error: "method_not_allowed"});
     return;
   }
-  if (origin !== "https://lmc-mobile.sorairosystem.com") {
+  if (!LMC_APP_ORIGINS.has(origin)) {
     response.status(403).json({error: "origin_not_allowed"});
     return;
   }

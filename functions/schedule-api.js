@@ -7,8 +7,9 @@ const {safeEqual,sha256Base64Url,validPkceChallenge,validPkceVerifier}=require("
 const {validateSlots,validateText,profileForSchedule,validateDateRange,validateAvailability}=require("./schedule-validation");
 const {discordErrorWebhookUrl,notifyDiscordAlert}=require("./discord-alerts");
 const REDIRECT="https://erdaosataillang.github.io/lmc-schedule/";
-const LMC="https://lmc-mobile.sorairosystem.com";
-const allowed=new Set([LMC,"https://erdaosataillang.github.io","http://localhost:5173","http://127.0.0.1:5173"]);
+const LMC="https://app.urakatabu.com";
+const lmcOrigins=new Set([LMC,"https://lmc-mobile.sorairosystem.com"]);
+const allowed=new Set([...lmcOrigins,"https://erdaosataillang.github.io","http://localhost:5173","http://127.0.0.1:5173"]);
 function deny(status,message){const e=new Error(message);e.status=status;throw e;}
 async function identity(request){const token=(request.get("authorization")||"").replace(/^Bearer\s+/i,"");let user;try{user=await getAuth().verifyIdToken(token,true);}catch{deny(401,"裏方アカウントでログインしてください。");}if(user.line!==true||user.registered!==true)deny(403,"裏方の登録アカウントが必要です。");const snapshot=await getFirestore().doc(`users/${user.uid}`).get();const profile=snapshot.exists?profileForSchedule(user.uid,snapshot.data()):null;if(!profile)deny(403,"この裏方アカウントは利用できません。");return profile;}
 async function poll(ref,transaction){const snap=transaction?await transaction.get(ref):await ref.get();if(!snap.exists)deny(404,"日程調整が見つかりません。リンクを確認してください。");return snap.data();}
@@ -20,7 +21,7 @@ exports.lmcScheduleApi=onRequest({region:"asia-northeast1",memory:"256MiB",timeo
  const db=getFirestore();const body=request.body||{};
  try{
  if(request.path==="/auth/code"&&request.method==="POST"){
- if(origin!==LMC||body.clientId!=="lmc-schedule"||body.redirectUri!==REDIRECT||body.codeChallengeMethod!=="S256"||!validPkceChallenge(body.codeChallenge))deny(400,"ログイン要求が正しくありません。");
+ if(!lmcOrigins.has(origin)||body.clientId!=="lmc-schedule"||body.redirectUri!==REDIRECT||body.codeChallengeMethod!=="S256"||!validPkceChallenge(body.codeChallenge))deny(400,"ログイン要求が正しくありません。");
  const user=await identity(request);const code=randomBytes(32).toString("base64url");await db.doc(`scheduleAuthorizationCodes/${sha256Base64Url(code)}`).create({uid:user.id,codeChallenge:body.codeChallenge,redirectUri:REDIRECT,expiresAt:Timestamp.fromMillis(Date.now()+60000)});response.json({code});return;
  }
  if(request.path==="/auth/exchange"&&request.method==="POST"){
