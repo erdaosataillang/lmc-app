@@ -47,7 +47,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             
             <!-- バンド -->
-            <a href="/admin/band/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
+            <a href="./band/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-users-rectangle text-[150px]"></i>
                 </div>
@@ -65,7 +65,7 @@
             </a>
 
             <!-- イベント -->
-            <a href="/admin/event/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
+            <a href="./event/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-bullhorn text-[150px]"></i>
                 </div>
@@ -83,7 +83,7 @@
             </a>
 
             <!-- Cueシート -->
-            <a href="/admin/cue/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
+            <a href="./cue/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-file-invoice text-[150px]"></i>
                 </div>
@@ -101,7 +101,7 @@
             </a>
 
             <!-- 部員 -->
-            <a href="/admin/user/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
+            <a href="./user/" class="group relative bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-1 transition-all overflow-hidden block">
                 <div class="absolute -right-6 -top-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
                     <i class="fa-solid fa-user-gear text-[150px]"></i>
                 </div>
@@ -121,7 +121,7 @@
 
         <!-- サブセクション -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <a href="/admin/booking/" class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center gap-4 transition-all group">
+            <a href="./booking/" class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center gap-4 transition-all group">
                 <div class="w-12 h-12 bg-red-50 text-red-500 rounded-xl flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors shadow-sm">
                     <i class="fa-solid fa-calendar-check text-xl"></i>
                 </div>
@@ -132,7 +132,16 @@
                 <i class="fa-solid fa-chevron-right ml-auto text-gray-200 group-hover:text-red-500 transition-colors"></i>
             </a>
 
-            <a href="/admin/expenses/" class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center gap-4 transition-all group">
+            <a href="./maintenance/" class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center gap-4 transition-all group">
+                <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                <div>
+                    <h4 class="font-bold text-gray-800">メンテナンスモード</h4>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Mobile App Control</p>
+                </div>
+                <i class="fa-solid fa-chevron-right ml-auto text-gray-200 group-hover:text-amber-500 transition-colors"></i>
+            </a>
+
+            <a href="./expenses/" class="bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm hover:bg-gray-50 flex items-center gap-4 transition-all group">
                 <div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors shadow-sm">
                     <i class="fa-solid fa-coins text-xl"></i>
                 </div>
@@ -147,7 +156,7 @@
 
     <!-- Logic -->
     <script type="module">
-        import { initAdminPage, db, auth, LIFF_ID } from "/js/admin-common.js?v=20261031-3";
+        import { initAdminPage, db, auth, LIFF_ID, ADMIN_BASE_PATH } from "/js/admin-common.js?v=20261118-1";
         import { signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { collection, getCountFromServer, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { signInFirebaseWithLine } from "/js/line-firebase-auth.js?v=20261031-3";
@@ -235,20 +244,20 @@
                 });
 
                 sessionStorage.removeItem('lmc_admin_auth_pending');
-                const target = sessionStorage.getItem('lmc_admin_redirect') || '/admin/';
+                const target = sessionStorage.getItem('lmc_admin_redirect') || `${ADMIN_BASE_PATH}/`;
                 sessionStorage.removeItem('lmc_admin_redirect');
 
-                if (target !== '/admin/' && target.startsWith('/admin/')) {
+                if (target !== `${ADMIN_BASE_PATH}/` && target.startsWith(`${ADMIN_BASE_PATH}/`)) {
                     window.location.replace(target);
                     return true;
                 }
-                window.history.replaceState(null, '', '/admin/');
+                window.history.replaceState(null, '', `${ADMIN_BASE_PATH}/`);
                 return false;
             } catch (error) {
                 console.error('Admin LINE callback failed:', error);
                 sessionStorage.removeItem('lmc_admin_auth_pending');
                 const reason = error?.code === 'auth/required-claim-missing' ? 'permission' : 'failed';
-                window.location.replace(`/admin/login.html?authError=${reason}`);
+                window.location.replace(`${ADMIN_BASE_PATH}/login.html?authError=${reason}`);
                 return true;
             }
         };

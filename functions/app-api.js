@@ -9,6 +9,7 @@ const {discordErrorWebhookUrl, notifyDiscordAlert} = require("./discord-alerts")
 
 const ALLOWED_ORIGINS = new Set([
   "https://lmc-mobile.sorairosystem.com",
+  "https://app.urakatabu.com",
   "https://urakata-lmc-admin.web.app",
   "https://urakata-lmc-admin.firebaseapp.com",
   "https://liff.line.me",
@@ -94,6 +95,15 @@ function publicProfile(snapshot) {
     if (source[field] !== undefined && source[field] !== null) result[field] = source[field];
   }
   return result;
+}
+
+function publicMaintenance(settings) {
+  const source = settings?.mobileMaintenance || {};
+  return {
+    enabled: source.enabled === true,
+    title: cleanOptionalText(source.title, 80) || "メンテナンス中です",
+    message: cleanOptionalText(source.message, 500) || "時間をおいて、もう一度お試しください。",
+  };
 }
 
 function cleanText(value, maxLength, fieldName) {
@@ -423,6 +433,13 @@ async function verifyEmailCode(db, identity, code) {
 async function route(request, response) {
   const db = getFirestore();
   const path = request.path.replace(/\/+$/, "") || "/";
+
+  if (request.method === "GET" && path === "/maintenance") {
+    const settings = (await db.doc("system/settings").get()).data() || {};
+    response.json({maintenance: publicMaintenance(settings)});
+    return;
+  }
+
   const identity = await authenticate(request);
 
   if (request.method === "POST" && path === "/client-errors") {
@@ -547,4 +564,4 @@ exports.lmcAppApi = onRequest({
   }
 });
 
-exports._test = {clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicProfile, sha256};
+exports._test = {clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicMaintenance, publicProfile, sha256};

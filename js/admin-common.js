@@ -3,10 +3,13 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 import { setErrorReporterAuth } from "./error-reporter.js";
 
-const ADMIN_ORIGIN = "https://urakata-lmc-admin.web.app";
+const ADMIN_ORIGIN = "https://app.urakatabu.com";
+export const ADMIN_BASE_PATH = window.location.pathname.startsWith("/lmc/app/admin") ? "/lmc/app/admin" : "/admin";
 const isLocalDevelopment = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-if (window.location.pathname.startsWith("/admin") && window.location.origin !== ADMIN_ORIGIN && !isLocalDevelopment) {
-    window.location.replace(`${ADMIN_ORIGIN}${window.location.pathname}${window.location.search}${window.location.hash}`);
+const isCanonicalAdmin = window.location.origin === ADMIN_ORIGIN && ADMIN_BASE_PATH === "/lmc/app/admin";
+if (window.location.pathname.startsWith("/admin") && !isCanonicalAdmin && !isLocalDevelopment) {
+    const suffix = window.location.pathname.slice("/admin".length);
+    window.location.replace(`${ADMIN_ORIGIN}/lmc/app/admin${suffix}${window.location.search}${window.location.hash}`);
 }
 
 if ('serviceWorker' in navigator && window.isSecureContext) {
@@ -62,9 +65,9 @@ export function initAdminPage(activePageId, callback) {
         setErrorReporterAuth(auth);
         const tokenResult = user && !user.isAnonymous ? await user.getIdTokenResult() : null;
         if (!user || user.isAnonymous || tokenResult?.claims?.line !== true || tokenResult?.claims?.admin !== true) {
-            if (!window.location.href.includes('/admin/login.html')) {
+            if (window.location.pathname !== `${ADMIN_BASE_PATH}/login.html`) {
                 const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-                window.location.href = `/admin/login.html?redirect=${redirect}`;
+                window.location.href = `${ADMIN_BASE_PATH}/login.html?redirect=${redirect}`;
             }
             unlockUI();
         } else {
@@ -111,13 +114,14 @@ function renderSidebar(activePage, user) {
         </div>
         <nav class="flex-1 px-4 space-y-1.5 overflow-y-auto">
             <p class="text-[10px] font-extrabold text-gray-400 px-4 mb-3 uppercase tracking-widest">Main Menu</p>
-            <a href="/admin/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('dashboard')}"><i class="fa-solid fa-house w-6 text-center"></i><span class="ml-3 text-sm font-bold">ダッシュボード</span></a>
-            <a href="/admin/band/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('bands')}"><i class="fa-solid fa-users-rectangle w-6 text-center"></i><span class="ml-3 text-sm font-bold">バンド管理</span></a>
-            <a href="/admin/cue/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('cuesheets')}"><i class="fa-solid fa-file-invoice w-6 text-center"></i><span class="ml-3 text-sm font-bold">Cueシート</span></a>
-            <a href="/admin/user/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('users')}"><i class="fa-solid fa-user-gear w-6 text-center"></i><span class="ml-3 text-sm font-bold">個人管理</span></a>
-            <a href="/admin/booking/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('reservation')}"><i class="fa-solid fa-calendar-check w-6 text-center"></i><span class="ml-3 text-sm font-bold">予約管理</span></a>
-            <a href="/admin/expenses/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('fees')}"><i class="fa-solid fa-coins w-6 text-center"></i><span class="ml-3 text-sm font-bold">部費管理</span></a>
-            <a href="/admin/event/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('events')}"><i class="fa-solid fa-bullhorn w-6 text-center"></i><span class="ml-3 text-sm font-bold">イベント管理</span></a>
+            <a href="${ADMIN_BASE_PATH}/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('dashboard')}"><i class="fa-solid fa-house w-6 text-center"></i><span class="ml-3 text-sm font-bold">ダッシュボード</span></a>
+            <a href="${ADMIN_BASE_PATH}/band/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('bands')}"><i class="fa-solid fa-users-rectangle w-6 text-center"></i><span class="ml-3 text-sm font-bold">バンド管理</span></a>
+            <a href="${ADMIN_BASE_PATH}/cue/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('cuesheets')}"><i class="fa-solid fa-file-invoice w-6 text-center"></i><span class="ml-3 text-sm font-bold">Cueシート</span></a>
+            <a href="${ADMIN_BASE_PATH}/user/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('users')}"><i class="fa-solid fa-user-gear w-6 text-center"></i><span class="ml-3 text-sm font-bold">個人管理</span></a>
+            <a href="${ADMIN_BASE_PATH}/booking/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('reservation')}"><i class="fa-solid fa-calendar-check w-6 text-center"></i><span class="ml-3 text-sm font-bold">予約管理</span></a>
+            <a href="${ADMIN_BASE_PATH}/maintenance/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('maintenance')}"><i class="fa-solid fa-screwdriver-wrench w-6 text-center"></i><span class="ml-3 text-sm font-bold">メンテナンス</span></a>
+            <a href="${ADMIN_BASE_PATH}/expenses/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('fees')}"><i class="fa-solid fa-coins w-6 text-center"></i><span class="ml-3 text-sm font-bold">部費管理</span></a>
+            <a href="${ADMIN_BASE_PATH}/event/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('events')}"><i class="fa-solid fa-bullhorn w-6 text-center"></i><span class="ml-3 text-sm font-bold">イベント管理</span></a>
         </nav>
         <div class="p-6 border-t border-gray-100">
             <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
@@ -132,6 +136,6 @@ function renderSidebar(activePage, user) {
 
 window.handleSignOut = async () => {
     if (confirm("ログアウトしますか？")) {
-        try { await signOut(auth); window.location.href = "/admin/login.html"; } catch (e) { console.error(e); }
+        try { await signOut(auth); window.location.href = `${ADMIN_BASE_PATH}/login.html`; } catch (e) { console.error(e); }
     }
 };

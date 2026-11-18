@@ -71,7 +71,7 @@
 
     <!-- Logic -->
     <script type="module">
-        import { auth, LIFF_ID } from "/js/admin-common.js?v=20261031-3";
+        import { auth, LIFF_ID, ADMIN_BASE_PATH } from "/js/admin-common.js?v=20261118-1";
         import { signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { signInFirebaseWithLine } from "/js/line-firebase-auth.js?v=20261031-3";
 
@@ -83,15 +83,15 @@
         const getRedirectUrl = () => {
             const urlParams = new URLSearchParams(window.location.search);
             const redirectPath = urlParams.get('redirect');
-            if (!redirectPath) return "/admin/";
+            if (!redirectPath) return `${ADMIN_BASE_PATH}/`;
             try {
                 const target = new URL(redirectPath, window.location.origin);
-                if (target.origin !== window.location.origin || !target.pathname.startsWith('/admin/') || target.pathname === '/admin/login.html') {
-                    return "/admin/";
+                if (target.origin !== window.location.origin || !target.pathname.startsWith(`${ADMIN_BASE_PATH}/`) || target.pathname === `${ADMIN_BASE_PATH}/login.html`) {
+                    return `${ADMIN_BASE_PATH}/`;
                 }
                 return `${target.pathname}${target.search}${target.hash}`;
             } catch (_) {
-                return "/admin/";
+                return `${ADMIN_BASE_PATH}/`;
             }
         };
 

@@ -40,6 +40,7 @@ const chatApiToken = defineSecret("CHAT_API_TOKEN");
 const LINE_CHANNEL_ID = "2008162165";
 const ALLOWED_ORIGINS = new Set([
   "https://lmc-mobile.sorairosystem.com",
+  "https://app.urakatabu.com",
   "https://urakata-lmc-admin.web.app",
   "https://urakata-lmc-admin.firebaseapp.com",
   "https://liff.line.me",

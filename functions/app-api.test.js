@@ -27,6 +27,21 @@ test("公開プロフィールから個人情報と権限を除外する", () =>
   });
 });
 
+test("メンテナンス設定は公開可能な項目だけ返す", () => {
+  assert.deepEqual(_test.publicMaintenance({mobileMaintenance: {
+    enabled: true,
+    title: "更新作業中",
+    message: "しばらくお待ちください。",
+    updatedBy: "admin-user",
+    internalMemo: "非公開",
+  }}), {
+    enabled: true,
+    title: "更新作業中",
+    message: "しばらくお待ちください。",
+  });
+  assert.equal(_test.publicMaintenance({}).enabled, false);
+});
+
 test("予約時間の不正値と過大な予約を拒否する", () => {
   assert.throws(() => _test.parseBookingBody({bandId: "b1", startTime: "bad", endTime: "bad"}), /予約時間/);
   assert.throws(() => _test.parseBookingBody({
