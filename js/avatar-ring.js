@@ -1,4 +1,5 @@
 const STYLE_ID = 'lmc-part-avatar-ring-style';
+const CHRISTMAS_WREATH_URL = new URL('../assets/wreath-frame.svg', import.meta.url).href;
 
 const PART_COLORS = [
     { keys: ['vocal', 'vo', 'ボーカル', 'ヴォーカル'], color: '#f2aaca', glow: 'rgba(242,170,202,.42)' },
@@ -15,7 +16,7 @@ function injectStyles() {
     style.id = STYLE_ID;
     style.textContent = `
         .part-avatar-ring { overflow:visible!important; background:transparent!important; box-shadow:none!important; isolation:isolate; }
-        .part-avatar-ring > img { position:relative; z-index:2; }
+        .part-avatar-ring > img:not(.lmc-christmas-wreath) { position:relative; z-index:2; }
         .part-ring-layer { position:absolute; inset:-2px; z-index:3; border-radius:50%; pointer-events:none; }
         .part-ring-layer svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; transform:rotate(-90deg); }
         .part-ring-circle { fill:none; stroke:var(--part-ring-color,#b9c8df); stroke-width:3; stroke-linecap:round; stroke-dasharray:100; stroke-dashoffset:0; filter:drop-shadow(0 0 3px var(--part-ring-glow,rgba(185,200,223,.4))); }
@@ -24,15 +25,12 @@ function injectStyles() {
         .part-ring-dot::after { content:""; position:absolute; left:50%; top:-1px; width:var(--part-dot-size); height:var(--part-dot-size); transform:translateX(-50%); border-radius:50%; background:var(--part-ring-color,#b9c8df); opacity:var(--part-dot-opacity); box-shadow:0 0 6px 1px var(--part-ring-glow,rgba(185,200,223,.4)); }
         .part-avatar-ring.part-ring-animate .part-ring-circle { animation:lmcPartRingSweep 2s cubic-bezier(.2,.72,.15,1) both; }
         .part-avatar-ring.part-ring-animate .part-ring-orbit { animation:lmcPartRingOrbit 2s cubic-bezier(.3,.08,.2,1) both; }
-        .lmc-santa-hat { position:absolute; width:31px; height:31px; right:-6px; top:-14px; z-index:7; pointer-events:none; filter:drop-shadow(0 2px 2px rgba(95,29,38,.18)); transform-origin:50% 84%; animation:lmcSantaHatSettle .48s cubic-bezier(.18,.9,.24,1.22) both; }
-        .lmc-santa-hat svg { display:block; width:100%; height:100%; overflow:visible; }
-        .lmc-santa-hat-cap { fill:#eb4f59; stroke:#cf3946; stroke-width:.65; stroke-linejoin:round; }
-        .lmc-santa-hat-trim { fill:#fffdf9; stroke:#e6d9d2; stroke-width:.7; }
-        .lmc-santa-hat-highlight { fill:none; stroke:#ff9ca4; stroke-width:1.25; stroke-linecap:round; opacity:.72; }
-        @keyframes lmcSantaHatSettle { from { opacity:0; transform:translate3d(4px,-6px,0) rotate(18deg) scale(.72); } 68% { transform:translate3d(-1px,1px,0) rotate(4deg) scale(1.04); } to { opacity:1; transform:translate3d(0,0,0) rotate(7deg) scale(1); } }
+        .part-avatar-ring.lmc-christmas-mode .part-ring-layer { opacity:0; }
+        .part-avatar-ring > .lmc-christmas-wreath { position:absolute; inset:-7px; width:calc(100% + 14px); height:calc(100% + 14px); max-width:none; z-index:6; pointer-events:none; user-select:none; object-fit:contain; filter:drop-shadow(0 2px 2px rgba(23,72,31,.18)); transform-origin:50% 50%; will-change:transform,opacity; animation:lmcChristmasWreathSettle .58s cubic-bezier(.18,.9,.24,1.18) both; }
+        @keyframes lmcChristmasWreathSettle { from { opacity:0; transform:translate3d(0,-2px,0) rotate(-12deg) scale(.72); } 68% { transform:translate3d(0,0,0) rotate(3deg) scale(1.04); } to { opacity:1; transform:translate3d(0,0,0) rotate(0) scale(1); } }
         @keyframes lmcPartRingSweep { from { stroke-dashoffset:100; } to { stroke-dashoffset:0; } }
         @keyframes lmcPartRingOrbit { 0% { transform:rotate(0); opacity:0; } 6% { opacity:1; } 90% { opacity:1; } 100% { transform:rotate(360deg); opacity:0; } }
-        @media (prefers-reduced-motion:reduce) { .part-avatar-ring.part-ring-animate .part-ring-circle { animation:none; stroke-dashoffset:0; } .part-avatar-ring.part-ring-animate .part-ring-orbit { display:none; animation:none; } .lmc-santa-hat { animation:none; } }
+        @media (prefers-reduced-motion:reduce) { .part-avatar-ring.part-ring-animate .part-ring-circle { animation:none; stroke-dashoffset:0; } .part-avatar-ring.part-ring-animate .part-ring-orbit { display:none; animation:none; } .lmc-christmas-wreath { animation:none; } }
     `;
     document.head.appendChild(style);
 }
@@ -53,28 +51,29 @@ function isChristmasSeason(date = new Date()) {
     return date.getMonth() === 11 && date.getDate() <= 25;
 }
 
-export function setChristmasAvatarHat(element, active = isChristmasSeason()) {
+export function setChristmasAvatarWreath(element, active = isChristmasSeason()) {
     if (!element) return;
     injectStyles();
-    element.dataset.christmasHat = active ? 'on' : 'off';
-    const existing = element.querySelector('.lmc-santa-hat');
+    element.dataset.christmasWreath = active ? 'on' : 'off';
+    element.classList.toggle('lmc-christmas-mode', active);
+    element.querySelector('.lmc-santa-hat')?.remove();
+    const existing = element.querySelector('.lmc-christmas-wreath');
     if (!active) {
         existing?.remove();
         return;
     }
     if (existing) return;
-    const hat = document.createElement('span');
-    hat.className = 'lmc-santa-hat';
-    hat.setAttribute('aria-hidden', 'true');
-    hat.innerHTML = `<svg viewBox="0 0 32 32" aria-hidden="true">
-        <path class="lmc-santa-hat-cap" d="M3.8 23.2 16.6 3.2 28.4 23.2Z"/>
-        <path class="lmc-santa-hat-highlight" d="m9.2 18.2 5.4-9.1"/>
-        <rect class="lmc-santa-hat-trim" x="2" y="20.5" width="28" height="7.4" rx="3.7"/>
-        <circle class="lmc-santa-hat-trim" cx="16.6" cy="4.2" r="4.15"/>
-        <circle cx="15.4" cy="3" r="1" fill="#fff" opacity=".9"/>
-    </svg>`;
-    element.appendChild(hat);
+    const wreath = document.createElement('img');
+    wreath.className = 'lmc-christmas-wreath';
+    wreath.src = CHRISTMAS_WREATH_URL;
+    wreath.alt = '';
+    wreath.decoding = 'async';
+    wreath.draggable = false;
+    wreath.setAttribute('aria-hidden', 'true');
+    element.appendChild(wreath);
 }
+
+export const setChristmasAvatarHat = setChristmasAvatarWreath;
 
 export function applyPartAvatarRing(element, userData = {}) {
     if (!element) return;
@@ -83,7 +82,8 @@ export function applyPartAvatarRing(element, userData = {}) {
     element.style.setProperty('--part-ring-color', palette.color);
     element.style.setProperty('--part-ring-glow', palette.glow);
     element.classList.add('part-avatar-ring');
-    setChristmasAvatarHat(element, element.dataset.christmasHat ? element.dataset.christmasHat === 'on' : isChristmasSeason());
+    const christmasMode = element.dataset.christmasWreath || element.dataset.christmasHat;
+    setChristmasAvatarWreath(element, christmasMode ? christmasMode === 'on' : isChristmasSeason());
 
     let layer = element.querySelector('.part-ring-layer');
     if (!layer) {
