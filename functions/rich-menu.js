@@ -14,8 +14,9 @@ const lineMessagingChannelAccessToken = defineSecret("LINE_MESSAGING_CHANNEL_ACC
 const RICH_MENU_WIDTH = 2500;
 const RICH_MENU_HEIGHT = 1686;
 const LINE_IMAGE_LIMIT = 1024 * 1024;
-const APP_BASE_URL = "https://app.urakatabu.com/lmc/app";
-const FONT_PATH = path.join(__dirname, "assets", "fonts", "NotoSansJP.ttf");
+const LIFF_BASE_URL = "https://liff.line.me/2008162165-vVODNp12";
+const FONT_REGULAR_PATH = path.join(__dirname, "assets", "fonts", "LINESeedJP-Regular.ttf");
+const FONT_BOLD_PATH = path.join(__dirname, "assets", "fonts", "LINESeedJP-Bold.ttf");
 const ASSIGNMENT_COLLECTION = "lineRichMenuAssignments";
 const MAX_UPCOMING_BOOKINGS = 500;
 const MAX_MENU_CHANGES_PER_SYNC = 75;
@@ -122,7 +123,7 @@ function richMenuContext(uid, user, bands, bookings, settings, now = new Date())
 }
 
 function menuSignature(context) {
-  return createHash("sha256").update(JSON.stringify({version: 1, ...context})).digest("hex");
+  return createHash("sha256").update(JSON.stringify({version: 2, ...context})).digest("hex");
 }
 
 function materialIcon(name, x, y, size, fill = "#111B4C") {
@@ -131,10 +132,12 @@ function materialIcon(name, x, y, size, fill = "#111B4C") {
   return `<g transform="translate(${x} ${y + size}) scale(${size / 960})"><path fill="${fill}" d="${iconPath}"/></g>`;
 }
 
-let fontBase64 = "";
-function embeddedFont() {
-  if (!fontBase64) fontBase64 = fs.readFileSync(FONT_PATH).toString("base64");
-  return fontBase64;
+let regularFontBase64 = "";
+let boldFontBase64 = "";
+function embeddedFonts() {
+  if (!regularFontBase64) regularFontBase64 = fs.readFileSync(FONT_REGULAR_PATH).toString("base64");
+  if (!boldFontBase64) boldFontBase64 = fs.readFileSync(FONT_BOLD_PATH).toString("base64");
+  return {regular: regularFontBase64, bold: boldFontBase64};
 }
 
 async function avatarDataUrl(url, sharpModule) {
@@ -154,53 +157,51 @@ async function avatarDataUrl(url, sharpModule) {
 }
 
 function menuSvg(context, avatarUrl = "") {
+  const fonts = embeddedFonts();
   const booking = context.nextBooking;
   const scheduleDate = booking ? `${escapeXml(booking.date)} ${escapeXml(booking.time)}` : "予定はありません";
   const scheduleBand = booking ? escapeXml(booking.bandName) : "予約ページで予定を確認できます";
   const schedulePlace = booking ? escapeXml(booking.place) : "";
   const avatar = avatarUrl ?
-    `<image href="${avatarUrl}" x="1902" y="1110" width="230" height="230" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatarClip)"/>` :
-    materialIcon("account_circle", 1890, 1094, 255);
+    `<image href="${avatarUrl}" x="1055" y="1120" width="280" height="280" preserveAspectRatio="xMidYMid slice" clip-path="url(#avatarClip)"/>` :
+    materialIcon("account_circle", 1040, 1105, 310);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${RICH_MENU_WIDTH}" height="${RICH_MENU_HEIGHT}" viewBox="0 0 ${RICH_MENU_WIDTH} ${RICH_MENU_HEIGHT}">
     <defs>
       <style>
-        @font-face{font-family:LMCNoto;src:url(data:font/ttf;base64,${embeddedFont()}) format('truetype')}
-        text{font-family:LMCNoto,sans-serif;fill:#111B4C}
+        @font-face{font-family:LMCJapanese;src:url(data:font/ttf;base64,${fonts.regular}) format('truetype');font-weight:400}
+        @font-face{font-family:LMCJapanese;src:url(data:font/ttf;base64,${fonts.bold}) format('truetype');font-weight:700}
+        text{font-family:LMCJapanese,"Hiragino Sans","Yu Gothic",sans-serif;fill:#111B4C}
       </style>
       <linearGradient id="home" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFF8E8"/><stop offset="1" stop-color="#FFEFC8"/></linearGradient>
       <linearGradient id="schedule" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F5F0FF"/><stop offset="1" stop-color="#E9DEFF"/></linearGradient>
       <linearGradient id="cue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#EDF8FF"/><stop offset="1" stop-color="#D8EEFF"/></linearGradient>
-      <linearGradient id="settings" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#EFFFF8"/><stop offset="1" stop-color="#D9F6E8"/></linearGradient>
       <linearGradient id="account" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F9F2FF"/><stop offset="1" stop-color="#EEDFFF"/></linearGradient>
       <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="#7065A0" flood-opacity="0.14"/></filter>
-      <clipPath id="avatarClip"><circle cx="2017" cy="1225" r="115"/></clipPath>
+      <clipPath id="avatarClip"><circle cx="1195" cy="1260" r="140"/></clipPath>
     </defs>
     <rect width="2500" height="1686" fill="#F4F2FC"/>
     <g filter="url(#shadow)">
       <rect x="32" y="32" width="769" height="779" rx="70" fill="url(#home)"/>
       <rect x="865" y="32" width="1603" height="779" rx="70" fill="url(#schedule)"/>
       <rect x="32" y="875" width="769" height="779" rx="70" fill="url(#cue)"/>
-      <rect x="865" y="875" width="770" height="779" rx="70" fill="url(#settings)"/>
-      <rect x="1699" y="875" width="769" height="779" rx="70" fill="url(#account)"/>
+      <rect x="865" y="875" width="1603" height="779" rx="70" fill="url(#account)"/>
     </g>
     ${materialIcon("home", 242, 170, 350)}
     <text x="416" y="670" text-anchor="middle" font-size="112" font-weight="750">ホーム</text>
     ${materialIcon("calendar_month", 1015, 190, 330)}
     <rect x="1395" y="170" width="850" height="100" rx="50" fill="#A989E8" opacity="0.18"/>
     <text x="1430" y="250" font-size="94" font-weight="780">次の合わせ予定</text>
-    <text x="1430" y="410" font-size="92" font-weight="780">${scheduleDate}</text>
+    <text x="1430" y="410" font-size="78" font-weight="700">${scheduleDate}</text>
     <text x="1430" y="545" font-size="72" font-weight="700">${scheduleBand}</text>
     ${schedulePlace ? `<text x="1430" y="660" font-size="58" font-weight="520" fill="#515878">${schedulePlace}</text>` : ""}
     ${materialIcon("description", 265, 1018, 300)}
     <text x="416" y="1480" text-anchor="middle" font-size="91" font-weight="750">CUEシート</text>
-    ${materialIcon("settings", 1100, 1018, 300)}
-    <text x="1250" y="1480" text-anchor="middle" font-size="98" font-weight="750">設定</text>
-    <text x="2083" y="1038" text-anchor="middle" font-size="70" font-weight="750">マイアカウント</text>
+    <text x="1667" y="1038" text-anchor="middle" font-size="78" font-weight="750">マイアカウント</text>
     ${avatar}
-    <text x="2165" y="1205" font-size="61" font-weight="750">${escapeXml(context.name)}</text>
-    <text x="2165" y="1305" font-size="48" font-weight="520" fill="#515878">${escapeXml(context.account)}</text>
-    <rect x="1900" y="1410" width="365" height="82" rx="41" fill="#9A7DE0" opacity="0.16"/>
-    <text x="2083" y="1468" text-anchor="middle" font-size="40" font-weight="650" fill="#5F4DA1">詳細を見る</text>
+    <text x="1425" y="1215" font-size="72" font-weight="750">${escapeXml(context.name)}</text>
+    <text x="1425" y="1325" font-size="54" font-weight="520" fill="#515878">${escapeXml(context.account)}</text>
+    <rect x="1425" y="1405" width="720" height="90" rx="45" fill="#9A7DE0" opacity="0.16"/>
+    <text x="1785" y="1468" text-anchor="middle" font-size="44" font-weight="650" fill="#5F4DA1">アカウント情報を見る</text>
   </svg>`;
 }
 
@@ -269,11 +270,10 @@ function richMenuDefinition(uid, signature) {
     name: `LMC ${uid.slice(-10)} ${signature.slice(0, 10)}`,
     chatBarText: "メニュー",
     areas: [
-      {bounds: {x: 0, y: 0, width: 833, height: 843}, action: {type: "uri", label: "ホーム", uri: `${APP_BASE_URL}/`}},
-      {bounds: {x: 833, y: 0, width: 1667, height: 843}, action: {type: "uri", label: "次の合わせ予定", uri: `${APP_BASE_URL}/booking.html`}},
-      {bounds: {x: 0, y: 843, width: 833, height: 843}, action: {type: "uri", label: "CUEシート", uri: `${APP_BASE_URL}/?action=cue`}},
-      {bounds: {x: 833, y: 843, width: 834, height: 843}, action: {type: "uri", label: "設定", uri: `${APP_BASE_URL}/mypage.html#settings`}},
-      {bounds: {x: 1667, y: 843, width: 833, height: 843}, action: {type: "uri", label: "マイアカウント", uri: `${APP_BASE_URL}/mypage.html`}},
+      {bounds: {x: 0, y: 0, width: 833, height: 843}, action: {type: "uri", label: "ホーム", uri: `${LIFF_BASE_URL}/`}},
+      {bounds: {x: 833, y: 0, width: 1667, height: 843}, action: {type: "uri", label: "次の合わせ予定", uri: `${LIFF_BASE_URL}/booking.html`}},
+      {bounds: {x: 0, y: 843, width: 833, height: 843}, action: {type: "uri", label: "CUEシート", uri: `${LIFF_BASE_URL}/?action=cue`}},
+      {bounds: {x: 833, y: 843, width: 1667, height: 843}, action: {type: "uri", label: "マイアカウント", uri: `${LIFF_BASE_URL}/mypage.html`}},
     ],
   };
 }

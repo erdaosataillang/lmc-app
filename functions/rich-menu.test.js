@@ -38,17 +38,18 @@ test("アカウント欄にはパートと学年を短く表示する", () => {
   assert.equal(accountSubtitle({}), "プロフィールを確認");
 });
 
-test("リッチメニューは上段2領域・下段3領域を隙間なく定義する", () => {
+test("下段右2ブロックをマイアカウントとして定義する", () => {
   const definition = richMenuDefinition("U1234567890", "abc123456789");
   assert.deepEqual(definition.size, {width: 2500, height: 1686});
-  assert.equal(definition.areas.length, 5);
+  assert.equal(definition.areas.length, 4);
   assert.deepEqual(definition.areas.map((area) => area.bounds), [
     {x: 0, y: 0, width: 833, height: 843},
     {x: 833, y: 0, width: 1667, height: 843},
     {x: 0, y: 843, width: 833, height: 843},
-    {x: 833, y: 843, width: 834, height: 843},
-    {x: 1667, y: 843, width: 833, height: 843},
+    {x: 833, y: 843, width: 1667, height: 843},
   ]);
+  assert.equal(definition.areas.some((area) => area.action.label === "設定"), false);
+  assert.equal(definition.areas.every((area) => area.action.uri.startsWith("https://liff.line.me/2008162165-vVODNp12/")), true);
 });
 
 test("表示内容が同じなら署名も同じになる", () => {
