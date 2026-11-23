@@ -9,6 +9,8 @@ const errorReporterReady = typeof window !== "undefined"
  */
 export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUserId, options = {}) {
     if (!auth || !lineUserId) throw new Error("LINE user is not ready");
+    const liffClient = globalThis.liff;
+    if (!liffClient) throw new Error("LIFF SDK is not ready");
     const activateErrorReporter = () => errorReporterReady
         .then(module => module?.setErrorReporterAuth(auth))
         .catch(() => {});
@@ -41,8 +43,10 @@ export async function signInFirebaseWithLine(auth, signInWithCustomToken, lineUs
         }
     }
 
-    const idToken = liff.getIDToken();
-    const accessToken = liff.getAccessToken();
+    // ES Modules では `window.liff` が暗黙のグローバル変数 `liff` として
+    // 解決されないWebViewがあるため、初期化済みの参照を明示的に使う。
+    const idToken = liffClient.getIDToken();
+    const accessToken = liffClient.getAccessToken();
     if (!idToken && !accessToken) {
         throw new Error("LINE authentication tokens are unavailable. Please log in again.");
     }

@@ -521,8 +521,8 @@
                             <div id="digitalCueContainer" class="hidden" style="background:#fafafa; border:1px solid #e0e0e0; border-radius:12px; padding:14px; margin-bottom:16px;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:10px;">
                                     <div style="font-weight:bold; font-size:14px; color:#111;">デジタルCueシート</div>
-                                    <a id="btnOpenDigitalCueUrl" href="#" target="_blank" style="font-size:12px; color:#0b57d0; text-decoration:none; font-weight:bold; display:inline-flex; align-items:center; gap:2px;">
-                                        全画面・編集 <span class="material-icons" style="font-size:14px;">open_in_new</span>
+                                    <a id="btnOpenDigitalCueUrl" href="#" style="font-size:12px; color:#0b57d0; text-decoration:none; font-weight:bold; display:inline-flex; align-items:center; gap:2px;">
+                                        全画面・編集 <span class="material-icons" style="font-size:14px;">arrow_forward</span>
                                     </a>
                                 </div>
 
@@ -768,6 +768,16 @@
             });
         };
 
+        const openCueSheetInCurrentView = targetUrl => {
+            const target = new URL(targetUrl, window.location.href);
+            if (target.origin !== window.location.origin || target.pathname !== '/lmc/app/cue.html') {
+                throw new Error('Invalid Cue sheet URL');
+            }
+            // target=_blank はLINEのWebViewで別ブラウザへ分離され、LIFFの認証状態を
+            // 引き継げない場合がある。同じWebView内で遷移して認証状態を維持する。
+            window.location.assign(target.href);
+        };
+
         window.goToWebCueSheet = () => {
             if (!currentEditingBandId) return;
             if (!currentBandLatestEventId) {
@@ -776,7 +786,7 @@
             }
             const params = new URLSearchParams({bandID:currentEditingBandId});
             if (currentBandLatestEventId) params.set('eventID', currentBandLatestEventId);
-            window.location.href = `${CUE_WEB_URL}?${params.toString()}`;
+            openCueSheetInCurrentView(`${CUE_WEB_URL}?${params.toString()}`);
         };
 
         async function fetchAndRenderCueSheet(bandId, cueSheetId, eventId, fallbackImageUrl) {
@@ -831,6 +841,10 @@
                 if (cueData) {
                     container.classList.remove('hidden');
                     openLink.href = `${CUE_WEB_URL}?cueID=${encodeURIComponent(targetCueId)}`;
+                    openLink.onclick = event => {
+                        event.preventDefault();
+                        openCueSheetInCurrentView(openLink.href);
+                    };
 
                     document.getElementById('cueMetaCount').innerText = cueData.existingCount ? `${cueData.existingCount}回目` : "新規";
                     document.getElementById('cueMetaSync').innerText = cueData.syncVal || "無";
