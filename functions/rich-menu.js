@@ -204,7 +204,7 @@ function menuSvg(context, avatarUrl = "") {
 
 async function renderRichMenuImage(context) {
   const sharp = require("sharp");
-  // Cloud Functions の 512 MiB 内で安定させるため、libvips のワーカーと
+  // Cloud Functions のメモリ使用量を抑えるため、libvips のワーカーと
   // メモリキャッシュを最小化する。バッチ側も画像を1枚ずつ生成する。
   sharp.concurrency(1);
   sharp.cache(false);
@@ -416,7 +416,7 @@ exports.syncLineRichMenus = onSchedule({
   schedule: "17 * * * *",
   timeZone: "Asia/Tokyo",
   region: "asia-northeast1",
-  memory: "512MiB",
+  memory: "1GiB",
   timeoutSeconds: 540,
   maxInstances: 1,
   retryCount: 1,
@@ -426,7 +426,7 @@ exports.syncLineRichMenus = onSchedule({
 exports.syncLineRichMenuForUser = onDocumentWritten({
   document: "users/{userId}",
   region: "asia-northeast1",
-  memory: "512MiB",
+  memory: "1GiB",
   timeoutSeconds: 180,
   maxInstances: 2,
   secrets: [lineMessagingChannelAccessToken],
@@ -440,7 +440,7 @@ exports.syncLineRichMenuForUser = onDocumentWritten({
 exports.syncLineRichMenusForBooking = onDocumentWritten({
   document: "bookings/{bookingId}",
   region: "asia-northeast1",
-  memory: "512MiB",
+  memory: "1GiB",
   timeoutSeconds: 180,
   maxInstances: 2,
   secrets: [lineMessagingChannelAccessToken],
@@ -458,7 +458,7 @@ exports.syncLineRichMenusForBooking = onDocumentWritten({
 exports.syncLineRichMenusForBand = onDocumentWritten({
   document: "bands/{bandId}",
   region: "asia-northeast1",
-  memory: "512MiB",
+  memory: "1GiB",
   timeoutSeconds: 180,
   maxInstances: 2,
   secrets: [lineMessagingChannelAccessToken],
