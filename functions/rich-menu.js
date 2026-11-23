@@ -412,7 +412,7 @@ async function refreshUsers(db, token, uids) {
     try {
       return await refreshRichMenuForUser(db, token, uid);
     } catch (error) {
-      logger.error("Rich menu refresh failed", {uid, message: error.message, operation: error.operation});
+      logger.error("Rich menu refresh failed", {uid, message: error.message, operation: error.operation, status: error.status});
       return {changed: false, error: true};
     }
   });
@@ -433,7 +433,7 @@ async function syncAllRichMenus(db, token) {
       if (result.changed) changes += 1;
     } catch (error) {
       errors += 1;
-      logger.error("Scheduled rich menu sync failed", {uid: snapshot.id, message: error.message, operation: error.operation});
+      logger.error("Scheduled rich menu sync failed", {uid: snapshot.id, message: error.message, operation: error.operation, status: error.status});
     }
   });
   logger.info("Rich menu sync completed", {users: users.size, changes, skipped, errors});
@@ -462,7 +462,8 @@ exports.syncLineRichMenus = onSchedule({
   memory: "1GiB",
   timeoutSeconds: 540,
   maxInstances: 1,
-  retryCount: 1,
+  concurrency: 1,
+  retryCount: 0,
   secrets: [lineMessagingChannelAccessToken],
 }, async () => syncAllRichMenus(getFirestore(), lineMessagingChannelAccessToken.value()));
 
@@ -471,7 +472,8 @@ exports.syncLineRichMenuForUser = onDocumentWritten({
   region: "asia-northeast1",
   memory: "1GiB",
   timeoutSeconds: 180,
-  maxInstances: 2,
+  maxInstances: 1,
+  concurrency: 1,
   secrets: [lineMessagingChannelAccessToken],
 }, async (event) => {
   const before = event.data?.before?.exists ? event.data.before.data() : {};
@@ -485,7 +487,8 @@ exports.syncLineRichMenusForBooking = onDocumentWritten({
   region: "asia-northeast1",
   memory: "1GiB",
   timeoutSeconds: 180,
-  maxInstances: 2,
+  maxInstances: 1,
+  concurrency: 1,
   secrets: [lineMessagingChannelAccessToken],
 }, async (event) => {
   const before = event.data?.before?.exists ? event.data.before.data() : {};
@@ -503,7 +506,8 @@ exports.syncLineRichMenusForBand = onDocumentWritten({
   region: "asia-northeast1",
   memory: "1GiB",
   timeoutSeconds: 180,
-  maxInstances: 2,
+  maxInstances: 1,
+  concurrency: 1,
   secrets: [lineMessagingChannelAccessToken],
 }, async (event) => {
   const before = event.data?.before?.exists ? event.data.before.data() : {};
