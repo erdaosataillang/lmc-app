@@ -1,0 +1,68 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const test = require("node:test");
+const {
+  accountSubtitle,
+  menuSignature,
+  pickNextBooking,
+  richMenuContext,
+  richMenuDefinition,
+  renderRichMenuImage,
+} = require("./rich-menu")._test;
+
+const now = new Date("2026-11-23T10:00:00+09:00");
+
+test("参加バンドの確定済み予約だけを次の合わせ予定に選ぶ", () => {
+  const bands = [{id: "mine", memberIds: ["user-1"]}, {id: "other", memberIds: ["user-2"]}];
+  const bookings = [
+    {id: "pending", bandId: "mine", status: "pending", startTime: "2026-11-23T11:00:00+09:00", endTime: "2026-11-23T12:00:00+09:00"},
+    {id: "other", bandId: "other", status: "confirmed", startTime: "2026-11-23T11:00:00+09:00", endTime: "2026-11-23T12:00:00+09:00"},
+    {id: "mine-later", bandId: "mine", status: "confirmed", startTime: "2026-11-24T13:00:00+09:00", endTime: "2026-11-24T14:00:00+09:00"},
+    {id: "mine-first", bandId: "mine", status: "confirmed", startTime: "2026-11-24T11:00:00+09:00", endTime: "2026-11-24T12:00:00+09:00"},
+  ];
+  assert.equal(pickNextBooking("user-1", bands, bookings, now).id, "mine-first");
+});
+
+test("自由入力バンドの予約者にも次の合わせ予定を表示する", () => {
+  const booking = {
+    id: "custom", creatorId: "user-1", isCustomBand: true, status: "confirmed",
+    startTime: "2026-11-25T11:00:00+09:00", endTime: "2026-11-25T12:00:00+09:00",
+  };
+  assert.equal(pickNextBooking("user-1", [], [booking], now).id, "custom");
+});
+
+test("アカウント欄にはパートと学年を短く表示する", () => {
+  assert.equal(accountSubtitle({part: "guitar", year: "2"}), "Gt / 2年");
+  assert.equal(accountSubtitle({}), "プロフィールを確認");
+});
+
+test("リッチメニューは上段2領域・下段3領域を隙間なく定義する", () => {
+  const definition = richMenuDefinition("U1234567890", "abc123456789");
+  assert.deepEqual(definition.size, {width: 2500, height: 1686});
+  assert.equal(definition.areas.length, 5);
+  assert.deepEqual(definition.areas.map((area) => area.bounds), [
+    {x: 0, y: 0, width: 833, height: 843},
+    {x: 833, y: 0, width: 1667, height: 843},
+    {x: 0, y: 843, width: 833, height: 843},
+    {x: 833, y: 843, width: 834, height: 843},
+    {x: 1667, y: 843, width: 833, height: 843},
+  ]);
+});
+
+test("表示内容が同じなら署名も同じになる", () => {
+  const context = richMenuContext("user-1", {name: "山田太郎", part: "bass", year: "3"}, [], [], {}, now);
+  assert.equal(menuSignature(context), menuSignature({...context}));
+  assert.notEqual(menuSignature(context), menuSignature({...context, name: "山田花子"}));
+});
+
+test("LINEの制限内で日本語入りJPEGを生成する", async () => {
+  const context = richMenuContext("user-1", {name: "山田太郎", part: "guitar", year: "2"}, [{id: "band", memberIds: ["user-1"]}], [{
+    id: "booking", bandId: "band", bandName: "放課後セッション", status: "confirmed",
+    startTime: "2026-11-28T16:00:00+09:00", endTime: "2026-11-28T17:00:00+09:00",
+  }], {}, now);
+  const image = await renderRichMenuImage(context);
+  assert.equal(image[0], 0xff);
+  assert.equal(image[1], 0xd8);
+  assert.ok(image.length < 1024 * 1024, `${image.length} bytes`);
+});

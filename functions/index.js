@@ -666,3 +666,10 @@ exports.lmcScheduleApi = require("./schedule-api").lmcScheduleApi;
 
 // LIFF本体の機密データ・招待・予約・メール認証を検証するAPI。
 exports.lmcAppApi = require("./app-api").lmcAppApi;
+
+// LINE公式アカウントのユーザー別リッチメニューを同期する。
+const richMenuFunctions = require("./rich-menu");
+exports.syncLineRichMenus = richMenuFunctions.syncLineRichMenus;
+exports.syncLineRichMenuForUser = richMenuFunctions.syncLineRichMenuForUser;
+exports.syncLineRichMenusForBooking = richMenuFunctions.syncLineRichMenusForBooking;
+exports.syncLineRichMenusForBand = richMenuFunctions.syncLineRichMenusForBand;
