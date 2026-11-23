@@ -25,6 +25,9 @@ const UNAVAILABLE_RETRY_MILLISECONDS = 24 * 60 * 60 * 1000;
 const CREATE_TOKEN_CAPACITY = 70;
 const CREATE_TOKEN_REFILL_MILLISECONDS = 60 * 60 * 1000;
 const CREATE_RATE_LIMIT_REF = "system/lineRichMenuCreateRateLimit";
+const SYNC_QUEUE_COLLECTION = "lineRichMenuSyncQueue";
+const RATE_LIMIT_RETRY_MILLISECONDS = 5 * 60 * 1000;
+const TRANSIENT_RETRY_MILLISECONDS = 15 * 60 * 1000;
 const RENDER_WORKER_PATH = path.join(__dirname, "rich-menu-render-worker.js");
 
 // SVG path data from Google Material Symbols Rounded (Apache License 2.0).
@@ -441,40 +444,80 @@ async function eachWithConcurrency(items, concurrency, task) {
   return results;
 }
 
-async function refreshUsers(db, token, uids) {
+async function enqueueUsers(db, uids, reason = "changed", delayMilliseconds = 0) {
   const unique = [...new Set(uids.filter(Boolean))];
-  return eachWithConcurrency(unique, 1, async (uid) => {
-    try {
-      return await refreshRichMenuForUser(db, token, uid);
-    } catch (error) {
-      logger.error("Rich menu refresh failed", {uid, message: error.message, operation: error.operation, status: error.status});
-      return {changed: false, error: true};
+  if (!unique.length) return [];
+  const batch = db.batch();
+  const runAt = Timestamp.fromMillis(Date.now() + delayMilliseconds);
+  for (const uid of unique) {
+    batch.set(db.doc(`${SYNC_QUEUE_COLLECTION}/${uid}`), {
+      reason,
+      runAt,
+      queuedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+  }
+  await batch.commit();
+  return unique;
+}
+
+async function rescheduleQueuedUser(db, uid, reason, delayMilliseconds) {
+  await db.doc(`${SYNC_QUEUE_COLLECTION}/${uid}`).set({
+    reason,
+    runAt: Timestamp.fromMillis(Date.now() + delayMilliseconds),
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+}
+
+async function processQueuedUser(db, token, uid) {
+  const queueRef = db.doc(`${SYNC_QUEUE_COLLECTION}/${uid}`);
+  try {
+    const result = await refreshRichMenuForUser(db, token, uid);
+    if (result.rateLimited) {
+      await rescheduleQueuedUser(db, uid, "rate-limited", RATE_LIMIT_RETRY_MILLISECONDS);
+    } else if (result.unavailable) {
+      await rescheduleQueuedUser(db, uid, "line-unavailable", UNAVAILABLE_RETRY_MILLISECONDS);
+    } else if (result.leased) {
+      await rescheduleQueuedUser(db, uid, "leased", LEASE_MILLISECONDS);
+    } else {
+      await queueRef.delete().catch(() => {});
     }
+    return result;
+  } catch (error) {
+    logger.error("Rich menu refresh failed", {uid, message: error.message, operation: error.operation, status: error.status});
+    await rescheduleQueuedUser(db, uid, "transient-error", TRANSIENT_RETRY_MILLISECONDS);
+    return {changed: false, error: true};
+  }
+}
+
+async function refreshUsers(db, token, uids, reason = "changed") {
+  const unique = await enqueueUsers(db, uids, reason);
+  return eachWithConcurrency(unique, 1, async (uid) => {
+    return processQueuedUser(db, token, uid);
   });
 }
 
-async function syncAllRichMenus(db, token) {
-  const users = await db.collection("users").get();
+async function syncQueuedRichMenus(db, token, now = new Date()) {
+  const queued = await db.collection(SYNC_QUEUE_COLLECTION)
+      .where("runAt", "<=", Timestamp.fromDate(now))
+      .orderBy("runAt")
+      .limit(MAX_MENU_CHANGES_PER_SYNC)
+      .get();
   let changes = 0;
   let skipped = 0;
   let errors = 0;
   let rateLimited = false;
-  await eachWithConcurrency(users.docs, 1, async (snapshot) => {
-    if (changes >= MAX_MENU_CHANGES_PER_SYNC || rateLimited) {
+  await eachWithConcurrency(queued.docs, 1, async (snapshot) => {
+    if (rateLimited) {
       skipped += 1;
       return;
     }
-    try {
-      const result = await refreshRichMenuForUser(db, token, snapshot.id, {user: snapshot.data()});
-      if (result.changed) changes += 1;
-      if (result.rateLimited) rateLimited = true;
-    } catch (error) {
-      errors += 1;
-      logger.error("Scheduled rich menu sync failed", {uid: snapshot.id, message: error.message, operation: error.operation, status: error.status});
-    }
+    const result = await processQueuedUser(db, token, snapshot.id);
+    if (result.changed) changes += 1;
+    if (result.error) errors += 1;
+    if (result.rateLimited) rateLimited = true;
   });
-  logger.info("Rich menu sync completed", {users: users.size, changes, skipped, errors, rateLimited});
-  return {users: users.size, changes, skipped, errors, rateLimited};
+  logger.info("Rich menu queue sync completed", {queued: queued.size, changes, skipped, errors, rateLimited});
+  return {queued: queued.size, changes, skipped, errors, rateLimited};
 }
 
 function relevantUserState(data = {}) {
@@ -502,7 +545,7 @@ exports.syncLineRichMenus = onSchedule({
   concurrency: 1,
   retryCount: 0,
   secrets: [lineMessagingChannelAccessToken],
-}, async () => syncAllRichMenus(getFirestore(), lineMessagingChannelAccessToken.value()));
+}, async () => syncQueuedRichMenus(getFirestore(), lineMessagingChannelAccessToken.value()));
 
 exports.syncLineRichMenuForUser = onDocumentWritten({
   document: "users/{userId}",
@@ -516,7 +559,7 @@ exports.syncLineRichMenuForUser = onDocumentWritten({
   const before = event.data?.before?.exists ? event.data.before.data() : {};
   const after = event.data?.after?.exists ? event.data.after.data() : {};
   if (event.data?.before?.exists && event.data?.after?.exists && relevantUserState(before) === relevantUserState(after)) return;
-  await refreshUsers(getFirestore(), lineMessagingChannelAccessToken.value(), [event.params.userId]);
+  await refreshUsers(getFirestore(), lineMessagingChannelAccessToken.value(), [event.params.userId], "user-changed");
 });
 
 exports.syncLineRichMenusForBooking = onDocumentWritten({
@@ -535,7 +578,7 @@ exports.syncLineRichMenusForBooking = onDocumentWritten({
   const db = getFirestore();
   const bands = await Promise.all(bandIds.map((bandId) => db.doc(`bands/${bandId}`).get()));
   for (const band of bands) if (band.exists && Array.isArray(band.get("memberIds"))) memberIds.push(...band.get("memberIds"));
-  await refreshUsers(db, lineMessagingChannelAccessToken.value(), memberIds);
+  await refreshUsers(db, lineMessagingChannelAccessToken.value(), memberIds, "booking-changed");
 });
 
 exports.syncLineRichMenusForBand = onDocumentWritten({
@@ -551,7 +594,7 @@ exports.syncLineRichMenusForBand = onDocumentWritten({
   const after = event.data?.after?.exists ? event.data.after.data() : {};
   if (relevantBandState(before) === relevantBandState(after)) return;
   const uids = [...(before.memberIds || []), ...(after.memberIds || [])];
-  await refreshUsers(getFirestore(), lineMessagingChannelAccessToken.value(), uids);
+  await refreshUsers(getFirestore(), lineMessagingChannelAccessToken.value(), uids, "band-changed");
 });
 
 exports._test = {
