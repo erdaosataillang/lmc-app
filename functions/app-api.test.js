@@ -135,3 +135,36 @@ test("クライアント障害通知はユーザーごとに1分5件まで", () 
   assert.equal(_test.clientErrorAllowed(uid, 2000), false);
   assert.equal(_test.clientErrorAllowed(uid, 61001), true);
 });
+
+test("バンド統合では重複を除き統合先の設定を優先する", () => {
+  const merged = _test.mergeBandData({
+    memberIds: ["u1"], events: ["e1"], songs: [{id: "s1", title: "既存曲"}],
+    performanceDates: {e1: "2026-11-20"}, icon: "https://example.com/target.jpg",
+  }, {
+    memberIds: ["u1", "u2"], events: ["e1", "e2"], songs: [{id: "s1", title: "既存曲"}, {id: "s2", title: "追加曲"}],
+    performanceDates: {e1: "2026-11-19", e2: "2027-02-10"}, icon: "https://example.com/source.jpg",
+  }, "source-band");
+  assert.deepEqual(merged.memberIds, ["u1", "u2"]);
+  assert.deepEqual(merged.events, ["e1", "e2"]);
+  assert.deepEqual(merged.songs.map((song) => song.id), ["s1", "s2"]);
+  assert.deepEqual(merged.performanceDates, {e1: "2026-11-20", e2: "2027-02-10"});
+  assert.equal(merged.icon, undefined);
+  assert.deepEqual(merged.mergedFromBandIds, ["source-band"]);
+});
+
+test("タイムテーブルの統合元を統合先へ置換し重複を作らない", () => {
+  const result = _test.replaceBandInTimetable({published: true, entries: [
+    {bandId: "source", bandName: "旧", time: "10:00"},
+    {bandId: "target", bandName: "新", time: "11:00"},
+    {bandId: "other", bandName: "別", time: "12:00"},
+  ]}, "source", "target", "新");
+  assert.equal(result.changed, true);
+  assert.deepEqual(result.timetable.entries.map((entry) => entry.bandId), ["target", "other"]);
+  assert.equal(result.timetable.entries[0].time, "11:00");
+});
+
+test("イベント削除では対象バンドだけをタイムテーブルから外す", () => {
+  const result = _test.removeBandFromTimetable({entries: [{bandId: "a"}, {bandId: "b"}]}, "a");
+  assert.equal(result.changed, true);
+  assert.deepEqual(result.timetable.entries, [{bandId: "b"}]);
+});

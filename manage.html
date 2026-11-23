@@ -325,6 +325,21 @@
         </div>
     </div>
 
+    <div id="modal-band-merge" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-band-merge')">
+        <div class="user-modal-content" style="max-width:400px;">
+            <button onclick="closeModal('modal-band-merge')" style="position:absolute; top:16px; right:16px; width:32px; height:32px; border:0; border-radius:50%; background:rgba(118,118,128,.12); color:#5f6368; display:flex; align-items:center; justify-content:center; cursor:pointer;"><span class="material-icons" style="font-size:18px;">close</span></button>
+            <div style="font-size:12px; color:#1a73e8; font-weight:700; margin-bottom:6px;">バンド管理</div>
+            <h3 style="font-size:22px; margin:0 0 8px; color:#1c1c1e;">バンドを統合</h3>
+            <p id="band-merge-source-label" style="font-size:14px; color:#5f6368; line-height:1.6; margin:0 0 18px;"></p>
+            <label class="form-label" for="band-merge-target">統合先のバンド</label>
+            <select id="band-merge-target" class="form-input" style="background:#f8f9fa;"></select>
+            <div style="font-size:12px; color:#8e8e93; line-height:1.6; background:#f2f2f7; border-radius:14px; padding:14px; margin-top:14px;">
+                メンバー、出演イベント、曲、予約、Cueシート、タイムテーブルを統合先へ移します。統合元は履歴としてアーカイブされます。
+            </div>
+            <button id="band-merge-submit" class="btn-primary" style="margin-top:18px; background:#5856d6;" onclick="confirmBandMerge()">この内容で統合する</button>
+        </div>
+    </div>
+
     <div class="container">
         <!-- オリジナルヘッダー -->
         <div class="app-header">
@@ -778,6 +793,13 @@
                 </div>
             </div>
 
+            <div class="card" id="bd-detail-admin-actions">
+                <h3 style="font-size:18px; margin:0 0 8px; color:#1c1c1e; font-weight:700;">管理操作</h3>
+                <div style="font-size:13px; color:#8e8e93; line-height:1.5; margin-bottom:14px;">誤登録の解除や、重複して作成されたバンドの統合を行います。</div>
+                <button id="bd-remove-current-event" class="btn-outline" style="width:100%; color:#d93025; border-color:#f3c7c3; margin-bottom:10px;" onclick="removeCurrentEventFromBand()">現在のイベントから削除</button>
+                <button class="btn-outline" style="width:100%; color:#5856d6; border-color:#d9d7f7;" onclick="openBandMergeModal()">別のバンドへ統合</button>
+            </div>
+
             <div class="card">
                 <h3 style="font-size:18px; margin:0 0 16px; color:#1c1c1e; font-weight:700;">メンバー一覧</h3>
                 <div id="bd-detail-members-list" style="font-size:15px; line-height:1.6;"><div class="lmc-loading-state" style="padding:20px;" role="status"><img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt=""><span>メンバーを読み込み中...</span></div></div>
@@ -814,6 +836,7 @@
         import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal, setUnifiedNotificationContent} from './js/notification-popover.js?v=20261022-1';
         import {applyPartAvatarRing} from './js/avatar-ring.js?v=20261119-3';
+        import {mergeBands, removeBandFromEvent} from './js/app-api.js';
 
         const firebaseConfig = { apiKey: "AIzaSyAWtITnn5uMOPBgOY0Bd7Rt5IN1ry8XoJI", authDomain: "urakata-app.firebaseapp.com", projectId: "urakata-app", storageBucket: "urakata-app.firebasestorage.app", messagingSenderId: "407777765696", appId: "1:407777765696:web:045c2d94729022b4eab2a5", measurementId: "G-9ZRMD26XNJ" };
         const app = initializeApp(firebaseConfig);
@@ -2358,6 +2381,10 @@
             performanceDateInput.value = band.performanceDates?.[currentActiveEventId] || '';
             performanceDateInput.min = currentActiveEventData?.startDate || '';
             performanceDateInput.max = currentActiveEventData?.endDate || currentActiveEventData?.startDate || '';
+            const isRegisteredForCurrentEvent = Boolean(currentActiveEventId && Array.isArray(band.events) && band.events.includes(currentActiveEventId));
+            const removeEventButton = document.getElementById('bd-remove-current-event');
+            removeEventButton.classList.toggle('hidden', !isRegisteredForCurrentEvent);
+            removeEventButton.textContent = isRegisteredForCurrentEvent ? `${currentActiveEventName}から削除` : '現在のイベントから削除';
 
             const iconContainer = document.getElementById('bd-detail-icon');
             if (band.icon) {
@@ -2520,6 +2547,84 @@
                 await showCustomAlert('出演日を保存しました。');
             } catch (error) {
                 await showCustomAlert('保存エラー: ' + error.message, 'エラー');
+            }
+        };
+
+        window.removeCurrentEventFromBand = async () => {
+            if (!currentBandDetail || !currentActiveEventId) return;
+            const band = currentBandDetail;
+            const confirmed = await showCustomConfirm(
+                `「${band.name || 'このバンド'}」を「${currentActiveEventName}」から削除しますか？\nバンド自体は削除されません。`,
+                'イベントから削除'
+            );
+            if (!confirmed) return;
+            const button = document.getElementById('bd-remove-current-event');
+            button.disabled = true;
+            button.textContent = '削除中...';
+            try {
+                await removeBandFromEvent(auth, band.id, currentActiveEventId);
+                band.events = (Array.isArray(band.events) ? band.events : []).filter(id => id !== currentActiveEventId);
+                band.performanceDates = {...(band.performanceDates || {})};
+                delete band.performanceDates[currentActiveEventId];
+                if (currentActiveEventData?.timetable?.entries) {
+                    currentActiveEventData.timetable.entries = currentActiveEventData.timetable.entries.filter(entry => entry.bandId !== band.id);
+                }
+                concertLoadedEventId = null;
+                button.classList.add('hidden');
+                document.getElementById('bd-detail-performance-date').value = '';
+                filterAndRenderBands();
+                await showCustomAlert(`${currentActiveEventName}から削除しました。`);
+            } catch (error) {
+                button.disabled = false;
+                button.textContent = `${currentActiveEventName}から削除`;
+                await showCustomAlert(error.message || 'イベントから削除できませんでした。', 'エラー');
+            }
+        };
+
+        window.openBandMergeModal = () => {
+            if (!currentBandDetail) return;
+            const candidates = allBandsCache
+                .filter(band => band.id !== currentBandDetail.id && !band.mergedIntoBandId && band.isArchived !== true)
+                .sort((left, right) => (left.name || '').localeCompare(right.name || '', 'ja'));
+            if (candidates.length === 0) return void showCustomAlert('統合先にできるバンドがありません。', '統合できません');
+            document.getElementById('band-merge-source-label').textContent = `「${currentBandDetail.name || '名称未設定'}」のデータを、選択したバンドへまとめます。`;
+            const select = document.getElementById('band-merge-target');
+            select.replaceChildren(...candidates.map(band => new Option(band.name || '名称未設定', band.id)));
+            document.getElementById('band-merge-submit').disabled = false;
+            openModal('modal-band-merge');
+        };
+
+        window.confirmBandMerge = async () => {
+            if (!currentBandDetail) return;
+            const source = currentBandDetail;
+            const targetId = document.getElementById('band-merge-target').value;
+            const target = allBandsCache.find(band => band.id === targetId);
+            if (!target) return;
+            const confirmed = await showCustomConfirm(
+                `「${source.name || '統合元'}」を「${target.name || '統合先'}」へ統合します。\n予約やCueシートも移動し、統合元はアーカイブされます。元に戻す操作はできません。`,
+                'バンドを統合'
+            );
+            if (!confirmed) return;
+            const button = document.getElementById('band-merge-submit');
+            button.disabled = true;
+            button.textContent = '統合中...';
+            try {
+                await mergeBands(auth, source.id, target.id);
+                closeModal('modal-band-merge');
+                closePage('admin-band-detail');
+                currentBandDetail = null;
+                allBandsCache = [];
+                bandsLoaded = false;
+                bandsLoadPromise = null;
+                bandCuesLoadPromise = null;
+                bandCueRequests.clear();
+                concertLoadedEventId = null;
+                await openAdminBands();
+                await showCustomAlert(`「${target.name || '統合先バンド'}」へ統合しました。`);
+            } catch (error) {
+                button.disabled = false;
+                button.textContent = 'この内容で統合する';
+                await showCustomAlert(error.message || 'バンドを統合できませんでした。', 'エラー');
             }
         };
 

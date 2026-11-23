@@ -173,9 +173,25 @@
         </div>
     </div>
 
+    <div id="merge-band-modal" class="hidden fixed inset-0 z-[80] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div onclick="event.stopPropagation()" class="bg-white w-full max-w-md rounded-[32px] shadow-2xl p-8 flex flex-col">
+            <button onclick="window.closeMergeBandModal()" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-500"><i class="fa-solid fa-xmark"></i></button>
+            <p class="text-[10px] font-extrabold text-indigo-500 uppercase tracking-widest mb-2">Band management</p>
+            <h3 class="text-xl font-black text-gray-800 mb-2">バンドを統合</h3>
+            <p id="merge-band-source-label" class="text-sm text-gray-500 leading-relaxed mb-5"></p>
+            <label class="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest block mb-2">統合先のバンド</label>
+            <select id="merge-band-target" class="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-800 outline-none"></select>
+            <div class="mt-4 bg-indigo-50 text-indigo-700 rounded-2xl p-4 text-xs font-bold leading-relaxed">
+                メンバー・出演イベント・曲・予約・Cueシート・タイムテーブルを統合先へ移し、統合元をアーカイブします。
+            </div>
+            <button id="merge-band-submit" onclick="window.submitBandMerge()" class="mt-5 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-[22px] font-bold text-xs shadow-xl shadow-indigo-100">統合を実行</button>
+        </div>
+    </div>
+
     <!-- Logic -->
     <script type="module">
-        import { initAdminPage, db, escapeHtml, safeImageUrl } from "/js/admin-common.js?v=20261118-2";
+        import { initAdminPage, auth, db, escapeHtml, safeImageUrl } from "/js/admin-common.js?v=20261118-2";
+        import {mergeBands, removeBandFromEvent} from "/js/app-api.js";
         import { collection, onSnapshot, addDoc, updateDoc, doc, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let bandsData = [], usersData = [], eventsData = [];
@@ -386,7 +402,7 @@
                                 ${participatingEvents.length > 0 ? participatingEvents.map(evt => `
                                     <div class="p-4 flex items-center justify-between group hover:bg-sky-50/30 transition-colors">
                                         <div class="flex items-center gap-3"><div class="w-8 h-8 bg-sky-100 text-sky-600 rounded-lg flex items-center justify-center text-xs"><i class="fa-solid fa-star"></i></div><div><p class="font-bold text-gray-800 text-sm">${escapeHtml(evt.event)}</p><p class="text-[9px] text-gray-400 font-bold">${escapeHtml(evt.startDate || evt.date || '')}</p></div></div>
-                                        <button onclick="window.removeEventFromBand('${band.id}', '${evt.id}')" class="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash-can"></i></button>
+                                        <button onclick="window.removeEventFromBand('${band.id}', '${evt.id}')" class="px-3 py-2 flex items-center gap-2 text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors"><i class="fa-solid fa-trash-can"></i>イベントから削除</button>
                                     </div>`).join('') : '<div class="p-6 text-center text-xs text-gray-400 font-bold">出演イベントはありません</div>'}
                             </div>
                         </div>
@@ -418,6 +434,9 @@
                         <button onclick="window.toggleBandArchive('${band.id}', ${band.isArchived})" class="w-full py-3.5 bg-white border border-gray-200 text-gray-500 rounded-2xl text-xs font-bold hover:bg-gray-50 shadow-sm">
                             <i class="fa-solid fa-box-archive mr-2"></i>${band.isArchived ? 'アーカイブ解除' : 'アーカイブする'}
                         </button>
+                        <button onclick="window.openMergeBandModal('${band.id}')" class="w-full mt-3 py-3.5 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-2xl text-xs font-bold hover:bg-indigo-100 shadow-sm">
+                            <i class="fa-solid fa-code-merge mr-2"></i>別のバンドへ統合
+                        </button>
                     </div>
                 </div>`;
         }
@@ -425,7 +444,60 @@
         window.openAddBandEventModal = () => { const modal = document.getElementById('add-event-select-modal'); modal.classList.remove('hidden'); modal.classList.add('modal-active'); };
         window.closeAddBandEventModal = () => { const modal = document.getElementById('add-event-select-modal'); modal.classList.remove('modal-active'); setTimeout(() => modal.classList.add('hidden'), 200); };
         window.handleAddEventToBand = async () => { if (!activeBandId) return; const eid = document.getElementById('band-event-select-input').value; if (!eid) return; try { await updateDoc(doc(db, 'bands', activeBandId), { events: arrayUnion(eid) }); window.closeAddBandEventModal(); } catch (e) { console.error(e); } };
-        window.removeEventFromBand = async (bid, eid) => { if (confirm("出演イベントを削除しますか？")) { await updateDoc(doc(db, 'bands', bid), { events: arrayRemove(eid) }); } };
+        window.removeEventFromBand = async (bid, eid) => {
+            const band = bandsData.find(item => item.id === bid);
+            const eventData = eventsData.find(item => item.id === eid);
+            if (!confirm(`「${band?.name || 'このバンド'}」を「${eventData?.event || eventData?.name || 'イベント'}」から削除しますか？\nバンド自体は削除されません。`)) return;
+            try {
+                await removeBandFromEvent(auth, bid, eid);
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'イベントから削除できませんでした');
+            }
+        };
+        window.openMergeBandModal = (sourceId) => {
+            const source = bandsData.find(item => item.id === sourceId);
+            if (!source) return;
+            const candidates = bandsData
+                .filter(item => item.id !== sourceId && item.isArchived !== true && !item.mergedIntoBandId)
+                .sort((left, right) => (left.name || '').localeCompare(right.name || '', 'ja'));
+            if (!candidates.length) return alert('統合先にできるバンドがありません');
+            document.getElementById('merge-band-source-label').textContent = `「${source.name || '名称未設定'}」のデータを選択したバンドへまとめます。`;
+            const select = document.getElementById('merge-band-target');
+            select.replaceChildren(...candidates.map(item => new Option(item.name || '名称未設定', item.id)));
+            select.dataset.sourceId = sourceId;
+            const modal = document.getElementById('merge-band-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('modal-active');
+        };
+        window.closeMergeBandModal = () => {
+            const modal = document.getElementById('merge-band-modal');
+            modal.classList.remove('modal-active');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        };
+        window.submitBandMerge = async () => {
+            const select = document.getElementById('merge-band-target');
+            const sourceId = select.dataset.sourceId;
+            const targetId = select.value;
+            const source = bandsData.find(item => item.id === sourceId);
+            const target = bandsData.find(item => item.id === targetId);
+            if (!source || !target) return;
+            if (!confirm(`「${source.name}」を「${target.name}」へ統合します。\n予約やCueシートも移動し、統合元はアーカイブされます。元に戻す操作はできません。`)) return;
+            const button = document.getElementById('merge-band-submit');
+            button.disabled = true;
+            button.textContent = '統合中...';
+            try {
+                await mergeBands(auth, sourceId, targetId);
+                window.closeMergeBandModal();
+                window.closeBandDetail();
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'バンドを統合できませんでした');
+            } finally {
+                button.disabled = false;
+                button.textContent = '統合を実行';
+            }
+        };
         window.openAddBandModal = () => { const container = document.getElementById('new-band-members-list'); container.innerHTML = usersData.map(u => `<label class="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer text-xs font-bold"><input type="checkbox" value="${escapeHtml(u.id)}"> ${escapeHtml(u.name)}</label>`).join(''); document.getElementById('add-band-modal').classList.remove('hidden'); document.getElementById('add-band-modal').classList.add('modal-active'); };
         window.closeAddBandModal = () => { document.getElementById('add-band-modal').classList.remove('modal-active'); setTimeout(() => document.getElementById('add-band-modal').classList.add('hidden'), 200); };
         window.handleNewBandSubmit = async () => { const name = document.getElementById('new-band-name').value; const ids = Array.from(document.querySelectorAll('#new-band-members-list input:checked')).map(c => c.value); if(!name) return alert('バンド名を入力'); try { await addDoc(collection(db, 'bands'), { name, memberIds: ids, events: [], songs: [], isArchived: false, createdAt: serverTimestamp() }); window.closeAddBandModal(); } catch (e) { console.error(e); } };

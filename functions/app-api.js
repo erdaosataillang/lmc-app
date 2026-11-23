@@ -135,6 +135,174 @@ function cleanOptionalHttpsUrl(value, maxLength = 1600) {
   }
 }
 
+function assertAdmin(identity) {
+  if (identity?.admin !== true) {
+    throw new HttpError(403, "admin_required", "管理者権限が必要です。");
+  }
+}
+
+function uniqueList(...lists) {
+  return [...new Set(lists.flatMap((list) => Array.isArray(list) ? list : [])
+      .filter((value) => value !== undefined && value !== null && value !== ""))];
+}
+
+function songIdentity(song) {
+  if (!song || typeof song !== "object") return "";
+  if (song.id) return `id:${song.id}`;
+  return `song:${String(song.title || "").trim().toLowerCase()}|${String(song.eventId || "")}|${String(song.duration || "")}`;
+}
+
+function mergeSongs(targetSongs, sourceSongs) {
+  const result = [];
+  const seen = new Set();
+  for (const song of [...(Array.isArray(targetSongs) ? targetSongs : []), ...(Array.isArray(sourceSongs) ? sourceSongs : [])]) {
+    const key = songIdentity(song);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(song);
+  }
+  return result;
+}
+
+function mergeBandData(target, source, sourceId) {
+  const fallbackFields = ["icon", "headerImage", "timelineDescription", "latestCuesheetUrl", "latestCueSheetId", "cueSheetId", "creatorId"];
+  const merged = {
+    memberIds: uniqueList(target.memberIds, source.memberIds),
+    memberNames: uniqueList(target.memberNames, source.memberNames),
+    events: uniqueList(target.events, source.events),
+    songs: mergeSongs(target.songs, source.songs),
+    likes: uniqueList(target.likes, source.likes),
+    performanceDates: {...(source.performanceDates || {}), ...(target.performanceDates || {})},
+    mergedFromBandIds: uniqueList(target.mergedFromBandIds, source.mergedFromBandIds, [sourceId]),
+    isArchived: false,
+  };
+  for (const field of fallbackFields) {
+    if ((target[field] === undefined || target[field] === null || target[field] === "") && source[field]) merged[field] = source[field];
+  }
+  return merged;
+}
+
+function replaceBandInTimetable(timetable, sourceBandId, targetBandId, targetBandName) {
+  if (!timetable || !Array.isArray(timetable.entries)) return {timetable, changed: false};
+  let changed = false;
+  const hasOriginalTarget = timetable.entries.some((entry) => entry.bandId === targetBandId);
+  const seen = new Set();
+  const entries = [];
+  for (const original of timetable.entries) {
+    const entry = {...original};
+    if (entry.bandId === sourceBandId) {
+      if (hasOriginalTarget) {
+        changed = true;
+        continue;
+      }
+      entry.bandId = targetBandId;
+      if (targetBandName) entry.bandName = targetBandName;
+      changed = true;
+    }
+    if (entry.bandId === targetBandId) {
+      if (seen.has(targetBandId)) {
+        changed = true;
+        continue;
+      }
+      seen.add(targetBandId);
+    }
+    entries.push(entry);
+  }
+  return {timetable: changed ? {...timetable, entries} : timetable, changed};
+}
+
+function removeBandFromTimetable(timetable, bandId) {
+  if (!timetable || !Array.isArray(timetable.entries)) return {timetable, changed: false};
+  const entries = timetable.entries.filter((entry) => entry.bandId !== bandId);
+  return {
+    timetable: entries.length === timetable.entries.length ? timetable : {...timetable, entries},
+    changed: entries.length !== timetable.entries.length,
+  };
+}
+
+async function mergeBands(db, identity, sourceBandIdValue, targetBandIdValue) {
+  assertAdmin(identity);
+  const sourceBandId = cleanText(sourceBandIdValue, 160, "統合元バンド");
+  const targetBandId = cleanText(targetBandIdValue, 160, "統合先バンド");
+  if (sourceBandId === targetBandId || sourceBandId.includes("/") || targetBandId.includes("/")) {
+    throw new HttpError(400, "invalid_band_merge", "異なる2つのバンドを選択してください。");
+  }
+
+  const sourceRef = db.doc(`bands/${sourceBandId}`);
+  const targetRef = db.doc(`bands/${targetBandId}`);
+  const [sourceSnapshot, targetSnapshot, bookings, cueSheets, events, invites] = await Promise.all([
+    sourceRef.get(), targetRef.get(),
+    db.collection("bookings").where("bandId", "==", sourceBandId).get(),
+    db.collection("cuesheets").where("bandId", "==", sourceBandId).get(),
+    db.collection("events").get(),
+    db.collection("bandInvites").where("bandId", "==", sourceBandId).get(),
+  ]);
+  if (!sourceSnapshot.exists || !targetSnapshot.exists) {
+    throw new HttpError(404, "band_not_found", "統合するバンドが見つかりません。");
+  }
+  const source = sourceSnapshot.data() || {};
+  const target = targetSnapshot.data() || {};
+  if (source.mergedIntoBandId) throw new HttpError(409, "band_already_merged", "統合元のバンドはすでに統合されています。");
+
+  const timetableUpdates = [];
+  for (const eventSnapshot of events.docs) {
+    const result = replaceBandInTimetable(eventSnapshot.get("timetable"), sourceBandId, targetBandId, target.name || "");
+    if (result.changed) timetableUpdates.push({ref: eventSnapshot.ref, timetable: result.timetable});
+  }
+  const writeCount = 2 + bookings.size + cueSheets.size + invites.size + timetableUpdates.length;
+  if (writeCount > 450) {
+    throw new HttpError(409, "band_merge_too_large", "関連データが多いため一括統合できません。管理者に連絡してください。");
+  }
+
+  const batch = db.batch();
+  batch.set(targetRef, {...mergeBandData(target, source, sourceBandId), updatedAt: FieldValue.serverTimestamp()}, {merge: true});
+  batch.set(sourceRef, {
+    isArchived: true,
+    mergedIntoBandId: targetBandId,
+    mergedAt: FieldValue.serverTimestamp(),
+    memberIds: [], memberNames: [], events: [], performanceDates: {},
+    updatedAt: FieldValue.serverTimestamp(),
+  }, {merge: true});
+  for (const snapshot of bookings.docs) {
+    batch.update(snapshot.ref, {bandId: targetBandId, bandName: target.name || source.name || "統合済みバンド"});
+  }
+  for (const snapshot of cueSheets.docs) {
+    batch.update(snapshot.ref, {bandId: targetBandId, bandName: target.name || source.name || "統合済みバンド", updatedAt: FieldValue.serverTimestamp()});
+  }
+  for (const update of timetableUpdates) batch.update(update.ref, {timetable: update.timetable, timetableUpdatedAt: FieldValue.serverTimestamp()});
+  for (const snapshot of invites.docs) batch.delete(snapshot.ref);
+  await batch.commit();
+  return {sourceBandId, targetBandId, bookings: bookings.size, cueSheets: cueSheets.size, timetables: timetableUpdates.length};
+}
+
+async function removeBandEvent(db, identity, bandIdValue, eventIdValue) {
+  assertAdmin(identity);
+  const bandId = cleanText(bandIdValue, 160, "バンド");
+  const eventId = cleanText(eventIdValue, 160, "イベント");
+  if (bandId.includes("/") || eventId.includes("/")) throw new HttpError(400, "invalid_document_id", "IDが正しくありません。");
+  const bandRef = db.doc(`bands/${bandId}`);
+  const eventRef = db.doc(`events/${eventId}`);
+  const [bandSnapshot, eventSnapshot] = await Promise.all([bandRef.get(), eventRef.get()]);
+  if (!bandSnapshot.exists) throw new HttpError(404, "band_not_found", "バンドが見つかりません。");
+  const band = bandSnapshot.data() || {};
+  const performanceDates = {...(band.performanceDates || {})};
+  delete performanceDates[eventId];
+  const batch = db.batch();
+  batch.update(bandRef, {
+    events: (Array.isArray(band.events) ? band.events : []).filter((id) => id !== eventId),
+    performanceDates,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+  let timetableChanged = false;
+  if (eventSnapshot.exists) {
+    const result = removeBandFromTimetable(eventSnapshot.get("timetable"), bandId);
+    timetableChanged = result.changed;
+    if (result.changed) batch.update(eventRef, {timetable: result.timetable, timetableUpdatedAt: FieldValue.serverTimestamp()});
+  }
+  await batch.commit();
+  return {bandId, eventId, timetableChanged};
+}
+
 function dateKeyInTokyo(date) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit",
@@ -514,6 +682,15 @@ async function route(request, response) {
     response.status(204).send("");
     return;
   }
+  if (request.method === "POST" && path === "/bands/merge") {
+    response.json({merge: await mergeBands(db, identity, request.body?.sourceBandId, request.body?.targetBandId)});
+    return;
+  }
+  const bandEventMatch = path.match(/^\/bands\/([^/]+)\/events\/([^/]+)$/);
+  if (request.method === "DELETE" && bandEventMatch) {
+    response.json({removal: await removeBandEvent(db, identity, bandEventMatch[1], bandEventMatch[2])});
+    return;
+  }
   if (request.method === "POST" && path === "/invites/accept") {
     response.json(await acceptInvite(db, identity, request.body?.token));
     return;
@@ -580,4 +757,4 @@ exports.lmcAppApi = onRequest({
   }
 });
 
-exports._test = {bookingCanBeManagedBy, clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, parseBookingBody, publicMaintenance, publicProfile, sha256};
+exports._test = {bookingCanBeManagedBy, clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, mergeBandData, mergeSongs, parseBookingBody, publicMaintenance, publicProfile, removeBandFromTimetable, replaceBandInTimetable, sha256};

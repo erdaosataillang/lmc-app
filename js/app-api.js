@@ -32,6 +32,8 @@ export const loadPublicProfile = (auth, uid) => api(`/profiles/${encodeURICompon
 export const createBandInvite = (auth, bandId) => api(`/bands/${encodeURIComponent(bandId)}/invites`, {auth, method:"POST"});
 export const acceptBandInvite = (auth, token) => api("/invites/accept", {auth, method:"POST", body:{token}});
 export const leaveBandSecurely = (auth, bandId) => api(`/bands/${encodeURIComponent(bandId)}/leave`, {auth, method:"POST"});
+export const mergeBands = (auth, sourceBandId, targetBandId) => api("/bands/merge", {auth, method:"POST", body:{sourceBandId, targetBandId}});
+export const removeBandFromEvent = (auth, bandId, eventId) => api(`/bands/${encodeURIComponent(bandId)}/events/${encodeURIComponent(eventId)}`, {auth, method:"DELETE"});
 export const createBooking = (auth, booking) => api("/bookings", {auth, method:"POST", body:booking});
 export const updateBooking = (auth, id, booking) => api(`/bookings/${encodeURIComponent(id)}`, {auth, method:"PATCH", body:booking});
 export const removeBooking = (auth, id) => api(`/bookings/${encodeURIComponent(id)}`, {auth, method:"DELETE"});
