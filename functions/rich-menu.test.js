@@ -9,6 +9,7 @@ const {
   richMenuContext,
   richMenuDefinition,
   renderRichMenuImage,
+  renderRichMenuImageIsolated,
 } = require("./rich-menu")._test;
 
 const now = new Date("2026-11-23T10:00:00+09:00");
@@ -65,4 +66,8 @@ test("LINEの制限内で日本語入りJPEGを生成する", async () => {
   assert.equal(image[0], 0xff);
   assert.equal(image[1], 0xd8);
   assert.ok(image.length < 1024 * 1024, `${image.length} bytes`);
+  const isolatedImage = await renderRichMenuImageIsolated(context);
+  assert.equal(isolatedImage[0], 0xff);
+  assert.equal(isolatedImage[1], 0xd8);
+  assert.ok(isolatedImage.length < 1024 * 1024, `${isolatedImage.length} bytes`);
 });

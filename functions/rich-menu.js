@@ -2,6 +2,7 @@
 
 const fs = require("node:fs");
 const path = require("node:path");
+const {spawn} = require("node:child_process");
 const {createHash} = require("node:crypto");
 const {getFirestore, Timestamp, FieldValue} = require("firebase-admin/firestore");
 const {logger} = require("firebase-functions");
@@ -19,6 +20,7 @@ const ASSIGNMENT_COLLECTION = "lineRichMenuAssignments";
 const MAX_UPCOMING_BOOKINGS = 500;
 const MAX_MENU_CHANGES_PER_SYNC = 75;
 const LEASE_MILLISECONDS = 2 * 60 * 1000;
+const RENDER_WORKER_PATH = path.join(__dirname, "rich-menu-render-worker.js");
 
 // SVG path data from Google Material Symbols Rounded (Apache License 2.0).
 const MATERIAL_SYMBOLS = Object.freeze({
@@ -219,6 +221,47 @@ async function renderRichMenuImage(context) {
   throw new Error("Rich menu image exceeds the LINE 1 MB limit");
 }
 
+function renderRichMenuImageIsolated(context) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [RENDER_WORKER_PATH], {stdio: ["pipe", "pipe", "pipe"]});
+    const output = [];
+    const errors = [];
+    let outputBytes = 0;
+    let settled = false;
+    const finish = (error, image) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) reject(error);
+      else resolve(image);
+    };
+    const timer = setTimeout(() => {
+      child.kill("SIGKILL");
+      finish(new Error("Rich menu renderer timed out"));
+    }, 60_000);
+    child.stdout.on("data", (chunk) => {
+      outputBytes += chunk.length;
+      if (outputBytes > LINE_IMAGE_LIMIT) {
+        child.kill("SIGKILL");
+        finish(new Error("Rich menu renderer exceeded the LINE image limit"));
+        return;
+      }
+      output.push(chunk);
+    });
+    child.stderr.on("data", (chunk) => errors.push(chunk));
+    child.on("error", (error) => finish(error));
+    child.on("close", (code) => {
+      if (code !== 0) {
+        const detail = Buffer.concat(errors).toString("utf8").trim().slice(0, 500);
+        finish(new Error(`Rich menu renderer failed (${code})${detail ? `: ${detail}` : ""}`));
+        return;
+      }
+      finish(null, Buffer.concat(output));
+    });
+    child.stdin.end(JSON.stringify(context));
+  });
+}
+
 function richMenuDefinition(uid, signature) {
   return {
     size: {width: RICH_MENU_WIDTH, height: RICH_MENU_HEIGHT},
@@ -321,7 +364,7 @@ async function refreshRichMenuForUser(db, token, uid, options = {}) {
   const lease = await acquireLease(db, uid, signature);
   if (lease.skip) return {changed: false, skipped: true, leased: lease.leased === true};
   try {
-    const image = await renderRichMenuImage(context);
+    const image = await renderRichMenuImageIsolated(context);
     const richMenuId = await createAndLinkRichMenu(token, uid, signature, image);
     await lease.ref.set({
       signature,
@@ -483,4 +526,5 @@ exports._test = {
   richMenuContext,
   richMenuDefinition,
   renderRichMenuImage,
+  renderRichMenuImageIsolated,
 };
