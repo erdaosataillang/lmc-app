@@ -204,6 +204,10 @@ function menuSvg(context, avatarUrl = "") {
 
 async function renderRichMenuImage(context) {
   const sharp = require("sharp");
+  // Cloud Functions の 512 MiB 内で安定させるため、libvips のワーカーと
+  // メモリキャッシュを最小化する。バッチ側も画像を1枚ずつ生成する。
+  sharp.concurrency(1);
+  sharp.cache(false);
   const avatar = await avatarDataUrl(context.icon, sharp);
   const svg = menuSvg(context, avatar);
   for (const quality of [86, 80, 72, 64]) {
@@ -361,7 +365,7 @@ async function eachWithConcurrency(items, concurrency, task) {
 
 async function refreshUsers(db, token, uids) {
   const unique = [...new Set(uids.filter(Boolean))];
-  return eachWithConcurrency(unique, 2, async (uid) => {
+  return eachWithConcurrency(unique, 1, async (uid) => {
     try {
       return await refreshRichMenuForUser(db, token, uid);
     } catch (error) {
@@ -376,7 +380,7 @@ async function syncAllRichMenus(db, token) {
   let changes = 0;
   let skipped = 0;
   let errors = 0;
-  await eachWithConcurrency(users.docs, 2, async (snapshot) => {
+  await eachWithConcurrency(users.docs, 1, async (snapshot) => {
     if (changes >= MAX_MENU_CHANGES_PER_SYNC) {
       skipped += 1;
       return;
