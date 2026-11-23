@@ -21,6 +21,10 @@ const ASSIGNMENT_COLLECTION = "lineRichMenuAssignments";
 const MAX_UPCOMING_BOOKINGS = 500;
 const MAX_MENU_CHANGES_PER_SYNC = 75;
 const LEASE_MILLISECONDS = 2 * 60 * 1000;
+const UNAVAILABLE_RETRY_MILLISECONDS = 24 * 60 * 60 * 1000;
+const CREATE_TOKEN_CAPACITY = 70;
+const CREATE_TOKEN_REFILL_MILLISECONDS = 60 * 60 * 1000;
+const CREATE_RATE_LIMIT_REF = "system/lineRichMenuCreateRateLimit";
 const RENDER_WORKER_PATH = path.join(__dirname, "rich-menu-render-worker.js");
 
 // SVG path data from Google Material Symbols Rounded (Apache License 2.0).
@@ -337,12 +341,36 @@ async function acquireLease(db, uid, signature) {
     const snapshot = await transaction.get(ref);
     const data = snapshot.data() || {};
     if (data.signature === signature && data.richMenuId) return {ref, skip: true, data};
+    if (data.retryAfter?.toMillis?.() > now) return {ref, skip: true, unavailable: true, data};
     if (data.leaseUntil?.toMillis?.() > now) return {ref, skip: true, leased: true, data};
     transaction.set(ref, {
       leaseUntil: Timestamp.fromMillis(now + LEASE_MILLISECONDS),
       requestedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
     return {ref, skip: false, data};
+  });
+}
+
+function refilledCreateTokens(data = {}, now = Date.now()) {
+  const stored = Number.isFinite(data.tokens) ? data.tokens : CREATE_TOKEN_CAPACITY;
+  const refilledAt = data.refilledAt?.toMillis?.() || now;
+  const elapsed = Math.max(0, now - refilledAt);
+  return Math.min(CREATE_TOKEN_CAPACITY, stored + (elapsed * CREATE_TOKEN_CAPACITY / CREATE_TOKEN_REFILL_MILLISECONDS));
+}
+
+async function acquireCreatePermit(db) {
+  const ref = db.doc(CREATE_RATE_LIMIT_REF);
+  const now = Date.now();
+  return db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    const tokens = refilledCreateTokens(snapshot.data() || {}, now);
+    const allowed = tokens >= 1;
+    transaction.set(ref, {
+      tokens: allowed ? tokens - 1 : tokens,
+      refilledAt: Timestamp.fromMillis(now),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, {merge: true});
+    return allowed;
   });
 }
 
@@ -362,7 +390,11 @@ async function refreshRichMenuForUser(db, token, uid, options = {}) {
 
   const signature = menuSignature(context);
   const lease = await acquireLease(db, uid, signature);
-  if (lease.skip) return {changed: false, skipped: true, leased: lease.leased === true};
+  if (lease.skip) return {changed: false, skipped: true, leased: lease.leased === true, unavailable: lease.unavailable === true};
+  if (!await acquireCreatePermit(db)) {
+    await lease.ref.set({leaseUntil: FieldValue.delete()}, {merge: true});
+    return {changed: false, skipped: true, rateLimited: true};
+  }
   try {
     const image = await renderRichMenuImageIsolated(context);
     const richMenuId = await createAndLinkRichMenu(token, uid, signature, image);
@@ -373,19 +405,22 @@ async function refreshRichMenuForUser(db, token, uid, options = {}) {
       nextBookingEnd: context.nextBooking ? Timestamp.fromDate(new Date(context.nextBooking.endTime)) : null,
       imageBytes: image.length,
       lastError: FieldValue.delete(),
+      retryAfter: FieldValue.delete(),
       leaseUntil: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
     await deleteRichMenu(token, lease.data.richMenuId);
     return {changed: true, richMenuId, imageBytes: image.length};
   } catch (error) {
+    const unavailable = error instanceof LineApiError && [400, 404].includes(error.status) && error.operation === "rich-menu link";
     await lease.ref.set({
       leaseUntil: FieldValue.delete(),
       lastError: text(error.message, 300),
       lastErrorAt: FieldValue.serverTimestamp(),
+      retryAfter: unavailable ? Timestamp.fromMillis(Date.now() + UNAVAILABLE_RETRY_MILLISECONDS) : FieldValue.delete(),
     }, {merge: true});
-    // A user who hasn't added the Official Account can't be linked. Keep the job healthy and retry on the next sync.
-    if (error instanceof LineApiError && [400, 404].includes(error.status) && error.operation === "rich-menu link") {
+    // A user who hasn't added the Official Account can't be linked. Retry at most once per day.
+    if (unavailable) {
       logger.warn("Rich menu user link skipped", {uid, status: error.status});
       return {changed: false, unavailable: true};
     }
@@ -423,21 +458,23 @@ async function syncAllRichMenus(db, token) {
   let changes = 0;
   let skipped = 0;
   let errors = 0;
+  let rateLimited = false;
   await eachWithConcurrency(users.docs, 1, async (snapshot) => {
-    if (changes >= MAX_MENU_CHANGES_PER_SYNC) {
+    if (changes >= MAX_MENU_CHANGES_PER_SYNC || rateLimited) {
       skipped += 1;
       return;
     }
     try {
       const result = await refreshRichMenuForUser(db, token, snapshot.id, {user: snapshot.data()});
       if (result.changed) changes += 1;
+      if (result.rateLimited) rateLimited = true;
     } catch (error) {
       errors += 1;
       logger.error("Scheduled rich menu sync failed", {uid: snapshot.id, message: error.message, operation: error.operation, status: error.status});
     }
   });
-  logger.info("Rich menu sync completed", {users: users.size, changes, skipped, errors});
-  return {users: users.size, changes, skipped, errors};
+  logger.info("Rich menu sync completed", {users: users.size, changes, skipped, errors, rateLimited});
+  return {users: users.size, changes, skipped, errors, rateLimited};
 }
 
 function relevantUserState(data = {}) {
@@ -527,6 +564,7 @@ exports._test = {
   pickNextBooking,
   relevantBandState,
   relevantUserState,
+  refilledCreateTokens,
   richMenuContext,
   richMenuDefinition,
   renderRichMenuImage,

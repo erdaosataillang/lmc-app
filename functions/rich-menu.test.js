@@ -6,6 +6,7 @@ const {
   accountSubtitle,
   menuSignature,
   pickNextBooking,
+  refilledCreateTokens,
   richMenuContext,
   richMenuDefinition,
   renderRichMenuImage,
@@ -56,6 +57,12 @@ test("表示内容が同じなら署名も同じになる", () => {
   const context = richMenuContext("user-1", {name: "山田太郎", part: "bass", year: "3"}, [], [], {}, now);
   assert.equal(menuSignature(context), menuSignature({...context}));
   assert.notEqual(menuSignature(context), menuSignature({...context, name: "山田花子"}));
+});
+
+test("LINE作成枠は1時間かけて補充し上限を超えない", () => {
+  const start = Date.parse("2026-11-23T10:00:00Z");
+  assert.equal(refilledCreateTokens({tokens: 0, refilledAt: {toMillis: () => start}}, start + 30 * 60 * 1000), 35);
+  assert.equal(refilledCreateTokens({tokens: 69, refilledAt: {toMillis: () => start}}, start + 60 * 60 * 1000), 70);
 });
 
 test("LINEの制限内で日本語入りJPEGを生成する", async () => {
