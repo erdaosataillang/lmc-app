@@ -493,7 +493,7 @@ function relevantBandState(data = {}) {
 }
 
 exports.syncLineRichMenus = onSchedule({
-  schedule: "17 * * * *",
+  schedule: "47 * * * *",
   timeZone: "Asia/Tokyo",
   region: "asia-northeast1",
   memory: "1GiB",
