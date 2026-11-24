@@ -16,6 +16,34 @@
     <style>
         /* 万が一の真っ白防止用 */
         body.loading-failed { display: block !important; }
+        .booking-calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+        }
+        .booking-calendar-day {
+            min-height: 132px;
+        }
+        .booking-calendar-day.is-outside {
+            background: #f8fafc;
+        }
+        .booking-calendar-day.is-outside .booking-calendar-date {
+            color: #cbd5e1;
+        }
+        .booking-calendar-day.is-today {
+            background: #eff6ff;
+        }
+        .booking-calendar-event {
+            transform: translateZ(0);
+        }
+        @media (max-width: 767px) {
+            .booking-calendar-scroll {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .booking-calendar-inner {
+                min-width: 760px;
+            }
+        }
     </style>
 </head>
 <body id="main-body" class="min-h-screen flex overflow-hidden bg-[#f8fafc]">
@@ -43,42 +71,49 @@
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- 左側: 予約リスト -->
             <div class="lg:col-span-3 space-y-6">
-                <!-- ツールバー -->
-                <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 p-6 flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
-                        <i class="fa-solid fa-filter text-gray-300 text-xs"></i>
-                        <input type="date" id="res-date-filter" class="bg-transparent border-none outline-none text-xs font-bold text-gray-600 cursor-pointer">
+                <!-- 月移動ツールバー -->
+                <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 p-5 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="window.changeBookingMonth(-1)" aria-label="前の月" class="w-10 h-10 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <h3 id="booking-month-label" class="min-w-[142px] text-center text-base font-extrabold text-gray-800"></h3>
+                        <button type="button" onclick="window.changeBookingMonth(1)" aria-label="次の月" class="w-10 h-10 rounded-xl bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition-colors">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                        <button type="button" onclick="window.goToBookingToday()" class="ml-1 px-4 h-10 rounded-xl border border-gray-200 text-[11px] font-extrabold text-gray-600 hover:bg-gray-50 transition-colors">今日</button>
                     </div>
                     <div class="flex gap-3 items-center">
+                        <span id="booking-month-count" class="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 text-[10px] font-extrabold text-gray-400">
+                            <i class="fa-solid fa-calendar-days"></i><span>0件</span>
+                        </span>
                         <button onclick="window.openAddBookingModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all shadow-lg shadow-blue-50">
                             <i class="fa-solid fa-plus"></i> 新規予約を追加
                         </button>
                     </div>
                 </div>
 
-                <!-- 予約テーブル -->
-                <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="text-gray-400 uppercase text-[9px] font-extrabold tracking-widest border-b border-gray-50 bg-gray-50/50">
-                            <tr>
-                                <th class="px-8 py-5">バンド名</th>
-                                <th class="px-8 py-5">日付</th>
-                                <th class="px-8 py-5">時間</th>
-                                <th class="px-8 py-5">タイプ</th>
-                                <th class="px-8 py-5 text-right">状態 / 操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reservations-list-body" class="text-sm text-gray-600 font-bold">
-                            <tr>
-                                <td colspan="5" class="px-8 py-10 text-center text-gray-400">
-                                    <div class="lmc-loading-state" role="status">
-                                        <img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt="">
-                                        <span>予約を読み込み中...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- 月間予約カレンダー -->
+                <div class="bg-white rounded-[28px] shadow-sm border border-gray-100 overflow-hidden booking-calendar-scroll">
+                    <div class="booking-calendar-inner">
+                        <div class="booking-calendar-grid border-b border-gray-100 bg-gray-50/70 text-center text-[10px] font-extrabold text-gray-400">
+                            <div class="py-4 text-red-400">日</div>
+                            <div class="py-4">月</div>
+                            <div class="py-4">火</div>
+                            <div class="py-4">水</div>
+                            <div class="py-4">木</div>
+                            <div class="py-4">金</div>
+                            <div class="py-4 text-blue-500">土</div>
+                        </div>
+                        <div id="booking-calendar-grid" class="booking-calendar-grid" aria-live="polite">
+                            <div class="col-span-7 py-20 text-center text-gray-400">
+                                <div class="lmc-loading-state" role="status">
+                                    <img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt="">
+                                    <span>今月の予約を読み込み中...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -202,10 +237,13 @@
     <!-- Logic -->
     <script type="module">
         import { initAdminPage, db, escapeHtml } from "/js/admin-common.js?v=20261118-2";
-        import { collection, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, doc, serverTimestamp, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { collection, onSnapshot, addDoc, deleteDoc, updateDoc, setDoc, doc, serverTimestamp, Timestamp, query, where, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let bookingsData = [], bandsData = [];
-        let dateFilter = "";
+        let displayedMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        let unsubscribeBookings = null;
+        let bookingsLoading = true;
+        let bookingsError = null;
         let currentBookingType = 'normal';
         let editingBookingId = null;
         let currentConfirmAction = null;
@@ -224,10 +262,7 @@
                 bandsData = s.docs.map(d => ({id:d.id, ...d.data()}));
             });
 
-            onSnapshot(collection(db, 'bookings'), s => {
-                bookingsData = s.docs.map(d => ({id:d.id, ...d.data()}));
-                renderReservations();
-            });
+            subscribeToDisplayedMonth();
 
             onSnapshot(doc(db, 'system', 'settings'), s => {
                 if(s.exists()) {
@@ -239,45 +274,147 @@
             });
         });
 
-        function renderReservations() {
-            const container = document.getElementById('reservations-list-body');
-            if(!container) return;
-            
-            let filtered = bookingsData;
-            if (dateFilter) {
-                filtered = filtered.filter(r => {
-                    const d = r.startTime.toDate ? r.startTime.toDate() : new Date(r.startTime.seconds * 1000);
-                    return d.toISOString().split('T')[0] === dateFilter;
-                });
+        function bookingDate(value) {
+            if (!value) return null;
+            if (typeof value.toDate === 'function') return value.toDate();
+            if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+            const parsed = new Date(value);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+
+        function localDateKey(date) {
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        function subscribeToDisplayedMonth() {
+            if (unsubscribeBookings) {
+                unsubscribeBookings();
+                unsubscribeBookings = null;
             }
 
-            filtered.sort((a,b) => (a.startTime?.seconds || 0) - (b.startTime?.seconds || 0));
+            const monthStart = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth(), 1);
+            const nextMonthStart = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + 1, 1);
+            bookingsData = [];
+            bookingsLoading = true;
+            bookingsError = null;
+            renderReservations();
 
-            if(filtered.length === 0 && bookingsData.length > 0) {
-                container.innerHTML = `<tr><td colspan="5" class="px-8 py-10 text-center text-gray-300 font-bold uppercase">No reservations match</td></tr>`;
+            const monthQuery = query(
+                collection(db, 'bookings'),
+                where('startTime', '>=', Timestamp.fromDate(monthStart)),
+                where('startTime', '<', Timestamp.fromDate(nextMonthStart)),
+                orderBy('startTime', 'asc')
+            );
+
+            unsubscribeBookings = onSnapshot(monthQuery, snapshot => {
+                bookingsData = snapshot.docs.map(item => ({id: item.id, ...item.data()}));
+                bookingsLoading = false;
+                renderReservations();
+            }, error => {
+                console.error('Monthly booking query failed:', error);
+                bookingsData = [];
+                bookingsLoading = false;
+                bookingsError = error;
+                renderReservations();
+            });
+        }
+
+        function renderReservations() {
+            const container = document.getElementById('booking-calendar-grid');
+            const monthLabel = document.getElementById('booking-month-label');
+            const count = document.querySelector('#booking-month-count span');
+            if (!container || !monthLabel || !count) return;
+
+            monthLabel.textContent = `${displayedMonth.getFullYear()}年 ${displayedMonth.getMonth() + 1}月`;
+            count.textContent = bookingsLoading ? '読込中' : `${bookingsData.length}件`;
+
+            if (bookingsLoading) {
+                container.innerHTML = `<div class="col-span-7 py-20 text-center text-gray-400"><div class="lmc-loading-state" role="status"><img class="lmc-wave-loader lmc-wave-loader--small" src="/assets/lmc-wave-loader.svg" alt=""><span>この月の予約を読み込み中...</span></div></div>`;
+                return;
+            }
+            if (bookingsError) {
+                container.innerHTML = `<div class="col-span-7 py-20 text-center"><i class="fa-solid fa-circle-exclamation text-red-400 text-xl mb-3"></i><p class="text-sm font-bold text-gray-600">予約を読み込めませんでした</p><button type="button" onclick="window.reloadBookingMonth()" class="mt-4 px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-bold">再読み込み</button></div>`;
                 return;
             }
 
-            container.innerHTML = filtered.map(res => {
-                const s = res.startTime ? (res.startTime.toDate ? res.startTime.toDate() : new Date(res.startTime.seconds * 1000)) : null;
-                const e = res.endTime ? (res.endTime.toDate ? res.endTime.toDate() : new Date(res.endTime.seconds * 1000)) : null;
-                const dateStr = s ? s.toLocaleDateString('ja-JP', {month:'2-digit', day:'2-digit', weekday:'short'}) : '-';
-                const timeStr = (s && e) ? `${s.getHours()}:${String(s.getMinutes()).padStart(2,'0')} - ${e.getHours()}:${String(e.getMinutes()).padStart(2,'0')}` : '--:--';
-                const statusColor = res.status === 'confirmed' ? 'text-green-500' : 'text-orange-500';
-                return `
-                <tr class="hover:bg-gray-50 border-b border-gray-50 transition-colors">
-                    <td class="px-8 py-5 font-bold text-gray-800">${escapeHtml(res.bandName || '不明')}</td>
-                    <td class="px-8 py-5 text-xs">${dateStr}</td>
-                    <td class="px-8 py-5 text-xs">${timeStr}</td>
-                    <td class="px-8 py-5"><span class="px-2 py-1 ${res.type === 'event' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'} rounded text-[10px] font-bold">${res.type === 'event' ? 'イベント' : '練習'}</span></td>
-                    <td class="px-8 py-5 text-right flex items-center justify-end gap-3">
-                        <span class="text-[9px] font-black uppercase ${statusColor}">${res.status === 'confirmed' ? '確定' : '承認待ち'}</span>
-                        <button onclick="window.openEditBookingModal('${res.id}')" class="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:text-blue-600 transition-all"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="window.deleteBooking('${res.id}')" class="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:text-red-600 transition-all"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
+            const bookingsByDay = new Map();
+            for (const booking of bookingsData) {
+                const start = bookingDate(booking.startTime);
+                if (!start) continue;
+                const key = localDateKey(start);
+                if (!bookingsByDay.has(key)) bookingsByDay.set(key, []);
+                bookingsByDay.get(key).push(booking);
+            }
+
+            const firstDay = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth(), 1);
+            const gridStart = new Date(firstDay);
+            gridStart.setDate(firstDay.getDate() - firstDay.getDay());
+            const lastDay = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + 1, 0);
+            const cellCount = Math.ceil((firstDay.getDay() + lastDay.getDate()) / 7) * 7;
+            const todayKey = localDateKey(new Date());
+            const cells = [];
+
+            for (let index = 0; index < cellCount; index += 1) {
+                const date = new Date(gridStart);
+                date.setDate(gridStart.getDate() + index);
+                const key = localDateKey(date);
+                const inMonth = date.getMonth() === displayedMonth.getMonth();
+                const dayBookings = bookingsByDay.get(key) || [];
+                const visibleBookings = dayBookings.slice(0, 4);
+                const weekdayColor = date.getDay() === 0 ? 'text-red-500' : date.getDay() === 6 ? 'text-blue-500' : 'text-gray-600';
+                const events = visibleBookings.map(booking => {
+                    const start = bookingDate(booking.startTime);
+                    const end = bookingDate(booking.endTime);
+                    const time = booking.type === 'event'
+                        ? '終日'
+                        : `${String(start?.getHours() ?? 0).padStart(2, '0')}:${String(start?.getMinutes() ?? 0).padStart(2, '0')}`;
+                    const palette = booking.type === 'event'
+                        ? 'bg-purple-100 text-purple-700 border-purple-200'
+                        : booking.status === 'confirmed'
+                            ? 'bg-blue-100 text-blue-700 border-blue-200'
+                            : 'bg-amber-100 text-amber-700 border-amber-200';
+                    const title = `${time} ${booking.bandName || (booking.type === 'event' ? 'イベント' : '名称未設定')}${end && booking.type !== 'event' ? ` - ${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}` : ''}`;
+                    return `<button type="button" data-booking-id="${escapeHtml(booking.id)}" class="booking-calendar-event block w-full truncate rounded-lg border px-2 py-1 text-left text-[10px] font-extrabold ${palette}" title="${escapeHtml(title)}"><span class="opacity-70 mr-1">${time}</span>${escapeHtml(booking.bandName || (booking.type === 'event' ? 'イベント' : '名称未設定'))}</button>`;
+                }).join('');
+                const remainder = dayBookings.length - visibleBookings.length;
+
+                cells.push(`
+                    <div role="button" tabindex="0" data-calendar-date="${key}" aria-label="${date.getMonth() + 1}月${date.getDate()}日に予約を追加" class="booking-calendar-day ${inMonth ? '' : 'is-outside'} ${key === todayKey ? 'is-today' : ''} border-b border-r border-gray-100 p-2 text-left align-top hover:bg-blue-50/60 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-300 transition-colors cursor-pointer">
+                        <span class="booking-calendar-date inline-flex w-7 h-7 items-center justify-center rounded-full text-xs font-extrabold ${weekdayColor} ${key === todayKey ? 'bg-blue-600 !text-white' : ''}">${date.getDate()}</span>
+                        <span class="mt-1.5 flex flex-col gap-1">${events}${remainder > 0 ? `<span class="px-2 text-[9px] font-bold text-gray-400">ほか${remainder}件</span>` : ''}</span>
+                    </div>`);
+            }
+            container.innerHTML = cells.join('');
+            container.querySelectorAll('[data-booking-id]').forEach(button => {
+                button.addEventListener('click', event => {
+                    event.stopPropagation();
+                    window.openEditBookingModal(button.dataset.bookingId);
+                });
+            });
+            container.querySelectorAll('[data-calendar-date]').forEach(cell => {
+                const openNewBooking = () => window.openAddBookingModal(cell.dataset.calendarDate);
+                cell.addEventListener('click', openNewBooking);
+                cell.addEventListener('keydown', event => {
+                    if (event.target !== cell || !['Enter', ' '].includes(event.key)) return;
+                    event.preventDefault();
+                    openNewBooking();
+                });
+            });
         }
+
+        window.changeBookingMonth = offset => {
+            displayedMonth = new Date(displayedMonth.getFullYear(), displayedMonth.getMonth() + offset, 1);
+            subscribeToDisplayedMonth();
+        };
+        window.goToBookingToday = () => {
+            const today = new Date();
+            displayedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            subscribeToDisplayedMonth();
+        };
+        window.reloadBookingMonth = () => subscribeToDisplayedMonth();
+        window.addEventListener('beforeunload', () => {
+            if (unsubscribeBookings) unsubscribeBookings();
+        });
 
         function renderSettingsUI() {
             const fcBtn = document.getElementById('mode-first-come');
@@ -315,12 +452,14 @@
             try { await setDoc(doc(db, 'system', 'settings'), settings, { merge: true }); alert("Saved"); } catch(e) { console.error(e); }
         };
 
-        window.openAddBookingModal = () => {
+        window.openAddBookingModal = (dateKey = '') => {
             editingBookingId = null;
             document.getElementById('booking-modal-title').innerText = "新規予約の登録";
             document.getElementById('booking-band-id').value = "";
             document.getElementById('band-selector-input').value = "";
-            document.getElementById('booking-date').value = "";
+            const today = new Date();
+            const todayInDisplayedMonth = today.getFullYear() === displayedMonth.getFullYear() && today.getMonth() === displayedMonth.getMonth();
+            document.getElementById('booking-date').value = dateKey || (todayInDisplayedMonth ? localDateKey(today) : localDateKey(displayedMonth));
             document.getElementById('booking-start-time').value = "";
             document.getElementById('booking-end-time').value = "";
             window.setBookingType('normal');
@@ -338,7 +477,7 @@
             document.getElementById('band-selector-input').value = res.bandName || "";
             const start = res.startTime ? (res.startTime.toDate ? res.startTime.toDate() : new Date(res.startTime.seconds * 1000)) : new Date();
             const end = res.endTime ? (res.endTime.toDate ? res.endTime.toDate() : new Date(res.endTime.seconds * 1000)) : null;
-            document.getElementById('booking-date').value = start.toISOString().split('T')[0];
+            document.getElementById('booking-date').value = localDateKey(start);
             document.getElementById('booking-start-time').value = start.getHours().toString().padStart(2,'0') + ":" + start.getMinutes().toString().padStart(2,'0');
             if(end) document.getElementById('booking-end-time').value = end.getHours().toString().padStart(2,'0') + ":" + end.getMinutes().toString().padStart(2,'0');
             document.getElementById('booking-status').value = res.status || "pending";
@@ -414,7 +553,6 @@
         window.closeConfirmModal = () => { const modal = document.getElementById('confirm-modal'); modal.classList.remove('modal-active'); modal.classList.add('hidden'); };
         document.getElementById('confirm-action-btn').onclick = async () => { if(currentConfirmAction) await currentConfirmAction(); window.closeConfirmModal(); };
 
-        document.getElementById('res-date-filter').addEventListener('change', (e) => { dateFilter = e.target.value; renderReservations(); });
     </script>
 </body>
 </html>
