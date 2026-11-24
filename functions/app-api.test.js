@@ -52,6 +52,29 @@ test("予約者または予約対象バンドのメンバーは一般権限で�
   assert.equal(_test.bookingCanBeManagedBy({...booking, systemManaged: true}, "creator", {memberIds: ["creator"]}), false);
 });
 
+test("未来の確定予約は元バンドのメンバーだけ譲渡できる", () => {
+  const now = Date.now();
+  const booking = {
+    creatorId: "creator",
+    bandId: "band-1",
+    type: "normal",
+    status: "confirmed",
+    startTime: new Date(now + 60_000),
+  };
+  const band = {memberIds: ["member"]};
+  assert.equal(_test.bookingCanBeTransferredBy(booking, "member", band, now), true);
+  assert.equal(_test.bookingCanBeTransferredBy(booking, "creator", band, now), false);
+  assert.equal(_test.bookingCanBeTransferredBy({...booking, status: "pending"}, "member", band, now), false);
+  assert.equal(_test.bookingCanBeTransferredBy({...booking, type: "event"}, "member", band, now), false);
+  assert.equal(_test.bookingCanBeTransferredBy({...booking, startTime: new Date(now - 1)}, "member", band, now), false);
+});
+
+test("イベント参加バンドはeventsまたは出演日設定から判定する", () => {
+  assert.equal(_test.bandParticipatesInEvent({events: ["event-1"]}, "event-1"), true);
+  assert.equal(_test.bandParticipatesInEvent({performanceDates: {"event-1": "2026-11-24"}}, "event-1"), true);
+  assert.equal(_test.bandParticipatesInEvent({events: ["event-2"]}, "event-1"), false);
+});
+
 test("予約時間の不正値と過大な予約を拒否する", () => {
   assert.throws(() => _test.parseBookingBody({bandId: "b1", startTime: "bad", endTime: "bad"}), /予約時間/);
   assert.throws(() => _test.parseBookingBody({

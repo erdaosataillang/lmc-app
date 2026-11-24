@@ -417,6 +417,23 @@ function bookingCanBeManagedBy(booking, uid, band) {
   return Array.isArray(memberIds) && memberIds.includes(uid);
 }
 
+function bandParticipatesInEvent(band, eventId) {
+  if (!band || !eventId) return false;
+  const events = band.get ? band.get("events") : band.events;
+  const performanceDates = band.get ? band.get("performanceDates") : band.performanceDates;
+  return Boolean((Array.isArray(events) && events.includes(eventId)) ||
+    (performanceDates && typeof performanceDates === "object" && Object.hasOwn(performanceDates, eventId)));
+}
+
+function bookingCanBeTransferredBy(booking, uid, sourceBand, now = Date.now()) {
+  if (!booking || !uid || !sourceBand) return false;
+  if (booking.type === "event" || booking.status !== "confirmed" || booking.systemManaged === true ||
+      booking.isCustomBand === true || !booking.bandId || String(booking.bandId).startsWith("custom_")) return false;
+  const memberIds = sourceBand.get ? sourceBand.get("memberIds") : sourceBand.memberIds;
+  const startTime = booking.startTime?.toMillis?.() ?? new Date(booking.startTime).getTime();
+  return Array.isArray(memberIds) && memberIds.includes(uid) && Number.isFinite(startTime) && startTime > now;
+}
+
 async function canManageBookingInTransaction(transaction, db, booking, uid) {
   if (bookingCanBeManagedBy(booking, uid, null)) return true;
   if (booking.type === "event" || booking.isCustomBand === true || !booking.bandId || String(booking.bandId).startsWith("custom_")) {
@@ -497,6 +514,117 @@ async function deleteBooking(db, identity, bookingId) {
       throw new HttpError(403, "booking_participant_required", "予約した本人または参加バンドのメンバーだけ削除できます。");
     }
     transaction.delete(ref);
+  });
+}
+
+async function transferBooking(db, identity, bookingId, body = {}) {
+  const mode = body.mode === "public" ? "public" : body.mode === "band" ? "band" : "";
+  if (!mode) throw new HttpError(400, "invalid_transfer_mode", "譲渡方法を選択してください。");
+  const targetBandId = mode === "band" ? cleanText(body.targetBandId, 160, "譲渡先バンド") : "";
+  if (targetBandId.includes("/")) throw new HttpError(400, "invalid_document_id", "バンドIDが正しくありません。");
+
+  const bookingRef = db.doc(`bookings/${bookingId}`);
+  return db.runTransaction(async (transaction) => {
+    const bookingSnapshot = await transaction.get(bookingRef);
+    if (!bookingSnapshot.exists) throw new HttpError(404, "booking_not_found", "予約が見つかりません。");
+    const booking = bookingSnapshot.data() || {};
+    const sourceBandId = cleanOptionalText(booking.bandId, 160);
+    if (!sourceBandId || sourceBandId.includes("/")) {
+      throw new HttpError(400, "booking_not_transferable", "この予約は譲渡できません。");
+    }
+
+    const sourceBandRef = db.doc(`bands/${sourceBandId}`);
+    const settingsRef = db.doc("system/settings");
+    const [sourceBandSnapshot, settingsSnapshot] = await Promise.all([
+      transaction.get(sourceBandRef),
+      transaction.get(settingsRef),
+    ]);
+    if (!sourceBandSnapshot.exists || !bookingCanBeTransferredBy(booking, identity.uid, sourceBandSnapshot)) {
+      throw new HttpError(403, "booking_band_member_required", "予約バンドのメンバーだけがこの枠を譲れます。");
+    }
+
+    const activeEventId = cleanOptionalText(settingsSnapshot.get("activeEventId") || booking.eventId, 160);
+    const lotteryDate = cleanOptionalText(booking.lotteryDate, 10);
+    const lotteryRunRef = booking.source === "lottery" && /^\d{4}-\d{2}-\d{2}$/.test(lotteryDate)
+      ? db.doc(`lotteryRuns/${lotteryDate}`) : null;
+    const lotteryRunSnapshot = lotteryRunRef ? await transaction.get(lotteryRunRef) : null;
+    let targetBandSnapshot = null;
+
+    if (mode === "band") {
+      if (targetBandId === sourceBandId) throw new HttpError(400, "same_band", "現在のバンド以外を選択してください。");
+      targetBandSnapshot = await transaction.get(db.doc(`bands/${targetBandId}`));
+      if (!targetBandSnapshot.exists || targetBandSnapshot.get("isArchived") === true) {
+        throw new HttpError(404, "target_band_not_found", "譲渡先のバンドが見つかりません。");
+      }
+      if (!activeEventId || !bandParticipatesInEvent(targetBandSnapshot, activeEventId)) {
+        throw new HttpError(400, "target_band_not_in_event", "現在のイベントに参加しているバンドだけ選択できます。");
+      }
+    }
+
+    const transferredAt = FieldValue.serverTimestamp();
+    if (mode === "public") {
+      transaction.delete(bookingRef);
+    } else {
+      const targetBand = targetBandSnapshot.data() || {};
+      const targetMemberIds = Array.isArray(targetBand.memberIds) ? targetBand.memberIds : [];
+      const representativeId = targetMemberIds.includes(targetBand.creatorId) ? targetBand.creatorId : (targetMemberIds[0] || "");
+      transaction.update(bookingRef, {
+        bandId: targetBandId,
+        bandName: cleanOptionalText(targetBand.name, 120) || "名称未設定",
+        creatorId: representativeId,
+        userName: "譲渡された予約",
+        eventId: activeEventId,
+        originalCreatorId: booking.originalCreatorId || booking.creatorId || null,
+        transferredFromBandId: sourceBandId,
+        transferredFromBandName: booking.bandName || sourceBandSnapshot.get("name") || "名称未設定",
+        transferredBy: identity.uid,
+        transferredAt,
+        updatedAt: transferredAt,
+      });
+    }
+
+    if (lotteryRunRef && lotteryRunSnapshot?.exists) {
+      const run = lotteryRunSnapshot.data() || {};
+      const assignments = Array.isArray(run.assignments) ? run.assignments : [];
+      const bookingStartMillis = booking.startTime?.toMillis?.() || 0;
+      const matchingIndex = assignments.findIndex((assignment) =>
+        assignment.bandId === sourceBandId &&
+        (!bookingStartMillis || assignment.startTime?.toMillis?.() === bookingStartMillis));
+      if (matchingIndex >= 0) {
+        if (mode === "public") {
+          assignments.splice(matchingIndex, 1);
+        } else {
+          const targetBand = targetBandSnapshot.data() || {};
+          const targetMemberIds = Array.isArray(targetBand.memberIds) ? targetBand.memberIds : [];
+          assignments[matchingIndex] = {
+            ...assignments[matchingIndex],
+            bandId: targetBandId,
+            bandName: cleanOptionalText(targetBand.name, 120) || "名称未設定",
+            creatorId: targetMemberIds.includes(targetBand.creatorId) ? targetBand.creatorId : (targetMemberIds[0] || null),
+            userName: "譲渡された予約",
+            winningRequestId: null,
+            transferredFromBandId: sourceBandId,
+          };
+        }
+        transaction.update(lotteryRunRef, {
+          assignments,
+          successCount: assignments.length,
+          bandIds: [...new Set([
+            ...assignments.map((assignment) => assignment.bandId).filter(Boolean),
+            ...(Array.isArray(run.failedBandIds) ? run.failedBandIds : []),
+          ])],
+          updatedAt: transferredAt,
+        });
+      }
+    }
+
+    return {
+      mode,
+      bookingId,
+      sourceBandId,
+      targetBandId: mode === "band" ? targetBandId : null,
+      eventId: activeEventId || null,
+    };
   });
 }
 
@@ -701,6 +829,11 @@ async function route(request, response) {
     response.status(201).json({booking: await saveBooking(db, identity, request.body || {}, null)});
     return;
   }
+  const bookingTransferMatch = path.match(/^\/bookings\/([^/]+)\/transfer$/);
+  if (request.method === "POST" && bookingTransferMatch) {
+    response.json({transfer: await transferBooking(db, identity, bookingTransferMatch[1], request.body || {})});
+    return;
+  }
   const bookingMatch = path.match(/^\/bookings\/([^/]+)$/);
   if (request.method === "PATCH" && bookingMatch) {
     response.json({booking: await saveBooking(db, identity, request.body || {}, bookingMatch[1])});
@@ -759,4 +892,4 @@ exports.lmcAppApi = onRequest({
   }
 });
 
-exports._test = {bookingCanBeManagedBy, clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, mergeBandData, mergeSongs, parseBookingBody, publicMaintenance, publicProfile, removeBandFromTimetable, replaceBandInTimetable, sha256};
+exports._test = {bandParticipatesInEvent, bookingCanBeManagedBy, bookingCanBeTransferredBy, clientErrorAllowed, cleanOptionalHttpsUrl, customBandId, dateKeyInTokyo, eventIncludesDate, mergeBandData, mergeSongs, parseBookingBody, publicMaintenance, publicProfile, removeBandFromTimetable, replaceBandInTimetable, sha256};

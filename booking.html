@@ -158,6 +158,17 @@
         #bookingDetailBody.booking-detail-changing { opacity:0; }
         .booking-detail-wait { min-height:180px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:10px; color:#778198; font-size:12px; }
         .booking-detail-wait .material-icons { width:42px; height:42px; display:grid; place-items:center; border-radius:14px; background:#edf3fc; color:#5475a4; font-size:21px; }
+        .booking-detail-actions { display:none; padding:0 16px 20px; gap:9px; }
+        .booking-detail-actions button { margin:0; display:flex; align-items:center; justify-content:center; gap:6px; }
+        .booking-detail-actions .material-icons { font-size:18px; }
+        .transfer-choice { display:flex; align-items:flex-start; gap:12px; padding:14px; border:1px solid #e1e5ea; border-radius:17px; cursor:pointer; transition:border-color .18s ease,background .18s ease; }
+        .transfer-choice:has(input:checked) { border-color:#0b57d0; background:#eef4ff; }
+        .transfer-choice input { margin:3px 0 0; accent-color:#0b57d0; }
+        .transfer-choice-icon { width:38px; height:38px; border-radius:13px; display:grid; place-items:center; background:#e8f0fe; color:#0b57d0; flex:none; }
+        .transfer-choice-icon .material-icons { font-size:20px; }
+        .transfer-choice-title { font-size:14px; font-weight:800; color:#202124; }
+        .transfer-choice-note { margin-top:3px; font-size:11px; line-height:1.5; color:#6b7280; }
+        .transfer-band-select { width:100%; margin-top:10px; padding:12px 38px 12px 13px; border:1px solid #d9dde3; border-radius:13px; background:#fff; color:#202124; font:inherit; font-size:14px; }
         
         .event-block.cluster { background: #5f6368; color: white; border-left: 4px solid #3c4043; display: flex; justify-content: center; align-items: center; z-index: 25; } .event-block.cluster .event-title { white-space: normal; text-align: center; font-size: 13px; }
         
@@ -415,8 +426,40 @@
                 <button onclick="closeModal('modal-booking-detail')" aria-label="閉じる" style="border:0; background:#f1f3f4; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><span class="material-icons">close</span></button>
             </div>
             <div id="bookingDetailBody" style="padding:16px 16px 22px; overflow-y:auto; max-height:72vh;"></div>
-            <div id="bookingDetailActions" style="display:none; padding:0 16px 20px;">
-                <button class="btn-primary" onclick="editCurrentBookingFromDetail()"><span class="material-icons" style="font-size:18px; vertical-align:-4px; margin-right:5px;">edit</span>この予約を編集</button>
+            <div id="bookingDetailActions" class="booking-detail-actions">
+                <button id="btnEditBookingDetail" class="btn-primary" onclick="editCurrentBookingFromDetail()"><span class="material-icons">edit</span>予約を編集</button>
+                <button id="btnTransferBookingDetail" class="btn-secondary" onclick="openBookingTransferModal()"><span class="material-icons">swap_horiz</span>この枠を譲る</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 予約枠の譲渡（元バンドのメンバーのみ） -->
+    <div id="modal-booking-transfer" class="modal-overlay" onclick="if(event.target===this) closeModal('modal-booking-transfer')">
+        <div class="modal-content" style="max-width:440px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:18px;">
+                <div><h3 style="margin:0; font-size:19px;">この枠を譲る</h3><div style="font-size:12px; color:#6b7280; margin-top:4px;">合わせができないとき、予約枠を引き継げます</div></div>
+                <button onclick="closeModal('modal-booking-transfer')" aria-label="閉じる" style="border:0; background:#f1f3f4; width:32px; height:32px; border-radius:50%; display:grid; place-items:center;"><span class="material-icons">close</span></button>
+            </div>
+            <div style="display:grid; gap:10px;">
+                <label class="transfer-choice" id="transferBandChoice">
+                    <input type="radio" name="bookingTransferMode" value="band" checked onchange="updateBookingTransferMode()">
+                    <span class="transfer-choice-icon"><span class="material-icons">groups</span></span>
+                    <span style="min-width:0; flex:1;">
+                        <span class="transfer-choice-title">バンドを指定</span>
+                        <span class="transfer-choice-note" style="display:block;">現在のイベントに参加しているバンドへ譲ります</span>
+                        <select id="transferTargetBand" class="transfer-band-select" aria-label="譲渡先バンド"></select>
+                    </span>
+                </label>
+                <label class="transfer-choice">
+                    <input type="radio" name="bookingTransferMode" value="public" onchange="updateBookingTransferMode()">
+                    <span class="transfer-choice-icon" style="background:#e9f6ef; color:#137333;"><span class="material-icons">public</span></span>
+                    <span style="min-width:0; flex:1;"><span class="transfer-choice-title">全員に解放</span><span class="transfer-choice-note" style="display:block;">予約を空き枠に戻し、他のバンドが予約できるようにします</span></span>
+                </label>
+            </div>
+            <div id="transferBandStatus" style="min-height:18px; margin:10px 2px 0; color:#6b7280; font-size:11px;"></div>
+            <div style="display:flex; gap:10px; margin-top:16px;">
+                <button class="btn-secondary" style="margin:0; flex:1;" onclick="closeModal('modal-booking-transfer')">キャンセル</button>
+                <button id="btnConfirmBookingTransfer" class="btn-primary" style="margin:0; flex:1;" onclick="submitBookingTransfer()">譲る</button>
             </div>
         </div>
     </div>
@@ -691,7 +734,7 @@
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
         import {getDownloadURL, getStorage, ref as storageRef, uploadBytes} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-storage.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
-        import {createBooking, loadPublicProfile, loadPublicProfiles, removeBooking, updateBooking} from './js/app-api.js';
+        import {createBooking, loadPublicProfile, loadPublicProfiles, removeBooking, transferBooking, updateBooking} from './js/app-api.js?v=20261124-1';
         import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal, setUnifiedNotificationContent} from './js/notification-popover.js?v=20261022-1';
         import {applyPartAvatarRing, setChristmasAvatarWreath} from './js/avatar-ring.js?v=20261119-3';
@@ -2073,6 +2116,27 @@
             return myBandsAll.some(item => item.id === data.bandId) || (Array.isArray(band?.memberIds) && band.memberIds.includes(currentUser));
         }
 
+        function canTransferBooking(data, band = null) {
+            if (!data || data.type === 'event' || data.status !== 'confirmed' || data.systemManaged === true ||
+                data.isCustomBand === true || !data.bandId || String(data.bandId).startsWith('custom_')) return false;
+            const startTime = new Date(data.startTime).getTime();
+            const isMember = myBandsAll.some(item => item.id === data.bandId) ||
+                (Array.isArray(band?.memberIds) && band.memberIds.includes(currentUser));
+            return isMember && Number.isFinite(startTime) && startTime > Date.now();
+        }
+
+        function updateBookingDetailActions(data, band = null) {
+            const actions = document.getElementById('bookingDetailActions');
+            const editButton = document.getElementById('btnEditBookingDetail');
+            const transferButton = document.getElementById('btnTransferBookingDetail');
+            const canEdit = canManageBooking(data, band);
+            const canTransfer = canTransferBooking(data, band);
+            editButton.style.display = canEdit ? 'flex' : 'none';
+            transferButton.style.display = canTransfer ? 'flex' : 'none';
+            actions.style.display = canEdit || canTransfer ? 'grid' : 'none';
+            actions.style.gridTemplateColumns = canEdit && canTransfer ? '1fr 1fr' : '1fr';
+        }
+
         window.openBookingDetailModal = async (id, data, e) => {
             e?.preventDefault?.();
             e?.stopPropagation?.();
@@ -2082,9 +2146,7 @@
             const requestToken = ++bookingDetailRequestToken;
             bookingDetailTarget = {id, data, event:e, band:null};
             const body = document.getElementById('bookingDetailBody');
-            const actions = document.getElementById('bookingDetailActions');
-            const canEdit = canManageBooking(data);
-            actions.style.display = canEdit ? 'block' : 'none';
+            updateBookingDetailActions(data);
             body.classList.add('booking-detail-changing');
             body.setAttribute('aria-busy', 'true');
             const delayedPlaceholder = setTimeout(() => {
@@ -2098,7 +2160,7 @@
             clearTimeout(delayedPlaceholder);
             if (requestToken !== bookingDetailRequestToken || !bookingDetailTarget || bookingDetailTarget.id !== id || !detailModal.classList.contains('open')) return;
             bookingDetailTarget.band = band;
-            actions.style.display = canManageBooking(data, band) ? 'block' : 'none';
+            updateBookingDetailActions(data, band);
             const start = new Date(data.startTime);
             const end = new Date(data.endTime);
             const dateText = `${start.getFullYear()}年${start.getMonth()+1}月${start.getDate()}日`;
@@ -2159,6 +2221,93 @@
             const target = bookingDetailTarget;
             closeModal('modal-booking-detail');
             openEditBookingModal(target.id, target.data, target.event, target.band);
+        };
+
+        window.updateBookingTransferMode = () => {
+            const mode = document.querySelector('input[name="bookingTransferMode"]:checked')?.value || 'public';
+            const select = document.getElementById('transferTargetBand');
+            select.disabled = mode !== 'band' || select.options.length === 0;
+        };
+
+        window.openBookingTransferModal = async () => {
+            const target = bookingDetailTarget;
+            if (!target || !canTransferBooking(target.data, target.band)) {
+                await showCustomAlert('この予約枠は譲渡できません。', '譲渡できません');
+                return;
+            }
+
+            const sourceBandId = target.data.bandId;
+            const eventId = currentSystemSettings.activeEventId || target.data.eventId || activeConcertEventId;
+            const bandRadio = document.querySelector('input[name="bookingTransferMode"][value="band"]');
+            const publicRadio = document.querySelector('input[name="bookingTransferMode"][value="public"]');
+            const select = document.getElementById('transferTargetBand');
+            const status = document.getElementById('transferBandStatus');
+            const submitButton = document.getElementById('btnConfirmBookingTransfer');
+            select.replaceChildren();
+            bandRadio.disabled = true;
+            bandRadio.checked = true;
+            publicRadio.checked = false;
+            submitButton.disabled = true;
+            status.textContent = '現在のイベントのバンドを読み込んでいます…';
+            openModal('modal-booking-transfer');
+
+            try {
+                let bands = [];
+                if (eventId) {
+                    const snapshot = await getDocs(query(collection(db, 'bands'), where('events', 'array-contains', eventId)));
+                    bands = snapshot.docs
+                        .map(item => ({id:item.id, ...item.data()}))
+                        .filter(item => item.id !== sourceBandId && item.isArchived !== true)
+                        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'ja'));
+                }
+                bands.forEach(band => select.add(new Option(band.name || '名称未設定', band.id)));
+                bandRadio.disabled = bands.length === 0;
+                if (bands.length === 0) {
+                    publicRadio.checked = true;
+                    status.textContent = eventId ? '指定できる他のバンドがないため、全員への解放のみ選べます。' : '現在のイベントが未設定のため、全員への解放のみ選べます。';
+                } else {
+                    bandRadio.checked = true;
+                    status.textContent = `${bands.length}バンドから選択できます。`;
+                }
+            } catch (error) {
+                console.warn('Transfer target bands could not be loaded:', error);
+                publicRadio.checked = true;
+                status.textContent = 'バンド一覧を取得できないため、全員への解放のみ選べます。';
+            } finally {
+                submitButton.disabled = false;
+                updateBookingTransferMode();
+            }
+        };
+
+        window.submitBookingTransfer = async () => {
+            const target = bookingDetailTarget;
+            if (!target || !canTransferBooking(target.data, target.band)) return;
+            const mode = document.querySelector('input[name="bookingTransferMode"]:checked')?.value || 'public';
+            const select = document.getElementById('transferTargetBand');
+            if (mode === 'band' && !select.value) {
+                await showCustomAlert('譲渡先のバンドを選択してください。', '選択が必要です');
+                return;
+            }
+            const targetBandName = mode === 'band' ? select.options[select.selectedIndex]?.textContent : '';
+            const message = mode === 'band'
+                ? `この予約枠を「${targetBandName}」へ譲りますか？`
+                : 'この予約を取り消し、全員が予約できる空き枠に戻しますか？';
+            if (!await showCustomConfirm(message, '予約枠の譲渡')) return;
+
+            const button = document.getElementById('btnConfirmBookingTransfer');
+            button.disabled = true;
+            button.textContent = '処理中…';
+            try {
+                await transferBooking(auth, target.id, {mode, targetBandId: mode === 'band' ? select.value : undefined});
+                closeModal('modal-booking-transfer');
+                closeModal('modal-booking-detail');
+                await showCustomAlert(mode === 'band' ? `「${targetBandName}」へ予約枠を譲りました。` : '予約枠を全員に解放しました。');
+            } catch (error) {
+                await showCustomAlert(error.message || '予約枠を譲渡できませんでした。', 'エラー');
+            } finally {
+                button.disabled = false;
+                button.textContent = '譲る';
+            }
         };
 
         function openEditBookingModal(id, data, e, band = null){

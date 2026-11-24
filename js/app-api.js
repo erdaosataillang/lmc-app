@@ -37,5 +37,6 @@ export const removeBandFromEvent = (auth, bandId, eventId) => api(`/bands/${enco
 export const createBooking = (auth, booking) => api("/bookings", {auth, method:"POST", body:booking});
 export const updateBooking = (auth, id, booking) => api(`/bookings/${encodeURIComponent(id)}`, {auth, method:"PATCH", body:booking});
 export const removeBooking = (auth, id) => api(`/bookings/${encodeURIComponent(id)}`, {auth, method:"DELETE"});
+export const transferBooking = (auth, id, transfer) => api(`/bookings/${encodeURIComponent(id)}/transfer`, {auth, method:"POST", body:transfer});
 export const sendEmailCode = (auth, email) => api("/email/send-code", {auth, method:"POST", body:{email}});
 export const verifyEmailCode = (auth, code) => api("/email/verify", {auth, method:"POST", body:{code}});
