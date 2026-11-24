@@ -247,7 +247,7 @@
         let currentBookingType = 'normal';
         let editingBookingId = null;
         let currentConfirmAction = null;
-        let settings = { reservationMode: 'first_come', lotteryConfig: { mode: 'manual', daysBefore: 7, time: '12:00' } };
+        let settings = { reservationMode: 'first_come', activeEventId: null, lotteryConfig: { mode: 'manual', daysBefore: 7, time: '12:00' } };
 
         const safetyTimer = setTimeout(() => {
             const loader = document.getElementById('initial-loader');
@@ -268,6 +268,7 @@
                 if(s.exists()) {
                     const data = s.data();
                     settings.reservationMode = data.reservationMode || 'first_come';
+                    settings.activeEventId = data.activeEventId || null;
                     if (data.lotteryConfig) settings.lotteryConfig = data.lotteryConfig;
                     renderSettingsUI();
                 }
@@ -533,6 +534,7 @@
             if(!dateVal || !timeVal || !endTimeVal) return alert("Fill required fields");
             const payload = {
                 bandId: bandId || null, bandName: bandName,
+                eventId: currentBookingType === 'event' ? null : settings.activeEventId,
                 startTime: Timestamp.fromDate(new Date(`${dateVal}T${timeVal}:00`)),
                 endTime: Timestamp.fromDate(new Date(`${dateVal}T${endTimeVal}:00`)),
                 type: currentBookingType, status: document.getElementById('booking-status').value

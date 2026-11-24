@@ -102,6 +102,26 @@ function eventIncludesDate(eventData, dateKey) {
     dateKey >= startDate && dateKey <= endDate;
 }
 
+function eventCycleStart(activeEventData, eventSnapshots, targetStart) {
+  const validDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+  const explicitStart = activeEventData?.bookingStartDate ||
+    activeEventData?.reservationStartDate || activeEventData?.registrationStartDate;
+  if (validDate(explicitStart)) return tokyoDayBounds(explicitStart).start;
+
+  const activeStart = activeEventData?.startDate || activeEventData?.date;
+  if (validDate(activeStart)) {
+    const previousEnds = eventSnapshots
+        .map((snapshot) => snapshot.data() || {})
+        .map((item) => item.endDate || item.startDate || item.date)
+        .filter((dateKey) => validDate(dateKey) && dateKey < activeStart)
+        .sort();
+    if (previousEnds.length > 0) return tokyoDayBounds(previousEnds.at(-1)).end;
+  }
+
+  // 過去イベントが未登録の場合も、無制限に全予約を読まない。
+  return new Date(targetStart.getTime() - 180 * 24 * 60 * 60 * 1000);
+}
+
 async function activityProfile(uid, fallback = {}) {
   const profile = {
     uid: typeof uid === "string" ? uid : "",
@@ -546,15 +566,18 @@ exports.runScheduledLottery = onSchedule({
   }
 
   const {start, end} = tokyoDayBounds(dateKey);
+  let activeEvent = null;
   let activeEventBlock = null;
   if (typeof settings.activeEventId === "string" && settings.activeEventId) {
     const eventSnapshot = await db.doc(`events/${settings.activeEventId}`).get();
     const eventData = eventSnapshot.data() || {};
-    if (eventSnapshot.exists && eventIncludesDate(eventData, dateKey)) {
-      activeEventBlock = {
+    if (eventSnapshot.exists) {
+      activeEvent = {
         id: settings.activeEventId,
         name: eventData.event || eventData.name || "定期演奏会",
+        data: eventData,
       };
+      if (eventIncludesDate(eventData, dateKey)) activeEventBlock = activeEvent;
     }
   }
   const bookingSnapshot = await db.collection("bookings")
@@ -579,7 +602,23 @@ exports.runScheduledLottery = onSchedule({
       endTime: end,
     });
   }
-  const result = calculateLottery(bookings);
+  const bandBookingCounts = {};
+  if (activeEvent && !activeEventBlock) {
+    const eventsSnapshot = await db.collection("events").get();
+    const historyStart = eventCycleStart(activeEvent.data, eventsSnapshot.docs, start);
+    const historySnapshot = await db.collection("bookings")
+        .where("startTime", ">=", Timestamp.fromDate(historyStart))
+        .where("startTime", "<", Timestamp.fromDate(start))
+        .get();
+    const addConfirmedBooking = (data) => {
+      if (data.type === "event" || data.status !== "confirmed" || !data.bandId) return;
+      if (data.eventId && data.eventId !== activeEvent.id) return;
+      bandBookingCounts[data.bandId] = (bandBookingCounts[data.bandId] || 0) + 1;
+    };
+    historySnapshot.docs.forEach((snapshot) => addConfirmedBooking(snapshot.data() || {}));
+    bookings.forEach(addConfirmedBooking);
+  }
+  const result = calculateLottery(bookings, Math.random, {bandBookingCounts});
   const operationCount = 1 + result.assignments.length + result.candidateDocIds.length;
   if (operationCount > 500) {
     throw new Error(`Lottery requires ${operationCount} writes; Firestore batch limit is 500`);
@@ -592,8 +631,8 @@ exports.runScheduledLottery = onSchedule({
     executedBy: "scheduled-lottery",
     executedByName: "自動実行",
     status: activeEventBlock ? "blocked_event" : (result.candidateCount === 0 ? "no_candidates" : "completed"),
-    activeEventId: activeEventBlock?.id || null,
-    activeEventName: activeEventBlock?.name || null,
+    activeEventId: activeEvent?.id || null,
+    activeEventName: activeEvent?.name || null,
     durationMinutes: result.duration,
     hasMixedDurations: result.assignments.some((assignment) => assignment.durationMinutes === 30) &&
       result.assignments.some((assignment) => assignment.durationMinutes === 60),
@@ -614,6 +653,7 @@ exports.runScheduledLottery = onSchedule({
       startTime: Timestamp.fromDate(assignment.start),
       endTime: Timestamp.fromDate(assignment.end),
       durationMinutes: assignment.durationMinutes,
+      previousBookingCount: assignment.previousBookingCount || 0,
     })),
     executedAt: FieldValue.serverTimestamp(),
     scheduleTime: event.scheduleTime || null,
@@ -632,6 +672,7 @@ exports.runScheduledLottery = onSchedule({
       type: "normal",
       status: "confirmed",
       source: "lottery",
+      eventId: activeEvent?.id || null,
       lotteryDate: dateKey,
       winningRequestId: assignment.requestDocId || null,
       originalRequestIds: assignment.originalDocIds,

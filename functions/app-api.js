@@ -391,11 +391,11 @@ async function bookingStatus(db, start, {eventBooking = false} = {}) {
       throw new HttpError(409, "active_event_day_blocked", `${eventName}の開催日は、合わせ予約ができません。`);
     }
   }
-  if (eventBooking) return "confirmed";
+  if (eventBooking) return {status: "confirmed", activeEventId: ""};
   const mode = settings.reservationMode || settings.bookingMode || "first_come";
-  if (mode !== "lottery") return "confirmed";
+  if (mode !== "lottery") return {status: "confirmed", activeEventId};
   const run = await db.doc(`lotteryRuns/${dateKey}`).get();
-  return run.exists ? "confirmed" : "pending";
+  return {status: run.exists ? "confirmed" : "pending", activeEventId};
 }
 
 async function assertBandMember(db, bandId, uid) {
@@ -439,7 +439,8 @@ async function saveBooking(db, identity, body, bookingId) {
   ]);
   const bandId = isEvent ? "" : (customBandName ? customBandId(identity.uid, customBandName) : requestedBandId);
   const bandName = isEvent ? parsed.title : (customBandName || cleanOptionalText(band.get("name"), 120) || "名称未設定");
-  const status = await bookingStatus(db, start, {eventBooking: isEvent});
+  const bookingState = await bookingStatus(db, start, {eventBooking: isEvent});
+  const {status} = bookingState;
   const bookingRef = bookingId ? db.doc(`bookings/${bookingId}`) : db.collection("bookings").doc();
   await db.runTransaction(async (transaction) => {
     if (bookingId) {
@@ -473,6 +474,7 @@ async function saveBooking(db, identity, body, bookingId) {
       title: isEvent ? parsed.title : "",
       eventMessage: isEvent ? parsed.eventMessage : "",
       eventImageUrl: isEvent ? parsed.eventImageUrl : "",
+      eventId: isEvent ? "" : bookingState.activeEventId,
       status,
       startTime: Timestamp.fromDate(start),
       endTime: Timestamp.fromDate(end),

@@ -54,6 +54,48 @@ test("keeps one-hour assignments and shortens only bands that cannot fit", () =>
   assert.equal(result.failedBands.length, 0);
 });
 
+test("希望が1バンドだけの1時間枠はそのまま1時間で確定する", () => {
+  const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
+  const result = calculateLottery([
+    {id: "a1", bandId: "a", bandName: "A", type: "normal", status: "pending", startTime: at(14), endTime: at(15)},
+  ], () => 0.5);
+
+  assert.equal(result.assignments.length, 1);
+  assert.equal(result.assignments[0].bandId, "a");
+  assert.equal(result.assignments[0].durationMinutes, 60);
+  assert.equal(result.assignments[0].start.getTime(), at(14).getTime());
+  assert.equal(result.assignments[0].end.getTime(), at(15).getTime());
+});
+
+test("同じ1時間枠に2バンドの希望がある場合は30分ずつ確定する", () => {
+  const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
+  const result = calculateLottery([
+    {id: "a1", bandId: "a", bandName: "A", type: "normal", status: "pending", startTime: at(14), endTime: at(15)},
+    {id: "b1", bandId: "b", bandName: "B", type: "normal", status: "pending", startTime: at(14), endTime: at(15)},
+  ], () => 0.5);
+
+  assert.equal(result.assignments.length, 2);
+  assert.ok(result.assignments.every((assignment) => assignment.durationMinutes === 30));
+  assert.deepEqual(result.assignments.map((assignment) => assignment.start.getTime()).sort(), [at(14).getTime(), at(14, 30).getTime()]);
+  assert.equal(new Set(result.assignments.map((assignment) => assignment.bandId)).size, 2);
+});
+
+test("同じ1時間枠に3バンド以上ある場合は現在イベントの合わせ回数が少ない順に優先する", () => {
+  const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
+  const bookings = [
+    {id: "a1", bandId: "a", bandName: "A", type: "normal", status: "pending", startTime: at(14), endTime: at(15)},
+    {id: "b1", bandId: "b", bandName: "B", type: "normal", status: "pending", startTime: at(14), endTime: at(15)},
+    {id: "c1", bandId: "c", bandName: "C", type: "normal", status: "pending", startTime: at(14), endTime: at(15)},
+  ];
+  const result = calculateLottery(bookings, () => 0.5, {
+    bandBookingCounts: {a: 4, b: 0, c: 2},
+  });
+
+  assert.deepEqual(result.assignments.map((assignment) => assignment.bandId).sort(), ["b", "c"]);
+  assert.ok(result.assignments.every((assignment) => assignment.durationMinutes === 30));
+  assert.deepEqual(result.failedBands.map((band) => band.id), ["a"]);
+});
+
 test("抽選確定後も当選した希望を登録した人の情報を保持する", () => {
   const at = (hour, minute = 0) => new Date(`2026-09-30T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00+09:00`);
   const requestedAt = new Date("2026-09-20T12:00:00+09:00");
