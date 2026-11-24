@@ -6,6 +6,7 @@ const {
   accountSubtitle,
   menuSignature,
   pickNextBooking,
+  queueItemIsDue,
   refilledCreateTokens,
   richMenuContext,
   richMenuDefinition,
@@ -63,6 +64,12 @@ test("LINE作成枠は1時間かけて補充し上限を超えない", () => {
   const start = Date.parse("2026-11-23T10:00:00Z");
   assert.equal(refilledCreateTokens({tokens: 0, refilledAt: {toMillis: () => start}}, start + 30 * 60 * 1000), 35);
   assert.equal(refilledCreateTokens({tokens: 69, refilledAt: {toMillis: () => start}}, start + 60 * 60 * 1000), 70);
+});
+
+test("優先キューは実行時刻を過ぎた場合だけ処理対象にする", () => {
+  const now = new Date("2026-11-24T12:00:00+09:00");
+  assert.equal(queueItemIsDue({runAt: {toDate: () => new Date("2026-11-24T11:59:00+09:00")}}, now), true);
+  assert.equal(queueItemIsDue({runAt: {toDate: () => new Date("2026-11-24T12:01:00+09:00")}}, now), false);
 });
 
 test("LINEの制限内で日本語入りJPEGを生成する", async () => {

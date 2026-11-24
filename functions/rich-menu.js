@@ -26,6 +26,7 @@ const CREATE_TOKEN_CAPACITY = 70;
 const CREATE_TOKEN_REFILL_MILLISECONDS = 60 * 60 * 1000;
 const CREATE_RATE_LIMIT_REF = "system/lineRichMenuCreateRateLimit";
 const SYNC_QUEUE_COLLECTION = "lineRichMenuSyncQueue";
+const PRIORITY_USER_ID = "Ud626706f229a30d1479043d1990ff7c5";
 const RATE_LIMIT_RETRY_MILLISECONDS = 5 * 60 * 1000;
 const TRANSIENT_RETRY_MILLISECONDS = 15 * 60 * 1000;
 const RENDER_WORKER_PATH = path.join(__dirname, "rich-menu-render-worker.js");
@@ -308,12 +309,16 @@ async function createAndLinkRichMenu(token, uid, signature, image) {
     await lineRequest(token, "rich-menu image upload", `/v2/bot/richmenu/${encodeURIComponent(richMenuId)}/content`, {
       method: "POST", contentType: "image/jpeg", body: image, baseUrl: "https://api-data.line.me",
     });
-    await lineRequest(token, "rich-menu link", `/v2/bot/user/${encodeURIComponent(uid)}/richmenu/${encodeURIComponent(richMenuId)}`, {method: "POST"});
+    await linkRichMenu(token, uid, richMenuId, "rich-menu link");
     return richMenuId;
   } catch (error) {
     await lineRequest(token, "rich-menu cleanup", `/v2/bot/richmenu/${encodeURIComponent(richMenuId)}`, {method: "DELETE"}).catch(() => {});
     throw error;
   }
+}
+
+async function linkRichMenu(token, uid, richMenuId, operation = "rich-menu link") {
+  await lineRequest(token, operation, `/v2/bot/user/${encodeURIComponent(uid)}/richmenu/${encodeURIComponent(richMenuId)}`, {method: "POST"});
 }
 
 async function deleteRichMenu(token, richMenuId) {
@@ -401,6 +406,9 @@ async function refreshRichMenuForUser(db, token, uid, options = {}) {
   try {
     const image = await renderRichMenuImageIsolated(context);
     const richMenuId = await createAndLinkRichMenu(token, uid, signature, image);
+    await deleteRichMenu(token, lease.data.richMenuId);
+    // LINE側の削除処理が遅延しても、最後の操作が必ず新メニューのリンクになるようにする。
+    await linkRichMenu(token, uid, richMenuId, "rich-menu final link");
     await lease.ref.set({
       signature,
       richMenuId,
@@ -412,7 +420,6 @@ async function refreshRichMenuForUser(db, token, uid, options = {}) {
       leaseUntil: FieldValue.delete(),
       updatedAt: FieldValue.serverTimestamp(),
     }, {merge: true});
-    await deleteRichMenu(token, lease.data.richMenuId);
     return {changed: true, richMenuId, imageBytes: image.length};
   } catch (error) {
     const unavailable = error instanceof LineApiError && [400, 404].includes(error.status) && error.operation === "rich-menu link";
@@ -496,17 +503,48 @@ async function refreshUsers(db, token, uids, reason = "changed") {
   });
 }
 
+async function ensureAssignedLink(db, token, uid) {
+  const assignment = await db.doc(`${ASSIGNMENT_COLLECTION}/${uid}`).get();
+  const richMenuId = assignment.get("richMenuId");
+  if (!richMenuId) return {checked: false};
+  let currentId = "";
+  try {
+    const current = await lineRequest(token, "rich-menu link check", `/v2/bot/user/${encodeURIComponent(uid)}/richmenu`);
+    currentId = current.richMenuId || "";
+  } catch (error) {
+    if (!(error instanceof LineApiError) || error.status !== 404) throw error;
+  }
+  if (currentId === richMenuId) return {checked: true, repaired: false};
+  await linkRichMenu(token, uid, richMenuId, "rich-menu link repair");
+  logger.info("Priority rich menu link repaired", {uid});
+  return {checked: true, repaired: true};
+}
+
+function queueItemIsDue(data = {}, now = new Date()) {
+  const runAt = data.runAt?.toDate?.() || data.runAt;
+  return runAt instanceof Date && !Number.isNaN(runAt.getTime()) && runAt.getTime() <= now.getTime();
+}
+
 async function syncQueuedRichMenus(db, token, now = new Date()) {
+  await ensureAssignedLink(db, token, PRIORITY_USER_ID).catch((error) => {
+    logger.warn("Priority rich menu link check failed", {uid: PRIORITY_USER_ID, status: error.status, operation: error.operation});
+  });
+  const prioritySnapshot = await db.doc(`${SYNC_QUEUE_COLLECTION}/${PRIORITY_USER_ID}`).get();
   const queued = await db.collection(SYNC_QUEUE_COLLECTION)
       .where("runAt", "<=", Timestamp.fromDate(now))
       .orderBy("runAt")
       .limit(MAX_MENU_CHANGES_PER_SYNC)
       .get();
+  const documents = [];
+  if (prioritySnapshot.exists && queueItemIsDue(prioritySnapshot.data(), now)) documents.push(prioritySnapshot);
+  for (const snapshot of queued.docs) {
+    if (snapshot.id !== PRIORITY_USER_ID && documents.length < MAX_MENU_CHANGES_PER_SYNC) documents.push(snapshot);
+  }
   let changes = 0;
   let skipped = 0;
   let errors = 0;
   let rateLimited = false;
-  await eachWithConcurrency(queued.docs, 1, async (snapshot) => {
+  await eachWithConcurrency(documents, 1, async (snapshot) => {
     if (rateLimited) {
       skipped += 1;
       return;
@@ -516,8 +554,8 @@ async function syncQueuedRichMenus(db, token, now = new Date()) {
     if (result.error) errors += 1;
     if (result.rateLimited) rateLimited = true;
   });
-  logger.info("Rich menu queue sync completed", {queued: queued.size, changes, skipped, errors, rateLimited});
-  return {queued: queued.size, changes, skipped, errors, rateLimited};
+  logger.info("Rich menu queue sync completed", {queued: documents.length, changes, skipped, errors, rateLimited});
+  return {queued: documents.length, changes, skipped, errors, rateLimited};
 }
 
 function relevantUserState(data = {}) {
@@ -608,6 +646,7 @@ exports._test = {
   relevantBandState,
   relevantUserState,
   refilledCreateTokens,
+  queueItemIsDue,
   richMenuContext,
   richMenuDefinition,
   renderRichMenuImage,
