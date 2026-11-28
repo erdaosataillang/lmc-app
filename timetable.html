@@ -37,6 +37,8 @@
         .timeline-tab { display:flex; align-items:center; gap:5px; color:#0b57d0; background:#e8f0fe; }
         .timeline-tab.active { color:white; background:#0b57d0; }
         .schedule-card { background:#fff; border-radius:18px; padding:16px; margin-bottom:10px; display:flex; align-items:center; gap:14px; box-shadow:0 2px 10px rgba(0,0,0,.04); border:1px solid rgba(0,0,0,.03); }
+        .schedule-cue-link { display:inline-flex; align-items:center; gap:4px; padding:7px 9px; border-radius:999px; background:#e8f0fe; color:#0b57d0; font-size:11px; font-weight:700; text-decoration:none; white-space:nowrap; }
+        .schedule-cue-link .material-icons { font-size:15px; }
         .time { width:62px; flex-shrink:0; font-size:14px; font-weight:700; color:#0b57d0; text-align:center; }
         .band-icon { width:46px; height:46px; flex-shrink:0; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:14px; background:#e8f0fe; color:#1a73e8; }
         .band-icon img { width:100%; height:100%; object-fit:cover; }
@@ -159,8 +161,11 @@
         import {openUnifiedProfileModal} from './js/profile-popover.js?v=20261022-3';
         import {openUnifiedNotificationModal} from './js/notification-popover.js?v=20261022-1';
         import {applyPartAvatarRing} from './js/avatar-ring.js?v=20261119-3';
+        import {hasCueAdminAccess, timetableCueUrl} from './js/cue-links.js?v=1';
 
         let entries = [];
+        let activeEventId = null;
+        let canViewTimetableCue = false;
         let selectedDate = '';
         let showTimes = true;
         let cachedUser = {};
@@ -344,6 +349,11 @@
             return !!currentUser && Array.isArray(band?.memberIds) && band.memberIds.includes(currentUser);
         }
 
+        function timetableCueLink(bandId) {
+            const url = canViewTimetableCue ? timetableCueUrl(bandId, activeEventId) : '';
+            return url ? `<a class="schedule-cue-link" href="${escapeHtml(url)}" onclick="event.stopPropagation()"><span class="material-icons" aria-hidden="true">description</span>Cueシート</a>` : '';
+        }
+
         function memberStackHtml(band) {
             const ids = Array.isArray(band?.memberIds) ? band.memberIds : [];
             const names = Array.isArray(band?.memberNames) ? band.memberNames : [];
@@ -387,6 +397,7 @@
                             <button class="post-action" onclick="event.stopPropagation(); openBandProfile('${escapeHtml(entry.bandId)}')"><span class="material-icons">group</span><span>メンバー</span></button>
                             <button class="post-action ${liked ? 'liked' : ''}" onclick="event.stopPropagation(); toggleBandLike('${escapeHtml(entry.bandId)}')"><span class="material-icons">${liked ? 'favorite' : 'favorite_border'}</span><span>${likes.length}</span></button>
                             ${editable ? `<button class="post-action" onclick="event.stopPropagation(); openBandCopyEditor('${escapeHtml(entry.bandId)}')"><span class="material-icons">edit</span><span>編集</span></button>` : '<span class="post-action"><span class="material-icons">visibility</span><span>詳細</span></span>'}
+                            ${timetableCueLink(entry.bandId)}
                         </div>
                     </div>
                 </article>`;
@@ -550,6 +561,7 @@
                         <div class="band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
                         <div class="band-sub">${showTimes ? '出演予定' : `出演順 ${index + 1}`}</div>
                     </div>
+                    ${timetableCueLink(entry.bandId)}
                     <span class="material-icons" style="color:#c7c7cc;">chevron_right</span>
                 </article>`;
             }).join(''), token);
@@ -563,9 +575,10 @@
             try {
                 const lineUserId = await ensureLiffUser(true);
                 if (!lineUserId) return;
-                await signInFirebaseWithLine(auth, signInWithCustomToken, lineUserId);
+                const user = await signInFirebaseWithLine(auth, signInWithCustomToken, lineUserId);
+                canViewTimetableCue = await hasCueAdminAccess(user).catch(() => false);
                 const settings = await getDoc(doc(db, 'system', 'settings'));
-                const activeEventId = settings.exists() ? settings.data().activeEventId : null;
+                activeEventId = settings.exists() ? settings.data().activeEventId : null;
                 if (!activeEventId) {
                     document.getElementById('eventName').innerText = '次のイベントは未設定です';
                     document.getElementById('dayTabs').innerHTML = '';

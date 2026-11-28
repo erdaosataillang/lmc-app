@@ -15,6 +15,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
+        .song-apple-music { display:inline-block; margin:2px 8px 5px; padding:3px 8px; border-radius:8px; background:#fff0f3; color:#9c1748; font-size:11px; font-weight:700; }
+        .song-apple-music[hidden], #capture-area[hidden] { display:none; }
+        .cue-view-only .search-btn, .cue-view-only #submit-btn { display:none; }
         /* Apple風 UIデザイン */
         .search-btn {
             background: linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%);
@@ -185,6 +188,7 @@
 <body class="min-h-screen p-2 md:p-6">
 
     <div id="toast-container" class="fixed top-4 left-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <p id="cue-view-status" class="sheet-container text-sm" role="status" hidden></p>
 
     <div id="capture-area" class="sheet-container relative">
         
@@ -288,14 +292,14 @@
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js?v=20261128-1';
         import { loadPublicProfiles } from './js/app-api.js';
+        import { appleMusicSearchUrl, appleMusicTrackUrl, hasCueAdminAccess } from './js/cue-links.js?v=1';
         import { 
             getFirestore, 
             doc, 
             getDoc, 
-            setDoc, 
             updateDoc, 
             collection, 
-            getDocs, 
+            getDocs, query, where,
             serverTimestamp,
             writeBatch
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -314,7 +318,6 @@
 
         let db = null;
         let auth = null;
-        let authReady = Promise.resolve();
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
@@ -534,7 +537,10 @@
             tr.innerHTML = `
                 <td class="border-r-black-2 p-1 text-center font-bold bg-gray-50">${i + 1}</td>
                 <td class="border-r-black-2 relative flex items-center pr-1">
-                    <input type="text" class="px-2 w-full text-sm song-title" placeholder="曲名を入力">
+                    <div class="min-w-0 flex-grow">
+                        <input type="text" class="px-2 w-full text-sm song-title" placeholder="曲名を入力">
+                        <a class="song-apple-music no-print" target="_blank" rel="noopener noreferrer" hidden></a>
+                    </div>
                     <button type="button" class="no-print search-btn ml-1 px-3 py-1 text-xs rounded-full font-bold whitespace-nowrap" onclick="searchSong(this, ${i})">
                         検索
                     </button>
@@ -542,6 +548,7 @@
                 </td>
                 <td><input type="text" class="px-2 text-center font-mono text-sm song-duration" placeholder="00:00"></td>
             `;
+            tr.querySelector('.song-title').addEventListener('input', () => refreshSongLink(tr));
             return tr;
         };
 
@@ -554,7 +561,45 @@
         let bandId = urlParams.get('bandID');
         let eventId = urlParams.get('eventID');
         const cueId = urlParams.get('cueID') || urlParams.get('cuesheetID') || urlParams.get('cueSheetID');
+        const viewOnly = urlParams.get('view') === '1';
+        const captureArea = document.getElementById('capture-area');
+        const viewStatus = document.getElementById('cue-view-status');
+        let canViewAppleMusic = false;
+        if (viewOnly) {
+            captureArea.hidden = true;
+            captureArea.classList.add('cue-view-only');
+            viewStatus.hidden = false;
+            viewStatus.textContent = 'Cueシートを読み込んでいます…';
+        }
         let draftKey = `draft_${bandId || 'common'}_${eventId || 'common'}`;
+
+        function refreshSongLink(row) {
+            const title = row.querySelector('.song-title').value.trim();
+            const link = row.querySelector('.song-apple-music');
+            if (title !== row.dataset.linkedTitle) delete row.dataset.appleMusicUrl;
+            const directUrl = appleMusicTrackUrl(row.dataset.appleMusicUrl);
+            link.hidden = !canViewAppleMusic || !title;
+            if (link.hidden) {
+                link.removeAttribute('href');
+                return;
+            }
+            link.href = directUrl || appleMusicSearchUrl(title);
+            link.textContent = directUrl ? 'Apple Musicで開く' : 'Apple Musicで検索';
+        }
+
+        function setSongLink(row, value) {
+            row.dataset.linkedTitle = row.querySelector('.song-title').value.trim();
+            row.dataset.appleMusicUrl = appleMusicTrackUrl(value);
+            refreshSongLink(row);
+        }
+
+        function readSongRow(row) {
+            const title = row.querySelector('.song-title').value;
+            const duration = row.querySelector('.song-duration').value;
+            const appleMusicUrl = title.trim() === row.dataset.linkedTitle
+                ? appleMusicTrackUrl(row.dataset.appleMusicUrl) : '';
+            return {title, duration, ...(appleMusicUrl ? {appleMusicUrl} : {})};
+        }
 
         const applyFormData = (data) => {
             if (!data) return;
@@ -565,7 +610,7 @@
             
             const ngDateInput = document.getElementById('ng-date');
             ngDateInput.value = data.ngDate || '';
-            if (data.ngDate && data.ngDate.trim() !== '') {
+            if (String(data.ngDate ?? '').trim()) {
                 document.getElementById('ng-reason-row').classList.remove('hidden');
                 document.getElementById('ng-reason').value = data.ngReason || '';
             }
@@ -584,11 +629,11 @@
             if (data.members && Array.isArray(data.members)) {
                 const membersTrs = document.querySelectorAll('#members-tbody tr');
                 data.members.forEach((m, i) => {
-                    if (membersTrs[i]) {
+                    if (membersTrs[i] && m) {
                         membersTrs[i].querySelector('.grade-input').value = m.grade || '';
                         membersTrs[i].querySelector('.part-input').value = m.part || '';
                         // 読み込み時にひらがな化
-                        membersTrs[i].querySelector('.name-input').value = window.toHiragana(m.name || '');
+                        membersTrs[i].querySelector('.name-input').value = window.toHiragana(String(m.name || ''));
                     }
                 });
             }
@@ -599,8 +644,10 @@
                 for (let i = 0; i < rowCount; i++) {
                     const tr = createSongRow(i);
                     if (data.songs[i]) {
-                        tr.querySelector('.song-title').value = data.songs[i].title || '';
-                        tr.querySelector('.song-duration').value = data.songs[i].duration || '';
+                        const song = data.songs[i];
+                        tr.querySelector('.song-title').value = typeof song === 'string' ? song : (song.title || '');
+                        tr.querySelector('.song-duration').value = song.duration || '';
+                        setSongLink(tr, song.appleMusicUrl);
                     }
                     if (i === rowCount - 1) tr.classList.remove('border-b-black-1');
                     songsTbody.appendChild(tr);
@@ -609,7 +656,7 @@
         };
 
         const saveDraft = () => {
-            if (cueId) return;
+            if (cueId || viewOnly) return;
             if (!bandId || !eventId) return;
 
             const data = {
@@ -632,10 +679,7 @@
             });
 
             document.querySelectorAll('#songs-tbody tr').forEach(tr => {
-                data.songs.push({
-                    title: tr.querySelector('.song-title').value,
-                    duration: tr.querySelector('.song-duration').value
-                });
+                data.songs.push(readSongRow(tr));
             });
 
             localStorage.setItem(draftKey, JSON.stringify(data));
@@ -654,6 +698,62 @@
             }
         };
 
+        async function showTimetableCue(user) {
+            if (!await hasCueAdminAccess(user)) {
+                viewStatus.textContent = 'タイムテーブルからのCueシート閲覧には管理者権限が必要です。';
+                return;
+            }
+            if (!bandId || !eventId || bandId.includes('/') || eventId.includes('/')) {
+                viewStatus.textContent = '出演イベントまたはバンドを確認できませんでした。';
+                return;
+            }
+            canViewAppleMusic = true;
+
+            const canonical = await getDoc(doc(db, 'cuesheets', `${bandId}_${eventId}`));
+            let cue = canonical.data();
+            if (!cue || cue.archived === true || (cue.bandId && cue.bandId !== bandId) ||
+                (cue.eventId && cue.eventId !== eventId)) {
+                const matches = await getDocs(query(collection(db, 'cuesheets'),
+                    where('bandId', '==', bandId), where('eventId', '==', eventId)));
+                const updated = item => (item.updatedAt || item.createdAt)?.toMillis?.() || 0;
+                cue = matches.docs.map(item => item.data())
+                    .filter(item => item.archived !== true)
+                    .sort((a, b) => Number(!!a.fileUrl) - Number(!!b.fileUrl) || updated(b) - updated(a))[0];
+            }
+
+            if (!cue) {
+                const band = (await getDoc(doc(db, 'bands', bandId))).data();
+                // イベント情報がない旧画像は、出演先を一意に特定できる場合だけ扱う。
+                if (band?.events?.length === 1 && band.events[0] === eventId) {
+                    const fileUrl = band.latestCuesheetUrl || band.cueSheetUrl;
+                    if (fileUrl) cue = {fileUrl};
+                }
+            }
+            if (!cue) {
+                viewStatus.textContent = 'このイベントのCueシートはまだ提出されていません。';
+                return;
+            }
+            if (cue.fileUrl) {
+                const url = new URL(cue.fileUrl);
+                if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Invalid Cue file URL');
+                const link = document.createElement('a');
+                link.href = url.href;
+                link.className = 'song-apple-music';
+                link.textContent = '画像・PDFのCueシートを開く';
+                viewStatus.replaceChildren(link);
+                return;
+            }
+
+            const event = (await getDoc(doc(db, 'events', eventId))).data();
+            const eventSelect = document.getElementById('event-select');
+            eventSelect.replaceChildren(new Option(event?.event || event?.name || '出演イベント', eventId));
+            applyFormData(cue);
+            captureArea.querySelectorAll('input, textarea').forEach(input => { input.readOnly = true; });
+            captureArea.querySelectorAll('select, button').forEach(control => { control.disabled = true; });
+            viewStatus.hidden = true;
+            captureArea.hidden = false;
+        }
+
         window.addEventListener('DOMContentLoaded', async () => {
             if (!db) return;
 
@@ -668,10 +768,14 @@
             try {
                 // Firestoreを読む前に認証を完了させる。LIFF内遷移では既存の
                 // Firebaseセッションを優先し、不要なLINE再認証を発生させない。
-                authReady = authenticateCuePage();
-                const authenticatedUser = await authReady;
+                const authenticatedUser = await authenticateCuePage();
                 if (!authenticatedUser) return;
-                await preloadSystemUsers();
+                if (viewOnly) {
+                    await showTimetableCue(authenticatedUser);
+                    return;
+                }
+                canViewAppleMusic = await hasCueAdminAccess(authenticatedUser).catch(() => false);
+                void preloadSystemUsers();
                 const eventSelect = document.getElementById('event-select');
                 try {
                     eventSelect.innerHTML = '';
@@ -838,7 +942,9 @@
             } catch (error) {
                 console.error("Fetch Error:", error);
                 const authFailure = /LIFF|LINE authentication|Firebase session|auth\//i.test(String(error?.message || error));
-                showToast(authFailure ? '認証を確認できませんでした。画面を開き直してください' : 'データの読み込みに失敗しました', 'error');
+                const message = authFailure ? '認証を確認できませんでした。画面を開き直してください' : 'データの読み込みに失敗しました';
+                if (viewOnly) viewStatus.textContent = message;
+                else showToast(message, 'error');
             }
         });
 
@@ -945,6 +1051,7 @@
                             e.preventDefault(); 
                             titleInput.value = song.trackName;
                             row.querySelector('.song-duration').value = timeStr;
+                            setSongLink(row, song.trackViewUrl);
                             suggestBox.style.display = 'none';
                             titleInput.dispatchEvent(new Event('input', { bubbles: true }));
                         };
@@ -1012,6 +1119,7 @@
         });
 
         const submitCueSheet = async () => {
+            if (viewOnly) return;
             if (!db) {
                 showToast('データベースが初期化されていません', 'error');
                 return;
@@ -1071,14 +1179,15 @@
             let hasMissingTitle = false;
 
             document.querySelectorAll('#songs-tbody tr').forEach(tr => {
-                const title = tr.querySelector('.song-title').value.trim();
-                const duration = tr.querySelector('.song-duration').value.trim();
+                const song = readSongRow(tr);
+                const title = song.title.trim();
+                const duration = song.duration.trim();
 
                 if (title || duration) {
                     if (!title) hasMissingTitle = true;
                     if (!duration) hasMissingDuration = true;
                     if (title && duration) {
-                        songs.push({ title, duration });
+                        songs.push({...song, title, duration});
                     }
                 }
             });
