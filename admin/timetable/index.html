@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>タイムテーブル | LMC Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .tt-control { min-height:40px; border:1px solid #cbd5e1; border-radius:10px; padding:7px 10px; background:white; }
+        .tt-button { display:inline-flex; align-items:center; justify-content:center; gap:7px; min-height:40px; padding:7px 12px; border-radius:10px; background:#eff6ff; color:#1e40af; font-size:13px; font-weight:700; }
+        .tt-button:disabled { opacity:.45; cursor:not-allowed; }
+        .tt-primary { background:#1d4ed8; color:white; }
+        .tt-day[aria-pressed="true"] { background:#1e3a8a; color:white; }
+        .tt-row { display:grid; grid-template-columns:minmax(9rem,1fr) minmax(8rem,auto) auto auto; gap:12px; align-items:center; padding:12px; border:1px solid #e2e8f0; border-radius:14px; }
+        .tt-row[data-drop-target] { border-color:#2563eb; background:#eff6ff; }
+        .tt-grip { cursor:grab; color:#64748b; padding:6px; }
+        @media(max-width:650px) {
+            .tt-row { grid-template-columns:1fr 1fr; }
+            .tt-band { grid-column:1 / -1; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div id="sidebar-container" class="hidden md:block"></div>
+    <main class="md:ml-[260px] min-h-screen px-4 py-6 sm:p-8">
+        <div class="max-w-5xl mx-auto">
+            <header class="mb-6">
+                <a href="../event/" class="text-sm font-semibold text-blue-700">イベント管理</a>
+                <h1 class="mt-2 text-2xl sm:text-3xl font-bold text-slate-900">タイムテーブル</h1>
+            </header>
+            <label for="tt-event" class="block mb-2 text-sm font-bold">イベント</label>
+            <select id="tt-event" class="tt-control w-full sm:max-w-md" disabled></select>
+            <p id="tt-status" class="mt-3 mb-4 min-h-6 text-sm text-slate-600" role="status" aria-live="polite">管理者権限を確認しています…</p>
+
+            <fieldset id="tt-editor" class="min-w-0 space-y-4" hidden>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 flex flex-wrap gap-x-6 gap-y-3">
+                    <label class="flex items-center gap-2 text-sm font-semibold"><input id="tt-published" type="checkbox">タイムテーブルを公開</label>
+                    <label class="flex items-center gap-2 text-sm font-semibold"><input id="tt-show-times" type="checkbox">公開画面に時刻を表示</label>
+                </div>
+                <div class="bg-white rounded-2xl p-4 border border-slate-200 space-y-4">
+                    <div id="tt-days" class="flex flex-wrap gap-2" aria-label="出演日"></div>
+                    <div id="tt-fill" class="flex flex-wrap items-end gap-3 border-b border-slate-200 pb-4">
+                        <label class="flex flex-col gap-1 text-sm">最初の開始時刻<input id="tt-start" class="tt-control" type="time" value="10:00"></label>
+                        <label class="flex flex-col gap-1 text-sm">出演間隔（分）<input id="tt-interval" class="tt-control w-28" type="number" min="1" max="180" value="20"></label>
+                        <button id="tt-apply-times" class="tt-button" type="button">この日の時刻を一括設定</button>
+                    </div>
+                    <ol id="tt-rows" class="space-y-2"></ol>
+                </div>
+                <button id="tt-save" class="tt-button tt-primary" type="button">変更を保存</button>
+            </fieldset>
+        </div>
+    </main>
+
+    <dialog id="tt-band-detail" aria-labelledby="tt-band-title" class="w-full max-w-md rounded-2xl p-5 shadow-xl backdrop:bg-slate-900/45">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="tt-band-title" class="text-xl font-bold break-all"></h2>
+            <form method="dialog"><button class="tt-button" aria-label="バンド詳細を閉じる">閉じる</button></form>
+        </div>
+        <p id="tt-band-date" class="my-4 text-sm text-slate-600"></p>
+        <a id="tt-cue-link" class="tt-button tt-primary" target="_blank" rel="noopener noreferrer"><i class="fa-regular fa-file-lines" aria-hidden="true"></i>Cueシートを開く</a>
+    </dialog>
+    <script type="module" src="./editor.js?v=1"></script>
+</body>
+</html>

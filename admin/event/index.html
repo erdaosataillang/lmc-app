@@ -13,10 +13,10 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body class="min-h-screen flex overflow-hidden bg-[#f8fafc] hidden">
-    <!-- サイドバーはJSによって自動的に挿入されます -->
+    <div id="sidebar-container" class="hidden md:block"></div>
 
     <!-- メインコンテンツ -->
-    <main class="flex-1 ml-[260px] h-screen overflow-y-auto p-8 relative">
+    <main class="flex-1 md:ml-[260px] h-screen overflow-y-auto p-4 sm:p-8 relative">
         <header class="flex justify-between items-center mb-6">
             <div>
                 <h2 class="text-xl font-extrabold text-gray-800 uppercase tracking-widest">Events Management</h2>
@@ -86,7 +86,7 @@
 
     <!-- Logic -->
     <script type="module">
-        import { initAdminPage, db, escapeHtml } from "/js/admin-common.js?v=20261118-2";
+        import { initAdminPage, db, escapeHtml, ADMIN_BASE_PATH } from "/js/admin-common.js?v=20261128-timetable";
         import { collection, onSnapshot, setDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         let eventsData = [];
@@ -95,6 +95,7 @@
 
         // 初期化 (ページID: events)
         initAdminPage('events', (user) => {
+            document.body.classList.remove('hidden');
             console.log("Admin Events Module Loaded");
 
             // イベントデータの監視
@@ -162,8 +163,11 @@
                             <i class="fa-regular fa-clock mr-1"></i> ${escapeHtml(dateStr)}
                         </p>
 
-                        <div class="flex items-center justify-between border-t border-gray-50 pt-4 mt-auto">
-                            <span class="text-[9px] text-gray-300 font-bold uppercase tracking-widest">ID: ${escapeHtml(evt.id)}</span>
+                        <div class="flex items-center justify-between border-t border-gray-50 pt-4 mt-auto gap-3">
+                            <div class="min-w-0">
+                                <a href="${ADMIN_BASE_PATH}/timetable/?eventID=${encodeURIComponent(evt.id)}" class="inline-block rounded-xl bg-sky-50 px-3 py-2 text-sm font-bold text-sky-800">タイムテーブル</a>
+                                <span class="mt-2 block truncate text-[9px] text-gray-400 font-bold">ID: ${escapeHtml(evt.id)}</span>
+                            </div>
                             <button onclick="requestDeleteEvent('${evt.id}')" class="w-10 h-10 rounded-full bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all flex items-center justify-center">
                                 <i class="fa-solid fa-trash-can text-sm"></i>
                             </button>

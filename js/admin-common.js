@@ -102,6 +102,7 @@ function renderSidebar(activePage, user) {
                 case 'reservation': return 'bg-red-50 text-red-600 font-bold shadow-sm';
                 case 'fees':      return 'bg-orange-50 text-orange-600 font-bold shadow-sm';
                 case 'events':    return 'bg-sky-50 text-sky-600 font-bold shadow-sm';
+                case 'timetable': return 'bg-sky-50 text-sky-600 font-bold shadow-sm';
                 default:          return 'bg-gray-100 text-gray-800 font-bold';
             }
         }
@@ -126,6 +127,7 @@ function renderSidebar(activePage, user) {
             <a href="${ADMIN_BASE_PATH}/maintenance/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('maintenance')}"><i class="fa-solid fa-screwdriver-wrench w-6 text-center"></i><span class="ml-3 text-sm font-bold">メンテナンス</span></a>
             <a href="${ADMIN_BASE_PATH}/expenses/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('fees')}"><i class="fa-solid fa-coins w-6 text-center"></i><span class="ml-3 text-sm font-bold">部費管理</span></a>
             <a href="${ADMIN_BASE_PATH}/event/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('events')}"><i class="fa-solid fa-bullhorn w-6 text-center"></i><span class="ml-3 text-sm font-bold">イベント管理</span></a>
+            <a href="${ADMIN_BASE_PATH}/timetable/" class="nav-btn w-full flex items-center p-3.5 rounded-2xl ${getActiveClass('timetable')}"><i class="fa-solid fa-list-ol w-6 text-center" aria-hidden="true"></i><span class="ml-3 text-sm font-bold">タイムテーブル</span></a>
         </nav>
         <div class="p-6 border-t border-gray-100">
             <div class="flex items-center gap-3 bg-gray-50 p-3 rounded-2xl border border-gray-100">
