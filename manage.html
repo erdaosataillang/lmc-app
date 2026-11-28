@@ -216,7 +216,9 @@
         .tt-band-icon.icon-error img { display: none; }
         .tt-band-icon.icon-error .tt-default-icon { display: block; }
         .tt-band-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 750; }
-        .tt-cue-link { display:inline-flex; align-items:center; gap:4px; padding:6px 8px; border-radius:9px; background:#e8f0fe; color:#0b57d0; font-size:11px; font-weight:700; text-decoration:none; white-space:nowrap; }
+        #page-admin-band-detail .page-header-left { min-width:0; }
+        #band-detail-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .tt-cue-link { display:inline-flex; flex-shrink:0; align-items:center; gap:4px; margin-left:8px; padding:6px 8px; border-radius:9px; background:#e8f0fe; color:#0b57d0; font-size:11px; font-weight:700; text-decoration:none; white-space:nowrap; }
         .tt-detail-arrow { color: #bdc1c6; font-size: 19px; flex-shrink: 0; }
         .tt-drag-handle { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: #f1f3f4; color: #5f6368; cursor: grab; touch-action: none; }
         .tt-drag-handle:active { cursor: grabbing; background: #e8f0fe; color: #1a73e8; }
@@ -772,6 +774,7 @@
                 <button class="back-btn" onclick="closePage('admin-band-detail')"><span class="material-icons">arrow_back</span></button>
                 <div class="page-title" id="band-detail-title">バンド詳細</div>
             </div>
+            <a id="bd-timetable-cue-link" class="tt-cue-link hidden"><span class="material-icons" style="font-size:15px;" aria-hidden="true">description</span>Cueシート</a>
         </div>
         <div class="content-area" style="padding-top:16px;">
             <div style="text-align:center; margin-bottom:24px;">
@@ -1070,7 +1073,6 @@
                                 <div class="tt-band-name">${escapeHtml(entry.bandName || '名称未設定')}</div>
                                 <span class="material-icons tt-detail-arrow">chevron_right</span>
                             </div>
-                            ${canViewTimetableCue ? `<a class="tt-cue-link" href="${escapeHtml(timetableCueUrl(entry.bandId, currentActiveEventId))}"><span class="material-icons" style="font-size:15px;" aria-hidden="true">description</span>Cueシート</a>` : ''}
                             <div class="tt-drag-handle" onpointerdown="startTimetableDrag(event)" aria-label="押したまま上下に動かして並べ替え"><span class="material-icons">drag_indicator</span></div>
                         </div>
                         <div class="tt-fields">
@@ -1156,7 +1158,7 @@
 
         window.openTimetableBandDetail = bandId => {
             const band = concertBandsCache.find(item => item.id === bandId);
-            if (band) openAdminBandDetail(band);
+            if (band) openAdminBandDetail(band, currentActiveEventId);
         };
 
         function placeDraggedTimetableRow(pointerY) {
@@ -2371,9 +2373,14 @@
         });
 
         // 3. バンド詳細ページ
-        async function openAdminBandDetail(band) {
+        async function openAdminBandDetail(band, timetableEventId = null) {
             const detailVersion = ++bandDetailVersion;
             currentBandDetail = band;
+            const cueLink = document.getElementById('bd-timetable-cue-link');
+            const cueUrl = canViewTimetableCue ? timetableCueUrl(band.id, timetableEventId) : '';
+            cueLink.classList.toggle('hidden', !cueUrl);
+            if (cueUrl) cueLink.href = cueUrl;
+            else cueLink.removeAttribute('href');
             openPage('admin-band-detail');
 
             document.getElementById('band-detail-title').innerText = band.name || "バンド詳細";
