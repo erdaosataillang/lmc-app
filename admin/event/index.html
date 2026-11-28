@@ -11,12 +11,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- 共通CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        @media (max-width:1023px) { #sidebar-container { display:none; } }
+    </style>
 </head>
 <body class="min-h-screen flex overflow-hidden bg-[#f8fafc] hidden">
-    <div id="sidebar-container" class="hidden md:block"></div>
+    <div id="sidebar-container"></div>
 
     <!-- メインコンテンツ -->
-    <main class="flex-1 md:ml-[260px] h-screen overflow-y-auto p-4 sm:p-8 relative">
+    <main class="flex-1 min-w-0 lg:ml-[260px] h-screen overflow-y-auto p-4 sm:p-8 relative">
         <header class="flex justify-between items-center mb-6">
             <div>
                 <h2 class="text-xl font-extrabold text-gray-800 uppercase tracking-widest">Events Management</h2>

@@ -34,36 +34,40 @@ function render() {
     const counts = new Map();
     for (const entry of entries) counts.set(entry.date, (counts.get(entry.date) || 0) + 1);
     byId('days').innerHTML = dates.map(date =>
-        `<button type="button" class="tt-button tt-day" data-date="${date}" aria-pressed="${date === day}">${formatDate(date)} <span>${counts.get(date) || 0}組</span></button>`
+        `<button type="button" class="tt-day shrink-0 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-extrabold text-gray-600 hover:text-gray-900 transition-colors" data-date="${date}" aria-pressed="${date === day}">
+            ${formatDate(date)}<span class="tt-day-count rounded-full bg-gray-200 px-2 py-0.5 text-xs font-bold">${counts.get(date) || 0}組</span>
+        </button>`
     ).join('');
     const dayEntries = entries.filter(entry => entry.date === day);
     byId('fill').hidden = dates.length === 0;
     byId('apply-times').disabled = dayEntries.length === 0;
     saveButton.disabled = !dates.length;
     if (!dayEntries.length) {
-        rows.innerHTML = `<li class="p-4 text-sm text-slate-500">${dates.length ? 'この日の出演バンドはありません。' : 'イベントに開催日を設定してください。'}</li>`;
+        rows.innerHTML = `<li class="px-4 py-10 text-center text-sm font-semibold text-gray-500">${dates.length ? 'この日の出演バンドはありません。' : 'イベントに開催日を設定してください。'}</li>`;
         return;
     }
     rows.innerHTML = dayEntries.map((entry, index) => `
-        <li class="tt-row" data-band-id="${escapeHtml(entry.bandId)}">
+        <li class="tt-row px-4 py-4 sm:px-6 hover:bg-gray-50/50 transition-colors" data-band-id="${escapeHtml(entry.bandId)}">
             <div class="tt-band flex min-w-0 items-center gap-2">
-                <span class="tt-grip" draggable="true" title="ドラッグで並べ替え"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
-                <button type="button" class="flex min-w-0 items-center gap-2 text-left font-bold text-blue-800" data-action="detail">
-                    ${entry.icon ? `<img src="${safeImageUrl(entry.icon)}" class="h-8 w-8 rounded-lg object-cover" alt="">` : '<i class="fa-solid fa-users" aria-hidden="true"></i>'}
-                    <span class="break-all">${escapeHtml(entry.bandName)}</span>
+                <span class="tt-grip px-1.5 py-2 text-gray-400 hover:text-gray-700" draggable="true" title="ドラッグで並べ替え"><i class="fa-solid fa-grip-vertical" aria-hidden="true"></i></span>
+                <span class="w-6 shrink-0 text-center text-xs font-extrabold text-gray-500" aria-hidden="true">${index + 1}</span>
+                <button type="button" class="flex min-w-0 items-center gap-2 text-left text-sm font-extrabold text-gray-800 hover:text-sky-700" data-action="detail" aria-label="${escapeHtml(entry.bandName)}の詳細を開く">
+                    ${entry.icon ? `<img src="${safeImageUrl(entry.icon)}" class="h-9 w-9 shrink-0 rounded-xl object-cover" alt="">` : '<span class="h-9 w-9 shrink-0 rounded-xl bg-sky-50 text-sky-600 grid place-items-center"><i class="fa-solid fa-users" aria-hidden="true"></i></span>'}
+                    <span class="min-w-0 break-words">${escapeHtml(entry.bandName)}</span>
+                    <i class="fa-solid fa-chevron-right shrink-0 text-[10px] text-gray-400" aria-hidden="true"></i>
                 </button>
             </div>
-            <label class="flex flex-col gap-1 text-xs">出演日
-                <select class="tt-control min-w-0" data-field="date">
+            <label class="flex min-w-0 flex-col gap-1 text-xs font-bold text-gray-600">出演日
+                <select class="tt-control w-full" data-field="date">
                     ${dates.map(date => `<option value="${date}" ${date === entry.date ? 'selected' : ''}>${formatDate(date)}</option>`).join('')}
                 </select>
             </label>
-            <label class="flex flex-col gap-1 text-xs">開始時刻
-                <input class="tt-control min-w-0" type="time" data-field="time" value="${escapeHtml(entry.time)}">
+            <label class="flex min-w-0 flex-col gap-1 text-xs font-bold text-gray-600">開始時刻
+                <input class="tt-control w-full" type="time" data-field="time" value="${escapeHtml(entry.time)}">
             </label>
-            <div class="flex gap-1.5">
-                <button type="button" class="tt-button" data-action="up" aria-label="出演順を前へ" ${index === 0 ? 'disabled' : ''}>↑</button>
-                <button type="button" class="tt-button" data-action="down" aria-label="出演順を後ろへ" ${index === dayEntries.length - 1 ? 'disabled' : ''}>↓</button>
+            <div class="flex gap-1 self-end">
+                <button type="button" class="h-10 w-8 sm:w-10 rounded-xl bg-gray-50 text-gray-600 hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40" data-action="up" aria-label="出演順を前へ" ${index === 0 ? 'disabled' : ''}><i class="fa-solid fa-arrow-up" aria-hidden="true"></i></button>
+                <button type="button" class="h-10 w-8 sm:w-10 rounded-xl bg-gray-50 text-gray-600 hover:bg-sky-50 hover:text-sky-700 disabled:opacity-40" data-action="down" aria-label="出演順を後ろへ" ${index === dayEntries.length - 1 ? 'disabled' : ''}><i class="fa-solid fa-arrow-down" aria-hidden="true"></i></button>
             </div>
         </li>`).join('');
 }
