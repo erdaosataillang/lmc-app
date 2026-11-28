@@ -292,7 +292,7 @@
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { signInFirebaseWithLine } from './js/line-firebase-auth.js?v=20261128-1';
         import { loadPublicProfiles } from './js/app-api.js';
-        import { appleMusicSearchUrl, appleMusicTrackUrl, hasCueAdminAccess } from './js/cue-links.js?v=1';
+        import { appleMusicSearchUrl, appleMusicTrackUrl, hasCueAdminAccess, normalizeAppleMusicTrackId } from './js/cue-links.js?v=2';
         import { 
             getFirestore, 
             doc, 
@@ -576,8 +576,11 @@
         function refreshSongLink(row) {
             const title = row.querySelector('.song-title').value.trim();
             const link = row.querySelector('.song-apple-music');
-            if (title !== row.dataset.linkedTitle) delete row.dataset.appleMusicUrl;
-            const directUrl = appleMusicTrackUrl(row.dataset.appleMusicUrl);
+            if (title !== row.dataset.linkedTitle) {
+                delete row.dataset.appleMusicUrl;
+                delete row.dataset.appleMusicTrackId;
+            }
+            const directUrl = appleMusicTrackUrl(row.dataset.appleMusicUrl, row.dataset.appleMusicTrackId);
             link.hidden = !canViewAppleMusic || !title;
             if (link.hidden) {
                 link.removeAttribute('href');
@@ -587,18 +590,25 @@
             link.textContent = directUrl ? 'Apple Musicで開く' : 'Apple Musicで検索';
         }
 
-        function setSongLink(row, value) {
+        function setSongLink(row, value, trackId) {
+            const id = normalizeAppleMusicTrackId(trackId);
             row.dataset.linkedTitle = row.querySelector('.song-title').value.trim();
-            row.dataset.appleMusicUrl = appleMusicTrackUrl(value);
+            row.dataset.appleMusicTrackId = id;
+            row.dataset.appleMusicUrl = appleMusicTrackUrl(value, id);
             refreshSongLink(row);
         }
 
         function readSongRow(row) {
             const title = row.querySelector('.song-title').value;
             const duration = row.querySelector('.song-duration').value;
-            const appleMusicUrl = title.trim() === row.dataset.linkedTitle
-                ? appleMusicTrackUrl(row.dataset.appleMusicUrl) : '';
-            return {title, duration, ...(appleMusicUrl ? {appleMusicUrl} : {})};
+            if (title.trim() !== row.dataset.linkedTitle) return {title, duration};
+            const appleMusicTrackId = normalizeAppleMusicTrackId(row.dataset.appleMusicTrackId);
+            const appleMusicUrl = appleMusicTrackUrl(row.dataset.appleMusicUrl, appleMusicTrackId);
+            return {
+                title, duration,
+                ...(appleMusicTrackId ? {appleMusicTrackId} : {}),
+                ...(appleMusicUrl ? {appleMusicUrl} : {})
+            };
         }
 
         const applyFormData = (data) => {
@@ -647,7 +657,7 @@
                         const song = data.songs[i];
                         tr.querySelector('.song-title').value = typeof song === 'string' ? song : (song.title || '');
                         tr.querySelector('.song-duration').value = song.duration || '';
-                        setSongLink(tr, song.appleMusicUrl);
+                        setSongLink(tr, song.appleMusicUrl, song.appleMusicTrackId);
                     }
                     if (i === rowCount - 1) tr.classList.remove('border-b-black-1');
                     songsTbody.appendChild(tr);
@@ -1051,7 +1061,7 @@
                             e.preventDefault(); 
                             titleInput.value = song.trackName;
                             row.querySelector('.song-duration').value = timeStr;
-                            setSongLink(row, song.trackViewUrl);
+                            setSongLink(row, song.trackViewUrl, song.trackId);
                             suggestBox.style.display = 'none';
                             titleInput.dispatchEvent(new Event('input', { bubbles: true }));
                         };
