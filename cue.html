@@ -286,7 +286,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { signInFirebaseWithLine } from './js/line-firebase-auth.js';
+        import { signInFirebaseWithLine } from './js/line-firebase-auth.js?v=20261128-1';
         import { loadPublicProfiles } from './js/app-api.js';
         import { 
             getFirestore, 
@@ -388,6 +388,46 @@
             } catch (e) {
                 console.error("Users cache error:", e);
             }
+        }
+
+        async function getValidFirebaseSession() {
+            if (!auth) return null;
+            if (typeof auth.authStateReady === 'function') await auth.authStateReady();
+            const user = auth.currentUser;
+            if (!user || user.isAnonymous) return null;
+            try {
+                const token = await user.getIdTokenResult();
+                return token.claims.line === true && token.claims.registered === true ? user : null;
+            } catch (error) {
+                console.warn('Stored Firebase session could not be used:', error);
+                return null;
+            }
+        }
+
+        async function waitForLiffSdk(timeoutMs = 6000) {
+            const startedAt = Date.now();
+            while (!window.liff && Date.now() - startedAt < timeoutMs) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            return window.liff || null;
+        }
+
+        async function authenticateCuePage() {
+            // LIFF内のページ遷移ではFirebase Authのセッションが同じオリジンに残る。
+            // 先にこれを再利用し、LIFF SDKの再初期化失敗やログインループで
+            // Cueシートの読み込み全体が止まることを防ぐ。
+            const storedSession = await getValidFirebaseSession();
+            if (storedSession) return storedSession;
+
+            const liffClient = await waitForLiffSdk();
+            if (!liffClient) throw new Error('LIFF SDK failed to load');
+            await liffClient.init({liffId: '2008162165-vVODNp12'});
+            if (!liffClient.isLoggedIn()) {
+                liffClient.login({redirectUri: window.location.href});
+                return null;
+            }
+            const profile = await liffClient.getProfile();
+            return signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId);
         }
 
         window.showNameSuggest = (inputEl, index) => {
@@ -626,14 +666,11 @@
             }
 
             try {
-                // Firestoreを読む前に認証を完了させ、初回表示時の権限エラーを防ぐ。
-                const liffClient = window.liff;
-                if (!liffClient) throw new Error('LIFF SDK failed to load');
-                await liffClient.init({liffId: '2008162165-vVODNp12'});
-                if (!liffClient.isLoggedIn()) { liffClient.login(); return; }
-                const profile = await liffClient.getProfile();
-                authReady = signInFirebaseWithLine(auth, signInWithCustomToken, profile.userId);
-                await authReady;
+                // Firestoreを読む前に認証を完了させる。LIFF内遷移では既存の
+                // Firebaseセッションを優先し、不要なLINE再認証を発生させない。
+                authReady = authenticateCuePage();
+                const authenticatedUser = await authReady;
+                if (!authenticatedUser) return;
                 await preloadSystemUsers();
                 const eventSelect = document.getElementById('event-select');
                 try {
@@ -800,7 +837,8 @@
                 }
             } catch (error) {
                 console.error("Fetch Error:", error);
-                showToast('データの読み込みに失敗しました', 'error');
+                const authFailure = /LIFF|LINE authentication|Firebase session|auth\//i.test(String(error?.message || error));
+                showToast(authFailure ? '認証を確認できませんでした。画面を開き直してください' : 'データの読み込みに失敗しました', 'error');
             }
         });
 
